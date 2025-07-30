@@ -4,35 +4,44 @@ defmodule SportipediaWeb.Router do
   use PowAssent.Phoenix.Router
 
   pipeline :browser do
-    plug(:accepts, ["html"])
-    plug(:fetch_session)
-    plug(:fetch_live_flash)
-    plug(:put_root_layout, html: {SportipediaWeb.Layouts, :root})
-    plug(:protect_from_forgery)
-    plug(:put_secure_browser_headers)
+    plug :accepts, ["html"]
+    plug :fetch_session
+    plug :fetch_live_flash
+    plug :put_root_layout, html: {SportipediaWeb.Layouts, :root}
+    plug :protect_from_forgery
+    plug :put_secure_browser_headers
   end
 
   pipeline :api do
-    plug(:accepts, ["json"])
-    plug(Pow.Plug.Session, otp_app: :sportipedia)
+    plug :accepts, ["json"]
+    plug SportipediaWeb.APIAuthPlug, otp_app: :sportipedia
   end
+
+  pipeline :api_protected do
+    plug Pow.Plug.RequireAuthenticated, error_handler: SportipediaWeb.APIAuthErrorHandler
+  end
+
+  # pipeline :api do
+  #   plug :accepts, ["json"]
+  #   plug Pow.Plug.Session, otp_app: :sportipedia
+  # end
 
   pipeline :skip_csrf_protection do
-    plug(:accepts, ["html"])
-    plug(:fetch_session)
-    plug(:fetch_flash)
-    plug(:put_secure_browser_headers)
+    plug :accepts, ["html"]
+    plug :fetch_session
+    plug :fetch_flash
+    plug :put_secure_browser_headers
   end
 
   scope "/" do
-    pipe_through(:skip_csrf_protection)
+    pipe_through :skip_csrf_protection
 
-    pow_assent_authorization_post_callback_routes()
+    # pow_assent_authorization_post_callback_routes()
   end
 
   scope "/" do
-    pipe_through(:browser)
-    pow_routes()
+    pipe_through :browser
+    # pow_routes()
     # pow_assent_routes()
     pow_assent_authorization_routes()
   end
@@ -46,15 +55,32 @@ defmodule SportipediaWeb.Router do
   # end
 
   scope "/api", SportipediaWeb do
-    pipe_through(:api)
+    pipe_through :api
+  end
+
+  scope "/api/v1", SportipediaWeb.API.V1, as: :api_v1 do
+    pipe_through :api
+
+    # resources "/registration", RegistrationController, singleton: true, only: [:create]
+    resources "/session", SessionController, singleton: true, only: [:create, :delete]
+    # post "/session/renew", SessionController, :renew
+
+    get "/auth/:provider/new", AuthenticationController, :new
+    post "/auth/:provider/callback", AuthenticationController, :callback
+  end
+
+  scope "/api/v1", SportipediaWeb.API.V1, as: :api_v1 do
+    pipe_through [:api, :api_protected]
+
+    # Your protected API endpoints here
   end
 
   # Enable Swoosh mailbox preview in development
   if Application.compile_env(:sportipedia, :dev_routes) do
     scope "/dev" do
-      pipe_through(:browser)
+      pipe_through :browser
 
-      forward("/mailbox", Plug.Swoosh.MailboxPreview)
+      forward "/mailbox", Plug.Swoosh.MailboxPreview
     end
   end
 end
