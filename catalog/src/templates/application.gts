@@ -1,0 +1,23 @@
+import { link } from 'ember-link';
+import { pageTitle } from 'ember-page-title';
+
+import UserMenu from '#/components/user-menu.gts';
+
+import { AppHeader } from '@hokulea/ember';
+
+<template>
+  {{pageTitle "Sportipedia"}}
+
+  <AppHeader @home={{link "application"}}>
+    <:brand>Sportipedia</:brand>
+    <:nav>
+      hi
+      {{!-- <n.Item @push={{link "blog"}}>Blog</n.Item> --}}
+    </:nav>
+    <:aux>
+      <UserMenu />
+    </:aux>
+  </AppHeader>
+
+  {{outlet}}
+</template>
