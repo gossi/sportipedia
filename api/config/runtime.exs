@@ -31,8 +31,8 @@ end
 config :sportipedia, :pow_assent,
   providers: [
     github: [
-      client_id: System.get_env("GITHUB_CLIENT_ID"),
-      client_secret: System.get_env("GITHUB_CLIENT_SECRET"),
+      client_id: env!("GITHUB_CLIENT_ID", :string),
+      client_secret: env!("GITHUB_CLIENT_SECRET", :string),
       strategy: Assent.Strategy.Github
     ]
   ]

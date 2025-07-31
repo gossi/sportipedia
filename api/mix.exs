@@ -49,6 +49,11 @@ defmodule Sportipedia.MixProject do
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.5"},
 
+      # Security
+      {:cors_plug, "~> 3.0"},
+      {:ssl_verify_fun, "~> 1.1"},
+      {:certifi, "~> 2.4"},
+
       # Auth
       {:dotenvy, "~> 1.0.0"},
       {:pow, "~> 1.0.34"},

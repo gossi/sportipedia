@@ -20,14 +20,18 @@ defmodule SportipediaWeb.API.V1.AuthenticationController do
   end
 
   defp redirect_uri(conn) do
-    # "https://client.example.com/auth/#{conn.params["provider"]}/callback"
-    "http://localhost:4000/?provider=#{conn.params["provider"]}"
+    "http://localhost:4200/auth/#{conn.params["provider"]}/callback"
   end
 
   @spec callback(Conn.t(), map()) :: Conn.t()
   def callback(conn, %{"provider" => provider} = params) do
-    session_params = Map.fetch!(params, "session_params")
-    params = Map.drop(params, ["provider", "session_params"])
+    session_params =
+      Map.fetch!(params, "session_params")
+      |> Map.new(fn {k, v} -> {String.to_atom(k), v} end)
+
+    params =
+      Map.drop(params, ["provider", "session_params"])
+      |> Map.put("state", session_params.state)
 
     conn
     |> Conn.put_private(:pow_assent_session_params, session_params)
