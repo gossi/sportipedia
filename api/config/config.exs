@@ -11,43 +11,30 @@ config :sportipedia,
   ecto_repos: [Sportipedia.Repo],
   generators: [timestamp_type: :utc_datetime, binary_id: true]
 
+# Event Stores
+config :sportipedia, event_stores: [Sportipedia.Accounts.EventStore]
+
+config :sportipedia, Sportipedia.Accounts.Application,
+  event_store: [
+    adapter: Commanded.EventStore.Adapters.EventStore,
+    serializer: Commanded.Serialization.JsonSerializer,
+    event_store: Sportipedia.Accounts.EventStore
+  ]
+
+config :guardian, Guardian.DB,
+  adapter: Guardian.DB.EctoAdapter,
+  repo: Sportipedia.Repo
+
 # Configures the endpoint
 config :sportipedia, SportipediaWeb.Endpoint,
   url: [host: "localhost"],
   adapter: Bandit.PhoenixAdapter,
   render_errors: [
-    formats: [html: SportipediaWeb.ErrorHTML, json: SportipediaWeb.ErrorJSON],
+    formats: [json: SportipediaWeb.ErrorJSON],
     layout: false
   ],
   pubsub_server: Sportipedia.PubSub,
-  live_view: [signing_salt: "W+FN6DPL"]
-
-# Authentication
-config :sportipedia, :pow,
-  user: Sportipedia.Users.User,
-  repo: Sportipedia.Repo,
-  web_module: SportipediaWeb,
-  extensions: [PowResetPassword, PowEmailConfirmation],
-  controller_callbacks: Pow.Extension.Phoenix.ControllerCallbacks
-
-config :sportipedia, :pow_assent,
-  providers: [
-    github: [
-      client_id: System.get_env("GITHUB_CLIENT_ID"),
-      client_secret: System.get_env("GITHUB_CLIENT_SECRET"),
-      strategy: Assent.Strategy.Github
-    ]
-  ]
-
-# Event Stores
-config :sportipedia, event_stores: [Sportipedia.Catalog.EventStore]
-
-config :sportipedia, Sportipedia.Catalog.Application,
-  event_store: [
-    adapter: Commanded.EventStore.Adapters.EventStore,
-    serializer: Commanded.Serialization.JsonSerializer,
-    event_store: Sportipedia.Catalog.EventStore
-  ]
+  live_view: [signing_salt: "FAkFxBA3"]
 
 # Configures the mailer
 #
@@ -59,7 +46,7 @@ config :sportipedia, Sportipedia.Catalog.Application,
 config :sportipedia, Sportipedia.Mailer, adapter: Swoosh.Adapters.Local
 
 # Configures Elixir's Logger
-config :logger, :console,
+config :logger, :default_formatter,
   format: "$time $metadata[$level] $message\n",
   metadata: [:request_id]
 

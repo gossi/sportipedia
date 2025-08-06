@@ -15,11 +15,7 @@ config :sportipedia, Sportipedia.Repo,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
 
-config :sportipedia, Sportipedia.Catalog.EventStore, database_config
-
-config :sportipedia, Sportipedia.Catalog.EventStore,
-  serializer: Commanded.Serialization.JsonSerializer,
-  schema: "catalog"
+config :sportipedia, Sportipedia.Accounts.EventStore, database_config
 
 # For development, we disable any cache and enable
 # debugging and code reloading.
@@ -30,11 +26,11 @@ config :sportipedia, Sportipedia.Catalog.EventStore,
 config :sportipedia, SportipediaWeb.Endpoint,
   # Binding to loopback ipv4 address prevents access from other machines.
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
-  http: [ip: {127, 0, 0, 1}, port: 4000],
+  http: [ip: {127, 0, 0, 1}, port: String.to_integer(System.get_env("PORT") || "4000")],
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "XDCbx16hwv4ytd9PXcGWG1j3msPAc6h4fYeWEztmnYrrC4Ck9AcwCEnpznxV1RZD",
+  secret_key_base: "SFjcCpfYcDcCdORpuAhED2ZWxvuRNyk8wK3k9sn7DLZLNT+8W1z5A2Ojx2oSvA3z",
   watchers: []
 
 # ## SSL Support
@@ -60,21 +56,11 @@ config :sportipedia, SportipediaWeb.Endpoint,
 # configured to run both http and https servers on
 # different ports.
 
-# Watch static and templates for browser reloading.
-config :sportipedia, SportipediaWeb.Endpoint,
-  live_reload: [
-    patterns: [
-      ~r"priv/static/(?!uploads/).*(js|css|png|jpeg|jpg|gif|svg)$",
-      ~r"priv/gettext/.*(po)$",
-      ~r"lib/sportipedia_web/(controllers|live|components)/.*(ex|heex)$"
-    ]
-  ]
-
 # Enable dev routes for dashboard and mailbox
 config :sportipedia, dev_routes: true
 
 # Do not include metadata nor timestamps in development logs
-config :logger, :console, format: "[$level] $message\n"
+config :logger, :default_formatter, format: "[$level] $message\n"
 
 # Set a higher stacktrace during development. Avoid configuring such
 # in production as building large stacktraces may be expensive.
@@ -82,12 +68,6 @@ config :phoenix, :stacktrace_depth, 20
 
 # Initialize plugs at runtime for faster development compilation
 config :phoenix, :plug_init_mode, :runtime
-
-config :phoenix_live_view,
-  # Include HEEx debug annotations as HTML comments in rendered markup
-  debug_heex_annotations: true,
-  # Enable helpful, but potentially expensive runtime checks
-  enable_expensive_runtime_checks: true
 
 # Disable swoosh api client as it is only required for production adapters.
 config :swoosh, :api_client, false

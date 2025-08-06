@@ -1,86 +1,77 @@
 defmodule SportipediaWeb.Router do
   use SportipediaWeb, :router
-  use Pow.Phoenix.Router
-  use PowAssent.Phoenix.Router
-
-  pipeline :browser do
-    plug :accepts, ["html"]
-    plug :fetch_session
-    plug :fetch_live_flash
-    plug :put_root_layout, html: {SportipediaWeb.Layouts, :root}
-    plug :protect_from_forgery
-    plug :put_secure_browser_headers
-  end
 
   pipeline :api do
     plug :accepts, ["json"]
-    plug SportipediaWeb.APIAuthPlug, otp_app: :sportipedia
   end
 
-  pipeline :api_protected do
-    plug Pow.Plug.RequireAuthenticated, error_handler: SportipediaWeb.APIAuthErrorHandler
+  pipeline :admin do
+    # plug SportipediaWeb.AdminPipeline
+    plug Guardian.Plug.Pipeline,
+      otp_app: :sportipedia,
+      module: Sportipedia.Auth.Guardian,
+      error_handler: SportipediaWeb.ErrorHandler
+
+    plug Guardian.Plug.VerifyHeader, claims: %{role: "admin"}
+    plug Guardian.Plug.LoadResource
   end
 
-  # pipeline :api do
-  #   plug :accepts, ["json"]
-  #   plug Pow.Plug.Session, otp_app: :sportipedia
-  # end
+  pipeline :catalog do
+    # plug SportipediaWeb.CatalogPipeline
+    plug Guardian.Plug.Pipeline,
+      otp_app: :sportipedia,
+      module: Sportipedia.Auth.Guardian,
+      error_handler: SportipediaWeb.ErrorHandler
 
-  pipeline :skip_csrf_protection do
-    plug :accepts, ["html"]
-    plug :fetch_session
-    plug :fetch_flash
-    plug :put_secure_browser_headers
+    # Accept token if present, or continue as guest
+    plug Guardian.Plug.VerifyHeader, realm: "Bearer", claims: %{}, key: :default
+    plug Guardian.Plug.LoadResource, allow_blank: true
   end
 
-  scope "/" do
-    pipe_through :skip_csrf_protection
-
-    # pow_assent_authorization_post_callback_routes()
-  end
-
-  scope "/" do
-    pipe_through :browser
-    # pow_routes()
-    # pow_assent_routes()
-    pow_assent_authorization_routes()
-  end
-
-  # scope "/", SportipediaWeb do
-  #   # pipe_through(:browser)
-
-  #   # get "/", PageController, :home
-  #   pow_routes()
-  #   pow_assent_authorization_routes()
-  # end
-
-  scope "/api", SportipediaWeb do
-    pipe_through :api
-  end
-
-  scope "/api/v1", SportipediaWeb.API.V1, as: :api_v1 do
+  scope "/auth", SportipediaWeb do
     pipe_through :api
 
-    # resources "/registration", RegistrationController, singleton: true, only: [:create]
-    resources "/session", SessionController, singleton: true, only: [:create, :delete]
-    # post "/session/renew", SessionController, :renew
+    # post "/login"
+    # post "/register"
 
-    get "/auth/:provider/new", AuthenticationController, :new
-    post "/auth/:provider/callback", AuthenticationController, :callback
+    post "/:provider/login", AuthController, :login_with_provider
   end
 
-  scope "/api/v1", SportipediaWeb.API.V1, as: :api_v1 do
-    pipe_through [:api, :api_protected]
-
-    # Your protected API endpoints here
+  scope "/admin", SportipediaWeb do
+    pipe_through [:api, :admin]
   end
 
-  # Enable Swoosh mailbox preview in development
+  # Enable LiveDashboard and Swoosh mailbox preview in development
   if Application.compile_env(:sportipedia, :dev_routes) do
-    scope "/dev" do
-      pipe_through :browser
+    # If you want to use the LiveDashboard in production, you should put
+    # it behind authentication and allow only admins to access it.
+    # If your application does not have an admins-only section yet,
+    # you can use Plug.BasicAuth to set up some basic authentication
+    # as long as you are also using SSL (which you should anyway).
+    import Phoenix.LiveDashboard.Router
 
+    scope "/dev" do
+      pipe_through [:fetch_session, :protect_from_forgery]
+
+      live_dashboard "/dashboard", metrics: SportipediaWeb.Telemetry
       forward "/mailbox", Plug.Swoosh.MailboxPreview
     end
   end
+
+  ## Authentication routes
+
+  # scope "/", SportipediaWeb do
+  #   pipe_through [:browser, :redirect_if_user_is_authenticated]
+
+  #   # get "/users/register", UserRegistrationController, :new
+  #   # post "/users/register", UserRegistrationController, :create
+  # end
+
+  # scope "/", SportipediaWeb do
+  #   pipe_through [:browser, :require_authenticated_user]
+
+  #   # get "/users/settings", UserSettingsController, :edit
+  #   # put "/users/settings", UserSettingsController, :update
+  #   # get "/users/settings/confirm-email/:token", UserSettingsController, :confirm_email
+  # end
 end

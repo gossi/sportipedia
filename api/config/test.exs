@@ -1,5 +1,8 @@
 import Config
 
+# Only in tests, remove the complexity from the password hashing algorithm
+config :bcrypt_elixir, :log_rounds, 1
+
 # Configure your database
 #
 # The MIX_TEST_PARTITION environment variable can be used
@@ -17,7 +20,7 @@ config :sportipedia, Sportipedia.Repo,
 # you can enable the server option below.
 config :sportipedia, SportipediaWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
-  secret_key_base: "0W9SSxgyji/kzI7bnlKXDfNcqUuuk5su0gPzBU/Jj1ULEF8VLfJI8Oo1Bow1jDdI",
+  secret_key_base: "BdwvEvEf6IjSMr3Y4LSZWloJ925fpyad95D7G2KCYjPOjwppDAZRfjzRuJh9Ph91",
   server: false
 
 # In test we don't send emails
@@ -31,7 +34,3 @@ config :logger, level: :warning
 
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime
-
-# Enable helpful, but potentially expensive runtime checks
-config :phoenix_live_view,
-  enable_expensive_runtime_checks: true

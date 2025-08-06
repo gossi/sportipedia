@@ -1,12 +1,4 @@
 import Config
-import Dotenvy
-
-source!([
-  Path.absname(".env", Path.expand(".")),
-  # Path.absname(".#{config_env()}.env", env_dir_prefix),
-  # Path.absname(".#{config_env()}.overrides.env", env_dir_prefix),
-  System.get_env()
-])
 
 # config/runtime.exs is executed for all environments, including
 # during releases. It is executed after compilation and before the
@@ -28,14 +20,19 @@ if System.get_env("PHX_SERVER") do
   config :sportipedia, SportipediaWeb.Endpoint, server: true
 end
 
-config :sportipedia, :pow_assent,
-  providers: [
-    github: [
-      client_id: env!("GITHUB_CLIENT_ID", :string),
-      client_secret: env!("GITHUB_CLIENT_SECRET", :string),
-      strategy: Assent.Strategy.Github
-    ]
+# Authentication
+config :sportipedia, :strategies,
+  github: [
+    client_id: System.get_env("GITHUB_CLIENT_ID"),
+    client_secret: System.get_env("GITHUB_CLIENT_SECRET"),
+    redirect_uri: "http://localhost:4000/auth/github/callback",
+    code_verifier: true,
+    strategy: Assent.Strategy.Github
   ]
+
+config :sportipedia, Sportipedia.Auth.Guardian,
+  issuer: "sportipedia",
+  secret_key: System.get_env("GUARDIAN_SECRET_KEY")
 
 if config_env() == :prod do
   database_url =
@@ -51,6 +48,8 @@ if config_env() == :prod do
     # ssl: true,
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
+    # For machines with several cores, consider starting multiple pools of `pool_size`
+    # pool_count: 4,
     socket_options: maybe_ipv6
 
   # The secret key base is used to sign/encrypt cookies and other secrets.
@@ -117,18 +116,18 @@ if config_env() == :prod do
   # ## Configuring the mailer
   #
   # In production you need to configure the mailer to use a different adapter.
-  # Also, you may need to configure the Swoosh API client of your choice if you
-  # are not using SMTP. Here is an example of the configuration:
+  # Here is an example configuration for Mailgun:
   #
   #     config :sportipedia, Sportipedia.Mailer,
   #       adapter: Swoosh.Adapters.Mailgun,
   #       api_key: System.get_env("MAILGUN_API_KEY"),
   #       domain: System.get_env("MAILGUN_DOMAIN")
   #
-  # For this example you need include a HTTP client required by Swoosh API client.
-  # Swoosh supports Hackney and Finch out of the box:
+  # Most non-SMTP adapters require an API client. Swoosh supports Req, Hackney,
+  # and Finch out-of-the-box. This configuration is typically done at
+  # compile-time in your config/prod.exs:
   #
-  #     config :swoosh, :api_client, Swoosh.ApiClient.Hackney
+  #     config :swoosh, :api_client, Swoosh.ApiClient.Req
   #
   # See https://hexdocs.pm/swoosh/Swoosh.html#module-installation for details.
 end

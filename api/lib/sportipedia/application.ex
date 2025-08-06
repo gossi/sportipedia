@@ -12,13 +12,13 @@ defmodule Sportipedia.Application do
       Sportipedia.Repo,
       {DNSCluster, query: Application.get_env(:sportipedia, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Sportipedia.PubSub},
-      # Start the Finch HTTP client for sending emails
-      {Finch, name: Sportipedia.Finch},
       # Start a worker by calling: Sportipedia.Worker.start_link(arg)
       # {Sportipedia.Worker, arg},
       # Start to serve requests, typically the last entry
       SportipediaWeb.Endpoint,
-      Sportipedia.Catalog.Application
+      # Run guardian sweeper every 24hrs (once a day)
+      {Guardian.DB.Sweeper, [interval: 60 * 60 * 1000 * 24]},
+      Sportipedia.Accounts.Application
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
