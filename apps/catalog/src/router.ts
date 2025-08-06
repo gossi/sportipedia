@@ -12,5 +12,6 @@ Router.map(function () {
   this.route('auth', { path: '/auth/:provider' }, function () {
     this.route('callback');
   });
+  this.route('login');
   /* eslint-enable @typescript-eslint/no-invalid-this */
 });

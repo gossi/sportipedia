@@ -1,8 +1,7 @@
 import { link } from 'ember-link';
 import { pageTitle } from 'ember-page-title';
 
-import UserMenu from '#/components/user-menu.gts';
-
+// import UserMenu from '#/components/user-menu.gts';
 import { AppHeader } from '@hokulea/ember';
 
 <template>
@@ -14,8 +13,9 @@ import { AppHeader } from '@hokulea/ember';
       hi
       {{!-- <n.Item @push={{link "blog"}}>Blog</n.Item> --}}
     </:nav>
-    <:aux>
-      <UserMenu />
+    <:aux as |n|>
+      <n.Item @push={{link "login"}}>Login</n.Item>
+      {{! <UserMenu /> }}
     </:aux>
   </AppHeader>
 
