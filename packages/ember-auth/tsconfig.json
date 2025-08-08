@@ -1,0 +1,32 @@
+{
+  "extends": "@ember/app-tsconfig",
+  "glint": {
+    "environment": [
+      "ember-loose"
+    ]
+  },
+  "include": [
+    "src",
+    "tests",
+    "types"
+  ],
+  "compilerOptions": {
+    "rootDir": ".",
+    "paths": {
+      "#/": [
+        "./src/index.ts"
+      ],
+      "#/*": [
+        "./src/*"
+      ],
+      "#tests/*": [
+        "./tests/*"
+      ]
+    },
+    "types": [
+      "ember-source/types",
+      "vite/client",
+      "@embroider/core/virtual"
+    ]
+  }
+}
