@@ -16,7 +16,7 @@ export default {
     [
       'babel-plugin-ember-template-compilation',
       {
-        transforms: [...macros.templateMacros]
+        transforms: [...macros.templateMacros, 'glimmer-scoped-css/ast-transform']
       }
     ],
     [

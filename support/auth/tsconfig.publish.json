@@ -1,8 +1,12 @@
 {
   "extends": "@ember/library-tsconfig",
-  "include": ["src"],
+  "include": [
+    "src"
+  ],
   "glint": {
-    "environment": ["ember-loose"]
+    "environment": [
+      "ember-loose"
+    ]
   },
   "compilerOptions": {
     "allowJs": true,
@@ -18,6 +22,9 @@
       imports to files on disk
     */
     "rootDir": "./src",
-    "types": ["ember-source/types"]
+    "types": [
+      "ember-source/types",
+      "vite/client"
+    ]
   }
 }

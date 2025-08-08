@@ -2,6 +2,7 @@ import { Addon } from '@embroider/addon-dev/rollup';
 import { resolve } from 'node:path';
 
 import { babel } from '@rollup/plugin-babel';
+import { scopedCSS } from 'glimmer-scoped-css/rollup';
 import { defineConfig } from 'rollup';
 
 const addon = new Addon({
@@ -21,7 +22,11 @@ export default defineConfig({
   // You can augment this if you need to.
   output: addon.output(),
 
+  external: ['@warp-drive/ember', 'ember-command', 'ember-link'],
+
   plugins: [
+    scopedCSS(),
+
     // These are the modules that users should be able to import from your
     // addon. Anything not listed here may get optimized away.
     addon.publicEntrypoints(['index.js']),
@@ -50,10 +55,10 @@ export default defineConfig({
     // addon.hbs(),
 
     // Ensure that .gjs files are properly integrated as Javascript
-    // addon.gjs(),
+    addon.gjs(),
 
     // Emit .d.ts declaration files
-    addon.declarations('declarations', `glint --declaration --project ${configs.ts}`),
+    // addon.declarations('declarations', `glint --declaration --project ${configs.ts}`),
 
     // addons are allowed to contain imports of .css files, which we want rollup
     // to leave alone and keep in the published output.

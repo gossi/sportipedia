@@ -1,2 +1,2 @@
-export { GithubAuthenticator } from './authenticators/github.ts';
-export { default as SessionService } from './services/session.ts';
+export { SportipediaOauthAuthenticator } from './authenticators/oauth.ts';
+export { LoginForm } from './components/login-form.gts';
