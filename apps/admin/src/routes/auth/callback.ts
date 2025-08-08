@@ -1,8 +1,10 @@
 import Route from '@ember/routing/route';
 import { service } from '@ember/service';
 
+import { restoreOauthSessionData, verifyOauthSession } from 'ember-auth';
+
 import type Transition from '@ember/routing/transition';
-import type SessionService from '#/services/session';
+import type { SessionService } from 'ember-auth';
 
 type QP = {
   code: string;
@@ -14,10 +16,18 @@ export default class AuthCallbackRoute extends Route {
 
   activate(transition: Transition) {
     const { provider } = this.paramsFor('auth') as { provider: string };
-    const { code, state } = transition.to?.queryParams as QP;
+    const qp = new URLSearchParams(transition.to?.queryParams as QP);
 
-    console.log('activate', { provider, code, state });
+    const sessionData = restoreOauthSessionData();
 
-    void this.session.authenticate(provider, code, { state });
+    if (!verifyOauthSession(sessionData, qp)) {
+      console.error('eek, not verified');
+    }
+
+    void this.session.authenticate('oauth', {
+      provider,
+      code: qp.get('code'),
+      codeVerifier: sessionData.codeVerifier
+    });
   }
 }

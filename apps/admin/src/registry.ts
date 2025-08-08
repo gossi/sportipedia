@@ -1,3 +1,4 @@
+import { SessionService } from 'ember-auth';
 import { LinkManagerService } from 'ember-link';
 import PageTitleService from 'ember-page-title/services/page-title';
 
@@ -38,7 +39,8 @@ const emberRegistry = {
 const addonRegistry = {
   [`${config.modulePrefix}/services/page-title`]: PageTitleService,
   [`${config.modulePrefix}/services/-hokulea`]: HokuleaService,
-  [`${config.modulePrefix}/services/link-manager`]: LinkManagerService
+  [`${config.modulePrefix}/services/link-manager`]: LinkManagerService,
+  [`${config.modulePrefix}/services/session`]: SessionService
   // [`${config.modulePrefix}/services/-portal`]: PortalService
 };
 

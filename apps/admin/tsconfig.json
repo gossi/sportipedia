@@ -21,6 +21,9 @@
       "#tests/*": [
         "./tests/*"
       ]
+      // "@sportipedia/auth": [
+      //   "../../support/auth/declarations"
+      // ]
     },
     "types": [
       "ember-source/types",

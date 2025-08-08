@@ -2,6 +2,7 @@ import { ember, extensions } from '@embroider/vite';
 import process from 'node:process';
 
 import { babel } from '@rollup/plugin-babel';
+import { scopedCSS } from 'glimmer-scoped-css/rollup';
 // import { FileSystemIconLoader } from 'unplugin-icons/loaders';
 import icons from 'unplugin-icons/vite';
 import { defineConfig } from 'vite';
@@ -17,6 +18,7 @@ export default defineConfig({
   },
   plugins: [
     ember(),
+    scopedCSS('src'),
     babel({
       babelHelpers: 'runtime',
       extensions
