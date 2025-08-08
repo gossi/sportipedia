@@ -5,6 +5,7 @@ import { service } from '@ember/service';
 import { Await } from '@warp-drive/ember';
 import { GithubProvider, persistOauthSessionData } from 'ember-auth';
 import { command } from 'ember-command';
+import { t } from 'ember-intl';
 import { link } from 'ember-link';
 
 import { Button, Form, Icon } from '@hokulea/ember';
@@ -65,8 +66,10 @@ export class LoginForm extends Component<LoginFormSignature> {
             }}
           >
             <:before><Icon @icon={{p.icon}} /></:before>
-            <:label>Login with
-              {{p.provider.name}}</:label>
+            <:label>{{t
+                "accounts.components.login.actions.login-with"
+                provider=p.provider.name
+              }}</:label>
           </Button>
         {{/each}}
       </:success>
@@ -78,7 +81,7 @@ export class LoginForm extends Component<LoginFormSignature> {
       <f.Email @name="email" @label="Email" autocomplete="username" />
       <f.Password @name="password" @label="Password" autocomplete="current-password" />
 
-      <f.Submit>Log in</f.Submit>
+      <f.Submit>{{t "accounts.components.login.actions.login"}}</f.Submit>
     </Form>
   </template>
 }
