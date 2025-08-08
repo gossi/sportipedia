@@ -1,4 +1,5 @@
 import { SessionService } from 'ember-auth';
+import { IntlService } from 'ember-intl';
 import { LinkManagerService } from 'ember-link';
 import PageTitleService from 'ember-page-title/services/page-title';
 
@@ -40,7 +41,8 @@ const addonRegistry = {
   [`${config.modulePrefix}/services/page-title`]: PageTitleService,
   [`${config.modulePrefix}/services/-hokulea`]: HokuleaService,
   [`${config.modulePrefix}/services/link-manager`]: LinkManagerService,
-  [`${config.modulePrefix}/services/session`]: SessionService
+  [`${config.modulePrefix}/services/session`]: SessionService,
+  [`${config.modulePrefix}/services/intl`]: IntlService
   // [`${config.modulePrefix}/services/-portal`]: PortalService
 };
 

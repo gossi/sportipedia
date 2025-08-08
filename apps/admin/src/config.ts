@@ -8,7 +8,7 @@ type Config = {
 console.log(import.meta.env);
 
 const ENV: Config = {
-  modulePrefix: 'ember-app-vite',
+  modulePrefix: '@sportipedia/admin',
   environment: import.meta.env.DEV ? 'development' : 'production',
   rootURL: '/',
   locationType: 'history',

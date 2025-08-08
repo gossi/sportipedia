@@ -2,6 +2,7 @@ import { ember, extensions } from '@embroider/vite';
 import process from 'node:process';
 
 import { babel } from '@rollup/plugin-babel';
+import { intl } from 'ember-intl/vite';
 import { scopedCSS } from 'glimmer-scoped-css/rollup';
 // import { FileSystemIconLoader } from 'unplugin-icons/loaders';
 import icons from 'unplugin-icons/vite';
@@ -32,6 +33,9 @@ export default defineConfig({
       // customCollections: {
       //   custom: FileSystemIconLoader('./assets/icons')
       // }
+    }),
+    intl({
+      paths: ['./locales']
     })
   ]
 });

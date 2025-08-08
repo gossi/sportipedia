@@ -2,7 +2,7 @@ import Component from '@glimmer/component';
 import { service } from '@ember/service';
 
 // import { LoginForm } from '#/components/login-form.gts';
-import { LoginForm } from '@sportipedia/auth';
+import { LoginForm } from '@sportipedia/accounts';
 
 import { Page } from '@hokulea/ember';
 

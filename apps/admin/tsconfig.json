@@ -21,14 +21,12 @@
       "#tests/*": [
         "./tests/*"
       ]
-      // "@sportipedia/auth": [
-      //   "../../support/auth/declarations"
-      // ]
     },
     "types": [
       "ember-source/types",
       "@embroider/core/virtual",
-      "vite/client"
+      "vite/client",
+      "ember-intl/types"
     ]
   }
 }
