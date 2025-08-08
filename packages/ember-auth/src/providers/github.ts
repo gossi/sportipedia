@@ -1,4 +1,4 @@
-import { Oauth2Provider, type Oauth2ProviderConfig } from './oauth2';
+import { Oauth2Provider, type Oauth2ProviderConfig } from './oauth2.ts';
 
 const GITHUB_DEFAULT_CONFIG = {
   name: 'github',
