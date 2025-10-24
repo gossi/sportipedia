@@ -12,7 +12,7 @@ import { hokuleaRegistry } from '@hokulea/ember/registry';
 
 import type ApplicationInstance from '@ember/application/instance';
 
-export default class Router extends EmberRouter {
+class Router extends EmberRouter {
   location = 'history';
   rootURL = '/';
 }
