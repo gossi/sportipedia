@@ -1,27 +1,58 @@
 import '@warp-drive/ember/install';
 
-import Application from '@ember/application';
+import EmberRouter from '@ember/routing/router';
 
-import Resolver from 'ember-resolver';
+import { userRegistry } from '@sportipedia/user/registry';
+import { IntlService } from 'ember-intl';
+import PageTitleService from 'ember-page-title/services/page-title';
+import EmberApp from 'ember-strict-application-resolver';
 
 import '@hokulea/core/index.css';
+import { hokuleaRegistry } from '@hokulea/ember/registry';
 
-import config from './config';
-import { registry } from './registry';
+import type ApplicationInstance from '@ember/application/instance';
 
-class App extends Application {
-  modulePrefix = config.modulePrefix;
-  Resolver = Resolver.withModules(registry);
+export default class Router extends EmberRouter {
+  location = 'history';
+  rootURL = '/';
 }
 
-export async function start(options: Record<string, unknown> = {}) {
+Router.map(function () {
+  /* eslint-disable @typescript-eslint/no-invalid-this */
+  this.route('login');
+  this.route('logout');
+  this.route('registration');
+  this.route('protected', { path: '' }, function () {
+    this.route('dashboard');
+    this.route('users', function () {
+      this.route('new');
+      this.route('details', { path: '/:id' });
+    });
+  });
+  /* eslint-enable @typescript-eslint/no-invalid-this */
+});
+
+export default class App extends EmberApp {
+  modules = {
+    './router': { default: Router },
+    ...hokuleaRegistry(),
+    ...userRegistry(),
+    ...import.meta.glob('./services/**/*', { eager: true }),
+    ...import.meta.glob('./routes/**/*', { eager: true }),
+    ...import.meta.glob('./templates/**/*', { eager: true }),
+    './services/intl': { default: IntlService },
+    './services/page-title': { default: PageTitleService }
+  };
+}
+
+export function createApp(options: Record<string, unknown> = {}) {
   const app = App.create({ ...options, autoboot: false });
 
-  const instance = app.buildInstance();
+  return app.buildInstance();
+}
 
+export async function start(instance: ApplicationInstance) {
   await instance.boot();
 
   instance.startRouting();
-
-  return instance;
 }

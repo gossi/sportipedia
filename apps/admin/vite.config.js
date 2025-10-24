@@ -35,7 +35,7 @@ export default defineConfig({
       // }
     }),
     intl({
-      paths: ['./locales']
+      paths: ['./locales', './node_modules/@sportipedia/user/locales']
     })
   ]
 });

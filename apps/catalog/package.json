@@ -18,6 +18,11 @@
     "lint:types": "glint",
     "test": "vite build --mode development && testem ci"
   },
+  "dependencies": {
+    "@warp-drive/core": "5.6.0",
+    "@warp-drive/ember": "5.6.0",
+    "@warp-drive/json-api": "5.6.0"
+  },
   "devDependencies": {
     "@babel/core": "^7.19.3",
     "@babel/plugin-transform-runtime": "^7.25.4",
@@ -39,8 +44,8 @@
     "@gossi/config-stylelint": "^1.1.0",
     "@gossi/config-template-lint": "^1.1.0",
     "@hokulea/core": "^0.4.0",
-    "@hokulea/ember": "^0.7.2",
-    "@hokulea/theme-moana": "^0.1.0",
+    "@hokulea/ember": "^0.10.2",
+    "@hokulea/theme-moana": "^0.2.0",
     "@rollup/plugin-babel": "^5.3.1",
     "@sportipedia/auth": "workspace:*",
     "@theemo/ember": "^1.0.1",
@@ -77,10 +82,5 @@
   "ember-addon": {
     "type": "app",
     "version": 2
-  },
-  "dependencies": {
-    "@warp-drive/core": "5.6.0",
-    "@warp-drive/ember": "5.6.0",
-    "@warp-drive/json-api": "5.6.0"
   }
 }

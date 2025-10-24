@@ -1,0 +1,24 @@
+form:
+  username:
+    label: Benutzername
+    description: |
+      Wird verwendet für <b>@mention</b> und in der URL zu deinem
+      Profil <code>/&lt;username&gt;</code>.<br><small>Format: Buchstaben,
+      Zahlen, Punkt <code>.</code> und Dash <code>-</code> (Sonderzeichen nur in
+      der Mitte)</small>
+  email:
+    label: Email
+  password:
+    label: Passwort
+  password-confirm:
+    label: Passwort bestätigen
+  name:
+    label: Name (optional)
+    description: Dein vollständiger Name
+
+errors:
+  passwords-must-match: Passwörter müssen übereinstimmen
+  username-allowed-chars: Benutername kann nur A-Z 0-9 
+
+actions:
+  register: Registrieren

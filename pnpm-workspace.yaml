@@ -2,3 +2,4 @@ packages:
   - apps/*
   - support/*
   - packages/*
+  - services/*
