@@ -85,7 +85,7 @@
     "babel-plugin-ember-template-compilation": "^3.0.0",
     "ember-qunit": "^9.0.3",
     "ember-resolver": "^13.1.1",
-    "ember-source": "~6.5.0",
+    "ember-source": "~6.8.0",
     "eslint": "^9.32.0",
     "eslint-plugin-ember": "^12.5.0",
     "eslint-plugin-qunit": "^8.1.2",
@@ -95,6 +95,7 @@
     "rollup": "^4.44.0",
     "testem": "^3.16.0",
     "typescript": "^5.9.2",
+    "unplugin-icons": "^22.1.0",
     "vite": "^6.3.5"
   },
   "engines": {
