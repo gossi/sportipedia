@@ -30,6 +30,11 @@ export const auth = betterAuth({
           familyName: names[names.length - 1]
         };
       },
+    },
+    google: {
+      clientId: process.env.GOOGLE_CLIENT_ID as string,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+      redirectURI: 'http://localhost:3000/callback/google',
     }
   },
   user: {
