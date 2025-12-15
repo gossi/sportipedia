@@ -3,7 +3,7 @@ import process from 'node:process';
 
 import { babel } from '@rollup/plugin-babel';
 import { intl } from 'ember-intl/vite';
-import { scopedCSS } from 'glimmer-scoped-css/rollup';
+import { scopedCSS } from 'ember-scoped-css/vite';
 // import { FileSystemIconLoader } from 'unplugin-icons/loaders';
 import icons from 'unplugin-icons/vite';
 import { defineConfig } from 'vite';
@@ -19,7 +19,7 @@ export default defineConfig({
   },
   plugins: [
     ember(),
-    scopedCSS('src'),
+    scopedCSS({ layerName: 'app' }),
     babel({
       babelHelpers: 'runtime',
       extensions
@@ -29,13 +29,22 @@ export default defineConfig({
     }),
     icons({
       autoInstall: true,
-      compiler: 'raw'
+      compiler: 'ember'
       // customCollections: {
       //   custom: FileSystemIconLoader('./assets/icons')
       // }
     }),
     intl({
       paths: ['./locales', './node_modules/@sportipedia/user/locales']
-    })
+    }),
+    {
+      name: 'watch-locales',
+      configureServer: (server) => {
+        server.watcher.options = {
+          ...server.watcher.options,
+          ignored: [/node_modules\/(?!@sportipedia).*/, '**/.git/**']
+        };
+      }
+    }
   ]
 });

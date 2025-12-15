@@ -1,44 +1,21 @@
+@import "@hokulea/core/style.css";
+
 :target {
   scroll-margin-block: calc(70px + 2ex);
 }
 
 :root {
-  --typo-prose-family: "Inter Variable", system-ui, sans-serif;
-  --typo-prose-feature-settings: "case" 1, "ss03" 1, "cv05" 1, "cv07", "kern" 1;
-  --typo-heading-family: "Inter Variable", system-ui, sans-serif;
-  --typo-heading-feature-settings: "liga" 1, "calt" 1, "cv05" 1, "kern" 1;
-  --typo-heading-tracking: -0.018em;
-  --typo-heading-weight: 350;
-  --typo-display-family: "Inter Display", system-ui, sans-serif;
-  --typo-display-feature-settings: "liga" 1, "calt" 1, "salt" 1, "kern" 1;
-  --typo-display-weight: 325;
-  --typo-display-tracking: -0.003em;
-  --sizing-max-content-width: 60rem;
-}
-
-.showcases {
-  --min: 25ch;
-  --gap: 1rem;
-
-  /* display: grid;
-  grid-gap: var(--gap);
-grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--min)), 1fr)); */
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--gap);
-
-  & > * {
-    /* width: min(max(25ch, 30%), 100%); */
-    width: 25ch;
-  }
-}
-
-.showcase-card {
-  [part="body"] {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35em;
-  }
+  --typography-prose-family: "Inter Variable", system-ui, sans-serif;
+  --typography-prose-feature-settings: "case" 1, "ss03" 1, "cv05" 1, "cv07", "kern" 1;
+  --typography-heading-family: "Inter Variable", system-ui, sans-serif;
+  --typography-heading-feature-settings: "liga" 1, "calt" 1, "cv05" 1, "kern" 1;
+  --typography-heading-tracking: -0.018em;
+  --typography-heading-weight: 350;
+  --typography-display-family: "Inter Display", system-ui, sans-serif;
+  --typography-display-feature-settings: "liga" 1, "calt" 1, "salt" 1, "kern" 1;
+  --typography-display-weight: 325;
+  --typography-display-tracking: -0.003em;
+  --layout-page-max-content-width: 60rem;
 }
 
 .tag {

@@ -1,0 +1,9 @@
+title: Sitzungen
+
+current-session: Aktelle Sitzung
+last-accessed: Zuletzt benutzt
+
+actions:
+  revoke-other-sessions: Andere Geräte ausloggen
+  revoke-all-sessions: Überall ausloggen
+  revoke-session: Dieses Gerät ausloggen

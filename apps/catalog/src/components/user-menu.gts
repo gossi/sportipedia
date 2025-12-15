@@ -1,32 +1,53 @@
-import Component from '@glimmer/component';
-import { cached } from '@glimmer/tracking';
-import { service } from '@ember/service';
+import { getUser, isAuthenticated } from '@sportipedia/user';
+import { t } from 'ember-intl';
 
-import { getRequestState } from '@warp-drive/ember';
+import PhBroadcast from '~icons/ph/broadcast';
+import PhGear from '~icons/ph/gear';
+import PhKey from '~icons/ph/key';
+import PhSignOut from '~icons/ph/sign-out';
 
-import type Store from '#/services/store';
+// import PhUser from '~icons/ph/user';
+import { Avatar, Icon, type MenuBuilder } from '@hokulea/ember';
 
-export default class UserMenu extends Component {
-  @service declare store: Store;
+import type { TOC } from '@ember/component/template-only';
 
-  req = {
-    url: 'http://localhost:4000/api/v1/auth/github/new'
+interface UserMenuSignature {
+  Args: {
+    nav: MenuBuilder;
   };
-
-  @cached
-  get authRequest() {
-    return this.store.request<{ data: { url: string } }>({
-      url: 'http://localhost:4000/api/v1/auth/github/new'
-    });
-  }
-
-  get auth() {
-    return getRequestState(this.authRequest).value?.data;
-  }
-
-  <template>
-    {{#if this.auth}}
-      <a href="{{this.auth.url}}">Login with Github</a>
-    {{/if}}
-  </template>
 }
+
+const UserMenu: TOC<UserMenuSignature> = <template>
+  {{#if (isAuthenticated)}}
+    {{#let (getUser) as |user|}}
+      <@nav.Item>
+        <:label>
+          <Avatar @src={{user.image}} @name={{user.name}} />
+        </:label>
+        <:menu as |um|>
+          <um.Item @href="/user/profile">
+            <Icon @icon={{PhGear}} />
+            {{t "user.components.user-menu.settings"}}
+          </um.Item>
+          <um.Item @href="/user/sessions">
+            <Icon @icon={{PhBroadcast}} />
+            {{t "user.pages.sessions.title"}}
+          </um.Item>
+          <um.Item @href="/user/auth">
+            <Icon @icon={{PhKey}} />
+            {{t "user.pages.auth.title"}}
+          </um.Item>
+          <hr />
+          <um.Item @href="/logout">
+            <Icon @icon={{PhSignOut}} />
+            {{t "user.components.user-menu.logout"}}
+          </um.Item>
+        </:menu>
+      </@nav.Item>
+    {{/let}}
+  {{else}}
+    <@nav.Item @href="/login">Login</@nav.Item>
+  {{/if}}
+</template>;
+
+export { UserMenu };

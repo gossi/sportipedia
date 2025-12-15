@@ -27,7 +27,8 @@
       "@glint/ember-tsc/types",
       "@embroider/core/virtual",
       "vite/client",
-      "ember-intl/types"
+      "ember-intl/types",
+      "unplugin-icons/types/ember"
     ]
   }
 }

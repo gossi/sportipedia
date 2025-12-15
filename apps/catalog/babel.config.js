@@ -2,6 +2,8 @@ import { buildMacros } from '@embroider/macros/babel';
 import { fileURLToPath } from 'node:url';
 
 import { setConfig } from '@warp-drive/core/build-config';
+import emberConcurrency from 'ember-concurrency/async-arrow-task-transform';
+import { scopedCSS } from 'ember-scoped-css/babel';
 
 const macros = buildMacros({
   configure: (config) => {
@@ -29,9 +31,10 @@ export default {
     [
       'babel-plugin-ember-template-compilation',
       {
-        transforms: [...macros.templateMacros]
+        transforms: [...macros.templateMacros, scopedCSS.template({ layerName: 'app' })]
       }
     ],
+    emberConcurrency,
     [
       'module:decorator-transforms',
       {

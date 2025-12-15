@@ -1,17 +1,10 @@
 import { RegistrationForm } from '@sportipedia/user';
 import { t } from 'ember-intl';
 
-import { Page } from '@hokulea/ember';
-
-// import type { SessionService } from 'ember-auth';
+import { FocusPage } from '@hokulea/ember';
 
 <template>
-  <Page class="registration">
-    <h1>{{t "user.pages.registration.heading"}}</h1>
-
-    <div>
-      <RegistrationForm />
-    </div>
-
-  </Page>
+  <FocusPage @title={{t "user.pages.registration.heading"}}>
+    <RegistrationForm />
+  </FocusPage>
 </template>

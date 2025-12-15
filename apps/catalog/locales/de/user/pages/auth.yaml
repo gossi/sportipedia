@@ -1,0 +1,17 @@
+title: Sicherheit & Account
+
+password:
+  title: Passwort
+  set: Vorhanden
+  unset: Nicht vorhanden
+
+actions:
+  change-password: Passwort ändern
+  set-password: Passwort setzen
+  hide: Verstecken
+  link: Verbinden
+  unlink: Trennen
+
+errors:
+  title: "{error, select, account_already_linked_to_different_user {Account Verbinden} other {Fehler}}"
+  message: "{error, select, account_already_linked_to_different_user {Account bereits verbunden.} other {Unbekannter Fehler}} "
