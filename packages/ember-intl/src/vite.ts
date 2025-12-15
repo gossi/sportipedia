@@ -207,6 +207,9 @@ export const intl = ({
      * Watch translation files and trigger an update.
      */
     async handleHotUpdate({ file, server }) {
+      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
+      log.info(`hot update ${file}, ${paths}`);
+
       const isLocaleFile =
         /\.(json|yml|yaml)$/.exec(file) &&
         paths.some((p) => file.startsWith(path.join(process.cwd(), p)));

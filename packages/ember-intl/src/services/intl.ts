@@ -5,20 +5,20 @@ import { htmlSafe } from '@ember/template';
 
 import { createIntl, createIntlCache, type IntlShape } from '@formatjs/intl';
 
-import { formatMessage, type FormatMessageParameters } from '../formatters.ts';
-import { escapeFormatMessageOptions } from '../utils/escaping.ts';
+import { formatMessage, type FormatMessageParameters } from '../formatters';
+import { escapeFormatMessageOptions } from '../utils/escaping';
 import {
   convertToArray,
   convertToString,
   hasLocaleChanged,
   normalizeLocale
-} from '../utils/locale.ts';
+} from '../utils/locale';
 import {
   flattenKeys,
   handleMissingTranslation,
   type MissingTranslationHandler,
   type Translations
-} from '../utils/translations.ts';
+} from '../utils/translations';
 
 export class IntlService extends Service {
   @tracked private _intls: Record<string, IntlShape> = {};
@@ -229,6 +229,26 @@ export class IntlService extends Service {
     return formatMessage(intlShape, descriptor, options);
   }
 
+  formatNumber(value: number, options?: Intl.NumberFormatOptions) {
+    return new Intl.NumberFormat(this._locale, options).format(value);
+  }
+
+  formatDuration(value: Intl.DurationInput, options?: Intl.DurationFormatOptions) {
+    return new Intl.DurationFormat(this._locale, options).format(value);
+  }
+
+  formatDateTime(value: Date | number, options?: Intl.DateTimeFormatOptions) {
+    return new Intl.DateTimeFormat(this._locale, options).format(value);
+  }
+
+  formatRelativeTime(
+    value: number,
+    unit: Intl.RelativeTimeFormatUnit,
+    options?: Intl.RelativeTimeFormatOptions
+  ) {
+    return new Intl.RelativeTimeFormat(this._locale, options).format(value, unit);
+  }
+
   private updateDocumentLanguage(): void {
     const html = document.documentElement;
 
@@ -269,3 +289,9 @@ export class IntlService extends Service {
 }
 
 // export { type Formats } from '../-private/formatjs/index';
+
+declare module '@ember/service' {
+  interface Registry {
+    intl: IntlService;
+  }
+}
