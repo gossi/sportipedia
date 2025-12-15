@@ -10,6 +10,7 @@
     "start": "turbo run start"
   },
   "devDependencies": {
+    "@glint/ember-tsc": "^1.0.7",
     "turbo": "^2.5.5"
   },
   "engines": {
