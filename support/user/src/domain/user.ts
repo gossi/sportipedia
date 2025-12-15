@@ -9,6 +9,6 @@ export interface User extends BetterAuthUser {
   readonly role: 'user' | 'admin';
 }
 
-export function isAdmin(user: User) {
+export function isAdmin(user: User): boolean {
   return user.role === 'admin';
 }

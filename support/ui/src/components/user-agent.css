@@ -1,0 +1,21 @@
+.info {
+  display: grid;
+  grid-template-rows: max-content max-content;
+  row-gap: 0.15em;
+  column-gap: var(--s-3);
+
+  &:has([part="icon"]) {
+    grid-template-columns: max-content max-content;
+  }
+
+  [part="icon"] {
+    grid-row: 1/-1;
+    font-size: var(--s4);
+  }
+
+  [part="vendor"] {
+    display: flex;
+    align-items: baseline;
+    gap: 0.15em;
+  }
+}

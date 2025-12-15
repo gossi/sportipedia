@@ -6,7 +6,7 @@ import { service } from '@ember/service';
 import { t } from 'ember-intl';
 import { or } from 'ember-truth-helpers';
 
-import { Button, Form, Icon } from '@hokulea/ember';
+import { Button, Form, Icon, type SubmitHandler } from '@hokulea/ember';
 
 import type { AuthService } from '../services/auth';
 import type { Link } from 'ember-link';
@@ -43,13 +43,13 @@ interface LoginFormSignature {
 export class LoginForm extends Component<LoginFormSignature> {
   @service declare auth: AuthService;
 
-  loginWithEmail = async (data: { email: string; password: string }) => {
+  loginWithEmail: SubmitHandler<{ email: string; password: string }> = async (data) => {
     await this.auth.client.signIn.email(data);
 
     this.args.success?.();
   };
 
-  loginWithSocial = async (provider: string) => {
+  loginWithSocial = async (provider: string): Promise<void> => {
     await this.auth.client.signIn.social({
       provider,
       callbackURL: this.args.callbackURL
@@ -57,7 +57,7 @@ export class LoginForm extends Component<LoginFormSignature> {
   };
 
   <template>
-    <style>
+    <style scoped>
       .divider {
         width: 55%;
         height: 1px;
@@ -70,7 +70,7 @@ export class LoginForm extends Component<LoginFormSignature> {
     {{#each PROVIDERS as |p|}}
       <Button @importance="subtle" @push={{fn this.loginWithSocial p.name}}>
         <:before><Icon @icon={{p.icon}} /></:before>
-        <:label>{{t "accounts.components.login.actions.login-with" provider=p.name}}</:label>
+        <:label>{{t "user.components.login.actions.login-with" provider=p.name}}</:label>
       </Button>
     {{/each}}
 
@@ -79,18 +79,18 @@ export class LoginForm extends Component<LoginFormSignature> {
     <Form @submit={{this.loginWithEmail}} as |f|>
       <f.Email
         @name="email"
-        @label={{t "accounts.components.login.form.email.label"}}
+        @label={{t "user.components.login.form.email.label"}}
         autocomplete="username"
         required
       />
       <f.Password
         @name="password"
-        @label={{t "accounts.components.login.form.password.label"}}
+        @label={{t "user.components.login.form.password.label"}}
         autocomplete="current-password"
         required
       />
 
-      <f.Submit>{{t "accounts.components.login.actions.login"}}</f.Submit>
+      <f.Submit>{{t "user.components.login.actions.login"}}</f.Submit>
     </Form>
 
     {{#if (or @registrationLink @resetPasswordLink)}}
@@ -98,7 +98,7 @@ export class LoginForm extends Component<LoginFormSignature> {
         {{#if @registrationLink}}
           {{#let @registrationLink as |l|}}
             <a href={{l.url}} {{on "click" l.open}}>
-              {{t "accounts.components.login.actions.register"}}
+              {{t "user.components.login.actions.register"}}
             </a>
           {{/let}}
         {{/if}}

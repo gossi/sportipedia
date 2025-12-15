@@ -18,9 +18,21 @@
       imports to files on disk
     */
     "rootDir": "./src",
+    "paths": {
+      "#/": [
+        "./src/index.ts"
+      ],
+      "#/*": [
+        "./src/*"
+      ],
+      "#tests/*": [
+        "./tests/*"
+      ]
+    },
     "types": [
       "ember-source/types",
-      "vite/client"
+      "vite/client",
+      "unplugin-icons/types/ember"
     ]
   }
 }

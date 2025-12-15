@@ -1,6 +1,8 @@
 import { buildMacros } from '@embroider/macros/babel';
 import { fileURLToPath } from 'node:url';
 
+import { scopedCSS } from 'ember-scoped-css/babel';
+
 const macros = buildMacros();
 
 export default {
@@ -16,7 +18,7 @@ export default {
     [
       'babel-plugin-ember-template-compilation',
       {
-        transforms: [...macros.templateMacros, 'glimmer-scoped-css/ast-transform']
+        transforms: [...macros.templateMacros, scopedCSS.template({ layerName: 'app' })]
       }
     ],
     [

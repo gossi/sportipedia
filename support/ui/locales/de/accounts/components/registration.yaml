@@ -1,4 +1,8 @@
 form:
+  givenName:
+    label: Vorname
+  familyName:
+    label: Nachname
   username:
     label: Benutzername
     description: |
@@ -10,6 +14,12 @@ form:
     label: Email
   password:
     label: Passwort
+    rules:
+      min-character: Mindestens 8 Zeichen
+      uppercase-letter: Mindestens 1 Großbuchstaben
+      lowercase-letter: Mindestens 1 Kleinbuchstaben
+      number: Mindestens 1 Zahl
+      special-character: Mindestens 1 Sonderzeichen
   password-confirm:
     label: Passwort bestätigen
   name:
@@ -18,7 +28,7 @@ form:
 
 errors:
   passwords-must-match: Passwörter müssen übereinstimmen
-  username-allowed-chars: Benutername kann nur A-Z 0-9 
+  username-allowed-chars: Benutername kann nur A-Z 0-9
 
 actions:
   register: Registrieren
