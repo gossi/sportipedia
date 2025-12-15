@@ -7,7 +7,7 @@ import { IntlService } from 'ember-intl';
 import PageTitleService from 'ember-page-title/services/page-title';
 import EmberApp from 'ember-strict-application-resolver';
 
-import '@hokulea/core/index.css';
+import '@hokulea/core/style.css';
 import { hokuleaRegistry } from '@hokulea/ember/registry';
 
 import type ApplicationInstance from '@ember/application/instance';
@@ -21,7 +21,6 @@ Router.map(function () {
   /* eslint-disable @typescript-eslint/no-invalid-this */
   this.route('login');
   this.route('logout');
-  this.route('registration');
   this.route('protected', { path: '' }, function () {
     this.route('dashboard');
     this.route('users', function () {
