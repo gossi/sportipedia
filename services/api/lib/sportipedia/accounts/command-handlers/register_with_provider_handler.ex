@@ -1,9 +1,9 @@
 defmodule Sportipedia.Accounts.CommandHandlers.RegisterWithProviderHandler do
   @behaviour Commanded.Commands.Handler
 
+  alias Sportipedia.Accounts
   alias Sportipedia.Accounts.Queries.UserByUsername
   alias Sportipedia.Accounts.Events.UserRegistered
-  alias Sportipedia.Accounts.Queries.UserByProvider
   alias Sportipedia.Accounts.Commands.RegisterWithProvider
   alias Sportipedia.Accounts.Projections.User
   alias Sportipedia.Accounts.Projections.UserIdentity
@@ -11,7 +11,7 @@ defmodule Sportipedia.Accounts.CommandHandlers.RegisterWithProviderHandler do
 
   def handle(_aggregate, %RegisterWithProvider{} = cmd) do
     with {:user_exists, nil} <-
-           {:user_exists, user_with_provider_exists(cmd.provider, cmd.provider_user_id)},
+           {:user_exists, Accounts.user_by_provider(cmd.provider, cmd.provider_user_id)},
          {:username_taken, nil} <- {:username_taken, username_taken?(cmd.username)},
          {:ok, user} <- create_user_with_identity(cmd) do
       %UserRegistered{id: user.id}
@@ -51,10 +51,5 @@ defmodule Sportipedia.Accounts.CommandHandlers.RegisterWithProviderHandler do
         }
       ]
     })
-  end
-
-  defp user_with_provider_exists(provider, provider_user_id) do
-    UserByProvider.new(provider, provider_user_id)
-    |> Repo.one()
   end
 end

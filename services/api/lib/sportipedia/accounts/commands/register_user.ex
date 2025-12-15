@@ -13,7 +13,7 @@ defmodule Sportipedia.Accounts.Commands.RegisterUser do
   alias Sportipedia.Accounts.Validators.{UniqueEmail, UniqueUsername}
   alias Sportipedia.Auth
 
-  validates(:user_id, id: true)
+  validates(:id, id: true)
 
   validates(:username,
     presence: [message: "can't be empty"],

@@ -9,15 +9,10 @@ defmodule SportipediaWeb.AuthController do
   def login_with_provider(conn, %{"provider" => provider} = params) do
     result =
       with {:ok, provider_auth} <- oauth_callback(params),
-           {:ok, user} <- user_by_provider(provider, provider_auth),
+           {:ok, user} <- ensure_user_by_provider(provider, provider_auth),
            {:ok, token, _claims} <- Auth.token_for_user(user) do
         {:ok, token}
       else
-        {:error, {:no_user_found, provider_auth}} ->
-          Accounts.register_with_provider(
-            map_provider_auth_to_register_params(provider, provider_auth)
-          )
-
         {:error, err} ->
           {:error, err}
       end
@@ -37,14 +32,17 @@ defmodule SportipediaWeb.AuthController do
     }
   end
 
-  defp user_by_provider(provider, authorize_response) do
+  defp ensure_user_by_provider(provider, authorize_response) do
     user =
       UserByProvider.new(provider, authorize_response.user["sub"])
       |> Repo.one()
 
     case user do
       nil ->
-        {:error, {:no_user_found, authorize_response}}
+        {:ok,
+         Accounts.register_with_provider(
+           map_provider_auth_to_register_params(provider, authorize_response)
+         )}
 
       user ->
         {:ok, user}
@@ -72,7 +70,7 @@ defmodule SportipediaWeb.AuthController do
 
   defp login_response(conn, {:ok, token}) do
     json(conn, %{
-      data: token
+      token: token
     })
   end
 end

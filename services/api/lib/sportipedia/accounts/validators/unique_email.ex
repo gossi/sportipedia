@@ -5,7 +5,7 @@ defmodule Sportipedia.Accounts.Validators.UniqueEmail do
   alias Sportipedia.Accounts.Projections.User
 
   def validate(value, context) do
-    user_id = Map.get(context, :user_id)
+    user_id = Map.get(context, :id)
 
     case email_registered?(value, user_id) do
       true -> {:error, "has already been taken"}

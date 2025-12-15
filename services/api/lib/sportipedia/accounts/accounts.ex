@@ -3,6 +3,8 @@ defmodule Sportipedia.Accounts do
   The boundary for the Accounts system.
   """
 
+  alias Sportipedia.Accounts.Queries.UserByProvider
+
   alias Sportipedia.Accounts.Commands.{
     RegisterUser,
     RegisterWithProvider
@@ -82,6 +84,11 @@ defmodule Sportipedia.Accounts do
     email
     |> String.downcase()
     |> UserByEmail.new()
+    |> Repo.one()
+  end
+
+  def user_by_provider(provider, provider_user_id) do
+    UserByProvider.new(provider, provider_user_id)
     |> Repo.one()
   end
 

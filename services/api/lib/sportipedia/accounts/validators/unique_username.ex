@@ -5,7 +5,7 @@ defmodule Sportipedia.Accounts.Validators.UniqueUsername do
   alias Sportipedia.Accounts.Projections.User
 
   def validate(username, context) do
-    user_id = Map.get(context, :user_id)
+    user_id = Map.get(context, :id)
 
     case username_registered?(username, user_id) do
       true -> {:error, "has already been taken"}
