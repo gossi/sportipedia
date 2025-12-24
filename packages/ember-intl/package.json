@@ -42,46 +42,46 @@
   },
   "dependencies": {
     "@formatjs/intl": "^3.1.6",
-    "decorator-transforms": "^2.3.0",
+    "decorator-transforms": "catalog:build",
     "dot-prop": "^9.0.0",
-    "ember-strict-application-resolver": "^0.1.0",
+    "ember-strict-application-resolver": "catalog:ember",
     "globby": "^14.1.0",
     "js-yaml": "^4.1.0"
   },
   "peerDependencies": {
-    "ember-resources": "^7.0.7"
+    "ember-resources": "catalog:ember"
   },
   "devDependencies": {
-    "@ember/app-tsconfig": "^1.0.3",
-    "@ember/library-tsconfig": "^1.1.3",
+    "@ember/app-tsconfig": "catalog:ember",
+    "@ember/library-tsconfig": "catalog:ember",
     "@ember/test-helpers": "^5.2.2",
-    "@embroider/compat": "^4.1.0",
-    "@embroider/core": "^4.1.0",
-    "@embroider/macros": "^1.18.1",
-    "@embroider/vite": "^1.1.5",
-    "@glint/ember-tsc": "^1.0.7",
-    "@glint/template": "^1.7.2",
-    "@glint/tsserver-plugin": "^2.0.7",
-    "@gossi/config-eslint": "^1.1.0",
-    "@gossi/config-prettier": "^1.0.1",
+    "@embroider/compat": "catalog:ember",
+    "@embroider/core": "catalog:ember",
+    "@embroider/macros": "catalog:ember",
+    "@embroider/vite": "catalog:ember",
+    "@glint/ember-tsc": "catalog:ember",
+    "@glint/template": "catalog:ember",
+    "@glint/tsserver-plugin": "catalog:ember",
+    "@gossi/config-eslint": "catalog:lint",
+    "@gossi/config-prettier": "catalog:lint",
     "@types/js-yaml": "^4.0.9",
-    "@types/qunit": "^2.19.12",
+    "@types/qunit": "catalog:types",
     "ember-qunit": "^9.0.3",
-    "ember-resources": "^7.0.7",
-    "ember-source": "~6.5.0",
-    "eslint": "^9.32.0",
-    "eslint-plugin-ember": "^12.5.0",
-    "eslint-plugin-qunit": "^8.1.2",
-    "prettier": "^3.5.3",
+    "ember-resources": "catalog:ember",
+    "ember-source": "catalog:ember",
+    "eslint": "catalog:lint",
+    "eslint-plugin-ember": "catalog:lint",
+    "eslint-plugin-qunit": "catalog:lint",
+    "prettier": "catalog:lint",
     "qunit": "^2.24.1",
-    "temporal-polyfill": "^0.3.0",
+    "temporal-polyfill": "catalog:lib",
     "temporal-spec": "^0.3.0",
     "testem": "^3.16.0",
-    "tsdown": "^0.16.0",
-    "typescript": "^5.9.2",
-    "vite": "^6.3.5"
+    "tsdown": "catalog:build",
+    "typescript": "catalog:build",
+    "vite": "catalog:build"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=24"
   }
 }

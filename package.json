@@ -10,11 +10,11 @@
     "start": "turbo run start"
   },
   "devDependencies": {
-    "@glint/ember-tsc": "^1.0.7",
+    "@glint/ember-tsc": "catalog:ember",
     "turbo": "^2.5.5"
   },
   "engines": {
-    "node": ">= 22"
+    "node": ">=24"
   },
   "packageManager": "pnpm@10.14.0"
 }
