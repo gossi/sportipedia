@@ -1,4 +1,4 @@
 {
-  "elixirLS.projectDir": "./api/",
+  "elixirLS.projectDir": "./services/api/",
   "elixirLS.dotFormatter": ".formatter.exs"
 }
