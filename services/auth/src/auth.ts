@@ -1,63 +1,75 @@
-import { betterAuth } from "better-auth";
-import { openAPI, admin, jwt, bearer } from "better-auth/plugins"
-import { Pool } from 'pg'
+import { betterAuth } from 'better-auth';
+import { admin, bearer, jwt, openAPI } from 'better-auth/plugins';
+import { Pool } from 'pg';
+
+import { sendEmail } from './email';
 
 export const auth = betterAuth({
   appName: 'Sportipedia',
-  basePath: "/",
+  basePath: '/',
   database: new Pool({
-    host: process.env.DB_HOSTNAME,
-    database: process.env.DB_DATABASE,
-    user: process.env.DB_USERNAME,
-    password: process.env.DB_PASSWORD,
+    host: process.env.AUTH_DB_HOSTNAME,
+    database: process.env.AUTH_DB_DATABASE,
+    user: process.env.AUTH_DB_USERNAME,
+    password: process.env.AUTH_DB_PASSWORD,
     options: '-c search_path=auth'
   }),
-  trustedOrigins: [
-    'http://localhost:4200'
-  ],
+  trustedOrigins: [process.env.ADMIN_URL as string, process.env.CATALOG_URL as string],
   emailAndPassword: {
-    enabled: true
+    enabled: true,
+    sendResetPassword: async ({ url, user }) => {
+      await sendEmail('password-reset', {
+        email: user.email,
+        name: user.name,
+        url
+      });
+    }
+  },
+  emailVerification: {
+    sendVerificationEmail: async ({ url, user }) => {
+      await sendEmail('confirm-email', {
+        email: user.email,
+        name: user.name,
+        url
+      });
+    }
   },
   socialProviders: {
     github: {
       clientId: process.env.GITHUB_CLIENT_ID as string,
       clientSecret: process.env.GITHUB_CLIENT_SECRET as string,
-      redirectURI: 'http://localhost:3000/callback/github',
+      redirectURI: `${process.env.AUTH_URL}/callback/github`,
       mapProfileToUser: (profile) => {
         const names = profile.name.split(' ');
+
         return {
           givenName: names[0],
-          familyName: names[names.length - 1]
+          familyName: names.at(-1)
         };
-      },
+      }
     },
     google: {
       clientId: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
-      redirectURI: 'http://localhost:3000/callback/google',
+      redirectURI: `${process.env.AUTH_URL}/callback/google`
     }
   },
   user: {
     additionalFields: {
       givenName: {
         type: 'string',
-        required: true,
+        required: true
       },
       familyName: {
         type: 'string',
-        required: true,
+        required: true
       },
       lang: {
-        type: "string",
+        type: 'string',
         required: false,
-        defaultValue: "en",
-      },
-    },
+        defaultValue: 'en'
+      }
+    }
   },
-  plugins: [
-    openAPI(),
-    admin(),
-    jwt(),
-    bearer()
-  ]
-})
+  plugins: [openAPI(), admin(), jwt(), bearer()]
+});

@@ -28,13 +28,21 @@ defmodule SportipediaWeb.Router do
     plug Guardian.Plug.LoadResource, allow_blank: true
   end
 
+  pipeline :verify_auth do
+    plug SportipediaWeb.Plugs.VerifyAuth
+  end
+
   scope "/auth", SportipediaWeb do
     pipe_through :api
 
-    # post "/login"
-    # post "/register"
-
     post "/:provider/login", AuthController, :login_with_provider
+  end
+
+  scope "/accounts/mailer", SportipediaWeb.Accounts do
+    pipe_through [:api, :verify_auth]
+
+    post "/confirm-email", EmailController, :confirm_email
+    post "/password-reset", EmailController, :password_reset
   end
 
   scope "/admin", SportipediaWeb do
