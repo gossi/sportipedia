@@ -24,6 +24,8 @@ Router.map(function () {
   this.route('login');
   this.route('logout');
   this.route('registration');
+  this.route('request-password-reset');
+  this.route('reset-password');
   this.route('user', function () {
     this.route('profile');
     this.route('sessions');

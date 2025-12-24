@@ -1,4 +1,10 @@
+@layer reset, tokens, foundation, layout, components, app;
+
 @import "@hokulea/core/style.css";
+
+body {
+  padding-bottom: var(--s0);
+}
 
 :target {
   scroll-margin-block: calc(70px + 2ex);

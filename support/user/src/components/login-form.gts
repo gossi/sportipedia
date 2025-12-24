@@ -3,6 +3,7 @@ import { fn } from '@ember/helper';
 import { on } from '@ember/modifier';
 import { service } from '@ember/service';
 
+import { Google } from '@sportipedia/ui';
 import { t } from 'ember-intl';
 import { or } from 'ember-truth-helpers';
 
@@ -28,6 +29,12 @@ const PROVIDERS = [
     4.297c0 6.145-3.74 7.5-7.296 7.891c.556.479 1.077 1.464 1.077 2.959c0
     2.14-.02 3.864-.02 4.385c0 .416.28.916 1.104.755c6.4-2.093 10.979-8.093
     10.979-15.156c0-8.833-7.161-16-16-16z"/></svg>`
+  },
+  {
+    name: 'google',
+    label: 'Google',
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    icon: Google
   }
 ];
 
@@ -65,6 +72,18 @@ export class LoginForm extends Component<LoginFormSignature> {
         margin-block: var(--spacing-container4);
         background-color: var(--control-border-color);
       }
+
+      .links {
+        display: flex;
+        justify-content: center;
+        gap: var(--s-3);
+
+        :global(a:not(:last-child)::after) {
+          content: "";
+          border-inline-end: 1px solid var(--control-border-color);
+          padding-inline-end: var(--s-3);
+        }
+      }
     </style>
 
     {{#each PROVIDERS as |p|}}
@@ -94,11 +113,19 @@ export class LoginForm extends Component<LoginFormSignature> {
     </Form>
 
     {{#if (or @registrationLink @resetPasswordLink)}}
-      <p>
+      <p class="links">
         {{#if @registrationLink}}
           {{#let @registrationLink as |l|}}
             <a href={{l.url}} {{on "click" l.open}}>
               {{t "user.components.login.actions.register"}}
+            </a>
+          {{/let}}
+        {{/if}}
+
+        {{#if @resetPasswordLink}}
+          {{#let @resetPasswordLink as |l|}}
+            <a href={{l.url}} {{on "click" l.open}}>
+              {{t "user.components.login.actions.recover-password"}}
             </a>
           {{/let}}
         {{/if}}

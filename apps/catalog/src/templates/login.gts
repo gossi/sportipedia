@@ -6,6 +6,10 @@ import { FocusPage } from '@hokulea/ember';
 
 <template>
   <FocusPage @title={{t "user.pages.login.heading"}}>
-    <LoginForm @registrationLink={{link "registration"}} @callbackURL="http://localhost:4200" />
+    <LoginForm
+      @registrationLink={{link "registration"}}
+      @resetPasswordLink={{link "request-password-reset"}}
+      @callbackURL="http://localhost:4101"
+    />
   </FocusPage>
 </template>

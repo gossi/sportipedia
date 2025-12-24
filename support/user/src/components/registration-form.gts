@@ -1,5 +1,4 @@
 import Component from '@glimmer/component';
-import { fn } from '@ember/helper';
 import { service } from '@ember/service';
 
 import { t } from 'ember-intl';
@@ -30,16 +29,6 @@ interface RegistrationFormData {
   confirm_password: string;
 }
 
-// const validateConfirmPassword: FieldValidationHandler<RegistrationFormData> = ({ value, form }) => {
-//   console.log('validateConfirmPassword', value, form.getFieldValue('password'));
-
-//   if (value !== form.getFieldValue('password')) {
-//     return 'Passwords must match';
-//   }
-
-//   return;
-// };
-
 function makePasswordValidator(linkedField: string) {
   const validateConfirmPassword: FieldValidationHandler<RegistrationFormData> = ({
     value,
@@ -65,6 +54,7 @@ export const PasswordField: TOC<{
     @name={{@name}}
     @label={{if @label @label (t "user.components.registration.form.password.label")}}
     @validate={{passwordSchema}}
+    required
     autocomplete="new-password"
     ...attributes
   >
@@ -98,8 +88,10 @@ export const PasswordValidateField: TOC<{
     @linkedField={{@linkedField}}
     @revalidateOn="input"
     {{! @glint-ignore }}
-    @validate={{fn makePasswordValidator @linkedField}}
+    @validate={{(makePasswordValidator @linkedField)}}
+    required
     autocomplete="new-password"
+    ...attributes
   />
 </template>;
 
@@ -149,40 +141,6 @@ export class RegistrationForm extends Component<RegistrationFormSignature> {
 
       <PasswordField @form={{f}} @name="password" required />
       <PasswordValidateField @form={{f}} @name="password_confirm" @linkedField="password" />
-      {{!-- <f.Password
-        @name="password"
-        @label={{t "user.components.registration.form.password.label"}}
-        @validate={{passwordSchema}}
-        autocomplete="new-password"
-        required
-      >
-        <:rules as |Rule|>
-          <Rule @key="type" @value="min_length">
-            {{t "user.components.registration.form.password.rules.min-character"}}
-          </Rule>
-          <Rule @key="message" @value="upper">
-            {{t "user.components.registration.form.password.rules.uppercase-letter"}}
-          </Rule>
-          <Rule @key="message" @value="lower">
-            {{t "user.components.registration.form.password.rules.lowercase-letter"}}
-          </Rule>
-          <Rule @key="message" @value="number">
-            {{t "user.components.registration.form.password.rules.number"}}
-          </Rule>
-          <Rule @key="message" @value="special">
-            {{t "user.components.registration.form.password.rules.special-character"}}
-          </Rule>
-        </:rules>
-      </f.Password> --}}
-      {{!-- <f.Password
-        @name="password_confirm"
-        @label={{t "user.components.registration.form.password-confirm.label"}}
-        @linkedField="password"
-        @revalidateOn="input"
-        {{! @glint-ignore }}
-        @validate={{validateConfirmPassword}}
-        autocomplete="new-password"
-      /> --}}
 
       <f.Submit>{{t "user.components.registration.actions.register"}}</f.Submit>
     </Form>
