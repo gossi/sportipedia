@@ -2,7 +2,7 @@ import { Addon } from '@embroider/addon-dev/rollup';
 import { extensions } from '@embroider/vite';
 
 import { babel } from '@rollup/plugin-babel';
-import { scopedCSS } from 'ember-scoped-css/rollup';
+import { scopedCSS } from 'ember-scoped-css/rolldown';
 import { defineConfig } from 'tsdown';
 
 const addon = new Addon({
@@ -18,12 +18,16 @@ export default defineConfig({
   tsconfig: './tsconfig.build.json',
   plugins: [
     scopedCSS({ layerName: 'app' }),
-    addon.dependencies(),
-    addon.gjs(),
-    addon.declarations('declarations', `ember-tsc --declaration --project ./tsconfig.publish.json`),
     babel({
       babelHelpers: 'bundled',
       extensions
-    })
-  ]
+    }),
+    addon.dependencies(),
+    addon.gjs(),
+    addon.declarations(
+      'declarations',
+      `ember-tsc --declaration --project ./tsconfig.declarations.json`
+    )
+  ],
+  ignoreWatch: ['declarations/']
 });

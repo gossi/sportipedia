@@ -25,10 +25,14 @@ export default defineConfig({
     }),
     addon.dependencies(),
     addon.gjs(),
-    addon.declarations('declarations', `ember-tsc --declaration --project ./tsconfig.publish.json`),
+    addon.declarations(
+      'declarations',
+      `ember-tsc --declaration --project ./tsconfig.declarations.json`
+    ),
     icons({
       autoInstall: true,
       compiler: 'ember'
     })
-  ]
+  ],
+  ignoreWatch: ['declarations/']
 });
