@@ -837,6 +837,9 @@ importers:
       '@iconify-json/material-symbols':
         specifier: catalog:icons
         version: 1.2.50
+      '@iconify-json/ph':
+        specifier: ^1.2.2
+        version: 1.2.2
       '@rollup/plugin-babel':
         specifier: catalog:build
         version: 6.1.0(@babel/core@7.28.5)(rollup@4.46.2)

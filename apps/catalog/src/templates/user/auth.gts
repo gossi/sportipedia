@@ -29,11 +29,19 @@ const changePassword = async ({
   currentPassword: string;
   newPassword: string;
 }) => {
-  await auth.changePassword({ currentPassword, newPassword });
-};
+  const { error } = await auth.changePassword({ currentPassword, newPassword });
 
-const changeEmail = async ({ email }: { email: string }, callbackURL = '/user/auth') => {
-  return await auth.changeEmail({ newEmail: email, callbackURL });
+  if (error) {
+    return {
+      value: {},
+      success: false,
+      issues: [
+        {
+          message: error.message as string
+        }
+      ]
+    };
+  }
 };
 
 <template>
@@ -84,33 +92,6 @@ const changeEmail = async ({ email }: { email: string }, callbackURL = '/user/au
         </:error>
 
         <:success>
-          {{!-- <Section @title={{t "user.pages.auth.email"}}>
-            <Card>
-              <Form @submit={{changeEmail}} as |f|>
-                <f.Text @name="email" @label="Email" />
-
-                <p><f.Submit>Change Email</f.Submit></p>
-              </Form>
-            </Card>
-          </Section>
-
-          <Section @title={{t "user.pages.auth.password"}}>
-            <Card>
-              <Form @submit={{changePassword}} as |f|>
-                <PasswordField @form={{f}} @name="newPassword" />
-                <PasswordValidateField
-                  @form={{f}}
-                  @name="newPassword_confirm"
-                  @linkedField="newPassword"
-                />
-                {{! <f.Text @name="givenName" @label="Given Name" />
-                <f.Text @name="familyName" @label="Family Name" /> }}
-
-                <p><f.Submit>Change Name</f.Submit></p>
-              </Form>
-            </Card>
-          </Section> --}}
-
           <BoxList as |Item|>
             <Item
               @icon={{PhPassword}}
@@ -128,16 +109,21 @@ const changeEmail = async ({ email }: { email: string }, callbackURL = '/user/au
                 </small>
               </:content>
               <:disclosure>
-                <Form @submit={{changePassword}} as |f|>
-                  <f.Password @name="currentPassword" @label="Current Password" />
-                  <PasswordField @form={{f}} @name="newPassword" />
-                  <PasswordValidateField
-                    @form={{f}}
-                    @name="newPassword_confirm"
-                    @linkedField="newPassword"
-                  />
-                  <p><f.Submit>Change Name</f.Submit></p>
-                </Form>
+                {{#if (accounts.usesProvider "credential")}}
+                  <Form @submit={{changePassword}} as |f|>
+                    <f.Errors />
+                    <f.Password @name="currentPassword" @label="Current Password" />
+                    <PasswordField @form={{f}} @name="newPassword" />
+                    <PasswordValidateField
+                      @form={{f}}
+                      @name="newPassword_confirm"
+                      @linkedField="newPassword"
+                    />
+                    <p><f.Submit>{{t "user.pages.auth.actions.change-password"}}</f.Submit></p>
+                  </Form>
+                {{else}}
+                  TODO: Set yourself a password, when initially logged in through social provider
+                {{/if}}
               </:disclosure>
             </Item>
             <Item @icon={{Github}}>
@@ -194,63 +180,6 @@ const changeEmail = async ({ email }: { email: string }, callbackURL = '/user/au
               </:actions>
             </Item>
           </BoxList>
-          {{!-- <div class="provider">
-              <div>
-                <span>
-                  <Icon @icon={{PhPassword}} />
-                  Password
-                </span>
-              </div>
-              <div class="social">
-                <span>
-                  <Icon @icon={{Github}} />
-                  Github
-                </span>
-
-                {{#if (accounts.usesProvider "github")}}
-                  <Button @push={{fn accounts.unlinkSocial "github"}} @spacing="-1">
-                    {{t "user.pages.auth.actions.unlink"}}
-                  </Button>
-                {{else}}
-                  <Button @push={{fn accounts.linkSocial "github"}} @spacing="-1">
-                    {{t "user.pages.auth.actions.link"}}
-                  </Button>
-                {{/if}}
-              </div>
-              <div class="social">
-                <span>
-                  <Icon @icon={{Google}} />
-                  Google
-                </span>
-
-                {{#if (accounts.usesProvider "google")}}
-                  <Button @push={{fn accounts.unlinkSocial "google"}} @spacing="-1">
-                    {{t "user.pages.auth.actions.unlink"}}
-                  </Button>
-                {{else}}
-                  <Button @push={{fn accounts.linkSocial "google"}} @spacing="-1">
-                    {{t "user.pages.auth.actions.link"}}
-                  </Button>
-                {{/if}}
-              </div>
-              <div class="social">
-                <span>
-                  <Icon @icon={{Apple}} />
-                  Apple
-                </span>
-
-                {{#if (accounts.usesProvider "apple")}}
-                  <Button @spacing="-1">
-                    {{t "user.pages.auth.actions.unlink"}}
-                  </Button>
-                {{else}}
-                  <Button @spacing="-1">
-                    {{t "user.pages.auth.actions.link"}}
-                  </Button>
-                {{/if}}
-              </div>
-            </div> --}}
-
         </:success>
       </Await>
     {{/let}}

@@ -55,7 +55,8 @@
   },
   "peerDependencies": {
     "@glimmer/component": "catalog:ember",
-    "ember-concurrency": "catalog:ember"
+    "ember-concurrency": "catalog:ember",
+    "better-auth": "catalog:lib"
   },
   "devDependencies": {
     "@babel/core": "catalog:build",
@@ -83,6 +84,7 @@
     "@types/qunit": "catalog:types",
     "@warp-drive/ember": "catalog:ember",
     "babel-plugin-ember-template-compilation": "catalog:build",
+    "better-auth": "catalog:lib",
     "ember-qunit": "^9.0.3",
     "ember-resolver": "catalog:ember",
     "ember-scoped-css": "catalog:ember",

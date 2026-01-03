@@ -4,14 +4,7 @@ import { cell } from 'ember-resources';
 
 import { auth } from '#/auth';
 
-interface Account {
-  id: string;
-  provider: string;
-  createdAt: Date;
-  updatedAt: Date;
-  accountId: string;
-  scopes: string[];
-}
+import type { Account } from 'better-auth';
 
 export class AccountsResource {
   #accounts = cell<Account[]>();
@@ -26,7 +19,7 @@ export class AccountsResource {
       const request = await auth.listAccounts();
 
       if (request.data && request.data.length >= 0) {
-        this.#accounts.set(request.data as Account[]);
+        this.#accounts.set(request.data);
       }
 
       return request;
@@ -34,7 +27,7 @@ export class AccountsResource {
   }
 
   usesProvider = (provider: string) => {
-    return this.accounts.some((a) => a.provider === provider);
+    return this.accounts.some((a) => a.providerId === provider);
   };
 
   linkSocial = async (provider: string) => {
@@ -50,6 +43,6 @@ export class AccountsResource {
       providerId: provider
     });
 
-    this.#accounts.set(this.accounts.filter((a) => a.provider !== provider));
+    this.#accounts.set(this.accounts.filter((a) => a.providerId !== provider));
   };
 }

@@ -17,6 +17,7 @@ export const auth = betterAuth({
   trustedOrigins: [process.env.ADMIN_URL as string, process.env.CATALOG_URL as string],
   emailAndPassword: {
     enabled: true,
+    // requireEmailVerification: true,
     sendResetPassword: async ({ url, user }) => {
       await sendEmail('password-reset', {
         email: user.email,
@@ -55,6 +56,9 @@ export const auth = betterAuth({
     }
   },
   user: {
+    changeEmail: {
+      enabled: true
+    },
     additionalFields: {
       givenName: {
         type: 'string',

@@ -8,4 +8,6 @@ export {
 export type { User } from './domain/user.ts';
 export { isAdmin } from './domain/user.ts';
 export { getSession, getUser, isAuthenticated } from './helpers.ts';
+export { RequestPasswordResetPage } from './pages/request-password-reset-page.gts';
+export { ResetPasswordPage } from './pages/reset-password-page.gts';
 export { AuthService } from './services/auth.ts';

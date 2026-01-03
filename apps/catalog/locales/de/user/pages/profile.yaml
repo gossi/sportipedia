@@ -1,1 +1,9 @@
 title: Profil
+
+sections:
+  name: Name
+  email: Email
+
+actions:
+  change-name: Name Ändern
+  change-email: Email Ändern

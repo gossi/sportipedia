@@ -5,8 +5,8 @@ defmodule SportipediaWeb.Accounts.EmailController do
   alias Sportipedia.Mailer
   alias Sportipedia.Accounts.Emails
 
-  def confirm_email(conn, %{"to" => to, "url" => url, "name" => name}) do
-    Emails.email_confirmation(to, name, url)
+  def confirm_email(conn, %{"data" => %{"email" => email, "url" => url, "name" => name}}) do
+    Emails.email_confirmation(email, name, url)
     |> Mailer.deliver()
 
     send_resp(conn, 204, "")
