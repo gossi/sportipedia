@@ -1,0 +1,11 @@
+form:
+  email:
+    label: Email
+  password:
+    label: Passwort
+
+actions:
+  login: Einloggen
+  login-with: Mit {provider, select, github {GitHub} google {Google} apple {Apple} other {provider}} einloggen
+  register: Registrieren
+  recover-password: Passwort vergessen

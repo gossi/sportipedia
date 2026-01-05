@@ -1,0 +1,33 @@
+{
+  "name": "@sportipedia/auth",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsdown",
+    "lint": "pnpm run '/^lint:(?!.*(fix)).*$/'",
+    "lint:fix": "pnpm run '/^lint:[^:]*:fix/'",
+    "lint:js": "eslint . --cache",
+    "lint:js:fix": "eslint . --fix",
+    "lint:types": "tsc"
+  },
+  "devDependencies": {
+    "@better-auth/cli": "^1.3.7",
+    "@gossi/config-eslint": "catalog:lint",
+    "@gossi/config-prettier": "catalog:lint",
+    "@hono/node-server": "^1.19.0",
+    "@types/node": "^25.0.3",
+    "@types/pg": "^8.15.5",
+    "better-auth": "catalog:lib",
+    "eslint": "catalog:lint",
+    "pg": "^8.16.3",
+    "prettier": "catalog:lint",
+    "hono": "^4.9.4",
+    "tsdown": "catalog:build",
+    "tsx": "catalog:script",
+    "typescript": "catalog:build"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

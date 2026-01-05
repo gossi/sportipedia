@@ -1,0 +1,95 @@
+{
+  "name": "@sportipedia/ui",
+  "private": true,
+  "description": "Sportipedia User Supporting Domain (including Auth)",
+  "keywords": [
+    "ember-addon"
+  ],
+  "author": "Thomas Gossmann",
+  "type": "module",
+  "imports": {
+    "#/": "./src/index.ts",
+    "#/*": "./src/*"
+  },
+  "exports": {
+    ".": {
+      "types": "./declarations/index.d.ts",
+      "default": "./dist/index.mjs"
+    }
+  },
+  "files": [
+    "dist",
+    "declarations",
+    "locales"
+  ],
+  "scripts": {
+    "build": "tsdown",
+    "dev": "vite dev",
+    "lint": "pnpm run '/^lint:(?!.*(fix)).*$/'",
+    "lint:fix": "pnpm run '/^lint:[^:]*:fix/'",
+    "lint:js": "eslint . --cache",
+    "lint:js:fix": "eslint . --fix",
+    "lint:types": "ember-tsc",
+    "prepack": "pnpm build",
+    "start": "tsdown --watch",
+    "test": "vite build --mode=development --out-dir dist-tests && testem --file testem.cjs ci --port 0"
+  },
+  "dependencies": {
+    "@hokulea/ember": "catalog:lib",
+    "decorator-transforms": "catalog:build",
+    "ember-strict-application-resolver": "catalog:ember",
+    "ember-truth-helpers": "catalog:ember",
+    "ua-parser-js": "^2.0.6"
+  },
+  "peerDependencies": {
+    "@glimmer/component": "catalog:ember",
+    "ember-concurrency": "catalog:ember"
+  },
+  "devDependencies": {
+    "@babel/core": "catalog:build",
+    "@babel/eslint-parser": "catalog:build",
+    "@babel/plugin-transform-typescript": "catalog:build",
+    "@babel/preset-typescript": "catalog:build",
+    "@babel/runtime": "catalog:build",
+    "@ember/app-tsconfig": "catalog:ember",
+    "@ember/library-tsconfig": "catalog:ember",
+    "@ember/test-helpers": "^5.2.2",
+    "@embroider/addon-dev": "catalog:ember",
+    "@embroider/compat": "catalog:ember",
+    "@embroider/core": "catalog:ember",
+    "@embroider/macros": "catalog:ember",
+    "@embroider/vite": "catalog:ember",
+    "@glimmer/component": "catalog:ember",
+    "@glint/ember-tsc": "catalog:ember",
+    "@glint/template": "catalog:ember",
+    "@glint/tsserver-plugin": "catalog:ember",
+    "@gossi/config-eslint": "catalog:lint",
+    "@gossi/config-prettier": "catalog:lint",
+    "@gossi/config-stylelint": "catalog:lint",
+    "@gossi/config-template-lint": "catalog:lint",
+    "@iconify-json/logos": "^1.2.4",
+    "@iconify-json/material-symbols": "catalog:icons",
+    "@iconify-json/ph": "^1.2.2",
+    "@rollup/plugin-babel": "catalog:build",
+    "@types/qunit": "catalog:types",
+    "@warp-drive/ember": "catalog:ember",
+    "babel-plugin-ember-template-compilation": "catalog:build",
+    "ember-qunit": "^9.0.3",
+    "ember-resolver": "catalog:ember",
+    "ember-scoped-css": "catalog:ember",
+    "ember-source": "catalog:ember",
+    "eslint": "catalog:lint",
+    "eslint-plugin-ember": "catalog:lint",
+    "eslint-plugin-qunit": "catalog:lint",
+    "prettier": "catalog:lint",
+    "qunit": "^2.24.1",
+    "testem": "^3.16.0",
+    "tsdown": "catalog:build",
+    "typescript": "catalog:build",
+    "unplugin-icons": "catalog:icons",
+    "vite": "catalog:build"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}

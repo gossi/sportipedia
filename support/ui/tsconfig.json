@@ -1,0 +1,33 @@
+{
+  "extends": "@ember/app-tsconfig",
+  "include": [
+    "src",
+    "tests",
+    "types"
+  ],
+  "compilerOptions": {
+    "rootDir": ".",
+    "declaration": true,
+    "declarationDir": "declarations",
+    "declarationMap": true,
+    "isolatedDeclarations": true,
+    "paths": {
+      "#/": [
+        "./src/index.ts"
+      ],
+      "#/*": [
+        "./src/*"
+      ],
+      "#tests/*": [
+        "./tests/*"
+      ]
+    },
+    "types": [
+      "ember-source/types",
+      "@glint/ember-tsc/types",
+      "@embroider/core/virtual",
+      "vite/client",
+      "unplugin-icons/types/ember"
+    ]
+  }
+}
