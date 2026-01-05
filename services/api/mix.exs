@@ -56,12 +56,8 @@ defmodule Sportipedia.MixProject do
       {:ssl_verify_fun, "~> 1.1"},
       {:certifi, "~> 2.4"},
 
-      # Authentication
-      {:assent, "~> 0.3.1"},
+      # Authentication + Authorization
       {:guardian, "~> 2.3"},
-      {:guardian_db, "~> 3.0"},
-
-      # Authorization
       {:bodyguard, "~> 2.4"},
 
       # Commanded (CQRS/ES)

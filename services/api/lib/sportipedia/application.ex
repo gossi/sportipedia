@@ -15,10 +15,13 @@ defmodule Sportipedia.Application do
       # Start a worker by calling: Sportipedia.Worker.start_link(arg)
       # {Sportipedia.Worker, arg},
       # Start to serve requests, typically the last entry
-      SportipediaWeb.Endpoint,
+      SportipediaWeb.Endpoint
+
       # Run guardian sweeper every 24hrs (once a day)
-      {Guardian.DB.Sweeper, [interval: 60 * 60 * 1000 * 24]},
-      Sportipedia.Accounts.Application
+      # {Guardian.DB.Sweeper, [interval: 60 * 60 * 1000 * 24]}
+
+      # Run commanded applications here
+      # Sportipedia.Accounts.Application
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
