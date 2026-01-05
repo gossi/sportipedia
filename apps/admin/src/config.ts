@@ -3,7 +3,6 @@ import translations from 'virtual:ember-intl-loader';
 import { auth } from './auth';
 
 import type ApplicationInstance from '@ember/application/instance';
-import type { IntlService } from 'ember-intl';
 
 function configureAuth(app: ApplicationInstance) {
   const authService = app.lookup('service:auth');
@@ -13,10 +12,14 @@ function configureAuth(app: ApplicationInstance) {
   authService.subscribe('sessionInvalidated', () => {
     router.transitionTo('login');
   });
+
+  authService.subscribe('sessionAuthenticated', () => {
+    router.transitionTo('protected.dashboard');
+  });
 }
 
 function configureIntl(app: ApplicationInstance) {
-  const intl = app.lookup('service:intl') as IntlService;
+  const intl = app.lookup('service:intl');
 
   intl.setLocale('de');
 

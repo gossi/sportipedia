@@ -11,7 +11,7 @@ export default class UserRoute extends Route {
   async beforeModel(transition: Transition) {
     const authenticated = await this.auth.requireAuthentication(transition);
 
-    if (!authenticated && this.auth.user ? !isAdmin(this.auth.user) : false) {
+    if (authenticated && this.auth.user ? !isAdmin(this.auth.user) : true) {
       this._router.transitionTo('login');
     }
   }

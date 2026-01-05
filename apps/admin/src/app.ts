@@ -22,7 +22,7 @@ Router.map(function () {
   this.route('login');
   this.route('logout');
   this.route('protected', { path: '' }, function () {
-    this.route('dashboard');
+    this.route('dashboard', { path: '' });
     this.route('users', function () {
       this.route('new');
       this.route('details', { path: '/:id' });

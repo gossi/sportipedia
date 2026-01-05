@@ -68,6 +68,7 @@
     "ember-source": "catalog:ember",
     "ember-strict-application-resolver": "catalog:ember",
     "ember-template-lint": "catalog:lint",
+    "ember-truth-helpers": "catalog:ember",
     "eslint": "catalog:lint",
     "eslint-plugin-ember": "catalog:lint",
     "eslint-plugin-qunit": "catalog:lint",

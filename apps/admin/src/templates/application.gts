@@ -8,23 +8,25 @@ import { AppHeader, Avatar } from '@hokulea/ember';
   {{pageTitle "Sportipedia"}}
 
   {{#let (getUser) as |user|}}
-    {{#if (isAdmin user)}}
-      <AppHeader @home={{link "application"}}>
-        <:brand>Sportipedia ADM</:brand>
-        <:nav as |n|>
-          <n.Item @href="/users">Users</n.Item>
-        </:nav>
-        <:aux as |n|>
-          <n.Item>
-            <:label>
-              <Avatar @src={{user.image}} @name={{user.name}} class="avatar" />
-            </:label>
-            <:menu as |um|>
-              <um.Item @href="/logout">Logout</um.Item>
-            </:menu>
-          </n.Item>
-        </:aux>
-      </AppHeader>
+    {{#if user}}
+      {{#if (isAdmin user)}}
+        <AppHeader @home={{link "application"}}>
+          <:brand>Sportipedia ADM</:brand>
+          <:nav as |n|>
+            <n.Item @href="/users">Users</n.Item>
+          </:nav>
+          <:aux as |n|>
+            <n.Item>
+              <:label>
+                <Avatar @src={{user.image}} @name={{user.name}} class="avatar" />
+              </:label>
+              <:menu as |um|>
+                <um.Item @href="/logout">Logout</um.Item>
+              </:menu>
+            </n.Item>
+          </:aux>
+        </AppHeader>
+      {{/if}}
     {{/if}}
   {{/let}}
 
