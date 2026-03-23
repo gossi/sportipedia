@@ -16,6 +16,7 @@
       "types": "./declarations/index.d.ts",
       "default": "./dist/index.mjs"
     },
+    "./style.css": "./dist/style.css",
     "./registry": {
       "types": "./declarations/registry.d.ts",
       "default": "./dist/registry.mjs"
@@ -81,6 +82,7 @@
     "@gossi/config-stylelint": "catalog:lint",
     "@gossi/config-template-lint": "catalog:lint",
     "@rollup/plugin-babel": "catalog:build",
+    "@tsdown/css": "catalog:build",
     "@types/qunit": "catalog:types",
     "@warp-drive/ember": "catalog:ember",
     "babel-plugin-ember-template-compilation": "catalog:build",
