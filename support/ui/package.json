@@ -15,7 +15,8 @@
     ".": {
       "types": "./declarations/index.d.ts",
       "default": "./dist/index.mjs"
-    }
+    },
+    "./style.css": "./dist/style.css"
   },
   "files": [
     "dist",
@@ -71,6 +72,7 @@
     "@iconify-json/material-symbols": "catalog:icons",
     "@iconify-json/ph": "^1.2.2",
     "@rollup/plugin-babel": "catalog:build",
+    "@tsdown/css": "catalog:build",
     "@types/qunit": "catalog:types",
     "@warp-drive/ember": "catalog:ember",
     "babel-plugin-ember-template-compilation": "catalog:build",

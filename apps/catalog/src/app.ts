@@ -1,6 +1,9 @@
 import '@warp-drive/ember/install';
 import 'temporal-polyfill/global';
 
+// import '@hokulea/core/style.css';
+// import '@sportipedia/user/style.css';
+// import '@sportipedia/ui/style.css';
 import EmberRouter from '@ember/routing/router';
 
 import { userRegistry } from '@sportipedia/user/registry';
@@ -9,7 +12,6 @@ import { LinkManagerService } from 'ember-link';
 import PageTitleService from 'ember-page-title/services/page-title';
 import EmberApp from 'ember-strict-application-resolver';
 
-// import '@hokulea/core/style.css';
 import { hokuleaRegistry } from '@hokulea/ember/registry';
 
 import type ApplicationInstance from '@ember/application/instance';

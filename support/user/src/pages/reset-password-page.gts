@@ -2,10 +2,11 @@ import Component from '@glimmer/component';
 import { tracked } from '@glimmer/tracking';
 
 import { ErrorPage, SuccessPage } from '@sportipedia/ui';
-import { PasswordField, PasswordValidateField } from '@sportipedia/user';
 import { t } from 'ember-intl';
 
 import { Button, FocusPage, Form } from '@hokulea/ember';
+
+import { PasswordField, PasswordValidateField } from '../components/password.gts';
 
 import type Owner from '@ember/owner';
 import type { AuthClient } from 'better-auth/client';
