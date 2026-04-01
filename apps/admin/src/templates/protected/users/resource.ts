@@ -20,6 +20,7 @@ export class UserResource {
 
   @cached
   get load() {
+    // eslint-disable-next-line unicorn/consistent-function-scoping
     return async () => {
       const request = await auth.admin.listUsers({
         query: {

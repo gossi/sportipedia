@@ -46,6 +46,7 @@ const BrowserIconMap: Record<string, Logo> = {
   'Mobile Safari': Safari as Logo
 };
 
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 function getBrowserIcon(name?: string): Logo | undefined {
   return name
     ? Object.hasOwn(BrowserIconMap, name)
@@ -78,6 +79,7 @@ const VendorIconMap: Record<string, Logo> = {
   Google: Google as Logo
 };
 
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 function getVendorIcon(vendor?: string): Logo | undefined {
   return vendor
     ? Object.hasOwn(VendorIconMap, vendor)
@@ -99,10 +101,12 @@ const OSIconMap: Record<string, Logo> = {
   Windows: Windows as Logo
 };
 
+// eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
 function getOSIcon(name?: string): Logo | undefined {
   return name ? (Object.hasOwn(OSIconMap, name) ? OSIconMap[name] : undefined) : undefined;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const VendorIcon: TOC<{ Args: { name?: string } }> = <template>
   {{#let (getVendorIcon @name) as |VI|}}
     {{#if VI}}

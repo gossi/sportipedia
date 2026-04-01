@@ -5,6 +5,9 @@
     "#/*": "./src/*",
     "#tests/*": "./tests/*"
   },
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "vite build",
     "dev": "vite",

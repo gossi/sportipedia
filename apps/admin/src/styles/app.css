@@ -88,31 +88,32 @@ table {
 }
 
 .avatar {
-  /* background-color: var(--control-background); */
-  /* box-shadow: 0 0 0 1px rgb(0 0 0 / 0.1); */
-  border-radius: 50%;
-  display: inline-grid;
   overflow: hidden;
-  white-space: nowrap;
-  text-overflow: clip;
-  height: 1lh;
-  line-height: 1.6em;
+  display: inline-grid;
   place-content: center;
-  aspect-ratio: 1;
-  letter-spacing: -2.5px;
-  text-indent: -0.2ch;
-  font-size: 0.8em;
 
+  aspect-ratio: 1;
+  height: 1lh;
   margin-block: -0.25em;
 
+  /* background-color: var(--control-background); */
 
+  /* box-shadow: 0 0 0 1px rgb(0 0 0 / 0.1); */
+  border-radius: 50%;
 
+  font-size: 0.8em;
+  line-height: 1.6em;
   color: var(--typography-muted);
+  text-indent: -0.2ch;
+  text-overflow: clip;
+  letter-spacing: -2.5px;
+  white-space: nowrap;
+
   background-color: var(--control-background);
   box-shadow: 0 0 0 1px var(--control-border-color);
 
   &:not(:has(img)) {
-    /* margin-block: -0.75em;*/
+    /* margin-block: -0.75em; */
     padding: 0.95em; 
   }
 
