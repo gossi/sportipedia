@@ -84,6 +84,7 @@ export function assertExistence(paths: string[]) {
 export function loadAndParse(langFile: string) {
   const fileContent = fs.readFileSync(langFile, 'utf8');
   const extname = path.extname(langFile);
+  // eslint-disable-next-line no-useless-assignment
   let parsedContent: Record<string, unknown> = {};
 
   try {

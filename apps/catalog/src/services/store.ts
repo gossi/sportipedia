@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { CacheHandler, Fetch, RequestManager, Store as DataStore } from '@warp-drive/core';
 import {
   instantiateRecord,

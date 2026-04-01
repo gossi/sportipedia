@@ -17,6 +17,7 @@ import { AppHeader } from '@hokulea/ember';
     </:nav>
     <:aux as |n|>
       {{!-- <n.Item @push={{link "login"}}>Login</n.Item> --}}
+      {{! @glint-expect-error see: https://github.com/hokulea/hokulea/issues/548 }}
       <UserMenu @nav={{n}} />
 
     </:aux>

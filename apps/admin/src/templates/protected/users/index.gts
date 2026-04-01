@@ -1,6 +1,5 @@
 import Component from '@glimmer/component';
 import { tracked } from '@glimmer/tracking';
-import { fn } from '@ember/helper';
 
 import { getUser, type User } from '@sportipedia/user';
 import { Await } from '@warp-drive/ember';
@@ -58,6 +57,7 @@ export default class UsersPage extends Component {
       {{#let (getUser) as |me|}}
         <Await @promise={{this.request}}>
           <:success as |result|>
+            {{! @glint-ignore }}
             <DataTable @header={{header}} @rows={{mapRows result.data.users me}} />
           </:success>
         </Await>

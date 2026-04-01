@@ -24,7 +24,7 @@ import { setApplication } from '@ember/test-helpers';
 // import { setup } from 'qunit-dom';
 import { setupEmberOnerrorValidation, start as qunitStart } from 'ember-qunit';
 
-export function start() {
+export function start(): void {
   setApplication(
     TestApp.create({
       autoboot: false,
