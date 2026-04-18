@@ -10,6 +10,9 @@ import { defineConfig } from 'vite';
 import { theemo } from '@theemo/vite';
 
 export default defineConfig({
+  define: {
+    __API_URL__: JSON.stringify(process.env.API_URL)
+  },
   server: {
     port: 4101
   },

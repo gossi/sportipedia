@@ -57,6 +57,7 @@
     "@warp-drive/core": "catalog:ember",
     "@warp-drive/ember": "catalog:ember",
     "@warp-drive/json-api": "catalog:ember",
+    "@warp-drive/utilities": "catalog:ember",
     "babel-plugin-debug-macros": "catalog:build",
     "babel-plugin-ember-template-compilation": "catalog:build",
     "better-auth": "catalog:lib",
