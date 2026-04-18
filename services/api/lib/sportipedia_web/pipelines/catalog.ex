@@ -4,9 +4,9 @@ defmodule SportipediaWeb.Pipelines.Catalog do
     module: Sportipedia.Auth.Guardian,
     error_handler: SportipediaWeb.ErrorHandler
 
-  # Accept token if present, or continue as guest
   # plug Guardian.Plug.VerifyHeader, realm: "Bearer", key: :default
 
-  # plug Guardian.Plug.VerifyHeader, realm: "Bearer", claims: %{}, key: :default
+  # Accept token if present, or continue as guest
+  plug Guardian.Plug.VerifyHeader, scheme: "Bearer", claims: %{}, key: :default
   plug Guardian.Plug.LoadResource, allow_blank: true
 end

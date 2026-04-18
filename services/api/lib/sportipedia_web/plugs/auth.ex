@@ -3,7 +3,6 @@ defmodule SportipediaWeb.Plugs.VerifyAuth do
   @max_skew 300
 
   defp secret(), do: System.fetch_env!("AUTH_API_SECRET")
-
   def init(opts), do: opts
 
   def call(conn, _opts) do

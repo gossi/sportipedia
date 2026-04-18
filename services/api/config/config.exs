@@ -16,6 +16,17 @@ config :sportipedia, event_stores: [Sportipedia.Accounts.EventStore]
 
 config :sportipedia, Sportipedia.Accounts.Application,
   event_store: [
+    source: "https://sportipedia.app",
+    stream_prefix: "accounts/",
+    adapter: Commanded.EventStore.Adapters.EventStore,
+    serializer: Commanded.Serialization.JsonSerializer,
+    event_store: Sportipedia.Accounts.EventStore
+  ]
+
+config :sportipedia, Sportipedia.Catalog.Application,
+  event_store: [
+    source: "https://sportipedia.app",
+    stream_prefix: "catalog/",
     adapter: Commanded.EventStore.Adapters.EventStore,
     serializer: Commanded.Serialization.JsonSerializer,
     event_store: Sportipedia.Accounts.EventStore

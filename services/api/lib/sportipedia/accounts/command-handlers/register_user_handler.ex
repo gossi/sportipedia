@@ -27,7 +27,8 @@ defmodule Sportipedia.Accounts.CommandHandlers.RegisterUserHandler do
       username: cmd.username,
       role: cmd.role,
       profile: %{
-        name: cmd.profile_name
+        # name: cmd.profile_name
+        name: ""
       }
     })
   end

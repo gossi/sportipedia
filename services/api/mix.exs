@@ -9,7 +9,8 @@ defmodule Sportipedia.MixProject do
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
-      deps: deps()
+      deps: deps(),
+      listeners: [Phoenix.CodeReloader]
     ]
   end
 
@@ -32,39 +33,39 @@ defmodule Sportipedia.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:bcrypt_elixir, "~> 3.0"},
-      {:phoenix, "~> 1.7.21"},
-      {:phoenix_ecto, "~> 4.5"},
+      {:bcrypt_elixir, "~> 3.3"},
+      {:phoenix, "~> 1.8.5"},
+      {:phoenix_ecto, "~> 4.7.0"},
       {:ecto_sql, "~> 3.13"},
       {:elixir_uuid, "~> 1.2"},
       {:postgrex, ">= 0.0.0"},
-      {:phoenix_html, "~> 4.1"},
-      {:phoenix_live_dashboard, "~> 0.8.3"},
-      {:swoosh, "~> 1.16"},
+      {:phoenix_html, "~> 4.3"},
+      {:phoenix_live_dashboard, "~> 0.8.7"},
+      {:swoosh, "~> 1.25"},
       {:req, "~> 0.5"},
       {:telemetry_metrics, "~> 1.0"},
-      {:telemetry_poller, "~> 1.0"},
-      {:gettext, "~> 0.26"},
-      {:jason, "~> 1.2"},
+      {:telemetry_poller, "~> 1.3"},
+      {:gettext, "~> 1.0.2"},
+      {:jason, "~> 1.4"},
       {:dns_cluster, "~> 0.2.0"},
-      {:bandit, "~> 1.5"},
-      {:exconstructor, "~> 1.1"},
+      {:bandit, "~> 1.10"},
+      {:exconstructor, "~> 1.3"},
       {:vex, "~> 0.9"},
 
       # Security
       {:cors_plug, "~> 3.0"},
       {:ssl_verify_fun, "~> 1.1"},
-      {:certifi, "~> 2.4"},
+      {:certifi, "~> 2.16"},
 
       # Authentication + Authorization
-      {:guardian, "~> 2.3"},
+      {:guardian, "~> 2.4"},
       {:bodyguard, "~> 2.4"},
 
       # Commanded (CQRS/ES)
       {:commanded, "~> 1.4"},
-      {:commanded_ecto_projections, "~> 1.3"},
-      {:commanded_eventstore_adapter, "~> 1.3"},
-      {:eventstore, "~> 1.3"}
+      {:commanded_ecto_projections, "~> 1.4"},
+      {:commanded_eventstore_adapter, "~> 1.4"},
+      {:eventstore, "~> 1.4"}
     ]
   end
 
