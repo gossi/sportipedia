@@ -1,4 +1,4 @@
-defmodule SportipediaWeb.Plugs.VerifyAuth do
+defmodule Sportipedia.Auth.Plug.ServicesAuth do
   import Plug.Conn
   @max_skew 300
 

@@ -43,10 +43,12 @@ defmodule Sportipedia.MixProject do
       {:phoenix_live_dashboard, "~> 0.8.7"},
       {:swoosh, "~> 1.25"},
       {:req, "~> 0.5"},
+      {:cachex, "~> 3.6"},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.3"},
       {:gettext, "~> 1.0.2"},
       {:jason, "~> 1.4"},
+      {:typedstruct, "~> 0.5"},
       {:dns_cluster, "~> 0.2.0"},
       {:bandit, "~> 1.10"},
       {:exconstructor, "~> 1.3"},
@@ -59,6 +61,7 @@ defmodule Sportipedia.MixProject do
 
       # Authentication + Authorization
       {:guardian, "~> 2.4"},
+      {:jose, "~> 1.11"},
       {:bodyguard, "~> 2.4"},
 
       # Commanded (CQRS/ES)

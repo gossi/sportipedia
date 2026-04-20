@@ -6,16 +6,16 @@ defmodule SportipediaWeb.Router do
   end
 
   pipeline :admin do
-    plug SportipediaWeb.Pipelines.Admin
+    plug Sportipedia.Auth.Pipeline.Admin
   end
 
   pipeline :catalog do
     plug :introspect
-    plug SportipediaWeb.Pipelines.Catalog
+    plug Sportipedia.Auth.Pipeline.Catalog
   end
 
-  pipeline :verify_auth do
-    plug SportipediaWeb.Plugs.VerifyAuth
+  pipeline :services_auth do
+    plug Sportipedia.Auth.Plug.ServicesAuth
   end
 
   defp introspect(conn, _opts) do
@@ -30,14 +30,9 @@ defmodule SportipediaWeb.Router do
     conn
   end
 
-  # scope "/auth", SportipediaWeb do
-  #   pipe_through :api
-
-  #   post "/:provider/login", AuthController, :login_with_provider
-  # endq
-
+  # TODO: This needs a rename to /services/mailer
   scope "/accounts/mailer", SportipediaWeb.Accounts do
-    pipe_through [:api, :verify_auth]
+    pipe_through [:api, :services_auth]
 
     post "/confirm-email", EmailController, :confirm_email
     post "/password-reset", EmailController, :password_reset
