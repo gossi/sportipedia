@@ -8,12 +8,14 @@ import {
 import { DefaultCachePolicy } from '@warp-drive/core/store';
 import { JSONAPICache } from '@warp-drive/json-api';
 
+import { AuthHandler } from '../auth-handler';
+
 import type { CacheCapabilitiesManager } from '@warp-drive/core/types';
 import type { Cache } from '@warp-drive/core/types/cache';
 import type { ResourceKey } from '@warp-drive/core/types/identifier';
 
 export default class Store extends DataStore {
-  requestManager = new RequestManager().use([Fetch]).useCache(CacheHandler);
+  requestManager = new RequestManager().use([AuthHandler, Fetch]).useCache(CacheHandler);
 
   lifetimes = new DefaultCachePolicy({
     apiCacheHardExpires: 15 * 60 * 1000, // 15 minutes
