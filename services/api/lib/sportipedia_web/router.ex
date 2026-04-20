@@ -6,43 +6,42 @@ defmodule SportipediaWeb.Router do
   end
 
   pipeline :admin do
-    # plug SportipediaWeb.AdminPipeline
-    plug Guardian.Plug.Pipeline,
-      otp_app: :sportipedia,
-      module: Sportipedia.Auth.Guardian,
-      error_handler: SportipediaWeb.ErrorHandler
-
-    plug Guardian.Plug.VerifyHeader, claims: %{role: "admin"}
-    plug Guardian.Plug.LoadResource
+    plug Sportipedia.Auth.Pipeline.Admin
   end
 
   pipeline :catalog do
-    # plug SportipediaWeb.CatalogPipeline
-    plug Guardian.Plug.Pipeline,
-      otp_app: :sportipedia,
-      module: Sportipedia.Auth.Guardian,
-      error_handler: SportipediaWeb.ErrorHandler
-
-    # Accept token if present, or continue as guest
-    plug Guardian.Plug.VerifyHeader, realm: "Bearer", claims: %{}, key: :default
-    plug Guardian.Plug.LoadResource, allow_blank: true
+    plug :introspect
+    plug Sportipedia.Auth.Pipeline.Catalog
   end
 
-  pipeline :verify_auth do
-    plug SportipediaWeb.Plugs.VerifyAuth
+  pipeline :services_auth do
+    plug Sportipedia.Auth.Plug.ServicesAuth
   end
 
-  scope "/auth", SportipediaWeb do
-    pipe_through :api
+  defp introspect(conn, _opts) do
+    IO.puts("""
+    ---
+    Verb: #{inspect(conn.method)}
+    Path: #{inspect(conn.request_path)}
+    Headers: #{inspect(conn.req_headers)}
+    ---
+    """)
 
-    post "/:provider/login", AuthController, :login_with_provider
+    conn
   end
 
+  # TODO: This needs a rename to /services/mailer
   scope "/accounts/mailer", SportipediaWeb.Accounts do
-    pipe_through [:api, :verify_auth]
+    pipe_through [:api, :services_auth]
 
     post "/confirm-email", EmailController, :confirm_email
     post "/password-reset", EmailController, :password_reset
+  end
+
+  scope "/catalog", SportipediaWeb.Catalog do
+    pipe_through [:api, :catalog]
+
+    post "/ping", HeartbeatController, :ping
   end
 
   scope "/admin", SportipediaWeb do

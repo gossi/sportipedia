@@ -5,6 +5,9 @@ import { scopedCSS } from 'ember-scoped-css/vite';
 import { defineConfig } from 'vite';
 
 export default defineConfig({
+  define: {
+    __AUTH_URL__: JSON.stringify(process.env.AUTH_URL)
+  },
   plugins: [
     ember(),
     scopedCSS({ layerName: 'app' }),

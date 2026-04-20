@@ -21,18 +21,14 @@ if System.get_env("PHX_SERVER") do
 end
 
 # Authentication
-config :sportipedia, :strategies,
-  github: [
-    client_id: System.get_env("GITHUB_CLIENT_ID"),
-    client_secret: System.get_env("GITHUB_CLIENT_SECRET"),
-    redirect_uri: "http://localhost:4000/auth/github/callback",
-    code_verifier: true,
-    strategy: Assent.Strategy.Github
-  ]
-
 config :sportipedia, Sportipedia.Auth.Guardian,
   issuer: "sportipedia",
-  secret_key: System.get_env("GUARDIAN_SECRET_KEY")
+  secret_key: {Sportipedia.Auth.SecretFetcher, :fetch_verification_secret, []},
+  secret_fetcher: Sportipedia.Auth.SecretFetcher,
+  allowed_algos: ["EdDSA", "Ed25519"]
+
+config :sportipedia,
+  jwks_url: System.get_env("JWKS_URL", "http://localhost:3000/jwks")
 
 if config_env() == :prod do
   database_url =

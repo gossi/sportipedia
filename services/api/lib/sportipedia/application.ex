@@ -12,6 +12,7 @@ defmodule Sportipedia.Application do
       Sportipedia.Repo,
       {DNSCluster, query: Application.get_env(:sportipedia, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Sportipedia.PubSub},
+      {Cachex, name: :jwks_cache},
       # Start a worker by calling: Sportipedia.Worker.start_link(arg)
       # {Sportipedia.Worker, arg},
       # Start to serve requests, typically the last entry
