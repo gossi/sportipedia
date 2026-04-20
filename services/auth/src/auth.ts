@@ -6,6 +6,7 @@ import { sendEmail } from './email';
 
 export const auth = betterAuth({
   appName: 'Sportipedia',
+  baseURL: process.env.AUTH_URL as string,
   basePath: '/',
   database: new Pool({
     host: process.env.AUTH_DB_HOSTNAME,
