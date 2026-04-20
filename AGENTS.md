@@ -59,3 +59,12 @@ mix phx.routes        # Show all routes
 - Elixir: Vex for validation, ExConstructor for struct creation
 - See [ARCHITECTURE.md](./ARCHITECTURE.md) for directory structure and domain organization
 - See [CODING-GUIDELINES.md](./CODING-GUIDELINES.md) for code style guidelines and patterns
+
+## References to use Third-Party Libraries
+
+- [better-auth](https://canary.warp-drive.io/llms.txt)
+
+Backend:
+
+- [commanded](https://hexdocs.pm/eventsourcingdb)
+- [phoenix](https://hexdocs.pm/phoenix)
