@@ -62,7 +62,11 @@ mix phx.routes        # Show all routes
 
 ## References to use Third-Party Libraries
 
-- [better-auth](https://canary.warp-drive.io/llms.txt)
+- [better-auth](https://better-auth.com/llms.txt)
+
+Frontend
+
+- [warp-drive](https://canary.warp-drive.io/llms.txt)
 
 Backend:
 
