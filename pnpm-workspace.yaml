@@ -80,5 +80,6 @@ catalogs:
     "@hokulea/theme-moana": ^0.4.0
     "@theemo/ember": ^1.0.1
     "@theemo/vite": ^1.0.1
-    "better-auth": ^1.4.9
+    "@better-auth/cli": "^1.4.22"
+    "better-auth": ^1.6.5
     "temporal-polyfill": ^0.3.0
