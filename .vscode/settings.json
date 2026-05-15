@@ -1,4 +1,6 @@
 {
   "elixirLS.projectDir": "./services/api/",
-  "elixirLS.dotFormatter": ".formatter.exs"
+  "elixirLS.dotFormatter": ".formatter.exs",
+  "elixirLS.mcpEnabled": true,
+  "elixirLS.mcpPort": 4328 // Optional: set a fixed port to avoid guessing
 }
