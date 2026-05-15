@@ -15,7 +15,6 @@ defmodule Sportipedia.Catalog.Equipment.Instruments.Aggregate.Instrument do
 
   def apply(%Instrument{} = aggregate, %InstrumentCataloged{} = event) do
     %InstrumentCataloged{id: id, title: title, description: description, slug: slug} = event
-    %InstrumentCataloged{title: title, description: description, slug: slug} = event
 
     %Instrument{id: id, title: title, description: description, slug: slug}
     IO.inspect(aggregate, label: "apply cataloged, aggregate")
@@ -25,7 +24,6 @@ defmodule Sportipedia.Catalog.Equipment.Instruments.Aggregate.Instrument do
       label: "new state"
     )
 
-    %Instrument{title: title, description: description, slug: slug}
   end
 
   def apply(%Instrument{} = aggregate, %InstrumentEdited{} = event) do
