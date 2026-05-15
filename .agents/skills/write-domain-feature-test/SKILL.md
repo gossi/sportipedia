@@ -6,23 +6,23 @@ description: Write a vertical-slice feature test for a CQRS/ES operation in the 
 ## Test File Location
 
 ```
-test/sportipedia/catalog/equipment/<entity>/features/<feature_name>_test.exs
+test/sportipedia/catalog/<subdomain>/<entity>/features/<feature_name>_test.exs
 ```
 
 ## Test Module Pattern
 
 ```elixir
-defmodule Sportipedia.Catalog.Equipment.<Entity>.Feature.<FeatureName>Test do
+defmodule Sportipedia.Catalog.<Subdomain>.<DomainObject>s.Feature.<FeatureName>Test do
   use Sportipedia.CatalogTestCase
 
-  alias Sportipedia.Catalog.Equipment.<Entity>
-  alias Sportipedia.Catalog.Equipment.<Entity>.Policy
-  alias Sportipedia.Catalog.Equipment.<Entity>.Command.<FeatureName>
-  alias Sportipedia.Catalog.Equipment.<Entity>.Command.<FeatureName>Handler
-  alias Sportipedia.Catalog.Equipment.<Entity>.Event.<EventName>
-  alias Sportipedia.Catalog.Equipment.<Entity>.Aggregate.<AggregateName>, as: Aggregate
-  alias Sportipedia.Catalog.Equipment.<Entity>.ReadModel.<ReadModelName>, as: ReadModel
-  alias Sportipedia.Catalog.Equipment.<Entity>.Projectors.<ProjectorName>
+  alias Sportipedia.Catalog.<Subdomain>.<DomainObject>s
+  alias Sportipedia.Catalog.<Subdomain>.<DomainObject>s.Policy
+  alias Sportipedia.Catalog.<Subdomain>.<DomainObject>s.Command.<FeatureName>
+  alias Sportipedia.Catalog.<Subdomain>.<DomainObject>s.Command.<FeatureName>Handler
+  alias Sportipedia.Catalog.<Subdomain>.<DomainObject>s.Event.<EventName>
+  alias Sportipedia.Catalog.<Subdomain>.<DomainObject>s.<AggregateName>
+  alias Sportipedia.Catalog.<Subdomain>.<DomainObject>s.<ReadModelName>
+  alias Sportipedia.Catalog.<Subdomain>.<DomainObject>s.<ProjectorName>
   alias Sportopedia.Catalog.Repo
 ```
 
@@ -131,14 +131,11 @@ Tests the full dispatch through `Sportipedia.Catalog` — needs event store (InM
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
 | Dispatch success   | `assert :ok = Sportipedia.Catalog.dispatch(cmd, consistency: :strong)` then `assert %ReadModel{...} = Repo.get(ReadModel, cmd.id)` |
 | Validation failure | `assert {:error, {:validation_failure, %{field: [message]}}} = Sportipedia.Catalog.dispatch(cmd)`                                  |
-| Public API         | Call `<Entity>.<action>(params)` and assert `{:ok, result}`                                                                        |
+| Public API         | Call `<DomainObject>s.<action>(params)` and assert `{:ok, result}`                                                                 |
 
 ## Tagging Convention
 
-```elixir
-@tag :unit        # pure logic, no DB or event store
-@tag :integration # needs Catalog.Repo DB or Commanded event store
-```
+See [docs/guidelines/backend.md](../docs/guidelines/backend.md#tagging-convention) for tag definitions (`:unit`, `:integration`) and placement rules (`@moduletag`, `@describetag`, `@tag`).
 
 ## Implementation Notes
 
