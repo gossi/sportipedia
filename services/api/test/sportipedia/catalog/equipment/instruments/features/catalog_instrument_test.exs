@@ -6,8 +6,8 @@ defmodule Sportipedia.Catalog.Equipment.Instruments.Feature.CatalogInstrumentTes
   alias Sportipedia.Catalog.Equipment.Instruments.Command.CatalogInstrument
   alias Sportipedia.Catalog.Equipment.Instruments.Command.CatalogInstrumentHandler
   alias Sportipedia.Catalog.Equipment.Instruments.Event.InstrumentCataloged
-  alias Sportipedia.Catalog.Equipment.Instruments.Aggregate.Instrument, as: InstrumentAggregate
-  alias Sportipedia.Catalog.Equipment.Instruments.ReadModel.Instrument, as: InstrumentReadModel
+  alias Sportipedia.Catalog.Equipment.Instruments.InstrumentAggregate
+  alias Sportipedia.Catalog.Equipment.Instruments.InstrumentReadModel
   alias Sportipedia.Catalog.Equipment.Instruments.Projectors.InstrumentProjector
   alias Sportipedia.Catalog.Repo
 
