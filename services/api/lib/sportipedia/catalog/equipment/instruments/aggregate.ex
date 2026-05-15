@@ -17,25 +17,10 @@ defmodule Sportipedia.Catalog.Equipment.Instruments.Aggregate.Instrument do
     %InstrumentCataloged{id: id, title: title, description: description, slug: slug} = event
 
     %Instrument{id: id, title: title, description: description, slug: slug}
-    IO.inspect(aggregate, label: "apply cataloged, aggregate")
-    IO.inspect(event, label: "apply cataloged, event")
-
-    IO.inspect(%Instrument{title: title, description: description, slug: slug},
-      label: "new state"
-    )
-
   end
 
   def apply(%Instrument{} = aggregate, %InstrumentEdited{} = event) do
     changes = InstrumentEdited.get_changes(event)
-
-    IO.inspect(aggregate, label: "apply edit, aggregate")
-    IO.inspect(event, label: "apply edit, event")
-    IO.inspect(changes, label: "apply edit, changes")
-
-    IO.inspect(Map.merge(aggregate, changes),
-      label: "new state"
-    )
 
     Map.merge(aggregate, changes)
   end

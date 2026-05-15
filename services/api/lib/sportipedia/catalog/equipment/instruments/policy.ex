@@ -4,12 +4,10 @@ defmodule Sportipedia.Catalog.Equipment.Instruments.Policy do
   # create instrument
 
   def authorize(:catalog_instrument, user, _params) when is_nil(user) do
-    IO.inspect(user, label: "cannot create instrument")
     :error
   end
 
   def authorize(:catalog_instrument, user, _params) when not is_nil(user) do
-    IO.inspect(user, label: "can create instrument")
     :ok
   end
 
