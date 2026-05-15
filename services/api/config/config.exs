@@ -8,29 +8,36 @@
 import Config
 
 config :sportipedia,
-  ecto_repos: [Sportipedia.Repo],
+  ecto_repos: [Sportipedia.Catalog.Repo],
   generators: [timestamp_type: :utc_datetime, binary_id: true]
 
 # Event Stores
-config :sportipedia, event_stores: [Sportipedia.Accounts.EventStore]
+# config :sportipedia, event_stores: [Sportipedia.Catalog.EventStore]
 
-# config :sportipedia, Sportipedia.Accounts.Application,
-#   event_store: [
-#     source: "https://sportipedia.app",
-#     stream_prefix: "accounts/",
-#     adapter: Commanded.EventStore.Adapters.EventStore,
-#     serializer: Commanded.Serialization.JsonSerializer,
-#     event_store: Sportipedia.Accounts.EventStore
-#   ]
+# Set custom type provider for all Commanded apps in this project
+config :commanded,
+  type_provider: Sportipedia.Support.Commanded.TypeProvider
 
-config :sportipedia, Sportipedia.Catalog.Application,
+config :sportipedia, Sportipedia.Catalog,
   event_store: [
+    name: Sportipedia.Catalog.EventStore,
+    adapter: Commanded.EventStore.Adapters.EventSourcingDB,
     source: "https://sportipedia.app",
     stream_prefix: "catalog/",
-    adapter: Commanded.EventStore.Adapters.EventStore,
-    serializer: Commanded.Serialization.JsonSerializer,
-    event_store: Sportipedia.Accounts.EventStore
+    client: [
+      api_token: System.get_env("ESDB_API_TOKEN"),
+      base_url: System.get_env("ESDB_URL")
+    ]
   ]
+
+# config :sportipedia, Sportipedia.Catalog,
+#   event_store: [
+#     adapter: Commanded.EventStore.Adapters.EventStore,
+#     serializer: Commanded.Serialization.JsonSerializer,
+#     event_store: Sportipedia.Catalog.EventStore,
+#     source: "https://sportipedia.app",
+#     stream_prefix: "catalog/"
+#   ]
 
 # Configures the endpoint
 config :sportipedia, SportipediaWeb.Endpoint,

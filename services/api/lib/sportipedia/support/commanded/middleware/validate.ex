@@ -1,4 +1,4 @@
-defmodule Sportipedia.Support.Middleware.Validate do
+defmodule Sportipedia.Support.Commanded.Middleware.Validate do
   @behaviour Commanded.Middleware
 
   alias Commanded.Middleware.Pipeline
@@ -18,7 +18,7 @@ defmodule Sportipedia.Support.Middleware.Validate do
     errors = command |> Vex.errors() |> merge_errors()
 
     pipeline
-    |> respond({:error, :validation_failure, errors})
+    |> respond({:error, {:validation_failure, errors}})
     |> halt()
   end
 

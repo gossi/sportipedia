@@ -1,4 +1,4 @@
-defmodule Sportipedia.Auth.Plug.AssignCurrentUser do
+defmodule Sportipedia.Auth.Plug.Identity do
   import Plug.Conn
 
   def init(opts), do: opts

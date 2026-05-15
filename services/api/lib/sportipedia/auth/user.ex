@@ -7,8 +7,8 @@ defmodule Sportipedia.Auth.User do
     field :name, String.t()
     field :email, String.t()
     field :image, String.t()
-    field :givenName, String.t()
-    field :familyName, String.t()
+    field :given_name, String.t()
+    field :family_name, String.t()
     field :lang, String.t()
   end
 
@@ -19,8 +19,8 @@ defmodule Sportipedia.Auth.User do
       name: token["name"],
       email: token["email"],
       image: token["image"],
-      givenName: token["givenName"],
-      familyName: token["familyName"],
+      given_name: token["givenName"],
+      family_name: token["familyName"],
       lang: token["lang"]
     }
   end

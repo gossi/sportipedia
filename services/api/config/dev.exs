@@ -8,14 +8,14 @@ database_config = [
   database: "sportipedia"
 ]
 
-config :sportipedia, Sportipedia.Repo, database_config
+config :sportipedia, Sportipedia.Catalog.Repo, database_config
 
-config :sportipedia, Sportipedia.Repo,
+config :sportipedia, Sportipedia.Catalog.Repo,
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
 
-config :sportipedia, Sportipedia.Accounts.EventStore, database_config
+config :sportipedia, Sportipedia.Catalog.EventStore, database_config
 
 # For development, we disable any cache and enable
 # debugging and code reloading.
@@ -33,6 +33,8 @@ config :sportipedia, SportipediaWeb.Endpoint,
   debug_errors: true,
   secret_key_base: "SFjcCpfYcDcCdORpuAhED2ZWxvuRNyk8wK3k9sn7DLZLNT+8W1z5A2Ojx2oSvA3z",
   watchers: []
+
+config :open_api_spex, :cache_adapter, OpenApiSpex.Plug.NoneCache
 
 # ## SSL Support
 #
