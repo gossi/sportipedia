@@ -9,11 +9,11 @@ defmodule Sportipedia.Catalog.Equipment.Instruments do
   alias Sportipedia.Catalog.Equipment.Instruments.Queries.InstrumentBySlug
 
   def instrument_by_id(id) when is_binary(id) do
-    Repo.get(Instrument, id)
+    Repo.get(InstrumentReadModel, id)
   end
 
   def instrument_by_id!(id) when is_binary(id) do
-    Repo.get!(Instrument, id)
+    Repo.get!(InstrumentReadModel, id)
   end
 
   def instrument_by_slug(slug) do
@@ -44,7 +44,7 @@ defmodule Sportipedia.Catalog.Equipment.Instruments do
   end
 
   def list_instruments(query) do
-    Repo.all(QueryBuilder.build(query, Instrument))
+    Repo.all(QueryBuilder.build(query, InstrumentReadModel))
   end
 
   def archive_instrument(id) do

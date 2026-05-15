@@ -9,7 +9,7 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentController do
   alias Sportipedia.Catalog.Equipment.Instruments.Command.CatalogInstrument
   alias Sportipedia.Catalog.Equipment.Instruments.Command.DeleteInstrument
   alias Sportipedia.Catalog.Equipment.Instruments.Command.ArchiveInstrument
-  alias Sportipedia.Catalog.Equipment.Instruments.ReadModel.Instrument
+  alias Sportipedia.Catalog.Equipment.Instruments.InstrumentReadModel
 
   use SportipediaWeb, :controller
   use OpenApiSpex.ControllerSpecs
@@ -62,7 +62,7 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentController do
 
   def read_instrument(conn, _) do
     case Instruments.read_instrument(conn.params["id"]) do
-      %Instrument{} = instrument ->
+      %InstrumentReadModel{} = instrument ->
         conn
         |> put_view(json: InstrumentView)
         |> render("show.json", %{data: instrument})

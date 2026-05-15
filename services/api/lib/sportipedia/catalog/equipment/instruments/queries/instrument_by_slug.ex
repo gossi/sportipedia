@@ -3,7 +3,7 @@ defmodule Sportipedia.Catalog.Equipment.Instruments.Queries.InstrumentBySlug do
   import Ecto.Query
 
   def new(slug) do
-    from(i in Instrument,
+    from(i in InstrumentReadModel,
       where: i.slug == ^slug
     )
   end

@@ -8,7 +8,7 @@ defmodule Sportipedia.Catalog.Equipment.Instruments.Feature.CatalogInstrumentTes
   alias Sportipedia.Catalog.Equipment.Instruments.Event.InstrumentCataloged
   alias Sportipedia.Catalog.Equipment.Instruments.InstrumentAggregate
   alias Sportipedia.Catalog.Equipment.Instruments.InstrumentReadModel
-  alias Sportipedia.Catalog.Equipment.Instruments.Projectors.InstrumentProjector
+  alias Sportipedia.Catalog.Equipment.Instruments.InstrumentProjector
   alias Sportipedia.Catalog.Repo
 
   describe "Policy" do
