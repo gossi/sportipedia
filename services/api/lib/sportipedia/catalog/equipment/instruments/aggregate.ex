@@ -14,8 +14,10 @@ defmodule Sportipedia.Catalog.Equipment.Instruments.Aggregate.Instrument do
   end
 
   def apply(%Instrument{} = aggregate, %InstrumentCataloged{} = event) do
+    %InstrumentCataloged{id: id, title: title, description: description, slug: slug} = event
     %InstrumentCataloged{title: title, description: description, slug: slug} = event
 
+    %Instrument{id: id, title: title, description: description, slug: slug}
     IO.inspect(aggregate, label: "apply cataloged, aggregate")
     IO.inspect(event, label: "apply cataloged, event")
 
