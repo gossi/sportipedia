@@ -1,0 +1,15 @@
+info:
+  name: Ping
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{apiUrl}}/catalog/ping"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

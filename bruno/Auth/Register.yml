@@ -1,0 +1,27 @@
+info:
+  name: Register
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{authUrl}}/sign-up/email"
+  body:
+    type: form-urlencoded
+    data:
+      - name: email
+        value: ""
+      - name: password
+        value: ""
+      - name: givenName
+        value: ""
+      - name: familyName
+        value: ""
+      - name: name
+        value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

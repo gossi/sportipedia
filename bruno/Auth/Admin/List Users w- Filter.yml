@@ -1,0 +1,22 @@
+info:
+  name: List Users w/ Filter
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: "{{authUrl}}/admin/list-users?filterField=id&filterValue"
+  params:
+    - name: filterField
+      value: id
+      type: query
+    - name: filterValue
+      value: ""
+      type: query
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

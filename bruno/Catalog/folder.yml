@@ -1,0 +1,12 @@
+info:
+  name: Catalog
+  type: folder
+  seq: 2
+
+request:
+  headers:
+    - name: Content-Type
+      value: application/vnd.api+json
+  auth:
+    type: bearer
+    token: "{{apiToken}}"

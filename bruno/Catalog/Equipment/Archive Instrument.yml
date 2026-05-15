@@ -1,0 +1,60 @@
+info:
+  name: Archive Instrument
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{apiUrl}}/catalog/equipment/instruments/archive-instrument"
+  body:
+    type: json
+    data: |-
+      {
+        "data": {
+          "type": "instruments",
+          "id": "6d3e425d-778c-4da7-a0da-8bae0fda303a"
+        }
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: Delete Skateboard
+    request:
+      url: "{{apiUrl}}/catalog/equipment/instruments/delete-instrument"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "data": {
+              "type": "instruments",
+              "id": "3e435097-f61e-4ed9-91ec-3eeb2f729f55"
+            }
+          }
+    response:
+      status: 204
+      statusText: No Content
+      headers:
+        - name: date
+          value: Wed, 29 Apr 2026 20:15:05 GMT
+        - name: cache-control
+          value: max-age=0, private, must-revalidate
+        - name: x-request-id
+          value: GKrtG7QU8ZVc29kAAAqD
+        - name: access-control-allow-credentials
+          value: "true"
+        - name: access-control-allow-origin
+          value: "*"
+        - name: access-control-expose-headers
+          value: ""
+        - name: content-type
+          value: application/vnd.api+json; charset=utf-8
+      body:
+        type: text
+        data: ""

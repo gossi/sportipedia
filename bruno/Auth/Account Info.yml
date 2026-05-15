@@ -1,0 +1,20 @@
+info:
+  name: Account Info
+  type: http
+  seq: 9
+
+http:
+  method: POST
+  url: "{{authUrl}}/account-info"
+  body:
+    type: form-urlencoded
+    data:
+      - name: accountId
+        value: ""
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
