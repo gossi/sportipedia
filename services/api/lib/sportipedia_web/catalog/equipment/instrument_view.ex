@@ -1,4 +1,4 @@
-defmodule Sportipedia.Catalog.Equipment.Instruments.Views.InstrumentView do
+defmodule SportipediaWeb.Catalog.Equipment.InstrumentView do
   use JSONAPI.View, type: "instruments"
 
   def path, do: "catalog/equipment/instruments"

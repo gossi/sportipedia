@@ -1,15 +1,15 @@
 defmodule SportipediaWeb.Catalog.Equipment.InstrumentController do
   alias OpenApiSpex.Reference
   alias SportipediaWeb.System.FallbackController
+  alias SportipediaWeb.Catalog.Equipment.InstrumentView
+  alias SportipediaWeb.Catalog.Equipment.Schemas.InstrumentResponse
+  alias SportipediaWeb.Catalog.Equipment.Schemas.InstrumentListResponse
   alias Sportipedia.Catalog.Equipment.Instruments
   alias Sportipedia.Catalog.Equipment.Instruments.Policy
   alias Sportipedia.Catalog.Equipment.Instruments.Command.CatalogInstrument
   alias Sportipedia.Catalog.Equipment.Instruments.Command.DeleteInstrument
   alias Sportipedia.Catalog.Equipment.Instruments.Command.ArchiveInstrument
   alias Sportipedia.Catalog.Equipment.Instruments.ReadModel.Instrument
-  alias Sportipedia.Catalog.Equipment.Instruments.Schemas.InstrumentResponse
-  alias Sportipedia.Catalog.Equipment.Instruments.Schemas.InstrumentListResponse
-  alias Sportipedia.Catalog.Equipment.Instruments.Views.InstrumentView
 
   use SportipediaWeb, :controller
   use OpenApiSpex.ControllerSpecs

@@ -1,5 +1,5 @@
-defmodule Sportipedia.Catalog.Equipment.Instruments.Schemas.InstrumentResponse do
-  alias Sportipedia.Catalog.Equipment.Instruments.Views.InstrumentView
+defmodule SportipediaWeb.Catalog.Equipment.Schemas.InstrumentResponse do
+  alias SportipediaWeb.Catalog.Equipment.InstrumentView
   alias Sportipedia.Support.JSONAPI.OpenApiSchema
 
   require OpenApiSpex
