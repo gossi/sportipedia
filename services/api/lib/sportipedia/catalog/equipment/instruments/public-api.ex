@@ -4,7 +4,7 @@ defmodule Sportipedia.Catalog.Equipment.Instruments do
   alias Sportipedia.Support.JSONAPI.QueryBuilder
   alias Sportipedia.Catalog
   alias Sportipedia.Catalog.Repo
-  alias Sportipedia.Catalog.Equipment.Instruments.ReadModel.Instrument
+  alias Sportipedia.Catalog.Equipment.Instruments.InstrumentReadModel
   alias Sportipedia.Catalog.Equipment.Instruments.Command.CatalogInstrument
   alias Sportipedia.Catalog.Equipment.Instruments.Queries.InstrumentBySlug
 

@@ -1,9 +1,9 @@
-defmodule Sportipedia.Catalog.Equipment.Instruments.Projectors.InstrumentProjector do
+defmodule Sportipedia.Catalog.Equipment.Instruments.InstrumentProjector do
   alias Sportipedia.Catalog.Equipment.Instruments
   alias Sportipedia.Catalog.Equipment.Instruments.Event.InstrumentArchived
   alias Sportipedia.Catalog.Equipment.Instruments.Event.InstrumentEdited
   alias Sportipedia.Catalog.Equipment.Instruments.Event.InstrumentCataloged
-  alias Sportipedia.Catalog.Equipment.Instruments.ReadModel.Instrument
+  alias Sportipedia.Catalog.Equipment.Instruments.InstrumentReadModel
 
   use Commanded.Projections.Ecto,
     application: Sportipedia.Catalog,
@@ -17,12 +17,12 @@ defmodule Sportipedia.Catalog.Equipment.Instruments.Projectors.InstrumentProject
     |> Ecto.Multi.insert(:catalog_instrument, Instrument.insert_changeset(Map.from_struct(event)))
   end
 
-  project %InstrumentEdited{} = event, metadata, fn multi ->
+  project %InstrumentEdited{} = event, _metadata, fn multi ->
     case Instruments.instrument_by_id(event.id) do
       nil ->
         multi
 
-      %Instrument{} = instrument ->
+      %InstrumentReadModel{} = instrument ->
         attrs = InstrumentEdited.get_changes(event)
 
         multi
@@ -35,7 +35,7 @@ defmodule Sportipedia.Catalog.Equipment.Instruments.Projectors.InstrumentProject
       nil ->
         multi
 
-      %Instrument{} = instrument ->
+      %InstrumentReadModel{} = instrument ->
         multi
         |> Ecto.Multi.delete(:archive_instrument, instrument)
     end

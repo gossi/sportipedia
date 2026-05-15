@@ -1,5 +1,5 @@
 defmodule Sportipedia.Catalog.Equipment.Instruments.Queries.InstrumentBySlug do
-  alias Sportipedia.Catalog.Equipment.Instruments.ReadModel.Instrument
+  alias Sportipedia.Catalog.Equipment.Instruments.InstrumentReadModel
   import Ecto.Query
 
   def new(slug) do
