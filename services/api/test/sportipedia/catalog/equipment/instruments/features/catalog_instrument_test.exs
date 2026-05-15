@@ -8,6 +8,7 @@ defmodule Sportipedia.Catalog.Equipment.Instruments.Feature.CatalogInstrumentTes
   alias Sportipedia.Catalog.Equipment.Instruments.Event.InstrumentCataloged
   alias Sportipedia.Catalog.Equipment.Instruments.Aggregate.Instrument, as: InstrumentAggregate
   alias Sportipedia.Catalog.Equipment.Instruments.ReadModel.Instrument, as: InstrumentReadModel
+  alias Sportipedia.Catalog.Equipment.Instruments.Projectors.InstrumentProjector
   alias Sportipedia.Catalog.Repo
 
   describe "Policy" do
@@ -162,58 +163,102 @@ defmodule Sportipedia.Catalog.Equipment.Instruments.Feature.CatalogInstrumentTes
 
   describe "Projector" do
     @tag :integration
-    test "inserts instrument into catalog database" do
+    test "projects InstrumentCataloged event into the read model" do
       event = %InstrumentCataloged{
         id: UUID.uuid4(),
-        title: "Tennis Racket",
-        slug: "tennis-racket",
-        description: "A standard tennis racket"
+        title: "Unicycle",
+        slug: "unicycle",
+        description: "Best vehicle in the world"
       }
 
-      changeset = InstrumentReadModel.insert_changeset(Map.from_struct(event))
+      metadata = %{
+        handler_name: "equipment.instrument_projection",
+        event_number: 1,
+        event_id: UUID.uuid4(),
+        stream_id: "instrument-#{event.id}",
+        stream_version: 1,
+        correlation_id: nil,
+        causation_id: nil,
+        created_at: DateTime.utc_now(),
+        application: Sportipedia.Catalog,
+        state: nil
+      }
 
-      assert {:ok, %{catalog_instrument: instrument}} =
-               Repo.transaction(
-                 Ecto.Multi.new()
-                 |> Ecto.Multi.insert(:catalog_instrument, changeset)
-               )
+      assert :ok = InstrumentProjector.handle(event, metadata)
 
-      assert instrument.title == "Tennis Racket"
-      assert instrument.slug == "tennis-racket"
-      assert instrument.description == "A standard tennis racket"
+      instrument = Repo.get!(InstrumentReadModel, event.id)
+      assert instrument.title == "Unicycle"
+      assert instrument.slug == "unicycle"
+      assert instrument.description == "Best vehicle in the world"
     end
 
     @tag :integration
-    test "rejects duplicate slug on insert" do
-      slug = "tennis-racket"
-      id = UUID.uuid4()
-
-      InstrumentReadModel.insert_changeset(%{id: UUID.uuid4(), title: "Existing", slug: slug})
-      |> Repo.insert!()
-
+    test "is idempotent for the same event" do
       event = %InstrumentCataloged{
-        id: id,
-        title: "Tennis Racket",
-        slug: slug,
-        description: "Another tennis racket"
+        id: UUID.uuid4(),
+        title: "Unicycle",
+        slug: "unicycle"
       }
 
-      changeset = InstrumentReadModel.insert_changeset(Map.from_struct(event))
+      metadata = %{
+        handler_name: "equipment.instrument_projection",
+        event_number: 1,
+        event_id: UUID.uuid4(),
+        stream_id: "instrument-#{event.id}",
+        stream_version: 1,
+        correlation_id: nil,
+        causation_id: nil,
+        created_at: DateTime.utc_now(),
+        application: Sportipedia.Catalog,
+        state: nil
+      }
 
-      assert {:error, :catalog_instrument, _, _} =
-               Repo.transaction(
-                 Ecto.Multi.new()
-                 |> Ecto.Multi.insert(:catalog_instrument, changeset)
-               )
+      assert :ok = InstrumentProjector.handle(event, metadata)
+      assert :ok = InstrumentProjector.handle(event, metadata)
+
+      assert [instrument] = Repo.all(InstrumentReadModel)
+      assert instrument.id == event.id
+    end
+
+    @tag :integration
+    test "rejects duplicate slug" do
+      slug = "unicycle"
+
+      Repo.insert!(%InstrumentReadModel{id: UUID.uuid4(), title: "Existing", slug: slug})
+
+      event = %InstrumentCataloged{
+        id: UUID.uuid4(),
+        title: "Unicycle",
+        slug: slug
+      }
+
+      metadata = %{
+        handler_name: "equipment.instrument_projection",
+        event_number: 1,
+        event_id: UUID.uuid4(),
+        stream_id: "instrument-#{event.id}",
+        stream_version: 1,
+        correlation_id: nil,
+        causation_id: nil,
+        created_at: DateTime.utc_now(),
+        application: Sportipedia.Catalog,
+        state: nil
+      }
+
+      assert {:error, _} = InstrumentProjector.handle(event, metadata)
     end
   end
 
   describe "End-to-end" do
     @tag :integration
     test "dispatches CatalogInstrument through the router" do
-      cmd = CatalogInstrument.new(id: UUID.uuid4(), title: "Uneven Bars", slug: "uneven-bars")
+      id = UUID.uuid4()
+      cmd = CatalogInstrument.new(id: id, title: "Unicycle", slug: "unicycle")
 
       assert :ok = Sportipedia.Catalog.dispatch(cmd, consistency: :strong)
+
+      assert %InstrumentReadModel{title: "Unicycle", slug: "unicycle"} =
+               Repo.get(InstrumentReadModel, id)
     end
 
     @tag :integration
@@ -227,15 +272,15 @@ defmodule Sportipedia.Catalog.Equipment.Instruments.Feature.CatalogInstrumentTes
     @tag :integration
     test "catalog_instrument/1 creates an instrument through the public API" do
       params = %{
-        title: "Vault Table",
-        slug: "vault-table",
-        description: "A standard vault table"
+        title: "Unicycle",
+        slug: "unicycle",
+        description: "Best vehicle in the world"
       }
 
       assert {:ok, instrument} = Instruments.catalog_instrument(params)
-      assert instrument.title == "Vault Table"
-      assert instrument.slug == "vault-table"
-      assert instrument.description == "A standard vault table"
+      assert instrument.title == "Unicycle"
+      assert instrument.slug == "unicycle"
+      assert instrument.description == "Best vehicle in the world"
       assert is_binary(instrument.id)
     end
   end
