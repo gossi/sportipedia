@@ -15,7 +15,7 @@ scope:
 apiVersion: schema.esdm.io/core/v1
 kind: subdomain
 name: catalog
-description: "The catalog of skills, instruments, apparatus, exercises, tutorials, and media assets — the product's reason to exist"
+description: "The catalog is a knowledge system for skills, exercises, tutorials, and media assets"
 scope:
   domain: sport
 type: core
