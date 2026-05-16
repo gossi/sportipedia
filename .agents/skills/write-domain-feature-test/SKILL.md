@@ -3,6 +3,11 @@ name: write-domain-feature-test
 description: Write a vertical-slice feature test for a CQRS/ES operation in the Sportipedia catalog domain. Covers Policy, Command validation, Handler, Event, Aggregate, Projector, and End-to-end dispatch in a single test file.
 ---
 
+## Guidelines
+
+- [Architecture](../../../ARCHITECTURE.md)
+- [Coding Guidelines](../../../docs/coding-guidelines/README.md)
+
 ## Test File Location
 
 ```
@@ -12,17 +17,17 @@ test/sportipedia/catalog/<subdomain>/<entity>/features/<feature_name>_test.exs
 ## Test Module Pattern
 
 ```elixir
-defmodule Sportipedia.Catalog.<Subdomain>.<DomainObject>s.Feature.<FeatureName>Test do
+defmodule Sportipedia.Catalog.<Composite>.<DomainObject>.Feature.<FeatureName>Test do
   use Sportipedia.CatalogTestCase
 
-  alias Sportipedia.Catalog.<Subdomain>.<DomainObject>s
-  alias Sportipedia.Catalog.<Subdomain>.<DomainObject>s.Policy
-  alias Sportipedia.Catalog.<Subdomain>.<DomainObject>s.Command.<FeatureName>
-  alias Sportipedia.Catalog.<Subdomain>.<DomainObject>s.Command.<FeatureName>Handler
-  alias Sportipedia.Catalog.<Subdomain>.<DomainObject>s.Event.<EventName>
-  alias Sportipedia.Catalog.<Subdomain>.<DomainObject>s.<AggregateName>
-  alias Sportipedia.Catalog.<Subdomain>.<DomainObject>s.<ReadModelName>
-  alias Sportipedia.Catalog.<Subdomain>.<DomainObject>s.<ProjectorName>
+  alias Sportipedia.Catalog.<Composite>.<DomainObject>
+  alias Sportipedia.Catalog.<Composite>.<DomainObject>.Policy
+  alias Sportipedia.Catalog.<Composite>.<DomainObject>.Command.<FeatureName>
+  alias Sportipedia.Catalog.<Composite>.<DomainObject>.Command.<FeatureName>Handler
+  alias Sportipedia.Catalog.<Composite>.<DomainObject>.Event.<EventName>
+  alias Sportipedia.Catalog.<Composite>.<DomainObject>.<AggregateName>
+  alias Sportipedia.Catalog.<Composite>.<DomainObject>.<ReadModelName>
+  alias Sportipedia.Catalog.<Composite>.<DomainObject>.<ProjectorName>
   alias Sportopedia.Catalog.Repo
 ```
 
@@ -58,9 +63,7 @@ Tests the command handlers, input into output. Ideally pure, integration tests w
 
 Tests events.
 
-Include:
-
-- Struct creation with enforced fields
+- Test against invalid struct creation (missing enforced fields)
 - Serialization, via `Jason.encode!(event)`
 
 ### Event Handler
@@ -134,7 +137,7 @@ Tests the full dispatch through `Sportipedia.Catalog` — needs event store (InM
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
 | Dispatch success   | `assert :ok = Sportipedia.Catalog.dispatch(cmd, consistency: :strong)` then `assert %ReadModel{...} = Repo.get(ReadModel, cmd.id)` |
 | Validation failure | `assert {:error, {:validation_failure, %{field: [message]}}} = Sportipedia.Catalog.dispatch(cmd)`                                  |
-| Public API         | Call `<DomainObject>s.<action>(params)` and assert `{:ok, result}`                                                                 |
+| Public API         | Call `<DomainObject>.<action>(params)` and assert `{:ok, result}`                                                                  |
 
 ## Implementation Notes
 
