@@ -1,0 +1,32 @@
+# apiVersion: schema.esdm.io/core/v1
+# kind: process-manager
+# name: calculate-lineage
+# description: "When skill relationships change (parents or parts), recalculate the lineage of affected skills"
+# scope:
+#   domain: sport
+# deliveryGuarantee: at-least-once
+# correlatedBy:
+#   source: event-field
+#   field: skill-id
+# state: {}
+# startsWhen:
+#   - boundedContext: sport
+#     aggregate: skill
+#     event: parents-changed
+#   - boundedContext: sport
+#     aggregate: skill
+#     event: parts-changed
+# endsWhen:
+#   - name: lineage-updated
+#     condition: "The lineage has been recalculated after the change"
+# reactions:
+#   - when:
+#       boundedContext: sport
+#       aggregate: skill
+#       event: parents-changed
+#     rule: "Recalculate the parent-child lineage for the affected skill tree"
+#   - when:
+#       boundedContext: sport
+#       aggregate: skill
+#       event: parts-changed
+#     rule: "Recalculate the part-whole lineage for the affected skill tree"

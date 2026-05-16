@@ -1,128 +1,125 @@
 # Architecture
 
-The project Sportipedia follows C4 Model as well as Domain-Driven Design (DDD):
+The project Sportipedia aims to help people in executing their movement skils,
+especially on the technical aspects.
 
-## 1. System: Sportipedia
+## Domain Model
 
-The system is language wise a bounded context in the domain of sport science.
-All domain terms should follow their definitions from established literature and are not meant to change within thi system.
+We are in the domain of sport, specifically targetting technical training and
+the underlying movement knowledge (part of movement science). The system is
+language wise a bounded context in the domain of sport science.
 
-## 2. Container: Catalog and Admin Apps
+See [Domain Model](./docs/domain-model/README.md) for details.
 
-The container holds a huge part of the system or technically relevant parts (eg. admin)
+## Directory Strutcure
 
-### Backend
+The directory is partially organized around deployment units.
 
-They are a commanded app running on the API microservice
+- [`apps/`](./apps/) - All frontend apps
+- [`docs/`](./docs/) - Documentation about the entire domain and software system
+- [`packages/`](./packages/) - Generic subdomain / Internal packages
+- [`services/`](./services/) - Microserives (generic and core subdomains)
+- [`support/`](./support/) - Supporting subdomain with its software components
 
-Location: `/services/api/lib/sportipedia/<app>`
+## Subdomains
 
-### Frontend
+### Core Subdomains
 
-They are represented by an ember app
+Each core subdomain describes its own architecture, refer to them individually:
 
-Location: `/apps/<app>`
+- [Catalog](./docs/architecture/catalog.md)
 
-## 3. Component: Core Subdomains as in DDD
+### Supporting Subdomains
 
-For the catalog these are: Equipment, Exercise, Athlete, Skills and Sports
+As there are more than one web apps, the frontend itself has a monorepo, which
+has several supporting packages in that regard.
 
-### Backend
+Location: `/support/`
 
-- Location: `/services/api/lib/sportipedia/<app>/<subdomain>/<feature>`
-- Architecture: Hybrid of Clean Architecture + Vertical Slice Architecture, CQRS/ES (Command and Query Responsibility Segregation / Event Sourcing)
+### Generic Subdomains
 
-#### Clean Architecture in `./<app>/<subdomain>`, contains
+General purpose components are usually off-the-shelf products. They appear as
+two forms within this software system:
 
-- Aggregate
-- Entities
-- Value Objects
-- Validations (optional)
-- Queries (optional)
+#### 1. Dedicated Services
 
-> [!NOTE] Example
->
-> ```txt
-> ./catalog/skills
-> - aggregate.ex
-> ```
+They are represented through their own container/component in the software
+system. That is the idea for these third-party products is to run them on your
+own. For example the authentication subdomain uses `better-auth`, which is its
+own service.
 
-#### Vertical Slice Architecture in `./<app>/<subdomain>/<feature>`
+Location: `/services/`
 
-Contains:
+#### 2. Technical Components
 
-- DTO
-- Value Objects
-- Events
-- Commands
-- Command Handlers
-- Projections
-- Validations (optional)
-- Queries (optional)
+A technical need in other places. Can be a copy of the third-party product with
+customizations needed for this codebase, eg. to shortcut development and
+"self-host" until the customizations are implemented upstream. They are
+considered temporary and subject of removal once capabilities are available by
+the third-party product itself.
 
-> [!NOTE] Example
->
-> ```txt
-> ./catalog/skills/catalog-skill
-> - event.ex
-> - command.ex
-> - command-handler.ex
-> ```
+Location: `/packages/`
 
-### Frontend
+## Software System
 
-- Location: `/apps/<app>/src/domain/<subdomain>`
-- Architecture: Clean Architecture, CQS (command-query separation)
+The entire software system and its technical infrastructure can be represented
+using the C4 Model.
 
-Directory Structure:
+Sportipedia is a set of manageable microservices, each a container according to
+the C4 Model. Some containers are used for multiple subdomains. They are
+properly namespaced to not interfere and _can_ be treated as their own
+microservice. For ease of deployment, this will be one services serving multiple subdomains.
 
-- `domain-objects/`: For domain objects, entities, value objects, actions (commands), questions (queries)
-  - Simple: `./<object>.ts`
-  - Verbose:
-    - `./<object>.ts`
-    - `./<object>/value-objects/<value-object>.ts`
-    - `./<object>/entities/<entity>.ts`
-    - `./<object>/abilities.ts`
-    - `./<object>/questions.ts`
-  - Hybrid: As complexity grows, parts can be extracted, questions/abilities stay with the value objects, etc.
-- `ui/`: Components, modifiers and helpers
-- `pages/`: Routes, controllers and templates
-- `services/` (optional): Ember Services (try to avoid)
+```mermaid
+C4Context
+title System Context Diagram for Sportipedia
 
-Use import maps:
+Person(user, "User")
+Person(admin, "Admin")
 
-```json
-{
-  "imports": {
-    "#skills/*": "./src/domains/skills/*"
+Rel(user, catalogWeb, "uses")
+Rel(admin, adminWeb, "uses")
+
+System_Boundary(catalog, "Catalog") {
+  Container(catalogWeb, "Catalog Web", "Ember App")
+  Component(catalogApi, "Catalog API")
+  Component(catalogEvents, "Catalog Event Storage")
+  Component(catalogProjections, "Catalog Read Model Projections")
+
+  Rel(catalogWeb, catalogApi, "uses")
+  Rel(catalogWeb, authService, "uses")
+  Rel(catalogApi, catalogEvents, "uses")
+  Rel(catalogApi, catalogProjections, "uses")
+
+  Rel(catalogApi, elixir, "runs on")
+  Rel(catalogEvents, esdb, "runs on")
+  Rel(catalogProjections, db, "runs on")
+
+  Rel(catalogWeb, feUser, "uses")
+  Rel(catalogWeb, feUI, "uses")
+}
+
+System_Boundary(infra, "Infrastructure") {
+  Container(elixir, "API Service", "Elixir Phoenix App")
+  Container(adminWeb, "Admin Web", "Ember App")
+  ContainerDb(esdb, "Event Storage", "EventSourcingDB")
+  ContainerDb(db, "Database", "Postgres")
+  
+  Rel(elixir, authService, "uses")
+  Rel(adminWeb, authService, "uses")
+  Rel(adminWeb, feUser, "uses")
+
+  Boundary(frontend, "Frontend Monorepo") {
+    Component(feUser, "@sportipedia/user", "Ember Addon")
+    Component(feUI, "@sportipedia/ui", "Ember Addon")
   }
 }
+
+System_Boundary(authSystem, "Authentication") {
+  Container(authService, "Auth Service", "Better Auth")
+  Component(authDb, "Auth DB")
+
+  Rel_D(authService, authDb, "uses")
+  Rel(authDb, db, "runs on")
+}
 ```
-
-Each subdomain exports a manifest file with exports for:
-
-- The modules for finding the Ember citizens from that subdomain: Routes, Controllers, Templates, Services
-- A `routes()` function
-
-They are then used in `./src/app.ts` to load the subdomain.
-
-## 4. Code
-
-Code follows the convention of the respective framework
-
-That also includes the supporting subdomain as in DDD as well as technically relevant packages.
-
-### Supporting Subdomain (Frontend)
-
-- They are shared amongs all apps and are located in `/supporting`.
-- They are regular JS packages (eg. Ember Addons)
-
-### Technical Packages (Frontend)
-
-- Location: `/packages`
-- They are part of this monorepo to suit the needs in the other locations
-- Some are ideally relayed back to their origin and them being used instead of the monorepo clone
-
-## Microservices
-
-These are the auth and API in services/ directory

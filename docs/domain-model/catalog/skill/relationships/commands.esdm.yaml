@@ -1,0 +1,38 @@
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: change-parents
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: skill
+data: {}
+publishes:
+  - parents-changed
+actors:
+  - user
+---
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: change-parts
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: skill
+data: {}
+publishes:
+  - parts-changed
+actors:
+  - user
+---
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: edit-multiplier
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: skill
+data: {}
+publishes:
+  - multiplier-edited
+actors:
+  - user

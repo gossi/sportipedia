@@ -1,0 +1,14 @@
+apiVersion: schema.esdm.io/core/v1
+kind: aggregate
+name: group
+description: "A grouping of skills for a sport that match the rules of that group, usually that fits a sentence"
+scope:
+  domain: sport
+  boundedContext: sport
+identifiedBy:
+  source: generated
+  generator: uuid
+invariants:
+  - name: unique-slug
+    rule: The slug for the group must be unique within a sport
+state: {}

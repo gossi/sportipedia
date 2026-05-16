@@ -1,0 +1,20 @@
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: position
+scope:
+  domain: sport
+  boundedContext: sport
+projections:
+  - boundedContext: sport
+    aggregate: position
+    event: position-cataloged
+    rule: "Project the position when it is cataloged"
+  - boundedContext: sport
+    aggregate: position
+    event: position-edited
+    rule: "Update position details"
+  - boundedContext: sport
+    aggregate: position
+    event: position-archived
+    rule: "Mark position as archived"
+schema: {}

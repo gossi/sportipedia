@@ -1,0 +1,46 @@
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: instructional-progression
+scope:
+  domain: sport
+  boundedContext: sport
+projections:
+  - boundedContext: sport
+    aggregate: skill
+    event: instructional-progression-constructed
+    rule: "Project the instructional progression structure"
+  - boundedContext: sport
+    aggregate: skill
+    event: instructional-progression-amended
+    rule: "Update instructional progression"
+schema: {}
+---
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: tutorial-video
+scope:
+  domain: sport
+  boundedContext: sport
+projections:
+  - boundedContext: sport
+    aggregate: skill
+    event: tutorial-linked
+    rule: "Add tutorial video to the skill's learning resources"
+  - boundedContext: sport
+    aggregate: skill
+    event: tutorial-unlinked
+    rule: "Remove tutorial video from the skill's learning resources"
+schema: {}
+---
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: error
+scope:
+  domain: sport
+  boundedContext: sport
+projections:
+  - boundedContext: sport
+    aggregate: skill
+    event: error-cataloged
+    rule: "Project common errors for the skill"
+schema: {}

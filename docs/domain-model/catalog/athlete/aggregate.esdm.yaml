@@ -1,0 +1,11 @@
+apiVersion: schema.esdm.io/core/v1
+kind: aggregate
+name: position
+description: "Certain body position or stance an athlete holds."
+scope:
+  domain: sport
+  boundedContext: sport
+identifiedBy:
+  source: generated
+  generator: uuid
+state: {}

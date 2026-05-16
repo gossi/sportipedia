@@ -1,0 +1,15 @@
+apiVersion: schema.esdm.io/core/v1
+kind: actor
+name: user
+scope:
+  domain: sport
+  boundedContext: sport
+type: human
+---
+apiVersion: schema.esdm.io/core/v1
+kind: actor
+name: admin
+scope:
+  domain: sport
+  boundedContext: sport
+type: human

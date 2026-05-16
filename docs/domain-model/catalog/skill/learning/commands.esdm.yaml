@@ -1,0 +1,64 @@
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: construct-instructional-progression
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: skill
+data: {}
+publishes:
+  - instructional-progression-constructed
+actors:
+  - user
+---
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: amend-instructional-progression
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: skill
+data: {}
+publishes:
+  - instructional-progression-amended
+actors:
+  - user
+---
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: link-tutorial
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: skill
+data: {}
+publishes:
+  - tutorial-linked
+actors:
+  - user
+---
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: unlink-tutorial
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: skill
+data: {}
+publishes:
+  - tutorial-unlinked
+actors:
+  - user
+---
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: catalog-error
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: skill
+data: {}
+publishes:
+  - error-cataloged
+actors:
+  - user

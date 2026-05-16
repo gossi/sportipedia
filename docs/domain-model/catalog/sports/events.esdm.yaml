@@ -1,0 +1,98 @@
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: sport-suggested
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: sport
+data: {}
+---
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: sport-approved
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: sport
+data: {}
+---
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: sport-rejected
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: sport
+data: {}
+---
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: sport-archived
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: sport
+data: {}
+---
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: position-associated
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: sport
+data: {}
+---
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: position-dissociated
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: sport
+data: {}
+---
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: group-associated
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: sport
+data: {}
+---
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: instrument-used
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: sport
+data: {}
+---
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: instrument-withdrawn
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: sport
+data: {}
+---
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: apparatus-used
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: sport
+data: {}
+---
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: apparatus-withdrawn
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: sport
+data: {}

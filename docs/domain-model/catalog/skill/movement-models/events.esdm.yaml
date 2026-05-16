@@ -1,0 +1,53 @@
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: phase-model-constructed
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: phase-model
+data: {}
+---
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: phase-model-amended
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: phase-model
+data: {}
+---
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: function-model-constructed
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: function-model
+data: {}
+---
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: function-model-amended
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: function-model
+data: {}
+---
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: constitutive-structure-constructed
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: constitutive-structure
+data: {}
+---
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: constitutive-structure-amended
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: constitutive-structure
+data: {}

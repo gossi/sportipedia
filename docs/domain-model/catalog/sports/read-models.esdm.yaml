@@ -1,0 +1,52 @@
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: sport
+scope:
+  domain: sport
+  boundedContext: sport
+projections:
+  - boundedContext: sport
+    aggregate: sport
+    event: sport-suggested
+    rule: "Add sport as suggested"
+  - boundedContext: sport
+    aggregate: sport
+    event: sport-approved
+    rule: "Mark sport as approved"
+  - boundedContext: sport
+    aggregate: sport
+    event: sport-rejected
+    rule: "Mark sport as rejected"
+  - boundedContext: sport
+    aggregate: sport
+    event: sport-archived
+    rule: "Mark sport as archived"
+  - boundedContext: sport
+    aggregate: sport
+    event: position-associated
+    rule: "Add associated position to sport"
+  - boundedContext: sport
+    aggregate: sport
+    event: position-dissociated
+    rule: "Remove dissociated position from sport"
+  - boundedContext: sport
+    aggregate: sport
+    event: group-associated
+    rule: "Add associated group to sport"
+  - boundedContext: sport
+    aggregate: sport
+    event: instrument-used
+    rule: "Add instrument to sport's equipment"
+  - boundedContext: sport
+    aggregate: sport
+    event: instrument-withdrawn
+    rule: "Remove instrument from sport's equipment"
+  - boundedContext: sport
+    aggregate: sport
+    event: apparatus-used
+    rule: "Add apparatus to sport's equipment"
+  - boundedContext: sport
+    aggregate: sport
+    event: apparatus-withdrawn
+    rule: "Remove apparatus from sport's equipment"
+schema: {}

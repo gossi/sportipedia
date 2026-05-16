@@ -1,0 +1,18 @@
+apiVersion: schema.esdm.io/core/v1
+kind: aggregate
+name: sport
+description: "A sport with its associated positions, groups, and equipment"
+scope:
+  domain: sport
+  boundedContext: sport
+identifiedBy:
+  source: generated
+  generator: uuid
+state: {}
+invariants:
+  - name: unique-name
+    rule: "Each sport must have a unique name within the domain"
+  - name: unique-slug
+    rule: The slug for the sport must be unique within the domain
+  - name: approval-lifecycle
+    rule: "A sport must be approved before it can be used in catalog contexts"
