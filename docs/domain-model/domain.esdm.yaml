@@ -8,6 +8,7 @@ kind: bounded-context
 name: sport
 description: >
   Sport science provides definitions for all terms in this bounded context.
+  All domain terms shall follow their definitions from established literature and are not meant to change within the system.
   Ubiquitous language follows established sport-science terminology.
 scope:
   domain: sport
