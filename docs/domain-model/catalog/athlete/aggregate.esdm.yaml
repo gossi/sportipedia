@@ -1,7 +1,7 @@
 apiVersion: schema.esdm.io/core/v1
 kind: aggregate
 name: position
-description: "A playing position or role within a sport"
+description: "Certain body position or stance an athlete holds."
 scope:
   domain: sport
   boundedContext: sport

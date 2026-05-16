@@ -1,6 +1,7 @@
 apiVersion: schema.esdm.io/core/v1
 kind: aggregate
 name: phase-model
+description: "The phase model by Meinel & Schnabel"
 scope:
   domain: sport
   boundedContext: sport
@@ -15,6 +16,7 @@ invariants:
 apiVersion: schema.esdm.io/core/v1
 kind: aggregate
 name: function-model
+description: "The function and function phase model by Göhner"
 scope:
   domain: sport
   boundedContext: sport
@@ -26,6 +28,7 @@ state: {}
 apiVersion: schema.esdm.io/core/v1
 kind: aggregate
 name: constitutive-structure
+description: "The constitutive movement structure by Kassat"
 scope:
   domain: sport
   boundedContext: sport

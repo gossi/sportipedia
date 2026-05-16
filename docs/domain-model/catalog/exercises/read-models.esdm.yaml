@@ -1,12 +1,12 @@
-apiVersion: schema.esdm.io/core/v1
-kind: read-model
-name: exercise
-scope:
-  domain: sport
-  boundedContext: sport
-projections:
-  - boundedContext: sport
-    aggregate: skill
-    event: skill-cataloged
-    rule: "Project exercise from skill catalog when an exercise is defined"
-schema: {}
+# apiVersion: schema.esdm.io/core/v1
+# kind: read-model
+# name: exercise
+# scope:
+#   domain: sport
+#   boundedContext: sport
+# projections:
+#   - boundedContext: sport
+#     aggregate: skill
+#     event: skill-cataloged
+#     rule: "Project exercise from skill catalog when an exercise is defined"
+# schema: {}

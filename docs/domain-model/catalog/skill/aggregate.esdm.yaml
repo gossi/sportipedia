@@ -1,7 +1,7 @@
 apiVersion: schema.esdm.io/core/v1
 kind: aggregate
 name: skill
-description: "A sport skill or movement pattern with its movement models, learning resources, and relationships"
+description: "A sport skill with its movement properties, movement models, learning resources, and relationships"
 scope:
   domain: sport
   boundedContext: sport
