@@ -2,3 +2,4 @@ node_modules/
 .turbo/
 .env
 .envrc
+/data/esdb
