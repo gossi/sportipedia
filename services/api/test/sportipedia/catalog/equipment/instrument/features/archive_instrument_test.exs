@@ -1,14 +1,14 @@
-defmodule Sportipedia.Catalog.Equipment.Instruments.Feature.ArchiveInstrumentTest do
+defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.ArchiveInstrumentTest do
   use Sportipedia.CatalogTestCase
 
-  alias Sportipedia.Catalog.Equipment.Instruments
-  alias Sportipedia.Catalog.Equipment.Instruments.Policy
-  alias Sportipedia.Catalog.Equipment.Instruments.Command.ArchiveInstrument
-  alias Sportipedia.Catalog.Equipment.Instruments.Command.ArchiveInstrumentHandler
-  alias Sportipedia.Catalog.Equipment.Instruments.Event.InstrumentArchived
-  alias Sportipedia.Catalog.Equipment.Instruments.InstrumentAggregate
-  alias Sportipedia.Catalog.Equipment.Instruments.InstrumentReadModel
-  alias Sportipedia.Catalog.Equipment.Instruments.InstrumentProjector
+  alias Sportipedia.Catalog.Equipment.Instrument
+  alias Sportipedia.Catalog.Equipment.Instrument.Policy
+  alias Sportipedia.Catalog.Equipment.Instrument.Command.ArchiveInstrument
+  alias Sportipedia.Catalog.Equipment.Instrument.Command.ArchiveInstrumentHandler
+  alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentArchived
+  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentAggregate
+  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel
+  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentProjector
   alias Sportipedia.Catalog.Repo
 
   describe "Policy" do
@@ -186,9 +186,9 @@ defmodule Sportipedia.Catalog.Equipment.Instruments.Feature.ArchiveInstrumentTes
     test "archive_instrument/1 archives through the public API" do
       params = %{title: "Unicycle", slug: "unicycle", description: "Best vehicle in the world"}
 
-      assert {:ok, instrument} = Instruments.catalog_instrument(params)
-      assert :ok = Instruments.archive_instrument(instrument.id)
-      refute Instruments.instrument_by_id(instrument.id)
+      assert {:ok, instrument} = Instrument.catalog_instrument(params)
+      assert :ok = Instrument.archive_instrument(instrument.id)
+      refute Instrument.instrument_by_id(instrument.id)
     end
   end
 end

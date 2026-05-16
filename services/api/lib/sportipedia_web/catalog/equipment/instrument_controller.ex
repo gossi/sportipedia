@@ -4,12 +4,12 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentController do
   alias SportipediaWeb.Catalog.Equipment.InstrumentView
   alias SportipediaWeb.Catalog.Equipment.Schemas.InstrumentResponse
   alias SportipediaWeb.Catalog.Equipment.Schemas.InstrumentListResponse
-  alias Sportipedia.Catalog.Equipment.Instruments
-  alias Sportipedia.Catalog.Equipment.Instruments.Policy
-  alias Sportipedia.Catalog.Equipment.Instruments.Command.CatalogInstrument
-  alias Sportipedia.Catalog.Equipment.Instruments.Command.DeleteInstrument
-  alias Sportipedia.Catalog.Equipment.Instruments.Command.ArchiveInstrument
-  alias Sportipedia.Catalog.Equipment.Instruments.InstrumentReadModel
+  alias Sportipedia.Catalog.Equipment.Instrument
+  alias Sportipedia.Catalog.Equipment.Instrument.Policy
+  alias Sportipedia.Catalog.Equipment.Instrument.Command.CatalogInstrument
+  alias Sportipedia.Catalog.Equipment.Instrument.Command.DeleteInstrument
+  alias Sportipedia.Catalog.Equipment.Instrument.Command.ArchiveInstrument
+  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel
 
   use SportipediaWeb, :controller
   use OpenApiSpex.ControllerSpecs
@@ -43,7 +43,7 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentController do
       label: "EVENT STORE ADAPTER"
     )
 
-    with {:ok, instrument} <- Instruments.catalog_instrument(conn.params) do
+    with {:ok, instrument} <- Instrument.catalog_instrument(conn.params) do
       conn
       |> put_view(json: InstrumentView)
       |> render("show.json", %{data: instrument})
@@ -61,7 +61,7 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentController do
     ]
 
   def read_instrument(conn, _) do
-    case Instruments.read_instrument(conn.params["id"]) do
+    case Instrument.read_instrument(conn.params["id"]) do
       %InstrumentReadModel{} = instrument ->
         conn
         |> put_view(json: InstrumentView)
@@ -79,7 +79,7 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentController do
     ]
 
   def list_instruments(conn, _) do
-    case Instruments.list_instruments(conn.assigns.jsonapi_query) do
+    case Instrument.list_instruments(conn.assigns.jsonapi_query) do
       data ->
         conn
         |> put_view(json: InstrumentView)
@@ -99,7 +99,7 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentController do
     ]
 
   def edit_instrument(conn, _) do
-    case Instruments.edit_instrument(conn.params) do
+    case Instrument.edit_instrument(conn.params) do
       {:ok, instrument} ->
         conn
         |> put_view(json: InstrumentView)
@@ -121,7 +121,7 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentController do
     ]
 
   def archive_instrument(conn, _) do
-    case Instruments.archive_instrument(conn.params["id"]) do
+    case Instrument.archive_instrument(conn.params["id"]) do
       :ok ->
         send_resp(conn, :no_content, "")
 

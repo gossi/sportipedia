@@ -1,4 +1,4 @@
-defmodule Sportipedia.Catalog.Equipment.Instruments.InstrumentReadModel do
+defmodule Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel do
   use TypedEctoSchema
   import Ecto.Changeset
 

@@ -1,5 +1,5 @@
-defmodule Sportipedia.Catalog.Equipment.Instruments.Event.InstrumentEdited do
-  alias Sportipedia.Catalog.Equipment.Instruments.Event.InstrumentEdited
+defmodule Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentEdited do
+  alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentEdited
   use TypedStruct
   use ExConstructor
 

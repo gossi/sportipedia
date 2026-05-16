@@ -3,7 +3,7 @@ defmodule SportipediaWeb.Catalog.Equipment.EditInstrumentRequestTest do
 
   import SportipediaWeb.RequestHelpers
 
-  alias Sportipedia.Catalog.Equipment.Instruments.InstrumentReadModel, as: Instrument
+  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel, as: Instrument
 
   @moduletag :integration
 

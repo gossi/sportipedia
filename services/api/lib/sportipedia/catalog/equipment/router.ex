@@ -1,13 +1,13 @@
 defmodule Sportipedia.Catalog.Equipment.Router do
   alias Sportipedia.Support.Commanded.Middleware.Identity
   alias Sportipedia.Support.Commanded.Middleware.Validate
-  alias Sportipedia.Catalog.Equipment.Instruments.InstrumentAggregate
-  alias Sportipedia.Catalog.Equipment.Instruments.Command.CatalogInstrumentHandler
-  alias Sportipedia.Catalog.Equipment.Instruments.Command.CatalogInstrument
-  alias Sportipedia.Catalog.Equipment.Instruments.Command.ArchiveInstrumentHandler
-  alias Sportipedia.Catalog.Equipment.Instruments.Command.ArchiveInstrument
-  alias Sportipedia.Catalog.Equipment.Instruments.Command.EditInstrumentHandler
-  alias Sportipedia.Catalog.Equipment.Instruments.Command.EditInstrument
+  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentAggregate
+  alias Sportipedia.Catalog.Equipment.Instrument.Command.CatalogInstrumentHandler
+  alias Sportipedia.Catalog.Equipment.Instrument.Command.CatalogInstrument
+  alias Sportipedia.Catalog.Equipment.Instrument.Command.ArchiveInstrumentHandler
+  alias Sportipedia.Catalog.Equipment.Instrument.Command.ArchiveInstrument
+  alias Sportipedia.Catalog.Equipment.Instrument.Command.EditInstrumentHandler
+  alias Sportipedia.Catalog.Equipment.Instrument.Command.EditInstrument
 
   use Commanded.Commands.Router
 

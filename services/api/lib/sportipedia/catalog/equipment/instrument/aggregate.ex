@@ -1,8 +1,8 @@
-defmodule Sportipedia.Catalog.Equipment.Instruments.InstrumentAggregate do
-  alias Sportipedia.Catalog.Equipment.Instruments.Event.InstrumentArchived
-  alias Sportipedia.Catalog.Equipment.Instruments.Event.InstrumentEdited
-  alias Sportipedia.Catalog.Equipment.Instruments.Event.InstrumentCataloged
-  alias Sportipedia.Catalog.Equipment.Instruments.InstrumentAggregate
+defmodule Sportipedia.Catalog.Equipment.Instrument.InstrumentAggregate do
+  alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentArchived
+  alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentEdited
+  alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentCataloged
+  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentAggregate
 
   use TypedStruct
 

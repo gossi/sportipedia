@@ -1,4 +1,4 @@
-defmodule Sportipedia.Catalog.Equipment.Instruments.Event.InstrumentCataloged do
+defmodule Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentCataloged do
   use TypedStruct
   use ExConstructor
 

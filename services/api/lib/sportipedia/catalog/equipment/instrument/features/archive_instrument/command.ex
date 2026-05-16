@@ -1,4 +1,4 @@
-defmodule Sportipedia.Catalog.Equipment.Instruments.Command.ArchiveInstrument do
+defmodule Sportipedia.Catalog.Equipment.Instrument.Command.ArchiveInstrument do
   use TypedStruct
   use ExConstructor
 

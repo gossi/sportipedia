@@ -1,9 +1,9 @@
-defmodule Sportipedia.Catalog.Equipment.Instruments.InstrumentProjector do
-  alias Sportipedia.Catalog.Equipment.Instruments
-  alias Sportipedia.Catalog.Equipment.Instruments.Event.InstrumentArchived
-  alias Sportipedia.Catalog.Equipment.Instruments.Event.InstrumentEdited
-  alias Sportipedia.Catalog.Equipment.Instruments.Event.InstrumentCataloged
-  alias Sportipedia.Catalog.Equipment.Instruments.InstrumentReadModel
+defmodule Sportipedia.Catalog.Equipment.Instrument.InstrumentProjector do
+  alias Sportipedia.Catalog.Equipment.Instrument
+  alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentArchived
+  alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentEdited
+  alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentCataloged
+  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel
 
   use Commanded.Projections.Ecto,
     application: Sportipedia.Catalog,
@@ -18,7 +18,7 @@ defmodule Sportipedia.Catalog.Equipment.Instruments.InstrumentProjector do
   end
 
   project %InstrumentEdited{} = event, _metadata, fn multi ->
-    case Instruments.instrument_by_id(event.id) do
+    case Instrument.instrument_by_id(event.id) do
       nil ->
         multi
 
@@ -31,7 +31,7 @@ defmodule Sportipedia.Catalog.Equipment.Instruments.InstrumentProjector do
   end
 
   project %InstrumentArchived{} = event, _metadata, fn multi ->
-    case Instruments.instrument_by_id(event.id) do
+    case Instrument.instrument_by_id(event.id) do
       nil ->
         multi
 

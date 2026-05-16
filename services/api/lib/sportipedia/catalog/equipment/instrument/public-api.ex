@@ -1,12 +1,12 @@
-defmodule Sportipedia.Catalog.Equipment.Instruments do
-  alias Sportipedia.Catalog.Equipment.Instruments.Command.EditInstrument
-  alias Sportipedia.Catalog.Equipment.Instruments.Command.ArchiveInstrument
+defmodule Sportipedia.Catalog.Equipment.Instrument do
+  alias Sportipedia.Catalog.Equipment.Instrument.Command.EditInstrument
+  alias Sportipedia.Catalog.Equipment.Instrument.Command.ArchiveInstrument
   alias Sportipedia.Support.JSONAPI.QueryBuilder
   alias Sportipedia.Catalog
   alias Sportipedia.Catalog.Repo
-  alias Sportipedia.Catalog.Equipment.Instruments.InstrumentReadModel
-  alias Sportipedia.Catalog.Equipment.Instruments.Command.CatalogInstrument
-  alias Sportipedia.Catalog.Equipment.Instruments.Queries.InstrumentBySlug
+  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel
+  alias Sportipedia.Catalog.Equipment.Instrument.Command.CatalogInstrument
+  alias Sportipedia.Catalog.Equipment.Instrument.Queries.InstrumentBySlug
 
   def instrument_by_id(id) when is_binary(id) do
     Repo.get(InstrumentReadModel, id)

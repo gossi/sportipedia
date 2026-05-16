@@ -1,7 +1,7 @@
-defmodule Sportipedia.Catalog.Equipment.Instruments.Validators.UniqueSlug do
+defmodule Sportipedia.Catalog.Equipment.Instrument.Validators.UniqueSlug do
   use Vex.Validator
 
-  alias Sportipedia.Catalog.Equipment.Instruments
+  alias Sportipedia.Catalog.Equipment.Instrument
 
   def validate(value, _context) do
     case slug_exists?(value) do
@@ -11,7 +11,7 @@ defmodule Sportipedia.Catalog.Equipment.Instruments.Validators.UniqueSlug do
   end
 
   defp slug_exists?(slug) do
-    case Instruments.instrument_by_slug(slug) do
+    case Instrument.instrument_by_slug(slug) do
       nil -> false
       _ -> true
     end

@@ -1,4 +1,4 @@
-defmodule Sportipedia.Catalog.Equipment.Instruments.Policy do
+defmodule Sportipedia.Catalog.Equipment.Instrument.Policy do
   @behaviour Bodyguard.Policy
 
   # create instrument

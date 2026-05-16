@@ -1,5 +1,5 @@
-defmodule Sportipedia.Catalog.Equipment.Instruments.Command.CatalogInstrument do
-  alias Sportipedia.Catalog.Equipment.Instruments.Validators.UniqueSlug
+defmodule Sportipedia.Catalog.Equipment.Instrument.Command.CatalogInstrument do
+  alias Sportipedia.Catalog.Equipment.Instrument.Validators.UniqueSlug
 
   use TypedStruct
   use ExConstructor

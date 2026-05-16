@@ -1,14 +1,14 @@
-defmodule Sportipedia.Catalog.Equipment.Instruments.Feature.CatalogInstrumentTest do
+defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.CatalogInstrumentTest do
   use Sportipedia.CatalogTestCase
 
-  alias Sportipedia.Catalog.Equipment.Instruments
-  alias Sportipedia.Catalog.Equipment.Instruments.Policy
-  alias Sportipedia.Catalog.Equipment.Instruments.Command.CatalogInstrument
-  alias Sportipedia.Catalog.Equipment.Instruments.Command.CatalogInstrumentHandler
-  alias Sportipedia.Catalog.Equipment.Instruments.Event.InstrumentCataloged
-  alias Sportipedia.Catalog.Equipment.Instruments.InstrumentAggregate
-  alias Sportipedia.Catalog.Equipment.Instruments.InstrumentReadModel
-  alias Sportipedia.Catalog.Equipment.Instruments.InstrumentProjector
+  alias Sportipedia.Catalog.Equipment.Instrument
+  alias Sportipedia.Catalog.Equipment.Instrument.Policy
+  alias Sportipedia.Catalog.Equipment.Instrument.Command.CatalogInstrument
+  alias Sportipedia.Catalog.Equipment.Instrument.Command.CatalogInstrumentHandler
+  alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentCataloged
+  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentAggregate
+  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel
+  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentProjector
   alias Sportipedia.Catalog.Repo
 
   describe "Policy" do
@@ -277,7 +277,7 @@ defmodule Sportipedia.Catalog.Equipment.Instruments.Feature.CatalogInstrumentTes
         description: "Best vehicle in the world"
       }
 
-      assert {:ok, instrument} = Instruments.catalog_instrument(params)
+      assert {:ok, instrument} = Instrument.catalog_instrument(params)
       assert instrument.title == "Unicycle"
       assert instrument.slug == "unicycle"
       assert instrument.description == "Best vehicle in the world"

@@ -2,7 +2,7 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentViewTest do
   use SportipediaWeb.ConnCase
 
   alias SportipediaWeb.Catalog.Equipment.InstrumentView
-  alias Sportipedia.Catalog.Equipment.Instruments.InstrumentReadModel, as: Instrument
+  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel, as: Instrument
 
   import SportipediaWeb.RequestHelpers
 
