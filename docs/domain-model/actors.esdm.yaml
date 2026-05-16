@@ -1,0 +1,55 @@
+apiVersion: schema.esdm.io/core/v1
+kind: actor
+name: user
+scope:
+  domain: sport
+  boundedContext: sport
+type: human
+---
+apiVersion: schema.esdm.io/core/v1
+kind: actor
+name: admin
+scope:
+  domain: sport
+  boundedContext: sport
+type: human
+---
+apiVersion: schema.esdm.io/core/v1
+kind: actor
+name: athlete
+scope:
+  domain: sport
+  boundedContext: sport
+type: human
+---
+apiVersion: schema.esdm.io/core/v1
+kind: actor
+name: coach
+scope:
+  domain: sport
+  boundedContext: sport
+type: human
+---
+apiVersion: schema.esdm.io/core/v1
+kind: actor
+name: sport-scientist
+scope:
+  domain: sport
+  boundedContext: sport
+type: human
+---
+apiVersion: schema.esdm.io/core/v1
+kind: actor
+name: photographer
+scope:
+  domain: sport
+  boundedContext: sport
+type: human
+---
+apiVersion: schema.esdm.io/core/v1
+kind: actor
+name: system
+scope:
+  domain: sport
+  boundedContext: sport
+type: system

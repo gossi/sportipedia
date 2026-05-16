@@ -1,0 +1,11 @@
+apiVersion: schema.esdm.io/core/v1
+kind: aggregate
+name: group
+description: "A grouping of skills or sports (e.g. by age, level, discipline)"
+scope:
+  domain: sport
+  boundedContext: sport
+identifiedBy:
+  source: generated
+  generator: uuid
+state: {}

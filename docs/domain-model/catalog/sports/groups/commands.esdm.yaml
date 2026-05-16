@@ -1,0 +1,41 @@
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: catalog-group
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: group
+data: {}
+publishes:
+  - group-cataloged
+actors:
+  - sport-scientist
+  - admin
+---
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: edit-group
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: group
+data: {}
+publishes:
+  - group-edited
+actors:
+  - sport-scientist
+  - admin
+---
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: archive-group
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: group
+data: {}
+publishes:
+  - group-archived
+actors:
+  - sport-scientist
+  - admin

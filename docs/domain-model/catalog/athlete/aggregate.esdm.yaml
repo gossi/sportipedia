@@ -1,0 +1,11 @@
+apiVersion: schema.esdm.io/core/v1
+kind: aggregate
+name: position
+description: "A playing position or role within a sport"
+scope:
+  domain: sport
+  boundedContext: sport
+identifiedBy:
+  source: generated
+  generator: uuid
+state: {}

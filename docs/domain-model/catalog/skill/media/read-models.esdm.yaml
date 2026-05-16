@@ -1,0 +1,33 @@
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: picture
+scope:
+  domain: sport
+  boundedContext: sport
+projections:
+  - boundedContext: sport
+    aggregate: skill
+    event: picture-uploaded
+    rule: "Add picture to the skill's media gallery"
+  - boundedContext: sport
+    aggregate: skill
+    event: media-deleted
+    rule: "Remove picture from the skill's media gallery"
+schema: {}
+---
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: video
+scope:
+  domain: sport
+  boundedContext: sport
+projections:
+  - boundedContext: sport
+    aggregate: skill
+    event: video-uploaded
+    rule: "Add video to the skill's media gallery"
+  - boundedContext: sport
+    aggregate: skill
+    event: media-deleted
+    rule: "Remove video from the skill's media gallery"
+schema: {}

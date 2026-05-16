@@ -1,0 +1,23 @@
+apiVersion: schema.esdm.io/core/v1
+kind: aggregate
+name: instrument
+description: "A measurement or assessment instrument used in sport science"
+scope:
+  domain: sport
+  boundedContext: sport
+identifiedBy:
+  source: generated
+  generator: uuid
+state: {}
+---
+apiVersion: schema.esdm.io/core/v1
+kind: aggregate
+name: apparatus
+description: "A training apparatus or piece of equipment"
+scope:
+  domain: sport
+  boundedContext: sport
+identifiedBy:
+  source: generated
+  generator: uuid
+state: {}

@@ -1,0 +1,77 @@
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: construct-phase-model
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: phase-model
+data: {}
+publishes:
+  - phase-model-constructed
+actors:
+  - sport-scientist
+---
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: amend-phase-model
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: phase-model
+data: {}
+publishes:
+  - phase-model-amended
+actors:
+  - sport-scientist
+---
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: construct-function-model
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: function-model
+data: {}
+publishes:
+  - function-model-constructed
+actors:
+  - sport-scientist
+---
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: amend-function-model
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: function-model
+data: {}
+publishes:
+  - function-model-amended
+actors:
+  - sport-scientist
+---
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: construct-constitutive-structure
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: constitutive-structure
+data: {}
+publishes:
+  - constitutive-structure-constructed
+actors:
+  - sport-scientist
+---
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: amend-constitutive-structure
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: constitutive-structure
+data: {}
+publishes:
+  - constitutive-structure-amended
+actors:
+  - sport-scientist

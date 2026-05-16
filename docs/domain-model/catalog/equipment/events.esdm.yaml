@@ -1,0 +1,53 @@
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: instrument-cataloged
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: instrument
+data: {}
+---
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: instrument-edited
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: instrument
+data: {}
+---
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: instrument-archived
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: instrument
+data: {}
+---
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: apparatus-cataloged
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: apparatus
+data: {}
+---
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: apparatus-edited
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: apparatus
+data: {}
+---
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: apparatus-archived
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: apparatus
+data: {}

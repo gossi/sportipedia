@@ -1,0 +1,56 @@
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: catalog-skill
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: skill
+data: {}
+publishes:
+  - skill-cataloged
+actors:
+  - sport-scientist
+  - admin
+---
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: change-position
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: skill
+data: {}
+publishes:
+  - start-position-changed
+  - end-position-changed
+actors:
+  - sport-scientist
+  - coach
+---
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: record-source
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: skill
+data: {}
+publishes:
+  - source-recorded
+actors:
+  - sport-scientist
+  - admin
+---
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: unrecord-source
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: skill
+data: {}
+publishes:
+  - source-unrecorded
+actors:
+  - sport-scientist
+  - admin
