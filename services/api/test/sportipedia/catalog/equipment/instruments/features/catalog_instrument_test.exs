@@ -23,7 +23,7 @@ defmodule Sportipedia.Catalog.Equipment.Instruments.Feature.CatalogInstrumentTes
     end
   end
 
-  describe "Command validation" do
+  describe "Command" do
     @tag :unit
     test "is valid with all required fields" do
       cmd = CatalogInstrument.new(id: UUID.uuid4(), title: "Tennis Racket", slug: "tennis-racket")
@@ -68,7 +68,7 @@ defmodule Sportipedia.Catalog.Equipment.Instruments.Feature.CatalogInstrumentTes
     end
   end
 
-  describe "Handler" do
+  describe "Command Handler" do
     @tag :unit
     test "creates InstrumentCataloged event from CatalogInstrument command" do
       cmd =
