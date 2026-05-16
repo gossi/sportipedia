@@ -9,23 +9,23 @@ We are in the domain of sport, specifically targetting technical training and
 the underlying movement knowledge (part of movement science). The system is
 language wise a bounded context in the domain of sport science.
 
-The [domain model is explained in detail](./docs/domain-model/) using [Event-Sourced Domain Modeling](https://www.esdm.io).
+See [Domain Model](./docs/domain-model/README.md) for details.
 
 ## Directory Strutcure
 
-The directory is organized around deployment units.
+The directory is partially organized around deployment units.
 
-- [`apps/`](apps/) - All frontend apps
-- [`docs/`](docs/) - Documentation about the entire domain and software system
-- [`packages/`](packages/) - Generic subdomain / Internal packages
-- [`services/`](services/) - Microserives (generic and core subdomains)
-- [`support/`](support/) - Supporting subdomain with its software components
+- [`apps/`](./apps/) - All frontend apps
+- [`docs/`](./docs/) - Documentation about the entire domain and software system
+- [`packages/`](./packages/) - Generic subdomain / Internal packages
+- [`services/`](./services/) - Microserives (generic and core subdomains)
+- [`support/`](./support/) - Supporting subdomain with its software components
 
 ## Subdomains
 
 ### Core Subdomains
 
-Each core subdomain has its own architecture, refer to them individually:
+Each core subdomain describes its own architecture, refer to them individually:
 
 - [Catalog](./docs/architecture/catalog.md)
 
@@ -38,8 +38,8 @@ Location: `/support/`
 
 ### Generic Subdomains
 
-General purpose components are usually off-the-shelf products. They appear as two forms within this software
-system:
+General purpose components are usually off-the-shelf products. They appear as
+two forms within this software system:
 
 #### 1. Dedicated Services
 
@@ -50,12 +50,13 @@ own service.
 
 Location: `/services/`
 
-#### 2. Customizations
+#### 2. Technical Components
 
-A copy of the third-party product with customizations needed for this codebase,
-eg. to shortcut development and "self-host" until the customizations are
-implemented upstream. They are considered temporary and subject of removal once
-capabilities are available by the third-party product itself.
+A technical need in other places. Can be a copy of the third-party product with
+customizations needed for this codebase, eg. to shortcut development and
+"self-host" until the customizations are implemented upstream. They are
+considered temporary and subject of removal once capabilities are available by
+the third-party product itself.
 
 Location: `/packages/`
 
