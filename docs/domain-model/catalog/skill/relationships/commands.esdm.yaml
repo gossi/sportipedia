@@ -9,8 +9,7 @@ data: {}
 publishes:
   - parents-changed
 actors:
-  - sport-scientist
-  - admin
+  - user
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -23,8 +22,7 @@ data: {}
 publishes:
   - parts-changed
 actors:
-  - sport-scientist
-  - admin
+  - user
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -37,5 +35,4 @@ data: {}
 publishes:
   - multiplier-edited
 actors:
-  - sport-scientist
-  - admin
+  - user

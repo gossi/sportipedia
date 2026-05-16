@@ -9,8 +9,7 @@ data: {}
 publishes:
   - group-cataloged
 actors:
-  - sport-scientist
-  - admin
+  - user
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -23,8 +22,7 @@ data: {}
 publishes:
   - group-edited
 actors:
-  - sport-scientist
-  - admin
+  - user
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -37,5 +35,4 @@ data: {}
 publishes:
   - group-archived
 actors:
-  - sport-scientist
-  - admin
+  - user

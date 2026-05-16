@@ -9,8 +9,7 @@ data: {}
 publishes:
   - picture-uploaded
 actors:
-  - photographer
-  - coach
+  - user
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -23,8 +22,7 @@ data: {}
 publishes:
   - video-uploaded
 actors:
-  - photographer
-  - coach
+  - user
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -37,5 +35,4 @@ data: {}
 publishes:
   - media-deleted
 actors:
-  - photographer
-  - admin
+  - user

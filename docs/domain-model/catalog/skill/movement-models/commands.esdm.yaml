@@ -9,7 +9,7 @@ data: {}
 publishes:
   - phase-model-constructed
 actors:
-  - sport-scientist
+  - user
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -22,7 +22,7 @@ data: {}
 publishes:
   - phase-model-amended
 actors:
-  - sport-scientist
+  - user
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -35,7 +35,7 @@ data: {}
 publishes:
   - function-model-constructed
 actors:
-  - sport-scientist
+  - user
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -48,7 +48,7 @@ data: {}
 publishes:
   - function-model-amended
 actors:
-  - sport-scientist
+  - user
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -61,7 +61,7 @@ data: {}
 publishes:
   - constitutive-structure-constructed
 actors:
-  - sport-scientist
+  - user
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -74,4 +74,4 @@ data: {}
 publishes:
   - constitutive-structure-amended
 actors:
-  - sport-scientist
+  - user

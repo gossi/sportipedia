@@ -10,7 +10,6 @@ publishes:
   - sport-suggested
 actors:
   - user
-  - coach
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -24,7 +23,6 @@ publishes:
   - sport-approved
 actors:
   - admin
-  - sport-scientist
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -37,8 +35,7 @@ data: {}
 publishes:
   - sport-rejected
 actors:
-  - admin
-  - sport-scientist
+  - user
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -64,7 +61,7 @@ data: {}
 publishes:
   - position-associated
 actors:
-  - sport-scientist
+  - user
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -77,7 +74,7 @@ data: {}
 publishes:
   - position-dissociated
 actors:
-  - sport-scientist
+  - user
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -90,8 +87,7 @@ data: {}
 publishes:
   - group-associated
 actors:
-  - sport-scientist
-  - admin
+  - user
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -104,8 +100,7 @@ data: {}
 publishes:
   - instrument-used
 actors:
-  - sport-scientist
-  - coach
+  - user
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -118,8 +113,7 @@ data: {}
 publishes:
   - instrument-withdrawn
 actors:
-  - sport-scientist
-  - admin
+  - user
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -132,8 +126,7 @@ data: {}
 publishes:
   - apparatus-used
 actors:
-  - sport-scientist
-  - coach
+  - user
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -146,5 +139,4 @@ data: {}
 publishes:
   - apparatus-withdrawn
 actors:
-  - sport-scientist
-  - admin
+  - user

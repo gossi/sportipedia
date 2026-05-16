@@ -9,8 +9,7 @@ data: {}
 publishes:
   - instrument-cataloged
 actors:
-  - sport-scientist
-  - admin
+  - user
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -23,8 +22,7 @@ data: {}
 publishes:
   - instrument-edited
 actors:
-  - sport-scientist
-  - admin
+  - user
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -37,8 +35,7 @@ data: {}
 publishes:
   - instrument-archived
 actors:
-  - sport-scientist
-  - admin
+  - user
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -51,8 +48,7 @@ data: {}
 publishes:
   - apparatus-cataloged
 actors:
-  - sport-scientist
-  - admin
+  - user
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -65,8 +61,7 @@ data: {}
 publishes:
   - apparatus-edited
 actors:
-  - sport-scientist
-  - admin
+  - user
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -79,5 +74,4 @@ data: {}
 publishes:
   - apparatus-archived
 actors:
-  - sport-scientist
-  - admin
+  - user

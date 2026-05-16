@@ -9,8 +9,7 @@ data: {}
 publishes:
   - instructional-progression-constructed
 actors:
-  - coach
-  - sport-scientist
+  - user
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -23,8 +22,7 @@ data: {}
 publishes:
   - instructional-progression-amended
 actors:
-  - coach
-  - sport-scientist
+  - user
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -37,8 +35,7 @@ data: {}
 publishes:
   - tutorial-linked
 actors:
-  - coach
-  - sport-scientist
+  - user
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -51,8 +48,7 @@ data: {}
 publishes:
   - tutorial-unlinked
 actors:
-  - coach
-  - sport-scientist
+  - user
 ---
 apiVersion: schema.esdm.io/core/v1
 kind: command
@@ -65,5 +61,4 @@ data: {}
 publishes:
   - error-cataloged
 actors:
-  - coach
-  - sport-scientist
+  - user
