@@ -3,7 +3,7 @@ defmodule SportipediaWeb.Catalog.Equipment.EditInstrumentRequestTest do
 
   import SportipediaWeb.RequestHelpers
 
-  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel, as: Instrument
+  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel
 
   @moduletag :integration
 
@@ -23,7 +23,7 @@ defmodule SportipediaWeb.Catalog.Equipment.EditInstrumentRequestTest do
       body = json_response(conn, 200)
 
       assert jsonapi_attr(body, "title") == "Updated"
-      assert Repo.get!(Instrument, instrument.id).title == "Updated"
+      assert Repo.get!(InstrumentReadModel, instrument.id).title == "Updated"
     end
 
     test "partially updates leaving other fields intact" do
@@ -43,7 +43,7 @@ defmodule SportipediaWeb.Catalog.Equipment.EditInstrumentRequestTest do
       assert jsonapi_attr(body, "description") == "new desc"
       assert jsonapi_attr(body, "title") == "Original"
 
-      updated = Repo.get!(Instrument, instrument.id)
+      updated = Repo.get!(InstrumentReadModel, instrument.id)
       assert updated.title == "Original"
       assert updated.slug == instrument.slug
     end
@@ -98,7 +98,7 @@ defmodule SportipediaWeb.Catalog.Equipment.EditInstrumentRequestTest do
       description: "desc"
     }
 
-    Instrument.insert_changeset(Map.merge(defaults, attrs))
+    InstrumentReadModel.insert_changeset(Map.merge(defaults, attrs))
     |> Repo.insert!()
   end
 end

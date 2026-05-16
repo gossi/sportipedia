@@ -3,7 +3,7 @@ defmodule SportipediaWeb.Catalog.Equipment.CatalogInstrumentRequestTest do
 
   import SportipediaWeb.RequestHelpers
 
-  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel, as: Instrument
+  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel
 
   @moduletag :integration
 
@@ -38,7 +38,7 @@ defmodule SportipediaWeb.Catalog.Equipment.CatalogInstrumentRequestTest do
                }
              } = body
 
-      assert Repo.get(Instrument, id)
+      assert Repo.get(InstrumentReadModel, id)
     end
 
     test "returns 403 when unauthenticated" do
@@ -80,7 +80,7 @@ defmodule SportipediaWeb.Catalog.Equipment.CatalogInstrumentRequestTest do
     end
 
     test "returns 422 when slug already exists" do
-      Repo.insert!(%Instrument{
+      Repo.insert!(%InstrumentReadModel{
         id: UUID.uuid4(),
         title: "Existing",
         slug: "unicycle"

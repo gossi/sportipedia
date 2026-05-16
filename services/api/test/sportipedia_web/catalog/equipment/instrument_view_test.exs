@@ -2,7 +2,7 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentViewTest do
   use SportipediaWeb.ConnCase
 
   alias SportipediaWeb.Catalog.Equipment.InstrumentView
-  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel, as: Instrument
+  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel
 
   import SportipediaWeb.RequestHelpers
 
@@ -22,7 +22,7 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentViewTest do
     end
 
     test "render show.json produces JSON:API single document" do
-      instrument = %Instrument{
+      instrument = %InstrumentReadModel{
         id: "abc-123",
         title: "Unicycle",
         slug: "unicycle",
@@ -46,7 +46,7 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentViewTest do
     end
 
     test "render index.json produces JSON:API collection" do
-      instrument = %Instrument{
+      instrument = %InstrumentReadModel{
         id: "abc-123",
         title: "Unicycle",
         slug: "unicycle",
@@ -69,7 +69,7 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentViewTest do
     test "returns instrument when found" do
       id = UUID.uuid4()
 
-      Repo.insert!(%Instrument{
+      Repo.insert!(%InstrumentReadModel{
         id: id,
         title: "Unicycle",
         slug: "unicycle"
@@ -108,8 +108,8 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentViewTest do
     end
 
     test "returns all instruments" do
-      Repo.insert!(%Instrument{id: UUID.uuid4(), title: "A", slug: "a"})
-      Repo.insert!(%Instrument{id: UUID.uuid4(), title: "B", slug: "b"})
+      Repo.insert!(%InstrumentReadModel{id: UUID.uuid4(), title: "A", slug: "a"})
+      Repo.insert!(%InstrumentReadModel{id: UUID.uuid4(), title: "B", slug: "b"})
 
       conn =
         build_conn()
@@ -121,8 +121,8 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentViewTest do
     end
 
     test "filters by title" do
-      Repo.insert!(%Instrument{id: UUID.uuid4(), title: "Matching", slug: "matching"})
-      Repo.insert!(%Instrument{id: UUID.uuid4(), title: "Other", slug: "other"})
+      Repo.insert!(%InstrumentReadModel{id: UUID.uuid4(), title: "Matching", slug: "matching"})
+      Repo.insert!(%InstrumentReadModel{id: UUID.uuid4(), title: "Other", slug: "other"})
 
       conn =
         build_conn()

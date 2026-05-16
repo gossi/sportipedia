@@ -3,7 +3,7 @@ defmodule SportipediaWeb.Catalog.Equipment.ArchiveInstrumentRequestTest do
 
   import SportipediaWeb.RequestHelpers
 
-  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel, as: Instrument
+  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel
 
   @moduletag :integration
 
@@ -11,7 +11,7 @@ defmodule SportipediaWeb.Catalog.Equipment.ArchiveInstrumentRequestTest do
     test "archives an instrument when authenticated" do
       id = UUID.uuid4()
 
-      Repo.insert!(%Instrument{
+      Repo.insert!(%InstrumentReadModel{
         id: id,
         title: "Unicycle",
         slug: "unicycle"
@@ -27,7 +27,7 @@ defmodule SportipediaWeb.Catalog.Equipment.ArchiveInstrumentRequestTest do
         )
 
       assert conn.status == 204
-      refute Repo.get(Instrument, id)
+      refute Repo.get(InstrumentReadModel, id)
     end
 
     test "returns 403 when unauthenticated" do
