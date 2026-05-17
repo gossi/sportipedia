@@ -1,0 +1,10 @@
+name: Local
+variables:
+  - name: authUrl
+    value: http://localhost:3000
+  - name: apiUrl
+    value: http://localhost:3100
+  - secret: true
+    name: authToken
+  - secret: true
+    name: apiToken

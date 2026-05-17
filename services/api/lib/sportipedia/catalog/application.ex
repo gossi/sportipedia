@@ -1,10 +1,6 @@
-defmodule Sportipedia.Catalog.Application do
-  # use Commanded,
-  #   router: Sportipedia.Catalog.Router,
-  #   event_store: Sportipedia.Catalog.EventStore
-
+defmodule Sportipedia.Catalog do
   # commanded app + router
   use Commanded.Application, otp_app: :sportipedia
 
-  router(Sportipedia.Catalog.Router)
+  router Sportipedia.Catalog.Equipment.Router
 end

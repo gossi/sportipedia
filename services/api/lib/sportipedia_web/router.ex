@@ -1,8 +1,21 @@
 defmodule SportipediaWeb.Router do
   use SportipediaWeb, :router
 
+  pipeline :browser do
+    plug :accepts, ["html"]
+    plug :fetch_session
+    # plug :fetch_live_flash
+    # plug :put_root_layout, html: {MyAppWeb.Layouts, :root}
+    plug :protect_from_forgery
+    plug :put_secure_browser_headers
+  end
+
   pipeline :api do
     plug :accepts, ["json"]
+    plug OpenApiSpex.Plug.PutApiSpec, module: SportipediaWeb.System.ApiSpec
+    plug JSONAPI.EnsureSpec
+    plug JSONAPI.Deserializer
+    plug JSONAPI.UnderscoreParameters
   end
 
   pipeline :admin do
@@ -14,8 +27,8 @@ defmodule SportipediaWeb.Router do
     plug Sportipedia.Auth.Pipeline.Catalog
   end
 
-  pipeline :services_auth do
-    plug Sportipedia.Auth.Plug.ServicesAuth
+  pipeline :system_auth do
+    plug Sportipedia.Auth.Plug.SystemAuth
   end
 
   defp introspect(conn, _opts) do
@@ -30,9 +43,8 @@ defmodule SportipediaWeb.Router do
     conn
   end
 
-  # TODO: This needs a rename to /services/mailer
   scope "/accounts/mailer", SportipediaWeb.Accounts do
-    pipe_through [:api, :services_auth]
+    pipe_through [:api, :system_auth]
 
     post "/confirm-email", EmailController, :confirm_email
     post "/password-reset", EmailController, :password_reset
@@ -41,11 +53,35 @@ defmodule SportipediaWeb.Router do
   scope "/catalog", SportipediaWeb.Catalog do
     pipe_through [:api, :catalog]
 
-    post "/ping", HeartbeatController, :ping
+    scope "/equipment", Equipment do
+      scope "/instruments" do
+        # commands
+        post "/catalog-instrument", InstrumentController, :catalog_instrument
+        post "/edit-instrument", InstrumentController, :edit_instrument
+        post "/archive-instrument", InstrumentController, :archive_instrument
+
+        # queries
+        get "/", InstrumentController, :list_instruments
+        get "/:id", InstrumentController, :read_instrument
+      end
+    end
   end
 
   scope "/admin", SportipediaWeb do
     pipe_through [:api, :admin]
+  end
+
+  scope "/system" do
+    pipe_through [:api]
+
+    post "/ping", SportipediaWeb.System.HeartbeatController, :ping
+    get "/openapi", OpenApiSpex.Plug.RenderSpec, []
+  end
+
+  scope "/swaggerui" do
+    pipe_through :browser
+
+    get "/", OpenApiSpex.Plug.SwaggerUI, path: "/system/openapi"
   end
 
   # Enable LiveDashboard and Swoosh mailbox preview in development
@@ -64,21 +100,4 @@ defmodule SportipediaWeb.Router do
       forward "/mailbox", Plug.Swoosh.MailboxPreview
     end
   end
-
-  ## Authentication routes
-
-  # scope "/", SportipediaWeb do
-  #   pipe_through [:browser, :redirect_if_user_is_authenticated]
-
-  #   # get "/users/register", UserRegistrationController, :new
-  #   # post "/users/register", UserRegistrationController, :create
-  # end
-
-  # scope "/", SportipediaWeb do
-  #   pipe_through [:browser, :require_authenticated_user]
-
-  #   # get "/users/settings", UserSettingsController, :edit
-  #   # put "/users/settings", UserSettingsController, :update
-  #   # get "/users/settings/confirm-email/:token", UserSettingsController, :confirm_email
-  # end
 end

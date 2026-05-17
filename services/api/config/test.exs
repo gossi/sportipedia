@@ -29,6 +29,21 @@ config :sportipedia, Sportipedia.Mailer, adapter: Swoosh.Adapters.Test
 # Disable swoosh api client as it is only required for production adapters
 config :swoosh, :api_client, false
 
+# Configure the catalog repo (same database, catalog schema)
+config :sportipedia, Sportipedia.Catalog.Repo,
+  username: "postgres",
+  password: "postgres",
+  hostname: "localhost",
+  database: "sportipedia_test#{System.get_env("MIX_TEST_PARTITION")}",
+  pool: Ecto.Adapters.SQL.Sandbox,
+  pool_size: System.schedulers_online() * 2
+
+# Use in-memory event store in test instead of EventSourcingDB
+config :sportipedia, Sportipedia.Catalog,
+  event_store: [
+    adapter: Commanded.EventStore.Adapters.InMemory
+  ]
+
 # Print only warnings and errors during test
 config :logger, level: :warning
 

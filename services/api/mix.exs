@@ -48,26 +48,36 @@ defmodule Sportipedia.MixProject do
       {:telemetry_poller, "~> 1.3"},
       {:gettext, "~> 1.0.2"},
       {:jason, "~> 1.4"},
-      {:typedstruct, "~> 0.5"},
       {:dns_cluster, "~> 0.2.0"},
       {:bandit, "~> 1.10"},
+      {:slugify, "~> 1.3"},
+      {:typed_ecto_schema, "~> 0.4.3"},
+
+      # objects, validation
+      {:typedstruct, "~> 0.5"},
       {:exconstructor, "~> 1.3"},
       {:vex, "~> 0.9"},
+
+      # API
+      {:jsonapi, "~> 1.10.0"},
+      {:open_api_spex, "~> 3.22"},
 
       # Security
       {:cors_plug, "~> 3.0"},
       {:ssl_verify_fun, "~> 1.1"},
-      {:certifi, "~> 2.16"},
+      {:certifi, "~> 2.15"},
 
       # Authentication + Authorization
       {:guardian, "~> 2.4"},
       {:jose, "~> 1.11"},
-      {:bodyguard, "~> 2.4"},
+      {:bodyguard, "~> 2.4.3"},
 
       # Commanded (CQRS/ES)
       {:commanded, "~> 1.4"},
       {:commanded_ecto_projections, "~> 1.4"},
       {:commanded_eventstore_adapter, "~> 1.4"},
+      # {:commanded_eventsourcingdb_adapter, github: "gossi/commanded_eventsourcingdb_adapter"},
+      {:commanded_eventsourcingdb_adapter, path: "../../../commanded_eventsourcingdb_adapter"},
       {:eventstore, "~> 1.4"}
     ]
   end
@@ -86,8 +96,8 @@ defmodule Sportipedia.MixProject do
       setup: ["deps.get", "ecto.setup"],
       "ecto.setup": [
         "ecto.create",
-        "event_store.create",
-        "event_store.init",
+        # "event_store.create",
+        # "event_store.init",
         "ecto.migrate",
         "run priv/repo/seeds.exs"
       ],

@@ -39,6 +39,8 @@ defmodule SportipediaWeb do
     quote do
       use Phoenix.Controller, formats: [:html, :json]
 
+      action_fallback SportipediaWeb.System.FallbackController
+
       use Gettext, backend: SportipediaWeb.Gettext
 
       import Plug.Conn

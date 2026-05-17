@@ -1,0 +1,13 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "elixir-ls": {
+      "type": "local",
+      "command": [
+        "bash",
+        "scripts/start-elixir-ls-mcp.sh"
+      ],
+      "enabled": true
+    }
+  }
+}

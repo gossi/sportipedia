@@ -9,20 +9,17 @@ defmodule Sportipedia.Application do
   def start(_type, _args) do
     children = [
       SportipediaWeb.Telemetry,
-      Sportipedia.Repo,
       {DNSCluster, query: Application.get_env(:sportipedia, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Sportipedia.PubSub},
       {Cachex, name: :jwks_cache},
       # Start a worker by calling: Sportipedia.Worker.start_link(arg)
       # {Sportipedia.Worker, arg},
       # Start to serve requests, typically the last entry
-      SportipediaWeb.Endpoint
-
-      # Run guardian sweeper every 24hrs (once a day)
-      # {Guardian.DB.Sweeper, [interval: 60 * 60 * 1000 * 24]}
+      SportipediaWeb.Endpoint,
 
       # Run commanded applications here
-      # Sportipedia.Accounts.Application
+      Sportipedia.Catalog.Repo,
+      Sportipedia.Catalog.Supervisor
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
