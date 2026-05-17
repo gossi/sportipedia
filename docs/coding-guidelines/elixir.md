@@ -1,46 +1,12 @@
 # Elixir Coding Guidelines
 
-## File Naming
-
-| File Type | Convention | Example |
-|-----------|------------|---------|
-| Elixir | `*.ex`, `*.exs` | `user.ex`, `user_controller.ex` |
-| Tests | `*_test.exs` | `user_test.exs` |
-
 ## Elixir/Phoenix Patterns
 
 - Module structure does not necessarily follow the directory structure
 
 ### Naming Conventions
 
-| Type | Convention | Example |
-|------|------------|---------|
-| Modules | PascalCase | `Sportipedia.Accounts` |
-| Functions | snake_case | `register_user` |
-| Variables | snake_case | `user_data` |
-| Atoms | snake_case | `:user`, `:admin` |
-| Files | snake_case.ex | `user_controller.ex` |
-
-## Error Handling
-
-### Node.js
-
-```typescript
-try {
-  // operation
-} catch (error) {
-  return c.json({ error: 'Message' }, 500);
-}
-```
-
-### Elixir
-
-```elixir
-case Accounts.register_user(params) do
-  {:ok, user} -> json(conn, %{user: user})
-  {:error, :username_taken} -> put_status(conn, 422) |> json(%{error: "taken"})
-end
-```
+Follow the [fficial Elixir naming conventions](https://hexdocs.pm/elixir/naming-conventions.html).
 
 ## Testing
 

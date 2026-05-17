@@ -3,7 +3,7 @@ name: write-domain-feature-test
 description: Write a vertical-slice feature test for a CQRS/ES operation in the Sportipedia catalog domain. Covers Policy, Command validation, Handler, Event, Aggregate, Projector, and End-to-end dispatch in a single test file.
 ---
 
-## Guidelines
+## Must Read: Guidelines
 
 - [Architecture](../../../ARCHITECTURE.md)
 - [Coding Guidelines](../../../docs/coding-guidelines/README.md)
