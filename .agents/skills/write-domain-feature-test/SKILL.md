@@ -1,35 +1,24 @@
 ---
 name: write-domain-feature-test
-description: Write a vertical-slice feature test for a CQRS/ES operation in the Sportipedia catalog domain. Covers Policy, Command validation, Handler, Event, Aggregate, Projector, and End-to-end dispatch in a single test file.
+description: Write a vertical-slice feature test for a CQRS/ES operation in the Sportipedia domain.
 ---
 
-## Must Read: Guidelines
+Here is the recipe to follow (give a TODO during execution):
 
-- [Architecture](../../../ARCHITECTURE.md)
-- [Coding Guidelines](../../../docs/coding-guidelines/README.md)
-
-## Test File Location
-
-```
-test/sportipedia/catalog/<subdomain>/<entity>/features/<feature_name>_test.exs
-```
-
-## Test Module Pattern
-
-```elixir
-defmodule Sportipedia.Catalog.<Composite>.<DomainObject>.Feature.<FeatureName>Test do
-  use Sportipedia.CatalogTestCase
-
-  alias Sportipedia.Catalog.<Composite>.<DomainObject>
-  alias Sportipedia.Catalog.<Composite>.<DomainObject>.Policy
-  alias Sportipedia.Catalog.<Composite>.<DomainObject>.Command.<FeatureName>
-  alias Sportipedia.Catalog.<Composite>.<DomainObject>.Command.<FeatureName>Handler
-  alias Sportipedia.Catalog.<Composite>.<DomainObject>.Event.<EventName>
-  alias Sportipedia.Catalog.<Composite>.<DomainObject>.<AggregateName>
-  alias Sportipedia.Catalog.<Composite>.<DomainObject>.<ReadModelName>
-  alias Sportipedia.Catalog.<Composite>.<DomainObject>.<ProjectorName>
-  alias Sportopedia.Catalog.Repo
-```
+1. Before writing any code or tests
+  - Make yourself familiar with the architecture: [Architecture](../../../ARCHITECTURE.md)
+  - Understand the coding guidelins: [Coding Guidelines](../../../docs/coding-guidelines/README.md) (follow into relevant subsections)
+2. Understand the code you are about to write tests for
+3. Explain the Domain we are in:
+  - What the feature is doing
+  - What are the invariants
+  - What's the domain language
+3. Accumulate a list of what functionality you want to cover in the test (see section below: [Test Content](#test-contents))
+4. Make a plan for how you want to write the test (respect [Test Guidelines](#test-contents))
+5. Summarize the task you are about to do:
+  - A technical summary for the tests to write, especially mention guidelines and conventions to respect and other constraints that apply
+  - The test plan: Nested list of the describe + test block names - use the exact test names from the code to write
+6. Write the tests
 
 ## Test Contents
 
@@ -129,17 +118,54 @@ assert [record] = Repo.all(ReadModel)
 assert {:error, _} = <ProjectorName>.handle(event, metadata)
 ```
 
-### End-to-end
+### Public API
 
-Tests the full dispatch through `Sportipedia.Catalog` — needs event store (InMemory) and DB and all relevant public API call.
+Tests the public API — needs event store (InMemory) and DB and all relevant public API call.
 
-| Test               | Pattern                                                                                                                            |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------- |
-| Dispatch success   | `assert :ok = Sportipedia.Catalog.dispatch(cmd, consistency: :strong)` then `assert %ReadModel{...} = Repo.get(ReadModel, cmd.id)` |
-| Validation failure | `assert {:error, {:validation_failure, %{field: [message]}}} = Sportipedia.Catalog.dispatch(cmd)`                                  |
-| Public API         | Call `<DomainObject>.<action>(params)` and assert `{:ok, result}`                                                                  |
+- test success
+- test validation (response is: `{:error, {:validation_failure, %{field: [message]}}}`)
+- test failures
 
-## Implementation Notes
+## Test Guidelines
+
+Location: `test/sportipedia/catalog/<subdomain>/<entity>/features/<feature_name>_test.exs`
+
+### Test Module Pattern
+
+Here is an example, take it as a template:
+
+```elixir
+defmodule Sportipedia.Catalog.<Composite>.<DomainObject>.Feature.<FeatureName>Test do
+  use Sportipedia.CatalogTestCase
+
+  alias Sportipedia.Catalog.<Composite>.<DomainObject>
+  alias Sportipedia.Catalog.<Composite>.<DomainObject>.Policy
+  alias Sportipedia.Catalog.<Composite>.<DomainObject>.Command.<FeatureName>
+  alias Sportipedia.Catalog.<Composite>.<DomainObject>.Command.<FeatureName>Handler
+  alias Sportipedia.Catalog.<Composite>.<DomainObject>.Event.<EventName>
+  alias Sportipedia.Catalog.<Composite>.<DomainObject>.<AggregateName>
+  alias Sportipedia.Catalog.<Composite>.<DomainObject>.<ReadModelName>
+  alias Sportipedia.Catalog.<Composite>.<DomainObject>.<ProjectorName>
+  alias Sportopedia.Catalog.Repo
+```
+
+### Covering Functionality
+
+Apply both:
+
+- Positive testing: verifies that the system works as expected with valid inputs.
+- Negative testing: checks how the system handles invalid, unexpected, or edge-case inputs.
+
+### Writing Tests
+
+- Follow the tagging conventions from [Elixir Coding Guidelines](../../../docs/coding-guidelines/elixir.md)
+- Follow the naming conventions from [Naming Conventions](../../../docs/coding-guidelines/naming-conventions.md)
+  - When comparing to other tests, rank the convention guidelines higher than existing source code
+
+
+### Implementation Notes
+
+Here is how the code is implemented to faster come to a conclusion how to write a test for
 
 - Commands use `ExConstructor` for construction: `<Command>.new(attrs)`
 - Errors from `Sportipedia.Catalog.dispatch` go through the `Validate` middleware which merges Vex errors into `%{field: [message]}`
