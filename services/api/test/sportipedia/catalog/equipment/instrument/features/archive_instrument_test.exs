@@ -32,6 +32,12 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.ArchiveInstrumentTest
       assert Vex.valid?(cmd)
     end
 
+    test "raises when required struct fields are missing" do
+      assert_raise ArgumentError, ~r"keys must also be given", fn ->
+        struct!(ArchiveInstrument, %{})
+      end
+    end
+
     test "is invalid without id" do
       cmd = ArchiveInstrument.new(id: nil)
 
@@ -162,7 +168,7 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.ArchiveInstrumentTest
     end
   end
 
-  describe "End-to-end" do
+  describe "Public API" do
     @describetag :integration
 
     test "dispatches ArchiveInstrument through the router" do

@@ -12,12 +12,12 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.CatalogInstrumentTest
   alias Sportipedia.Catalog.Repo
 
   describe "Policy" do
-    @tag :unit
+    @describetag :unit
+
     test "allows authenticated user to catalog an instrument" do
       assert Policy.authorize(:catalog_instrument, %{id: "user-123"}, %{}) == :ok
     end
 
-    @tag :unit
     test "rejects unauthenticated user" do
       assert Policy.authorize(:catalog_instrument, nil, %{}) == :error
     end
@@ -29,6 +29,13 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.CatalogInstrumentTest
       cmd = CatalogInstrument.new(id: UUID.uuid4(), title: "Tennis Racket", slug: "tennis-racket")
 
       assert Vex.valid?(cmd)
+    end
+
+    @tag :unit
+    test "raises when required struct fields are missing" do
+      assert_raise ArgumentError, ~r"keys must also be given", fn ->
+        struct!(CatalogInstrument, %{})
+      end
     end
 
     @tag :unit
@@ -69,7 +76,8 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.CatalogInstrumentTest
   end
 
   describe "Command Handler" do
-    @tag :unit
+    @describetag :unit
+
     test "creates InstrumentCataloged event from CatalogInstrument command" do
       cmd =
         CatalogInstrument.new(
@@ -89,7 +97,6 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.CatalogInstrumentTest
              } = CatalogInstrumentHandler.handle(aggregate, cmd)
     end
 
-    @tag :unit
     test "copies all fields from command to event" do
       cmd =
         CatalogInstrument.new(
@@ -109,15 +116,14 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.CatalogInstrumentTest
   end
 
   describe "Event" do
-    @tag :unit
-    test "struct has all enforced fields" do
-      event = %InstrumentCataloged{id: "e-1", title: "Hockey Stick", slug: "hockey-stick"}
+    @describetag :unit
 
-      assert event.title == "Hockey Stick"
-      assert event.slug == "hockey-stick"
+    test "struct has enforced fields" do
+      assert_raise ArgumentError, ~r"keys must also be given", fn ->
+        struct!(InstrumentCataloged, %{})
+      end
     end
 
-    @tag :unit
     test "can be encoded to JSON" do
       event = %InstrumentCataloged{
         id: "e-2",
@@ -135,8 +141,9 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.CatalogInstrumentTest
   end
 
   describe "Aggregate" do
-    @tag :unit
-    test "creates aggregate state from InstrumentCataloged event" do
+    @describetag :unit
+
+    test "applies InstrumentCataloged event to aggregate state" do
       event = %InstrumentCataloged{
         id: "agg-1",
         title: "Unicycle",
@@ -151,8 +158,7 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.CatalogInstrumentTest
       assert result.description == "Best vehicle in the world"
     end
 
-    @tag :unit
-    test "id is not propagated from event to aggregate state" do
+    test "id is propagated from event to aggregate state" do
       event = %InstrumentCataloged{id: "agg-id", title: "Beam", slug: "beam"}
 
       result = InstrumentAggregate.apply(%InstrumentAggregate{}, event)
@@ -162,7 +168,8 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.CatalogInstrumentTest
   end
 
   describe "Projector" do
-    @tag :integration
+    @describetag :integration
+
     test "projects InstrumentCataloged event into the read model" do
       event = %InstrumentCataloged{
         id: UUID.uuid4(),
@@ -192,7 +199,6 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.CatalogInstrumentTest
       assert instrument.description == "Best vehicle in the world"
     end
 
-    @tag :integration
     test "is idempotent for the same event" do
       event = %InstrumentCataloged{
         id: UUID.uuid4(),
@@ -220,7 +226,6 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.CatalogInstrumentTest
       assert instrument.id == event.id
     end
 
-    @tag :integration
     test "rejects duplicate slug" do
       slug = "unicycle"
 
@@ -249,8 +254,9 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.CatalogInstrumentTest
     end
   end
 
-  describe "End-to-end" do
-    @tag :integration
+  describe "Public API" do
+    @describetag :integration
+
     test "dispatches CatalogInstrument through the router" do
       id = UUID.uuid4()
       cmd = CatalogInstrument.new(id: id, title: "Unicycle", slug: "unicycle")
@@ -261,7 +267,6 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.CatalogInstrumentTest
                Repo.get(InstrumentReadModel, id)
     end
 
-    @tag :integration
     test "validation failure is rejected before reaching the aggregate" do
       cmd = CatalogInstrument.new(id: UUID.uuid4(), slug: "unicycle")
 
@@ -269,7 +274,6 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.CatalogInstrumentTest
                Sportipedia.Catalog.dispatch(cmd)
     end
 
-    @tag :integration
     test "catalog_instrument/1 creates an instrument through the public API" do
       params = %{
         title: "Unicycle",
