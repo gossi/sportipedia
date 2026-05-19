@@ -1,0 +1,20 @@
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: apparatus
+scope:
+  domain: sport
+  boundedContext: sport
+projections:
+  - boundedContext: sport
+    aggregate: apparatus
+    event: apparatus-cataloged
+    rule: "Project the apparatus when it is cataloged"
+  - boundedContext: sport
+    aggregate: apparatus
+    event: apparatus-edited
+    rule: "Update apparatus details"
+  - boundedContext: sport
+    aggregate: apparatus
+    event: apparatus-archived
+    rule: "Mark apparatus as archived"
+schema: {}

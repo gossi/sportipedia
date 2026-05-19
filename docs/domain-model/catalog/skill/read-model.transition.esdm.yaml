@@ -1,0 +1,20 @@
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: transition
+scope:
+  domain: sport
+  boundedContext: sport
+projections:
+  - boundedContext: sport
+    aggregate: skill
+    event: skill-cataloged
+    rule: "Create transition entry for the new skill"
+  - boundedContext: sport
+    aggregate: skill
+    event: start-position-changed
+    rule: "Update transition with the new start position"
+  - boundedContext: sport
+    aggregate: skill
+    event: end-position-changed
+    rule: "Update transition with the new end position"
+schema: {}

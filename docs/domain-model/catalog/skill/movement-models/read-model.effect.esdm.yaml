@@ -1,0 +1,16 @@
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: effect
+scope:
+  domain: sport
+  boundedContext: sport
+projections:
+  - boundedContext: sport
+    aggregate: constitutive-structure
+    event: constitutive-structure-constructed
+    rule: "Project effects from constitutive structure"
+  - boundedContext: sport
+    aggregate: constitutive-structure
+    event: constitutive-structure-amended
+    rule: "Update effects from constitutive structure amendment"
+schema: {}

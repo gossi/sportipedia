@@ -1,0 +1,16 @@
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: characteristic
+scope:
+  domain: sport
+  boundedContext: sport
+projections:
+  - boundedContext: sport
+    aggregate: constitutive-structure
+    event: constitutive-structure-constructed
+    rule: "Project characteristics of actions"
+  - boundedContext: sport
+    aggregate: constitutive-structure
+    event: constitutive-structure-amended
+    rule: "Update characteristics from constitutive structure amendment"
+schema: {}

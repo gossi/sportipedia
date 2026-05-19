@@ -1,0 +1,12 @@
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: edit-position
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: position
+data: {}
+publishes:
+  - position-edited
+actors:
+  - user

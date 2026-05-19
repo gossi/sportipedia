@@ -1,0 +1,12 @@
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: construct-phase-model
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: phase-model
+data: {}
+publishes:
+  - phase-model-constructed
+actors:
+  - user

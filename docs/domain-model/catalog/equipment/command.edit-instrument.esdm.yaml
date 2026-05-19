@@ -1,0 +1,12 @@
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: edit-instrument
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: instrument
+data: {}
+publishes:
+  - instrument-edited
+actors:
+  - user

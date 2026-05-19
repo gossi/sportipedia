@@ -1,0 +1,14 @@
+apiVersion: schema.esdm.io/core/v1
+kind: aggregate
+name: apparatus
+description: "Immovable sport equipment. An athlete moves or interacts with an apparatus, but will never move it"
+scope:
+  domain: sport
+  boundedContext: sport
+identifiedBy:
+  source: generated
+  generator: uuid
+invariants:
+  - name: unique-slug
+    rule: The slug for the apparatus must be unique within the domain
+state: {}

@@ -1,0 +1,12 @@
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: catalog-position
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: position
+data: {}
+publishes:
+  - position-cataloged
+actors:
+  - user

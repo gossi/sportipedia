@@ -1,0 +1,28 @@
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: skill
+scope:
+  domain: sport
+  boundedContext: sport
+projections:
+  - boundedContext: sport
+    aggregate: skill
+    event: skill-cataloged
+    rule: "Project the skill when it is cataloged"
+  - boundedContext: sport
+    aggregate: skill
+    event: source-recorded
+    rule: "Add source reference to the skill"
+  - boundedContext: sport
+    aggregate: skill
+    event: source-unrecorded
+    rule: "Remove source reference from the skill"
+  - boundedContext: sport
+    aggregate: skill
+    event: start-position-changed
+    rule: "Update the start position of the skill"
+  - boundedContext: sport
+    aggregate: skill
+    event: end-position-changed
+    rule: "Update the end position of the skill"
+schema: {}

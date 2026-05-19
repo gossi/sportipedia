@@ -1,0 +1,16 @@
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: phase
+scope:
+  domain: sport
+  boundedContext: sport
+projections:
+  - boundedContext: sport
+    aggregate: phase-model
+    event: phase-model-constructed
+    rule: "Project phase from phase model construction"
+  - boundedContext: sport
+    aggregate: phase-model
+    event: phase-model-amended
+    rule: "Update phase from phase model amendment"
+schema: {}

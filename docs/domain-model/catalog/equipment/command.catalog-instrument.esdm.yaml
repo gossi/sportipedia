@@ -1,0 +1,12 @@
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: catalog-instrument
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: instrument
+data: {}
+publishes:
+  - instrument-cataloged
+actors:
+  - user

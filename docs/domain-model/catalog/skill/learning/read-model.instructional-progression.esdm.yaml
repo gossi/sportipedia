@@ -1,0 +1,16 @@
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: instructional-progression
+scope:
+  domain: sport
+  boundedContext: sport
+projections:
+  - boundedContext: sport
+    aggregate: skill
+    event: instructional-progression-constructed
+    rule: "Project the instructional progression structure"
+  - boundedContext: sport
+    aggregate: skill
+    event: instructional-progression-amended
+    rule: "Update instructional progression"
+schema: {}

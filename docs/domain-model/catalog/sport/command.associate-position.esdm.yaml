@@ -1,0 +1,12 @@
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: associate-position
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: sport
+data: {}
+publishes:
+  - position-associated
+actors:
+  - user

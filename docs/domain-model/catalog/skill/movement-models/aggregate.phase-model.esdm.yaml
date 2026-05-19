@@ -1,0 +1,14 @@
+apiVersion: schema.esdm.io/core/v1
+kind: aggregate
+name: phase-model
+description: "The phase model by Meinel & Schnabel"
+scope:
+  domain: sport
+  boundedContext: sport
+identifiedBy:
+  source: generated
+  generator: uuid
+state: {}
+invariants:
+  - name: phases-sequential
+    rule: "Phases must be ordered sequentially without gaps"

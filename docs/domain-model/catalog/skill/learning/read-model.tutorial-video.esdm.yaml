@@ -1,0 +1,16 @@
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: tutorial-video
+scope:
+  domain: sport
+  boundedContext: sport
+projections:
+  - boundedContext: sport
+    aggregate: skill
+    event: tutorial-linked
+    rule: "Add tutorial video to the skill's learning resources"
+  - boundedContext: sport
+    aggregate: skill
+    event: tutorial-unlinked
+    rule: "Remove tutorial video from the skill's learning resources"
+schema: {}

@@ -1,0 +1,12 @@
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: archive-apparatus
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: apparatus
+data: {}
+publishes:
+  - apparatus-archived
+actors:
+  - user
