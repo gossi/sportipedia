@@ -13,3 +13,11 @@ scope:
   domain: sport
   boundedContext: sport
 type: human
+---
+apiVersion: schema.esdm.io/core/v1
+kind: actor
+name: guest
+scope:
+  domain: sport
+  boundedContext: sport
+type: human

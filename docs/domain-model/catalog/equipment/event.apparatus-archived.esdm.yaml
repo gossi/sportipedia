@@ -5,4 +5,12 @@ scope:
   domain: sport
   boundedContext: sport
   aggregate: apparatus
-data: {}
+data:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier of the apparatus"
+  required:
+    - id

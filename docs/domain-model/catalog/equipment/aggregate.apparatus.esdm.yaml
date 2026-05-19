@@ -11,4 +11,25 @@ identifiedBy:
 invariants:
   - name: unique-slug
     rule: The slug for the apparatus must be unique within the domain
-state: {}
+  - name: no-archive-when-in-use
+    rule: An apparatus can only be archived when no sport references it via use-apparatus
+state:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier"
+    title:
+      type: string
+      description: "Name of the apparatus"
+    slug:
+      type: string
+      description: "URL-friendly unique identifier"
+    description:
+      type: string
+      description: "Optional description"
+  required:
+    - id
+    - title
+    - slug
