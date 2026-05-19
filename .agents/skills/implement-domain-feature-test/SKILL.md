@@ -1,5 +1,5 @@
 ---
-name: write-domain-feature-test
+name: implement-domain-feature-test
 description: Write a vertical-slice feature test for a CQRS/ES operation in the Sportipedia domain.
 ---
 

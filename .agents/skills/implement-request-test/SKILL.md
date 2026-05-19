@@ -1,5 +1,5 @@
 ---
-name: write-request-test
+name: implement-request-test
 description: Write a vertical-slice request test for a controller action in the Sportipedia catalog web layer. Covers the controller endpoint, view rendering, and OpenAPI schemas for one feature. Use when the user asks you to write tests for an HTTP endpoint.
 ---
 
