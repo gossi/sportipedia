@@ -1,3 +1,9 @@
+# Copyright (c) 2026 the native web GmbH. All rights reserved.
+#
+# Free to use and redistribute as-is. Modification is not permitted.
+# Full terms: https://www.esdm.io/introduction/license/
+# This notice must not be removed.
+
 # Core schema identity.
 #
 # `$id` is a resolvable URL; `apiVersion` is the same URL without the
