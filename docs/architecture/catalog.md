@@ -49,10 +49,14 @@ Directory Structure:
 
 - `/services/api/lib/sportipedia/catalog/<composite>`
   - `/<domain-object>/`: see below
+  - `/<domain-object>/public_api.ex`: Port
 - `/services/api/lib/sportipedia_web/catalog/<composite>`
   - `/<domain-object>_controller.ex`: Controller for the given domain object
   - `/views/`: Views for the API responses
-  - `/schema/`: Schema describing the API response (for OpenAPI/JSON:API/Swagger docs)
+  - `/schema/`: Schema describing the API response (for OpenAPI/JSON:API/Swagger
+    docs)
+
+See: [Backend Architecture](./backend.md)
 
 ### Frontend
 
@@ -110,19 +114,37 @@ organized in the same directory.
 
 #### Clean Architecture
 
-- Location: `/services/api/lib/sportipedia/catalog/<composite>/<domain-object>`
 - Citizens:
-  - Public API
+  - Public API (Port)
   - Aggregates
   - Entities
   - Value Objects
   - (Validations)
   - (Queries)
   - (Generic) Read Models
+  - Policies (Authorization)
+
+Directory Structure:
+
+- `/services/api/lib/sportipedia/catalog/<composite>/<domain-object>/operation/<operation>`
+  - `/public_api.ex`: Public API
+  - `/aggregate.ex`: Aggregate
+  - `/policy.ex`: Authorization
+  - `/read_model.ex`: Shared Read Model (projection of the aggregate)
+  - `/entities/<entity-name>.ex`: Entity
+  - `/value-objects/<value-object-name>.ex`: Value Object
+  - `/validators/<validation-name>_validation.ex`: Shared Validators in the
+    Domain Object
+  - `/queries/<query-name>.ex`: (Value Objects)
+
+Special Naming Conventions:
+
+- Aggregate: `Sportipedia.<subdomain>.<composite>.<domain-object>Aggregate`
+- ReadModel: `Sportipedia.<subdomain>.<composite>.<domain-object>ReadModel`
+- Public API: `Sportipedia.<subdomain>.<composite>.<domain-object>`
 
 #### Vertical Slice Architecture
 
-- Location: `/services/api/lib/sportipedia/catalog/<composite>/<domain-object>/features/<feature>`
 - Citizens:
   - Events
   - Commands
@@ -133,6 +155,24 @@ organized in the same directory.
   - Projections (though they are in a central projector for technical reasons)
   - (Validations)
   - (Queries)
+
+Directory Structure:
+
+- `/services/api/lib/sportipedia/catalog/<composite>/<domain-object>/operation/<operation>`
+  - `/event.ex`: Event
+  - `/command.ex`: Command
+  - `/handler.ex`: Command Handler
+  - `/read_model.ex`: Custom Read Model
+  - `/<dto>.ex`: DTO
+  - `/<value-object>.ex`: Value Objects
+  - `/<validation-name>_validator.ex`: Validators
+  - `/<query-name>_query.ex`: Queries
+
+Special Naming Conventions:
+
+- Event: `Sportipedia.<subdomain>.<composite>.<domain-object>.Event.<event-name>`
+- Command: `Sportipedia.<subdomain>.<composite>.<domain-object>.Command.<command-name>`
+- CommandHandler: `Sportipedia.<subdomain>.<composite>.<domain-object>.Command.<command-name>Handler`
 
 ### Frontend
 
@@ -162,3 +202,27 @@ the other. Start simple, grow as volume/complexity requires it.
 ## 4. Code
 
 Code follows the [coding conventions](../coding-guidelines/README.md) of the respective framework
+
+## Appendix
+
+### Sample Constituent/Domain Object in the Backend
+
+Sample structure for a constituent:
+
+```txt
+/services/api/lib/sportipedia/catalog/<composite>/<domain-object>/
+|- operation/
+|  `- <operation>/
+|     |- command.ex
+|     |- event.ex
+|     `- handler.ex
+|- queries/
+|  `- some_query.ex
+|- validators/
+|  `- some_validator.ex
+|- aggregate.ex
+|- policy.ex
+|- projector.ex
+|- public_api.ex
+`- read_model.ex
+```

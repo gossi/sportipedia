@@ -16,5 +16,5 @@ projections:
   - boundedContext: sport
     aggregate: instrument
     event: instrument-archived
-    rule: "Mark instrument as archived"
+    rule: "Delete the instrument"
 schema: {}

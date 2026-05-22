@@ -16,7 +16,7 @@ projections:
   - boundedContext: sport
     aggregate: apparatus
     event: apparatus-archived
-    rule: "Mark apparatus as archived"
+    rule: "Delete the apparatus"
 schema:
   type: object
   properties:

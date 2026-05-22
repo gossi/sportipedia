@@ -123,3 +123,8 @@ System_Boundary(authSystem, "Authentication") {
   Rel(authDb, db, "runs on")
 }
 ```
+
+## Architecture Decisions
+
+Architecture decisions are documented in [architecture decisions
+records](./docs/adrs/).
