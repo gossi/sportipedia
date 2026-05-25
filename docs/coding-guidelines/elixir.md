@@ -6,7 +6,7 @@
 
 ### Naming Conventions
 
-Follow the [fficial Elixir naming conventions](https://hexdocs.pm/elixir/naming-conventions.html).
+Follow the [official Elixir naming conventions](https://hexdocs.pm/elixir/naming-conventions.html).
 
 ## Testing
 
@@ -16,9 +16,9 @@ Test tags determine which tests run and how they're categorised. Use the highest
 
 #### Available Tags
 
-| Tag | Meaning |
-|-----|---------|
-| `:unit` | Pure logic, no infrastructure dependency |
+| Tag            | Meaning                                                |
+| -------------- | ------------------------------------------------------ |
+| `:unit`        | Pure logic, no infrastructure dependency               |
 | `:integration` | Needs `Catalog.Repo` DB, event store, or HTTP endpoint |
 
 #### Tag Placement (highest to lowest)

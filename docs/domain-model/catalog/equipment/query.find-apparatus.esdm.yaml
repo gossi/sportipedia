@@ -1,0 +1,49 @@
+apiVersion: schema.esdm.io/core/v1
+kind: query
+name: find-apparatus
+description: "Retrieve a single apparatus by its id or slug"
+scope:
+  domain: sport
+  boundedContext: sport
+readModel: apparatus
+result:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier"
+    title:
+      type: string
+      description: "Name of the apparatus"
+    slug:
+      type: string
+      description: "URL-friendly unique identifier"
+    description:
+      type: string
+      description: "Optional description"
+  required:
+    - id
+    - title
+    - slug
+parameters:
+  oneOf:
+    - type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: "Unique identifier of the apparatus"
+      required:
+        - id
+    - type: object
+      properties:
+        slug:
+          type: string
+          description: "URL-friendly slug of the apparatus"
+      required:
+        - slug
+actors:
+  - guest
+  - user
+  - admin

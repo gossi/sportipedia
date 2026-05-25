@@ -107,7 +107,7 @@ x-esdm-project-layout:
       Tools that materialize ESDM models default to this layout.
       The convention is not enforced by the linter; modelers may
       deviate when a project's shape genuinely calls for it.
-description: "Core schema for event-sourced domain models. ESDM describes domains at the logical level: `domain`, `subdomain`, `bounded-context`, `context-mapping`, `aggregate`, `dynamic-consistency-boundary`, `command`, `event`, `event-handler`, `policy`, `process-manager`, `read-model`, `query`, `value-object`, `domain-service`, `actor`, and `external-system`. Two consistency units coexist as first-class kinds: `aggregate` is the classic, container-based unit (one identifier, one persistent state, lifecycle-bound); `dynamic-consistency-boundary` is the selector-based unit, spanned ad hoc per decision over a set of consulted events, suited for multi-key parameterisation and overlapping boundaries. Models may mix both freely – a command binds to exactly one of them via its `scope`, and an event is either aggregate-owned or free-standing within its bounded context. Rules that don't fit a fixed grammar – aggregate, dynamic-consistency-boundary, value-object and process-manager invariants, command emission logic, event-handler activation, policy and process-manager firing conditions, process-manager reaction logic, query result shaping, domain-service computations, projection effects, DCB consult criteria, and event-handler side effects – are captured as prose rules, carried either by the shared `namedRule` definition (`invariants`, `constraints`, `rules`) or by a `rule` or `criteria` field inside purpose-specific structures (`projections`, `sideEffects`, `reactions`, `consults`). State-level termination predicates of process managers (`endsWhen`) are predicates rather than rules and use the parallel `namedCondition` definition with a `condition` field. Arrays throughout the schema use their natural identifier (a `name`, a `term`, or a reference triple) as implicit key; uniqueness within an array is a modeling rule the schema does not enforce. Cross-field references – `aggregate.identifiedBy.field` pointing into `state`, `dynamic-consistency-boundary.identifiedBy[].field` pointing into the triggering command's `data`, `process-manager.correlatedBy.field` pointing into event payloads, `process-manager.timers[].at` pointing into `state` – are likewise modeling rules the schema does not enforce. Concrete API surfaces (routes, protocols, response shapes) are out of scope here. Discovery artifacts (domain-storytelling stories, event-storming output, example mappings, ...) are out of scope for the core and live in dedicated extension schemas; see the header comment for the extension model."
+description: "Core schema for event-sourced domain models. ESDM describes domains at the logical level: `domain`, `subdomain`, `bounded-context`, `context-mapping`, `aggregate`, `dynamic-consistency-boundary`, `command`, `event`, `event-handler`, `policy`, `process-manager`, `read-model`, `query`, `entity`, `value-object`, `domain-service`, `actor`, and `external-system`. Two consistency units coexist as first-class kinds: `aggregate` is the classic, container-based unit (one identifier, one persistent state, lifecycle-bound); `dynamic-consistency-boundary` is the selector-based unit, spanned ad hoc per decision over a set of consulted events, suited for multi-key parameterisation and overlapping boundaries. Models may mix both freely – a command binds to exactly one of them via its `scope`, and an event is either aggregate-owned or free-standing within its bounded context. Rules that don't fit a fixed grammar – aggregate, dynamic-consistency-boundary, value-object and process-manager invariants, command emission logic, event-handler activation, policy and process-manager firing conditions, process-manager reaction logic, query result shaping, domain-service computations, projection effects, DCB consult criteria, and event-handler side effects – are captured as prose rules, carried either by the shared `namedRule` definition (`invariants`, `constraints`, `rules`) or by a `rule` or `criteria` field inside purpose-specific structures (`projections`, `sideEffects`, `reactions`, `consults`). State-level termination predicates of process managers (`endsWhen`) are predicates rather than rules and use the parallel `namedCondition` definition with a `condition` field. Arrays throughout the schema use their natural identifier (a `name`, a `term`, or a reference triple) as implicit key; uniqueness within an array is a modeling rule the schema does not enforce. Cross-field references – `aggregate.identifiedBy.field` pointing into `state`, `dynamic-consistency-boundary.identifiedBy[].field` pointing into the triggering command's `data`, `process-manager.correlatedBy.field` pointing into event payloads, `process-manager.timers[].at` pointing into `state` – are likewise modeling rules the schema does not enforce. Concrete API surfaces (routes, protocols, response shapes) are out of scope here. Discovery artifacts (domain-storytelling stories, event-storming output, example mappings, ...) are out of scope for the core and live in dedicated extension schemas; see the header comment for the extension model."
 
 $defs:
   name:
@@ -401,6 +401,7 @@ properties:
       - process-manager
       - read-model
       - query
+      - entity
       - value-object
       - domain-service
       - actor
@@ -1439,6 +1440,85 @@ allOf:
           items:
             $ref: "#/$defs/namedRule"
       required: [scope, readModel, result]
+
+  - if:
+      properties:
+        kind:
+          const: entity
+      required: [kind]
+    then:
+      # An identity-bearing modeling element that has no
+      # consistency container of its own. An entity names
+      # the *what* behind an identifier – `student`,
+      # `course`, `book`, `seat` – in a model where the
+      # consistency boundary is spanned per decision (a
+      # `dynamic-consistency-boundary`) rather than carried
+      # by a fixed container (an `aggregate`). It mirrors
+      # the value-object shape (`scope`, `schema`,
+      # `invariants`) and adds an `identifiedBy` strategy
+      # so the identity itself is part of the model.
+      # Unlike an aggregate, an entity has no `state` and
+      # is itself not a consistency unit – it is referenced
+      # from elsewhere (typically a DCB's `identifiedBy`
+      # field or a command's payload) rather than receiving
+      # commands directly.
+      properties:
+        scope:
+          $ref: "#/$defs/scopeBoundedContext"
+        schema:
+          # JSON Schema shape of a single instance of the
+          # entity. Mirrors `value-object.schema` – an
+          # entity has identity but no per-instance
+          # container life of its own, so the schema
+          # describes what one instance looks like, not the
+          # projected state of an evolving thing.
+          type: object
+        identifiedBy:
+          # How an entity instance is identified.
+          # Discriminator `source` names the strategy; the
+          # sibling field carries the strategy-specific
+          # detail:
+          #   source: schema → field: <name of the field
+          #                            within `schema`>
+          #   source: static → value: <fixed identifier
+          #                            string>
+          # The `state` variant from `aggregate.identifiedBy`
+          # is absent – entities have no container state.
+          # The `generated` variant is absent too – an
+          # entity's identity is a description of *what*
+          # identifies it, not a mint specification;
+          # minting belongs on the aggregate or DCB-bound
+          # command that brings the entity into being.
+          oneOf:
+            - type: object
+              properties:
+                source:
+                  const: schema
+                field:
+                  $ref: "#/$defs/name"
+              required: [source, field]
+              additionalProperties: false
+            - type: object
+              properties:
+                source:
+                  const: static
+                value:
+                  type: string
+                  minLength: 1
+              required: [source, value]
+              additionalProperties: false
+        invariants:
+          # Rules every instance must satisfy that JSON
+          # Schema cannot express – mirrors
+          # `value-object.invariants`. Entities have no
+          # lifecycle, so invariants here are purely
+          # structural/value-level: checksums, cross-field
+          # constraints, domain rules attached to the
+          # instance shape itself.
+          type: array
+          items:
+            $ref: "#/$defs/namedRule"
+      required: [scope, schema, identifiedBy]
 
   - if:
       properties:

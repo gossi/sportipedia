@@ -104,9 +104,9 @@ that public interface, there is no way around.
 Architecture wise the domain-object is organized as a hybrid of clean architecture
 and vertical slice architecture.
 
-- __Vertical Slice Architecture (VSA)__: Everything feature based rsp. business process related follows VSA and is
-organized in the same directory.
-- __Clean Architecture__: Makes the core substance of the domain-object. Citizens that doesn't fall under VSA are organized through clean architecture.
+- **Vertical Slice Architecture (VSA)**: Everything feature based rsp. business process related follows VSA and is
+  organized in the same directory.
+- **Clean Architecture**: Makes the core substance of the domain-object. Citizens that doesn't fall under VSA are organized through clean architecture.
 
 ### Backend
 
@@ -135,13 +135,15 @@ Directory Structure:
   - `/value-objects/<value-object-name>.ex`: Value Object
   - `/validators/<validation-name>_validation.ex`: Shared Validators in the
     Domain Object
-  - `/queries/<query-name>.ex`: (Value Objects)
+  - `/queries/<query-name>.ex`: Custom queries
 
 Special Naming Conventions:
 
-- Aggregate: `Sportipedia.<subdomain>.<composite>.<domain-object>Aggregate`
-- ReadModel: `Sportipedia.<subdomain>.<composite>.<domain-object>ReadModel`
 - Public API: `Sportipedia.<subdomain>.<composite>.<domain-object>`
+- Aggregate: `Sportipedia.<subdomain>.<composite>.<domain-object>.<domain-object>Aggregate`
+- ReadModel: `Sportipedia.<subdomain>.<composite>.<domain-object>.<domain-object>ReadModel`
+- Projector: `Sportipedia.<subdomain>.<composite>.<domain-object>.<domain-object>Projector`
+- Policy: `Sportipedia.<subdomain>.<composite>.<domain-object>.Policy`
 
 #### Vertical Slice Architecture
 
@@ -167,6 +169,8 @@ Directory Structure:
   - `/<value-object>.ex`: Value Objects
   - `/<validation-name>_validator.ex`: Validators
   - `/<query-name>_query.ex`: Queries
+- `/services/api/test/sportipedia/catalog/<composite>/<domain-object>/operation/<operation>_test.exs`
+  - snake case the `<operation>`
 
 Special Naming Conventions:
 
