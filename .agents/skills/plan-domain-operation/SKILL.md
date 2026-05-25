@@ -7,7 +7,7 @@ description: Plan a read or write CQRS/ES operation in the Sportipedia domain.
 
 ## Overview
 
-Plan excatly ONE! domain feature for a CQRS/ES operation in the Sportipedia domain. 
+Plan excatly ONE! domain feature for a CQRS/ES operation in the Sportipedia domain.
 The operation is defined in the [Domain Model](../../../docs/domain-model/README.md).
 
 ## When to Use This Skill
@@ -83,12 +83,11 @@ Specify and name the steps in the sequence:
 - Only implement the sequence specified in the previous step
 - Include the policy for the given operation
 - Combine the relevant architecture, coding guidelines with the domain models
-- Look into the implement-domain-operation skill to understand what it _can_ build and _might_ use
+- Look into the seek-implementation-for-domain-operation skill to understand what it _can_ build and _might_ use
 - Verify the plan against architecture guidelines
 
 ## Step 5: Present the Result
 
 Present the plan with all necessary implementation details
+
 - **Must**: Modules skip implementation details: (present them like in API docs: Name + function listing with arity)
-
-

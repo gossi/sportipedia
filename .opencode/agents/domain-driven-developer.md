@@ -64,6 +64,16 @@ When silently correcting, look here:
 - docs > code
 - Arch > code / directory structure
 
+When to read code:
+
+- Get implementation details (eg. code within functions)
+- Framework/Library implementations (as done on the current codebase)
+
+How to judge existing code:
+
+- reason existing code against written docs, guidelines and conventions
+- in case of conflict: the written form wins
+
 ## Thinking Mode
 
 When reading code, think and reason about it. Here is the fact, that is driving your decision:

@@ -1,13 +1,13 @@
 ---
-name: implement-domain-operation-test
-description: Write a vertical-slice test for a CQRS/ES operation in the Sportipedia domain.
+name: seek-implementation-for-domain-operation-test
+description: Seek implementation details for a vertical-slice read or write CQRS/ES operation in the Sportipedia domain.
 ---
 
 # Implement Domain Operation Test
 
 ## Overview
 
-Implement excatly ONE! domain feature for a CQRS/ES operation in the Sportipedia domain. 
+Gives implementation details for a test about exactly ONE! CQRS/ES operation in the Sportipedia domain.
 The operation is defined in the [Domain Model](../../../docs/domain-model/README.md).
 
 Context: This should be run when a plan for that operation is ready for implementation.
@@ -16,27 +16,19 @@ Context: This should be run when a plan for that operation is ready for implemen
 
 Use this skill when:
 
-- A domain operation has been implemented
+- You have a plan for implementing a domain operation
 - The operation is known
+- You are using TDD to implement
+- You are about to write a test
+- You are seeking a way to structure the test file
+- You need to know what you want/need to test
 
-## Process for Implementing a Domain Operation Test
+## Context for Execting the Skill
 
-Here is the recipe to follow:
-
-1. Before writing any code or tests
-  - Make yourself familiar with the architecture: [Architecture](../../../ARCHITECTURE.md)
-  - Understand the coding guidelins: [Coding Guidelines](../../../docs/coding-guidelines/README.md) (follow into relevant subsections)
-2. Understand the code you are about to write tests for
-3. Explain the Domain we are in:
-  - What the feature is doing
-  - What are the invariants
-  - What's the domain language
-3. Accumulate a list of what functionality you want to cover in the test (see section below: [Test Content](#test-contents))
-4. Make a plan for how you want to write the test (respect [Test Guidelines](#test-contents))
-5. Summarize the task you are about to do:
-  - A technical summary for the tests to write, especially mention guidelines and conventions to respect and other constraints that apply
-  - The test plan: Nested list of the describe + test block names - use the exact test names from the code to write
-6. Write the tests
+- [Respect Code Access Policy](../../code-access-policy.md)
+- [Respect Coding Guidelines](../../../docs/coding-guidelines/README.md)
+- This skill counts as documentation
+- DO not run discovery, this documentation is sufficient
 
 ## Test Contents
 
@@ -49,7 +41,7 @@ The test may (if applicable) cover the following:
 - Event Handler
 - Aggregate
 - Projector
-- End-to-End
+- Public API
 
 Each is represented as a `describe` block in the test file and explained below.
 
@@ -60,6 +52,10 @@ Tests `Policy.authorize/3` — pure function
 ### Command
 
 - Struct creation with enforced fields
+  - When testing enforced fields, use `struct!(Command, %{})` which raises
+    `ArgumentError` if required fields are missing
+  - Optional fields (no `enforce: true`) can be omitted in struct literals
+    without raising — test this by creating events without optional fields
 - Validation
 
 ### Handler
@@ -70,7 +66,11 @@ Tests the command handlers, input into output. Ideally pure, integration tests w
 
 Tests events.
 
-- Test against invalid struct creation (missing enforced fields)
+- Struct creation with enforced fields
+  - When testing enforced fields, use `struct!(Event, %{})` which raises
+    `ArgumentError` if required fields are missing
+  - Optional fields (no `enforce: true`) can be omitted in struct literals
+    without raising — test this by creating events without optional fields
 - Serialization, via `Jason.encode!(event)`
 
 ### Event Handler
@@ -93,7 +93,12 @@ end
 
 Tests the projection logic by calling the projector's `handle/2` directly — needs DB.
 
-The `project` macro in `projector.ex` generates a `handle(event, metadata)` function clause. Call it with the event and a metadata map containing at least `:handler_name` (matches the `:name` option in `use Commanded.Projections.Ecto`) and `:event_number` (unique non-negative integer).
+The `project` macro in `projector.ex` generates a `handle(event, metadata)` function clause. 
+
+- Call `handle/2` with the event and a metadata map (see template below)
+  - Required fields: `handler_name`, `event_number`
+  - The `handler_name` in test metadata MUST exactly match the `:name` option in the projector's `use Commanded.Projections.Ecto` declaration.
+  - The `event_number` to be: unique non-negative integer
 
 Example:
 
@@ -107,7 +112,7 @@ metadata = %{
   correlation_id: nil,
   causation_id: nil,
   created_at: DateTime.utc_now(),
-  application: Sportipedia.Catalog,
+  application: Sportipedia.<Subdomain>,
   state: nil
 }
 ```
@@ -146,26 +151,30 @@ Tests the public API — needs event store (InMemory) and DB and all relevant pu
 
 ## Test Guidelines
 
-Location: `test/sportipedia/catalog/<subdomain>/<entity>/features/<feature_name>_test.exs`
+Location: `test/sportipedia/catalog/<composite>/<domain-object>/operation/<operation>_test.exs`
+
+- snake case the `<operation>/`
 
 ### Test Module Pattern
 
 Here is an example, take it as a template:
 
 ```elixir
-defmodule Sportipedia.Catalog.<Composite>.<DomainObject>.Feature.<FeatureName>Test do
-  use Sportipedia.CatalogTestCase
+defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Feature.<OperationName>Test do
+  use Sportipedia.<Subdomain>TestCase
 
-  alias Sportipedia.Catalog.<Composite>.<DomainObject>
-  alias Sportipedia.Catalog.<Composite>.<DomainObject>.Policy
-  alias Sportipedia.Catalog.<Composite>.<DomainObject>.Command.<FeatureName>
-  alias Sportipedia.Catalog.<Composite>.<DomainObject>.Command.<FeatureName>Handler
-  alias Sportipedia.Catalog.<Composite>.<DomainObject>.Event.<EventName>
-  alias Sportipedia.Catalog.<Composite>.<DomainObject>.<AggregateName>
-  alias Sportipedia.Catalog.<Composite>.<DomainObject>.<ReadModelName>
-  alias Sportipedia.Catalog.<Composite>.<DomainObject>.<ProjectorName>
-  alias Sportopedia.Catalog.Repo
+  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>
+  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Policy
+  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<FeatureName>
+  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<FeatureName>Handler
+  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Event.<EventName>
+  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<AggregateName>
+  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<ReadModelName>
+  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<ProjectorName>
+  alias Sportipedia.<Subdomain>.Repo
 ```
+
+- pascal case the `<Operation>`
 
 ### Covering Functionality
 
@@ -180,13 +189,12 @@ Apply both:
 - Follow the naming conventions from [Naming Conventions](../../../docs/coding-guidelines/naming-conventions.md)
   - When comparing to other tests, rank the convention guidelines higher than existing source code
 
-
 ### Implementation Notes
 
 Here is how the code is implemented to faster come to a conclusion how to write a test for
 
 - Commands use `ExConstructor` for construction: `<Command>.new(attrs)`
-- Errors from `Sportipedia.Catalog.dispatch` go through the `Validate` middleware which merges Vex errors into `%{field: [message]}`
-- Vex presence validator message: `"must be present"`
+- Errors from `Sportipedia.<Subdomain>.dispatch` go through the `Validate` middleware which merges Vex errors into `%{field: [message]}`
+- Vex `presence` validator message: `"must be present"`
 - Ecto `unique_constraint` message from DB: `"has already been taken"`
 - Ecto.Multi error tuples: `{:error, :multi_name, changeset, effects}`
