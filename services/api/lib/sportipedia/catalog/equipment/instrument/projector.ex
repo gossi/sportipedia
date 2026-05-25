@@ -14,7 +14,10 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.InstrumentProjector do
 
   project %InstrumentCataloged{} = event, _metadata, fn multi ->
     multi
-    |> Ecto.Multi.insert(:catalog_instrument, InstrumentReadModel.insert_changeset(Map.from_struct(event)))
+    |> Ecto.Multi.insert(
+      :catalog_instrument,
+      InstrumentReadModel.insert_changeset(Map.from_struct(event))
+    )
   end
 
   project %InstrumentEdited{} = event, _metadata, fn multi ->
@@ -26,7 +29,10 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.InstrumentProjector do
         attrs = InstrumentEdited.get_changes(event)
 
         multi
-        |> Ecto.Multi.update(:edit_instrument, InstrumentReadModel.update_changeset(instrument, attrs))
+        |> Ecto.Multi.update(
+          :edit_instrument,
+          InstrumentReadModel.update_changeset(instrument, attrs)
+        )
     end
   end
 
