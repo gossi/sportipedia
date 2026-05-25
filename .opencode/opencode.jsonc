@@ -9,5 +9,10 @@
       ],
       "enabled": true
     }
+  },
+  "agent": {
+    "domain-driven-developer": {
+      "color": "primary"
+    }
   }
 }

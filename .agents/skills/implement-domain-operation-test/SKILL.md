@@ -1,9 +1,27 @@
 ---
-name: implement-domain-feature-test
-description: Write a vertical-slice feature test for a CQRS/ES operation in the Sportipedia domain.
+name: implement-domain-operation-test
+description: Write a vertical-slice test for a CQRS/ES operation in the Sportipedia domain.
 ---
 
-Here is the recipe to follow (give a TODO during execution):
+# Implement Domain Operation Test
+
+## Overview
+
+Implement excatly ONE! domain feature for a CQRS/ES operation in the Sportipedia domain. 
+The operation is defined in the [Domain Model](../../../docs/domain-model/README.md).
+
+Context: This should be run when a plan for that operation is ready for implementation.
+
+## When to Use This Skill
+
+Use this skill when:
+
+- A domain operation has been implemented
+- The operation is known
+
+## Process for Implementing a Domain Operation Test
+
+Here is the recipe to follow:
 
 1. Before writing any code or tests
   - Make yourself familiar with the architecture: [Architecture](../../../ARCHITECTURE.md)
