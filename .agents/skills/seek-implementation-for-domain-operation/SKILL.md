@@ -23,6 +23,7 @@ Use this skill when:
 
 ## Context for Execting the Skill
 
+- [Read Placeholder Naming Substitution](../../../docs/architecture/naming-substitution.md)
 - [Respect Code Access Policy](../../code-access-policy.md)
 - This skill counts as documentation
 - DO not run discovery, this documentation is sufficient
@@ -59,7 +60,7 @@ defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Aggre
     field :<field>, type
   end
 
-  def apply(%__MODULE__{} = aggregate, %<EventName>{} = event) do
+  def apply(%__MODULE__{} = aggregate, %<Event>{} = event) do
     # apply event to aggregate
   end
 end
@@ -84,19 +85,21 @@ When needed use `vex` to validate commands.
 Read [Vex documentation](https://hexdocs.pm/vex/)
 
 - `use Vex.Struct` on the command
-- use `validates :<field>` with built-in checks, eg. `presence: true`
+- use `validates :<_field>` with built-in checks, eg. `presence: true`
 
 ##### Custom Validations
 
 Vex allows custom validations
 
 - Use a custom validator (see below)
-- apply it with `by: [function: &ValidatorName.validate/2]` and combine it with needed options, eg. `allow_nil: true`, if domain logic requires it to
+- apply it with `by: [function: &<Validator>.validate/2]` and combine it with needed options, eg. `allow_nil: true`, if domain logic requires it to
 
 #### Code Template
 
+- use `alias` for the validator
+
 ```elixir
-defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<CommandName> do
+defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<Command> do
   use TypedStruct
   use ExConstructor
 
@@ -108,7 +111,7 @@ defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<CommandNam
   use Vex.Struct
 
   validates :title, presence: true
-  validates :slug, presence: true, by: [function: &Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Validator.<Validator>.validate/2]
+  validates :slug, presence: true, by: [function: &Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Validators.<Validator>.validate/2]
 end
 ```
 
@@ -147,10 +150,10 @@ Implement the actual command behavior.
 #### Code Template
 
 ```elixir
-defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<CommandName>Handler do
+defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<Command>Handler do
   @behaviour Commanded.Commands.Handler
   
-  def handle(aggregate, %<CommandName>{} = cmd) do
+  def handle(aggregate, %<Command>{} = cmd) do
     # implement logic here
     # return events
   end
@@ -172,13 +175,13 @@ Facts about the system
 #### Code Template
 
 ```elixir
-defmodule Sportipedia.Catalog.<Composite>.<DomainObject>.Event.<EventName> do
+defmodule Sportipedia.Catalog.<Composite>.<DomainObject>.Event.<Event> do
   use TypedStruct
   use ExConstructor
 
   @derive Jason.Encoder
   typedstruct do
-    field :<field>, <type>, enforce: true/false
+    field :<_field>, <type>, enforce: true/false
   end
 end
 ```
@@ -201,10 +204,10 @@ defmodule Sportipedia.Catalog.<Composite>.<DomainObject>.<DomainObject>ReadModel
   
   @primary_key {:id, :binary_id, autogenerate: false}
   @timestamps_opts [type: :utc_datetime_usec]
-  @schema_prefix "<subdomain>"
+  @schema_prefix "<_subdomain>"
   
   typed_schema "<domain_object>" do
-    field :<field>, <type>, <opts>
+    field :<_field>, <field type>, <field opts>
 
     timestamps()
   end
@@ -233,11 +236,11 @@ defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Proje
   use Commanded.Projections.Ecto,
     application: Sportipedia.<Subdomain>,
     repo: Sportipedia.<Subdomain>.Repo,
-    name: "<composite>.<domain_object>_projection",
-    schema_prefix: "<subdomain>",
+    name: "<_composite>.<domain_object>_projection",
+    schema_prefix: "<_subdomain>",
     consistency: :strong
   
-  project %<EventName>{} = event, _metadata, fn multi ->
+  project %<Event>{} = event, _metadata, fn multi ->
     # projection code
   end
 end
@@ -250,7 +253,7 @@ end
 #### Code Template
 
 ```elixir
-defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Queries.<QueryName> do
+defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Queries.<Query> do
   import Ecto.Query
 
   def new(params) do
@@ -285,11 +288,11 @@ end
 
 ```elixir
 defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject> do
-  def <operation>(params) do
+  def <_operation>(params) do
     # implementation logic
   end
 
-  def <domain_object_by_id>(id) do
+  def <domain_object>_by_id(id) do
     # ecto query to read on record by id
   end
 end
@@ -300,18 +303,18 @@ end
 ### Register Command
 
 - register at a commanded router
-- router locations: `/services/api/lib/sportipedia/catalog/<composite>/router.ex`
+- router locations: `/services/api/lib/sportipedia/<_subdomain>/<_composite>/router.ex`
 - dispatch contents:
 
 ```elixir
-  identify <DomainObject>Aggregate, by: :id, prefix: "equipment/<domain-object>/"
-  dispatch Catalog<DomainObject>, to: Catalog<DomainObject>Handler, aggregate: <DomainObject>Aggregate
+  identify <DomainObject>Aggregate, by: :id, prefix: "<-composite>/<domain-object>/"
+  dispatch <Command>, to: <Command>Handler, aggregate: <DomainObject>Aggregate
 ```
 
-### Projector at supervisor
+### Projector at Supervisor
 
 - register the projector at a supervisor
 - supervisor locations: 
-  - `/services/api/lib/sportipedia/catalog/<composite>/supervisor.ex`
-  - `/services/api/lib/sportipedia/catalog/supervisor.ex`
+  - `/services/api/lib/sportipedia/<_subdomain>/<_composite>/supervisor.ex`
+  - `/services/api/lib/sportipedia/<_subdomain>/supervisor.ex`
 - add projector to children

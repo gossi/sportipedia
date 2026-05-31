@@ -25,6 +25,7 @@ Use this skill when:
 
 ## Context for Execting the Skill
 
+- [Read Placeholder Naming Substitution](../../../docs/architecture/naming-substitution.md)
 - [Respect Code Access Policy](../../code-access-policy.md)
 - [Respect Coding Guidelines](../../../docs/coding-guidelines/README.md)
 - This skill counts as documentation
@@ -82,7 +83,7 @@ tbd.
 Tests `Aggregate.apply/2` for the specific event.
 
 ```elixir
-test "applies <Event> to aggregate state" do
+test "applies <-event> to aggregate state" do
   event = %<Event>{...}
   result = Aggregate.apply(%Aggregate{}, event)
   assert result.field == value
@@ -104,7 +105,7 @@ Example:
 
 ```elixir
 metadata = %{
-  handler_name: "<projection_name>",
+  handler_name: "<_projection>",
   event_number: 1,
   event_id: UUID.uuid4(),
   stream_id: "entity-#{event.id}",
@@ -120,7 +121,7 @@ metadata = %{
 **Success case:**
 
 ```elixir
-assert :ok = <ProjectorName>.handle(event, metadata)
+assert :ok = <Projector>.handle(event, metadata)
 
 record = Repo.get!(ReadModel, event.id)
 assert record.field == expected
@@ -129,8 +130,8 @@ assert record.field == expected
 **Idempotency case** (same `event_number` is skipped via `ProjectionVersion`):
 
 ```elixir
-assert :ok = <ProjectorName>.handle(event, metadata)
-assert :ok = <ProjectorName>.handle(event, metadata)
+assert :ok = <Projector>.handle(event, metadata)
+assert :ok = <Projector>.handle(event, metadata)
 
 assert [record] = Repo.all(ReadModel)
 ```
@@ -138,7 +139,7 @@ assert [record] = Repo.all(ReadModel)
 **Error case** (e.g. DB constraint violation):
 
 ```elixir
-assert {:error, _} = <ProjectorName>.handle(event, metadata)
+assert {:error, _} = <Projector>.handle(event, metadata)
 ```
 
 ### Public API
@@ -151,30 +152,26 @@ Tests the public API — needs event store (InMemory) and DB and all relevant pu
 
 ## Test Guidelines
 
-Location: `test/sportipedia/catalog/<composite>/<domain-object>/operation/<operation>_test.exs`
-
-- snake case the `<operation>/`
+Location: `test/sportipedia/catalog/<_composite>/<domain-object>/operation/<_operation>_test.exs`
 
 ### Test Module Pattern
 
 Here is an example, take it as a template:
 
 ```elixir
-defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Feature.<OperationName>Test do
+defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Operation.<Operation>Test do
   use Sportipedia.<Subdomain>TestCase
 
   alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>
   alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Policy
-  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<FeatureName>
-  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<FeatureName>Handler
-  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Event.<EventName>
-  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<AggregateName>
-  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<ReadModelName>
-  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<ProjectorName>
+  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<Command>
+  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<Command>Handler
+  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Event.<Event>
+  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<Aggregate>
+  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<ReadModel>
+  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<Projector>
   alias Sportipedia.<Subdomain>.Repo
 ```
-
-- pascal case the `<Operation>`
 
 ### Covering Functionality
 
