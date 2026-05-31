@@ -19,7 +19,7 @@ Location: `/services/api/lib/sportipedia`
 
 Each domain object provides a public API. These are the available ports
 
-## Web Actore
+## Web Actor
 
 Provides a stateless REST API to which clients can connect.
 

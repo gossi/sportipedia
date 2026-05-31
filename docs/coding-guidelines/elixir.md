@@ -58,12 +58,8 @@ Attach at the highest level that's correct for all tests in that scope. Only mov
 
 ## Formatting
 
-- **Elixir**: mix format (run before committing)
+- `mix format` (run before committing)
 
 ## Important Patterns
 
 1. **CQRS/ES**: Commands → Events → Aggregates → Projections
-
-## Notes
-
-- Run `mix format` before committing (Elixir)
