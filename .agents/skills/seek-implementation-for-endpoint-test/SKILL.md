@@ -89,7 +89,7 @@ conn =
   |> authenticate_conn()
   |> api_conn()
   |> post("/<-subdomain>/<-composite>/<domain-object>s/<-action>",
-    Jason.encode!(jsonapi_body("<-type>", %{...}))
+    Jason.encode!(jsonapi_body("<jsonapi-type>", %{...}))
   )
 
 body = json_response(conn, 200)
@@ -98,7 +98,7 @@ body = json_response(conn, 200)
 For requests that need an explicit `id` in the body (edit, archive), use the 3-arg form:
 
 ```elixir
-jsonapi_body("<-type>", %{...}, id)
+jsonapi_body("<jsonapi-type>", %{...}, id)
 ```
 
 The `JSONAPI.Deserializer` plug flattens `data.id` and `data.attributes.*` into `conn.params`. So `data.id` becomes `conn.params["id"]`.
@@ -117,7 +117,7 @@ test "returns 403 when unauthenticated" do
   conn =
     build_conn()
     |> api_conn()
-    |> post("/path", Jason.encode!(jsonapi_body("<-type>", %{...})))
+    |> post("/path", Jason.encode!(jsonapi_body("<jsonapi-type>", %{...})))
 
   json_response(conn, 403)
 end
@@ -166,7 +166,7 @@ defmodule SportipediaWeb.<Subdomain>.<DomainObject>.<Operation>EndpointTest do
         |> authenticate_conn()
         |> api_conn()
         |> post("/<-subdomain>/<-composite>/<domain-object>s/<-action>",
-          Jason.encode!(jsonapi_body("<-type>", %{...}))
+          Jason.encode!(jsonapi_body("<jsonapi-type>", %{...}))
         )
 
       body = json_response(conn, 200)
@@ -174,7 +174,7 @@ defmodule SportipediaWeb.<Subdomain>.<DomainObject>.<Operation>EndpointTest do
       assert %{
                "data" => %{
                  "id" => id,
-                 "type" => "<jsonapi type>",
+                 "type" => "<jsonapi-type>",
                  "attributes" => %{
                    ...
                  }
@@ -189,7 +189,7 @@ defmodule SportipediaWeb.<Subdomain>.<DomainObject>.<Operation>EndpointTest do
         build_conn()
         |> api_conn()
         |> post("/<-subdomain>/<-composite>/<domain-object>s/<-action>",
-          Jason.encode!(jsonapi_body("<-type>", %{...}))
+          Jason.encode!(jsonapi_body("<jsonapi-type>", %{...}))
         )
 
       assert json_response(conn, 403)
@@ -201,7 +201,7 @@ defmodule SportipediaWeb.<Subdomain>.<DomainObject>.<Operation>EndpointTest do
         |> authenticate_conn()
         |> api_conn()
         |> post("/<-subdomain>/<-composite>/<domain-object>s/<-action>",
-          Jason.encode!(jsonapi_body("<-type>", %{...}))
+          Jason.encode!(jsonapi_body("<jsonapi-type>", %{...}))
         )
 
       assert json_response(conn, 422)
@@ -214,7 +214,7 @@ end
 
 ### View Tests
 
-File Location: `test/sportipedia_web/<_subdomain>/<_composite>/<_constituent>/<_domain_object>_view_test.exs`
+File Location: `test/sportipedia_web/<_subdomain>/<_composite>/<_constituent>/<domain_object>_view_test.exs`
 
 View unit tests are in a `describe "View"` block alongside the controller tests. The JSONAPI View's `render` function requires a `Plug.Conn` struct with fetched params:
 
@@ -237,7 +237,7 @@ defmodule SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>ViewTest do
       conn = build_conn() |> fetch_query_params()
       result = <DomainObject>View.render("show.json", %{data: <domain_object>, conn: conn})
 
-      assert %{data: %{id: _, type: "<-type>", attributes: %{...}}} = result
+      assert %{data: %{id: _, type: "<jsonapi-type>", attributes: %{...}}} = result
     end
   end
 end
@@ -245,7 +245,7 @@ end
 
 ### OpenAPI Schema Tests
 
-File Location: `test/sportipedia_web/<_subdomain>/<_composite>/<_constituent>/<_domain_object>_schema_test.exs`
+File Location: `test/sportipedia_web/<_subdomain>/<_composite>/<_constituent>/<domain_object>_schema_test.exs`
 
 Use `use ExUnit.Case` (no DB, no sandbox). Test that the compile-time schema has the expected structure:
 

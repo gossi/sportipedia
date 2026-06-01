@@ -134,7 +134,7 @@ Directory Structure:
   - `/aggregate.ex`: Aggregate
   - `/policy.ex`: Authorization
   - `/read_model.ex`: Shared Read Model (projection of the aggregate)
-  - `/entities/<entity_name>.ex`: Entity
+  - `/entities/<_entity>.ex`: Entity
   - `/value-objects/<value_object>.ex`: Value Object
   - `/validators/<_validation>_validation.ex`: Shared Validators in the
     Domain Object

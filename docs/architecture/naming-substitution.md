@@ -23,7 +23,7 @@ well, which makes reading and writing the templates much more natural.
 | snake_case | `<_subdomain>` | `<domain_object>` | `catalog_apparatus` |
 | PascalCase | `<Subdomain>` | `<DomainObject>` | `CatalogApparatus` |
 | camelCase | `<subdomain>` | `<domainObject>` | `catalogApparatus` |
-| spaces | - | `<desrcibe the situation>` | Fill this out by context |
+| spaces | - | `<describe the situation>` | Fill this out by context |
 
 ## Variables
 
@@ -47,9 +47,18 @@ case, the value is then found in the `name` attribute.
 | `<Event>` | ESDM | `event` | - |
 | `<Subdomain>` | ESDM | `subdomain` | - |
 | `<Operation>` | ESDM | `command` and `query` | - |
+| `<Entity>` | ESDM | `entity` | - |
+| `<ValueObject>` | ESDM | `value-object` | - |
 | `<Composite>` | Arch | `composite` | - |
-| `<Constituent>` | Arch | `constituen` | - |
+| `<Constituent>` | Arch | `constituent` | - |
 | `<DomainObject>` | Arch | `constituent` | Relates to [ESDM: `aggregate`](https://www.esdm.io/reference/core-schema/aggregate/), [ESDM: `read-model`](https://www.esdm.io/reference/core-schema/read-model/) |
+| `<Query>` | ESDM | `query` | - |
+| `<PublicAPI>` | Arch | `constituent` | - |
+| `<Action>` | ESDM | `command` | Command is entirely domain layer, action is the equivalent for the endpoint path or in the frontend |
+| `<JsonApiType>` | ESDM | `read-model` | plural form for JSONAPI |
+| `<Field>` | ESDM | `data` attribute keys | Generic usage for property or field in data structures in various technologies |
+| `<Validator>` | ESDM | `invariant` | Used for checking the invariant/rules |
+| `<Object>` | OOUX | `object` | Relates to [ESDM: `read-model`](https://www.esdm.io/reference/core-schema/read-model/), `<DomainObject>` |
 
 ## Substitution Samples
 

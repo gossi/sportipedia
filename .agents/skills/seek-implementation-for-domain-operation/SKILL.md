@@ -104,7 +104,7 @@ defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<Command> d
   use ExConstructor
 
   typedstruct do
-    field :<field>, <type>, enforce: true/false
+    field :<_field>, <field type>, enforce: true/false
   end
 
   # Validation
@@ -181,7 +181,7 @@ defmodule Sportipedia.Catalog.<Composite>.<DomainObject>.Event.<Event> do
 
   @derive Jason.Encoder
   typedstruct do
-    field :<_field>, <type>, enforce: true/false
+    field :<_field>, <field type>, enforce: true/false
   end
 end
 ```

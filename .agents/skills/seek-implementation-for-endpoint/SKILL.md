@@ -42,7 +42,7 @@ Here is a list of implementation details to seek
 
 A phoenix controller.
 
-File Location: `/services/api/lib/sportipedia_web/<_subdomain_>/<_composite>/<domain_object>_controller.ex`
+File Location: `/services/api/lib/sportipedia_web/<_subdomain>/<_composite>/<domain_object>_controller.ex`
 
 - `use SportipediaWeb, :controller`
 - `use OpenApiSpex.ControllerSpecs`
@@ -312,7 +312,10 @@ end
 
 Document endpoints in bruno for direct usage.
 
-File Location: `/bruno/<Subdomain>/<Composite>/<Endpoint>.bru`
+File Location:
+
+- Command: `/bruno/<Subdomain>/<Composite>/<Constituent>/<-command>.bru`
+- Query: `/bruno/<Subdomain>/<Composite>/<Constituent>/<-query>.bru`
 
 Follow [bruno documentation](https://docs.usebruno.com/llms.txt) for storing them.
 
