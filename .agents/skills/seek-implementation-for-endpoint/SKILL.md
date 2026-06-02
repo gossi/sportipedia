@@ -34,6 +34,14 @@ Use this skill when:
 > Failure Criteria: Reading Code, stop immediately!
 > Reading code takes too much time. Never even think about attempting!
 
+### Code Templates
+
+- Code Templates give you a scaffolding, when creating the file from scratch
+- They are templates, not strict guidelines
+- Sorting functions in modules when they contain both queries and commands:
+  1. All commands
+  2. All queries
+
 ## Implementation Details
 
 Here is a list of implementation details to seek

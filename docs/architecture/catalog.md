@@ -131,6 +131,7 @@ Directory Structure:
 
 - `/services/api/lib/sportipedia/catalog/<_composite>/<domain_object>/operation/<_operation>`
   - `/public_api.ex`: Public API
+  - `/internal.ex`: Internal API
   - `/aggregate.ex`: Aggregate
   - `/policy.ex`: Authorization
   - `/read_model.ex`: Shared Read Model (projection of the aggregate)
@@ -143,6 +144,7 @@ Directory Structure:
 Special Naming Conventions:
 
 - Public API: `Sportipedia.<Subdomain>.<Composite>.<DomainObject>`
+- Internal API: `Sportipedia.<Subdomain>.<Composite>.<DomainObject>Internal`
 - Aggregate: `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Aggregate`
 - ReadModel: `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>ReadModel`
 - Projector: `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Projector`

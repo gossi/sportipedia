@@ -28,9 +28,59 @@ Use this skill when:
 - This skill counts as documentation
 - DO not run discovery, this documentation is sufficient
 
+### Code Templates
+
+- Code Templates give you a scaffolding, when creating the file from scratch
+- They are templates, not strict guidelines
+- Sorting functions in modules when they contain both queries and commands:
+  1. All commands
+  2. All queries
+
 ## Implementation Details
 
 Here is a list of implementation details to seek
+
+### Public API
+
+- One function per command operation
+- One function per query operation
+
+#### Command
+
+- Dispatches the command with strong consistency
+- Vex runs as commanded middleware and validates the command
+- If the command results in a CREATE projection, instantiate a UUID for it
+- If the command addresses a read model, return it
+- Unless the command resuslts in DELETE projection, then don't
+
+#### Query
+
+- Query Ecto for the read model
+  - read one read model: try Internal API fallback to `Repo.get`
+  - list many read models: use `Repo.all` with `Sportipedia.Support.JSONAPI.QueryBuilder`
+  - all others:
+    - may use internal API for partial query
+    - use the respective custom query
+
+If the params to the query are `oneOf`, then the params should reflect this, eg: `def <_operation>(id_or_slug) do`. 
+Identify this as part of the implementation where to query. Use as much private function as it needs
+
+#### Return Types
+
+Return types for any operation is:
+
+- With result: `{:ok, result} | {:error, reason}`
+- Without result: `:ok | {:error, reason}`
+
+#### Code Template
+
+```elixir
+defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject> do
+  def <_operation>(params) do
+    # implementation logic
+  end
+end
+```
 
 ### Policy
 
@@ -119,7 +169,7 @@ end
 
 - `use Vex.Validator` on the validator
 - **Critical**: Do NOT configure them as "global" validators
-- implementation logic: 
+- implementation logic:
   - according to test the given invariance
   - May make use of a given query (if applicable)
 
@@ -128,7 +178,7 @@ end
 ```elixir
 defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Validators.<Validator> do
   use Vex.Validator
-  
+
   def validate(value, _context) do
     # run logic
   end
@@ -152,7 +202,7 @@ Implement the actual command behavior.
 ```elixir
 defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<Command>Handler do
   @behaviour Commanded.Commands.Handler
-  
+
   def handle(aggregate, %<Command>{} = cmd) do
     # implement logic here
     # return events
@@ -201,17 +251,17 @@ Read Model for querying.
 defmodule Sportipedia.Catalog.<Composite>.<DomainObject>.<DomainObject>ReadModel do
   use TypedEctoSchema
   import Ecto.Changeset
-  
+
   @primary_key {:id, :binary_id, autogenerate: false}
   @timestamps_opts [type: :utc_datetime_usec]
   @schema_prefix "<_subdomain>"
-  
+
   typed_schema "<domain_object>" do
     field :<_field>, <field type>, <field opts>
 
     timestamps()
   end
-  
+
   # changesets
 end
 ```
@@ -239,7 +289,7 @@ defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Proje
     name: "<_composite>.<domain_object>_projection",
     schema_prefix: "<_subdomain>",
     consistency: :strong
-  
+
   project %<Event>{} = event, _metadata, fn multi ->
     # projection code
   end
@@ -262,37 +312,23 @@ defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Queries.<Query> do
 end
 ```
 
-### Public API
+### Internal API
 
-- One function to get the read model (as needed for tests)
-- One function per command operation
-- One function per query operation
-  - Call custom queries, do not embedd raw Ecto queries
+Internal API is used within a constituent (including tests), but never from another constituent or composite.
+It contains function giving mnemonic to hide the technical call.
+For example, it will very much likely contain a function to retrieve the main domain object.
 
-#### Command
-
-- Dispatches the command with strong consistency
-- Vex runs as commanded middleware and validates the command
-- If the command results in a CREATE projection, instantiate a UUID for it
-- If the command addresses a read model, return it
-- Unless the command resuslts in DELETE projection, then don't
-
-#### Query
-
-- Query Ecto for the read model
-  - read one read model: use `Repo.get`
-  - list many read models: use `Repo.all` with `Sportipedia.Support.JSONAPI.QueryBuilder`
-  - all others: use the respective custom query
+In other places (eg Public API): Instead of calling Repo directly, use the internal API that is much more memorable.
 
 #### Code Template
 
 ```elixir
-defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject> do
-  def <_operation>(params) do
-    # implementation logic
+defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>Internal do
+  def <domain_object>_by_id(id) do
+    # ecto query to read on record by id
   end
 
-  def <domain_object>_by_id(id) do
+  def <domain_object>_by_id!(id) do
     # ecto query to read on record by id
   end
 end
@@ -314,7 +350,7 @@ end
 ### Projector at Supervisor
 
 - register the projector at a supervisor
-- supervisor locations: 
+- supervisor locations:
   - `/services/api/lib/sportipedia/<_subdomain>/<_composite>/supervisor.ex`
   - `/services/api/lib/sportipedia/<_subdomain>/supervisor.ex`
 - add projector to children

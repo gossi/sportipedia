@@ -31,6 +31,14 @@ Use this skill when:
 - This skill counts as documentation
 - DO not run discovery, this documentation is sufficient
 
+### Code Templates
+
+- Code Templates give you a scaffolding, when creating the file from scratch
+- They are templates, not strict guidelines
+- Sorting functions in modules when they contain both queries and commands:
+  1. All commands
+  2. All queries
+
 ## Test Contents
 
 - The [Domain Model](../../../docs/domain-model/README.md) contains the operation but also its behavior and/or test instructions.

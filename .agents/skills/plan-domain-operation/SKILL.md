@@ -48,37 +48,17 @@ Make a software plan for the given operation.
 
 Never assume what to do. Follow exactly! the plan below.
 
-## Step 1: Find the Relevant Domain Models
+## Step 1: Details about the Domain Operation
 
-- The feature only requires a subset from the domain model
-- Find the relevant domain models to the given operation in the domain model
-- Summarize the feature you are about to implement:
-  - Which Subdomain we are in?
-  - Where in the subdomain are we (based on the architecture)
-  - What are the Domain models relevant for implementation
+If not already done, use /find-domain-operation $1
 
-If you cannot find the given operation name in the domain model then abort.
-
-## Step 2: Identify the Operation and its sequence
-
-Figure out if the given operation is a read or write operation
-
-- Write: public API -> command -> command handler -> event -> apply state on aggregate -> projections -> read model
-- Read: public API -> query -> read model
-
-Specify and name the steps in the sequence:
-
-- Identify the steps by name, use the identifiers from the domain model
-- Discard anything that cannot be found in the domain model or is part of commanded, or the public API (entry file)
-- Acknowledge the sequence to the user
-
-## Step 3: Scope the Implementation
+## Step 2: Scope the Implementation
 
 - Start point for the implementation is the public API / Port
 - Discard anything that is not part of the sequence
 - Only target the domain actor
 
-## Step 4: Plan the Implementation
+## Step 3: Plan the Implementation
 
 - Only implement the sequence specified in the previous step
 - Include the policy for the given operation
@@ -86,7 +66,7 @@ Specify and name the steps in the sequence:
 - Look into the seek-implementation-for-domain-operation skill to understand what it _can_ build and _might_ use
 - Verify the plan against architecture guidelines
 
-## Step 5: Present the Result
+## Step 4: Present the Result
 
 Present the plan with all necessary implementation details
 

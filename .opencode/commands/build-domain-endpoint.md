@@ -10,7 +10,7 @@ model: opencode-go/qwen3.6-plus
 Implement endpoint for operation: $1
 
 1. /plan-domain-endpoint $1
-2. Implement the plan with /tdd and /seek-implementation-for-endpoint
+2. Proceed implementing the plan with /tdd and /seek-implementation-for-endpoint
 
 Now validate your own process in read-only mode:
 

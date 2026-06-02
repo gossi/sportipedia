@@ -31,6 +31,14 @@ Use this skill when:
 - This skill counts as documentation
 - DO not run discovery, this documentation is sufficient
 
+### Code Templates
+
+- Code Templates give you a scaffolding, when creating the file from scratch
+- They are templates, not strict guidelines
+- Sorting functions in modules when they contain both queries and commands:
+  1. All commands
+  2. All queries
+
 ## Test Contents
 
 The test may (if applicable) cover the following:
@@ -171,6 +179,7 @@ defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Operation.<Operatio
   alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<ReadModel>
   alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<Projector>
   alias Sportipedia.<Subdomain>.Repo
+end
 ```
 
 ### Covering Functionality

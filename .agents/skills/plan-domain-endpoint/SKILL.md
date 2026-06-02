@@ -51,34 +51,23 @@ Make a software plan for the given operation.
 
 Never assume what to do. Follow exactly! the plan below.
 
-## Step 1: Find the Relevant Domain Models
+## Step 1: Details about the Domain Operation
 
-- The feature only requires a subset from the domain model
-- Find the relevant domain models to the given operation in the domain model
-- Summarize the feature you are about to implement:
-  - Which Subdomain we are in?
-  - Where in the subdomain are we (based on the architecture)
-  - What are the Domain models relevant for implementation
+If not already done, use /find-domain-operation $1
 
-If you cannot find the given operation name in the domain model then abort.
-
-## Step 2: Identify the Operation and its sequence
-
-Figure out if the given operation is a read or write operation
-
-## Step 3: Scope the Implementation
+## Step 2: Scope the Implementation
 
 - Start point for the implementation is the router -> calling the Public API of the domain
 - Discard anything that is not part of the sequence
 - Only target the web actor
 
-## Step 4: Plan the Implementation
+## Step 3: Plan the Implementation
 
 - Combine the relevant architecture, coding guidelines with the domain models
 - Verify the plan against architecture guidelines
 - Documentation in Bruno
 
-## Step 5: Present the Result
+## Step 4: Present the Result
 
 Present the plan with all necessary implementation details
 

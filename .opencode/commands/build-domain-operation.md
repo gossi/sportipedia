@@ -10,7 +10,7 @@ model: opencode-go/qwen3.6-plus
 Plan and Implement $1
 
 1. /plan-domain-operation $1
-2. Implement the plan with /tdd and combine it with /seek-implementation-for-domain-operation and /seek-implementation-for-domain-operation-test
+2. Proceed implementing the plan with /tdd and combine it with /seek-implementation-for-domain-operation and /seek-implementation-for-domain-operation-test
 
 Now validate your own process in read-only mode:
 
