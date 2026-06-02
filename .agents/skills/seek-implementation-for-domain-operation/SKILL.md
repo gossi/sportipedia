@@ -34,6 +34,7 @@ Answer these questions BEFORE writing any code. If any answer is "no" or "unsure
 
 - [ ] Do I know EXACTLY which operation I'm implementing? (single command or query name)
 - [ ] Do I have the domain model files for this operation?
+- [ ] I may have used a query as implementation details for a write operation, but did not implement the query operation?
 - [ ] Can I list every file I need to create from the skill templates alone?
 - [ ] Am I implementing ONLY the named operation? (no read, list, edit, delete unless explicitly named)
 - [ ] Do I have everything I need from documentation? (no code exploration required)
@@ -109,6 +110,11 @@ Derive authorization from the domain model and present rules and invariants.
 - Policy uses the bodyguard framework
 - One function for "can actor do x for y"
 - Only functions needed for the given operation
+- Basis are the `actor` in the domain model. Use guards from `Sportipedia.Auth`:
+  - `is_guest?(user)`
+  - `is_user?(user)`
+  - `is_admin?(user)`
+
 
 ### Aggregate
 
