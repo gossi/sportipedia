@@ -21,12 +21,32 @@ Use this skill when:
 - You are using TDD to implement
 - You are seeking implementation details
 
-## Context for Execting the Skill
+## Context for Executing the Skill
 
 - [Read Placeholder Naming Substitution](../../../docs/architecture/naming-substitution.md)
-- [Respect Code Access Policy](../../code-access-policy.md)
-- This skill counts as documentation
-- DO not run discovery, this documentation is sufficient
+- [Respect Code Access Policy](../../code-access-policy.md) — **HARD CONSTRAINT**: Reading implementation code for patterns or reference is a task failure, not a warning. If violated: STOP, announce the violation, discard all knowledge from that code, and restart from documentation.
+- This skill counts as documentation — it is sufficient for implementation
+- DO NOT run discovery, DO NOT explore code
+
+### Before You Start — Mandatory Checklist
+
+Answer these questions BEFORE writing any code. If any answer is "no" or "unsure", STOP and ask.
+
+- [ ] Do I know EXACTLY which operation I'm implementing? (single command or query name)
+- [ ] Do I have the domain model files for this operation?
+- [ ] Can I list every file I need to create from the skill templates alone?
+- [ ] Am I implementing ONLY the named operation? (no read, list, edit, delete unless explicitly named)
+- [ ] Do I have everything I need from documentation? (no code exploration required)
+
+### Templates Are Complete
+
+The code templates in this skill contain EVERYTHING you need.
+You do NOT need to:
+- Look at existing implementations for patterns
+- Explore the codebase for conventions
+- Verify against existing code
+
+If a template seems incomplete, that is a documentation gap — report it, do not fill it from code.
 
 ### Code Templates
 
@@ -334,9 +354,9 @@ defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Inter
 end
 ```
 
-## Register
+### Register
 
-### Register Command
+#### Register Command
 
 - register at a commanded router
 - router locations: `/services/api/lib/sportipedia/<_subdomain>/<_composite>/router.ex`
@@ -347,10 +367,19 @@ end
   dispatch <Command>, to: <Command>Handler, aggregate: <DomainObject>Aggregate
 ```
 
-### Projector at Supervisor
+#### Projector at Supervisor
 
 - register the projector at a supervisor
 - supervisor locations:
   - `/services/api/lib/sportipedia/<_subdomain>/<_composite>/supervisor.ex`
   - `/services/api/lib/sportipedia/<_subdomain>/supervisor.ex`
 - add projector to children
+
+## Verification — Before Declaring Done
+
+Check each item. If any is "no", you have scope creep:
+
+- [ ] Did I create files ONLY for the named operation?
+- [ ] Are there any functions in Public API beyond what the command/query needs?
+- [ ] Did I read any implementation files? (should be: no)
+- [ ] Did I follow directory structure from docs, not from existing code?

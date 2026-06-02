@@ -7,7 +7,7 @@ description: Seek implementation details for a read or write CQRS/ES operation i
 
 ## Overview
 
-Gives implementation details for an endpoint to exactly ONE! CQRS/ES operation in the Sportipedia domain.
+Gives implementation details for an endpoint to EXACTLY ONE! CQRS/ES operation in the Sportipedia domain.
 The operation is defined in the [Domain Model](../../../docs/domain-model/README.md).
 
 Context: This should be run when a domain operation is implemented.
@@ -21,18 +21,55 @@ Use this skill when:
 - You are using TDD to implement
 - You are seeking implementation details
 
-## Context for Execting the Skill
+## Context for Executing the Skill
 
 - [Read Placeholder Naming Substitution](../../../docs/architecture/naming-substitution.md)
-- [Respect Code Access Policy](../../code-access-policy.md)
-- This skill counts as documentation
-- Do not run discovery, this documentation is sufficient
+- [Respect Code Access Policy](../../code-access-policy.md) — **HARD CONSTRAINT**: Reading implementation code for patterns or reference is a task failure, not a warning. If violated: STOP, announce the violation, discard all knowledge from that code, and restart from documentation.
+- This skill counts as documentation — it is sufficient for implementation
+- DO NOT run discovery, DO NOT explore code
 
 > ![CAUTION]
 > Strictly forbidden: Reading code/Exploring code!
 > NEVER!!! read code for reference implementation or check existing implementations.
 > Failure Criteria: Reading Code, stop immediately!
 > Reading code takes too much time. Never even think about attempting!
+
+### Before You Start — Mandatory Checklist
+
+Answer these questions BEFORE writing any code. If any answer is "no" or "unsure", STOP and ask.
+
+- [ ] Do I know EXACTLY which operation I'm implementing? (single command or query name)
+- [ ] Do I have the domain model files for this operation?
+- [ ] Can I list every file I need to create from the skill templates alone?
+- [ ] Am I implementing ONLY the named operation?
+- [ ] Do I have everything I need from documentation? (no code exploration required)
+
+### Templates Are Complete
+
+The code templates in this skill contain EVERYTHING you need.
+You do NOT need to:
+- Look at existing implementations for patterns
+- Explore the codebase for conventions
+- Verify against existing code
+
+If a template seems incomplete, that is a documentation gap — report it, do not fill it from code.
+
+### Scope Enforcement — DO NOT Create
+
+For a **command** endpoint, you MUST NOT create:
+- Query endpoints (GET)
+- Other command endpoints (POST)
+- Query functions in Public API beyond what the command needs
+- Schemas for operations not named
+- Bruno docs for operations not named
+
+For a **query** endpoint, you MUST NOT create:
+- Command endpoints (POST)
+- Other query endpoints (GET)
+- Schemas for operations not named
+- Bruno docs for operations not named
+
+Only create what the named operation requires. Nothing else.
 
 ### Code Templates
 
@@ -331,3 +368,13 @@ Sorting the endpoints:
 
 1. Commands
 2. Queries
+
+## Verification — Before Declaring Done
+
+Check each item. If any is "no", you have scope creep:
+
+- [ ] Did I create files ONLY for the named operation?
+- [ ] Are there any endpoints/actions beyond the one requested?
+- [ ] Did I read any implementation files? (should be: no)
+- [ ] Did I follow directory structure from docs, not from existing code?
+- [ ] Did I create Bruno docs ONLY for the named operation?
