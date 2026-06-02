@@ -31,6 +31,15 @@ Use this skill when:
 - This skill counts as documentation
 - DO not run discovery, this documentation is sufficient
 
+### Before You Start — Mandatory Checklist
+
+Answer these questions BEFORE writing any code. If any answer is "no" or "unsure", STOP and ask.
+
+- [ ] Do I know EXACTLY which operation I'm implementing? (single command or query name)
+- [ ] Do I have the domain model files for this operation?
+- [ ] Can I list every file I need to create from the skill templates alone?
+- [ ] Do I have everything I need from documentation? (no code exploration required)
+
 ### Code Templates
 
 - Code Templates give you a scaffolding, when creating the file from scratch
@@ -296,3 +305,11 @@ Apply both:
 - Follow the tagging conventions from [Elixir Coding Guidelines](../../../docs/coding-guidelines/elixir.md)
 - Follow the naming conventions from [Naming Conventions](../../../docs/coding-guidelines/naming-conventions.md)
   - When comparing to other tests, rank the convention guidelines higher than existing source code
+
+## Verification — Before Declaring Done
+
+Check each item. If any is "no", you have scope creep:
+
+- [ ] Did I create files ONLY for the named operation?
+- [ ] Did I read any implementation files? (should be: no)
+- [ ] Did I follow directory structure from docs, not from existing code?

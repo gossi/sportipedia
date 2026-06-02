@@ -114,6 +114,9 @@ Derive authorization from the domain model and present rules and invariants.
   - `is_guest?(user)`
   - `is_user?(user)`
   - `is_admin?(user)`
+  - Pick the relevant for the implementation at hand (not all three are always needed). 
+    When guests are allowed, all others are too. 
+    When a user is allowed, so are admins.
 - By using the provided guards the checks are centralized and guaranteed to be equal everywhere
 
 #### Code Template
@@ -355,10 +358,16 @@ end
 ### Internal API
 
 Internal API is used within a constituent (including tests), but never from another constituent or composite.
-It contains function giving mnemonic to hide the technical call.
-For example, it will very much likely contain a function to retrieve the main domain object.
 
-In other places (eg Public API): Instead of calling Repo directly, use the internal API that is much more memorable.
+What it contains:
+
+- Functions with descriptive names do hide implementation details to make the API memorable
+- Functions may call the implementation from elsewhere, eg. use an existing query
+
+What it does not contain:
+
+- Technical implemetation that has a better place to live elsewhere (eg. in a query or a validator)
+
 
 #### Code Template
 
@@ -370,6 +379,65 @@ defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Inter
 
   def <domain_object>_by_id!(id) do
     # ecto query to read on record by id
+  end
+end
+```
+
+### Example: Validator and Queries (unique slug)
+
+This example covers a fairly common concept of checking for slug uniqueness. 
+It explains where to locate the individual parts.
+
+Make a query (ideally this is found in the domain model, too) and call it as part of implementation details:
+
+```elixir [query]
+defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Queries.<DomainObject>BySlug do
+  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>ReadModel
+  import Ecto.Query
+
+  def new(slug) do
+    from(r in <DomainObject>ReadModel,
+      where: r.slug == ^slug
+    )
+  end
+end
+```
+
+Use that query in the internal API
+
+```elixir [internal API]
+defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Internal do
+  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Queries.<DomainObject>BySlug
+
+  def <_domain_object>_by_slug(slug) do
+    slug
+    |> String.downcase()
+    |> <DomainObject>BySlug.new()
+    |> Repo.one()
+  end
+end
+```
+
+Use from Validator
+
+```elixir
+defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Validators.UniqueSlug do
+  use Vex.Validator
+
+  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Internal
+
+  def validate(value, _context) do
+    case slug_exists?(value) do
+      true -> {:error, "slug already exists"}
+      false -> :ok
+    end
+  end
+
+  defp slug_exists?(slug) do
+    case <DomainObject>Internal.instrument_by_slug(slug) do
+      nil -> false
+      _ -> true
+    end
   end
 end
 ```

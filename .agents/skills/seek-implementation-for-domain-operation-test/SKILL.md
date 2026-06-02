@@ -26,10 +26,19 @@ Use this skill when:
 ## Context for Execting the Skill
 
 - [Read Placeholder Naming Substitution](../../../docs/architecture/naming-substitution.md)
-- [Respect Code Access Policy](../../code-access-policy.md)
+- [Respect Code Access Policy](../../code-access-policy.md) — **HARD CONSTRAINT**: Reading implementation code for patterns or reference is a task failure, not a warning. If violated: STOP, announce the violation, discard all knowledge from that code, and restart from documentation.
 - [Respect Coding Guidelines](../../../docs/coding-guidelines/README.md)
 - This skill counts as documentation
 - DO not run discovery, this documentation is sufficient
+
+### Before You Start — Mandatory Checklist
+
+Answer these questions BEFORE writing any code. If any answer is "no" or "unsure", STOP and ask.
+
+- [ ] Do I know EXACTLY which operation I'm implementing? (single command or query name)
+- [ ] Do I have the domain model files for this operation?
+- [ ] Can I list every file I need to create from the skill templates alone?
+- [ ] Do I have everything I need from documentation? (no code exploration required)
 
 ### Code Templates
 
@@ -40,6 +49,8 @@ Use this skill when:
   2. All queries
 
 ## Test Contents
+
+File Location: `/services/api/test/sportipedia/catalog/<_composite>/<domain_object>/operation/<_operation>_test.exs`
 
 The test may (if applicable) cover the following:
 
@@ -204,3 +215,11 @@ Here is how the code is implemented to faster come to a conclusion how to write 
 - Vex `presence` validator message: `"must be present"`
 - Ecto `unique_constraint` message from DB: `"has already been taken"`
 - Ecto.Multi error tuples: `{:error, :multi_name, changeset, effects}`
+
+## Verification — Before Declaring Done
+
+Check each item. If any is "no", you have scope creep:
+
+- [ ] Did I create files ONLY for the named operation?
+- [ ] Did I read any implementation files? (should be: no)
+- [ ] Did I follow directory structure from docs, not from existing code?

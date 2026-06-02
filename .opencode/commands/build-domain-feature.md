@@ -24,4 +24,4 @@ Implement domain feature: $1
 ## Step 3: Build the Operation Endpoint
 
 1. /plan-domain-endpoint $1
-2. Proceed implementing the plan with /tdd and /seek-implementation-for-endpoint
+2. Proceed implementing the plan with /tdd and /seek-implementation-for-endpoint and /seek-implementation-for-endpoint-test

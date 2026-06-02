@@ -175,7 +175,6 @@ Directory Structure:
   - `/<_validation>_validator.ex`: Validators
   - `/<_query>_query.ex`: Queries
 - `/services/api/test/sportipedia/catalog/<_composite>/<domain_object>/operation/<_operation>_test.exs`
-  - snake case the `<_operation>`
 
 Special Naming Conventions:
 
