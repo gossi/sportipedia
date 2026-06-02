@@ -323,7 +323,7 @@ In other places (eg Public API): Instead of calling Repo directly, use the inter
 #### Code Template
 
 ```elixir
-defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>Internal do
+defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Internal do
   def <domain_object>_by_id(id) do
     # ecto query to read on record by id
   end

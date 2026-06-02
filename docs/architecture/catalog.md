@@ -144,7 +144,7 @@ Directory Structure:
 Special Naming Conventions:
 
 - Public API: `Sportipedia.<Subdomain>.<Composite>.<DomainObject>`
-- Internal API: `Sportipedia.<Subdomain>.<Composite>.<DomainObject>Internal`
+- Internal API: `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Internal`
 - Aggregate: `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Aggregate`
 - ReadModel: `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>ReadModel`
 - Projector: `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Projector`
