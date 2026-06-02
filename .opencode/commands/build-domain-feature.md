@@ -12,16 +12,20 @@ providing the entrance through the API
 
 Implement domain feature: $1
 
-## Step 1: Find the Domain Operation
+## Workflow
+
+Here is a step-by-step guide. Strictly follow the order and do not mix them up.
+
+### Step 1: Find the Domain Operation
 
 1. Use /find-domain-operation $1
 
-## Step 2: Build the Domain Operation
+### Step 2: Build the Domain Operation
 
 1. /plan-domain-operation $1
 2. Proceed implementing the plan with /tdd and combine it with /seek-implementation-for-domain-operation and /seek-implementation-for-domain-operation-test
 
-## Step 3: Build the Operation Endpoint
+### Step 3: Build the Operation Endpoint
 
 1. /plan-domain-endpoint $1
 2. Proceed implementing the plan with /tdd and /seek-implementation-for-endpoint and /seek-implementation-for-endpoint-test
