@@ -1,6 +1,6 @@
 apiVersion: schema.esdm.io/core/v1
 kind: query
-name: find-apparatus
+name: read-apparatus
 description: "Retrieve a single apparatus by its id or slug"
 scope:
   domain: sport
