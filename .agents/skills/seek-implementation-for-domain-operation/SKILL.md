@@ -110,10 +110,24 @@ Derive authorization from the domain model and present rules and invariants.
 - Policy uses the bodyguard framework
 - One function for "can actor do x for y"
 - Only functions needed for the given operation
-- Basis are the `actor` in the domain model. Use guards from `Sportipedia.Auth`:
+- Basis are the `actor` in the domain model. MUST use guards from `Sportipedia.Auth`:
   - `is_guest?(user)`
   - `is_user?(user)`
   - `is_admin?(user)`
+- By using the provided guards the checks are centralized and guaranteed to be equal everywhere
+
+#### Code Template
+
+```elixir
+defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Policy do
+  @behaviour Bodyguard.Policy
+
+  import Sportipedia.Auth.Roles
+
+  def authorize(:<_operation>, user, _params) when is_guest?(user), do: :error
+  def authorize(:<_operation>, user, _params) when is_user?(user), do: :ok
+end
+```
 
 
 ### Aggregate

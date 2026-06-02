@@ -2,7 +2,7 @@ defmodule Sportipedia.Auth.User do
   alias Sportipedia.Auth.Guardian
   use TypedStruct
 
-  @type role() :: "guest" | "user" | "admin"
+  @type role() :: :guest | :user | :admin
 
   typedstruct do
     field :id, String.t()
