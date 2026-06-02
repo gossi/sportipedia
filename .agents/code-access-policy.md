@@ -42,7 +42,8 @@ You may ONLY read code for:
 
 You may NEVER read code for:
 
-- Finding patterns to copy
+- Finding patterns
+- Find existing patterns
 - Checking "how it's done elsewhere"
 - Understanding directory structure
 - Verifying your implementation matches existing code
