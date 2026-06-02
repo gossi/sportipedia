@@ -63,3 +63,4 @@ Attach at the highest level that's correct for all tests in that scope. Only mov
 ## Important Patterns
 
 1. **CQRS/ES**: Commands → Events → Aggregates → Projections
+2. **UUID**: When dealing with ids, use the `UUID` module
