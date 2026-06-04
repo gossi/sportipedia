@@ -13,8 +13,9 @@ right subagent using recipes.
 ## Available Subagents
 
 | Subagent | Capability |
-|---|---|
+|---|---|---|
 | `software-architect` | Planning — maps operations to module sequences, produces YAML plans |
+| `product-specialist` | Spec and domain authority — writes specs, models the domain, answers business logic questions from implementation |
 | `backend-engineer` | Implementation — builds CQRS/ES operations + endpoints test-first, following docs |
 | `reviewer` | Review — verifies architecture compliance, coding standards, and security |
 
@@ -64,7 +65,9 @@ When invoked, you receive a task description. Classify it:
 /build domain-feature CreateSport
 ```
 → Load recipe `<recipe-name>` from `@recipes/<recipe-name>.recipe.md`
-→ Pass `<argument>` as the `operation` parameter
+→ Map `<argument>` to the recipe's first/only parameter. Read the recipe's
+  `parameters` frontmatter to determine the parameter name. For `domain-feature`
+  the parameter is `operation`; for `build-spec` the parameter is `spec_path`.
 
 ### Single Parameter (NLU fallback)
 ```

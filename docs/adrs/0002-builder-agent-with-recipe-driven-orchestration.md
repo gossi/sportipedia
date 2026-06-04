@@ -43,7 +43,6 @@ Chosen option: **Option 2 — Builder agent with recipe-driven orchestration**, 
 - Good, because each agent has a focused responsibility with tailored constraints (e.g., the planner never writes code; the implementer never redesigns).
 - Good, because recipes codify workflows as structured files that both the builder (orchestrator) and direct commands can reference — no workflow knowledge is duplicated.
 - Good, because the recipe format supports composition (`recipe:` steps), iteration (`for-each:`), and parameter passing (`${...}` expressions), enabling future spec-driven builds.
-- Good, because the `domain-modelling` command stays on the `domain-designer` agent (unchanged), preserving the interactive modelling workflow.
 - Bad, because the builder introduces indirection — a simple operation build goes through three subagent delegations instead of one direct agent session.
 - Bad, because subagent delegation via `task` tool may be slower than direct agent execution (multiple LLM invocations).
 - Neutral, because the existing build command shortcuts (`/build-domain-feature`, etc.) are preserved as thin wrappers that invoke the same recipes through the builder, maintaining auto-complete convenience.
@@ -52,7 +51,6 @@ Chosen option: **Option 2 — Builder agent with recipe-driven orchestration**, 
 
 - The file system layout under `.opencode/agents/`, `.opencode/recipes/`, and `.opencode/commands/` reflects the design.
 - The builder agent's system prompt defines subagent routing rules and recipe loading behavior.
-- Direct commands invoke the builder with a recipe reference; `domain-modelling` invokes `domain-designer` directly.
 
 ## Pros and Cons of the Options
 
@@ -103,12 +101,12 @@ Chosen option: **Option 2 — Builder agent with recipe-driven orchestration**, 
 └────┬──────────┬────────────┬────────────────┬────────────┘
      │          │            │                │
      ▼          ▼            ▼                ▼
-┌────────┐ ┌────────┐ ┌───────────┐ ┌──────────┐
-│Software│ │Backend │ │ Reviewer  │ │ Domain   │
-│Architect││Engineer│ │(subagent) │ │ Designer │
-│(subagent)│(subagent)│           │ │(primary) │
-│Planner  │ │Implement│ │Review    │ │Model     │
-└────────┘ └────────┘ └───────────┘ └──────────┘
+┌──────────┐ ┌────────┐ ┌───────────┐ ┌──────────────────┐
+│Software  │ │Backend │ │ Reviewer  │ │ Product          │
+│Architect │ │Engineer│ │(subagent) │ │ Specialist       │
+│(subagent)│ │(subagent)│           │ │(primary)         │
+│Planner   │ │Implement│ │Review    │ │Spec + Model      │
+└──────────┘ └────────┘ └───────────┘ └──────────────────┘
 ```
 
 ### File Layout
@@ -117,7 +115,7 @@ Chosen option: **Option 2 — Builder agent with recipe-driven orchestration**, 
 .opencode/
 ├── agents/
 │   ├── builder.md               (mode: primary,   model: cheap)
-│   ├── domain-designer.md       (mode: primary,   model: default)
+│   ├── product-specialist.md    (mode: primary,   model: default)
 │   ├── backend-engineer.md      (mode: subagent,  model: qwen)
 │   ├── software-architect.md    (mode: subagent,  model: qwen)
 │   └── reviewer.md              (mode: subagent,  model: cheap)
@@ -130,7 +128,7 @@ Chosen option: **Option 2 — Builder agent with recipe-driven orchestration**, 
     ├── build-domain-feature.md               # → builder + domain-feature recipe
     ├── build-domain-operation.md             # → builder + domain-operation recipe
     ├── build-domain-endpoint.md              # → builder + domain-endpoint recipe
-    └── domain-modelling.md                   # → domain-designer (unchanged)
+    └── domain-modelling.md                   # → product-specialist
 ```
 
 ### Recipe Format
@@ -174,6 +172,7 @@ approval: auto
 ```
 
 Step primitives:
+
 - `skill: <name>` + `agent:` — Load a single skill via the `skill` tool and delegate to the named subagent.
 - `skills: [<name>, ...]` + `agent:` — Load multiple skills and delegate to the named subagent to combine and execute them.
 - `agent:` only — Delegate directly to the subagent without loading any skill. The subagent's system prompt is sufficient (used for review).
@@ -219,10 +218,3 @@ reference it via `$schema` for editor validation.
 - `approval: auto` — Execute all steps without user interruption.
 - `approval: manual` — Present the plan to the user after planning steps; ask for approval before proceeding.
 - Fallback: If the builder cannot classify a task or no planning skill exists for a step, it asks the user for guidance.
-
-### Renaming History
-
-The original `domain-driven-developer` agent was:
-
-1. **Renamed** to `domain-designer` (primary agent) — continues to serve the `domain-modelling` command.
-2. **Duplicated** and adapted to `backend-engineer` (subagent mode) — serves implementation delegation with identical docs-first, code-access-policy constraints.

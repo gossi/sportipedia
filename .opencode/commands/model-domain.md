@@ -1,7 +1,7 @@
 ---
-name: domain-modelling
-description: Alter the domain model (interactive, no swarm)
-agent: domain-designer
+name: model-domain
+description: Run a domain modelling session and alter the domain model
+agent: product-specialist
 ---
 
 # Domain Modelling

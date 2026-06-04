@@ -1,6 +1,7 @@
 ---
 name: write-product-spec
 description: Use when asked to design a new feature or project
+agent: product-specialist
 ---
 
 # Writing Product Specifications
@@ -15,8 +16,6 @@ Make yourself familiar with the given [Architecture](../../../ARCHITECTURE.md) a
 
 Connect the product specification document with [ESDM](https://www.esdm.io). Link the spec to the esdm yaml files.
 
-Announce at start: "I'm using the writing-product-specs skill to create the product specification."
-
 Context: This should be run when designing a new feature or planning a project that needs clear requirements documentation.
 
 **Core principle:** Product specifications are detailed descriptions of the features and functionality of a product. They are used to communicate the requirements of the product to the development team.
@@ -24,6 +23,7 @@ Context: This should be run when designing a new feature or planning a project t
 ## When to Use This Skill
 
 Use this skill when:
+
 - You are explicitly asked to write a product specification, product spec, or PRD (Product Requirements Document)
 - You are asked to design a new feature and need to document requirements before implementation
 - You are planning a project and need to define what will be built and why
@@ -42,45 +42,79 @@ Ask questions to understand the feature or project. There might be prior knowled
 - **What is it?** What feature or project are we building? What does it do?
 - **What are their problems?** What specific pain points or challenges does the audience face? What is broken or missing?
 - **Where is the problem located?** What subdomain, composite and constituent we are in?
+- **What architectural scope does this cover?** Is this backend-only, full-stack, domain-only, or something else?
 - **How will this feature/project solve them?** What is the proposed solution? How does it address the problems? What are the commands and events? Which aggregates do these affect? What are the projections to which read model? Quality assurance in the form of Given-When-Then.
-- **Is there a reference implementation?** Found a reference implementation, ask if this is correct? Fully or which parts? Explicitely include partially as answer
-- **Is the Domain Model defined?** Are the additions clear and distinctively described? Are there (no) ambiguities?
-- **Explicitely! ask this question (include your assumptions): What are the invariants?** Do we know the rules that apply? Is existing prior prior knowledge still accurate?
+- **Is the Domain Model defined?** Check the existing domain model for consistency. If anything is missing or ambiguous, fill the gaps through domain modelling.
+- **Explicitely! ask this question (include your assumptions): What are the invariants?** Do we know the rules that apply? Is existing prior knowledge still accurate?
 - **What are we NOT doing?** What is explicitly out of scope? What related features or capabilities are we excluding?
-- **What needs to be documented through code?** Bruno collection? Storybook?
+
+As you discuss the feature, keep an ear out for things that feel like they should be deferred or pushed out of scope — cross-aggregate dependencies, prerequisite conditions, scope-creep risks. Flag these conversationally and decide together whether to defer them (→ todo file) or exclude them (→ non-requirements).
 
 Continue asking questions until you have enough information to draft a complete spec. Don't proceed to drafting until you have clear answers to these core questions.
 
-### Step 2: Draft the Specification
+### Step 2: Domain Modelling
 
-Using the information gathered, draft the product specification following the document structure outlined in the **Product Spec Format** section. Present the complete draft to the user.
+Interview to define the domain model precisely:
 
-### Step 3: Iterate Based on Feedback
+- Commands and their data fields (required vs optional)
+- Events and their payloads
+- Aggregate state and invariants
+- Read models and projections
+- Authorization rules per actor
+- Given-When-Then Feature with scenarios
+- **Behavior** — what happens when the command executes, how partial updates work, what the event payload contains and under what conditions. Capture this as detail in the ESDM `description` field.
+
+Write/update the `*.esdm.yaml` files under `docs/domain-model/<subdomain>/<composite>/`. Then run:
+
+```bash
+esdm lint
+```
+
+Loop: fix any errors → re-lint → repeat until clean. Warnings may be ignored.
+
+If the domain model was previously defined and is consistent, this step validates and confirms it.
+
+### Step 3: Draft and Iterate the Specification
+
+Using the information gathered and the validated domain model, draft the product specification following the document structure outlined in the **Product Spec Format** section. Present the complete draft to the user.
 
 After presenting the draft:
+
 - Ask the user for edits, clarifications, or additions
 - Identify gaps in the spec and ask targeted questions to fill them
 - Revise the spec based on feedback
+- If feedback touches the domain model, return to Step 2
 - Continue iterating until the user confirms the spec is complete and accurate
 
 ### Step 4: Finalize and Save
 
 Once the user confirms the spec is good enough:
+
 - Review the final spec against the document structure in **Product Spec Format**
-- Extract the additions to the domain model into their own `*.esdm.yaml` files
-  - Make use of the Given-When-Then extension
-- Link them from the spec
-- Save the artifact as `spec-<feature-name>-DD-MM-YYYY.md` (or as requested by the user). Put the file under /docs/specs/ then follow the same directory structure as the architecture does for the given subdomain we are in.
+- Create a `_todo/todo-<feature>-DD-MM-YYYY.md` file for any deferred items (linked from the Tradeoffs section)
+- Link the spec to the ESDM files
+- Save the artifact as `spec-<feature>-DD-MM-YYYY.md` (or as requested by the user). Put the file under `/docs/specs/` then follow the same directory structure as the architecture does for the given subdomain we are in.
 
 ## Product Spec Format
 
 Below is the format for a product spec. Each section should be written with clear, actionable guidance.
+
+```yaml
+---
+feature: <name of the feature, same as in the filename>
+subdomain: <subdomain>
+composite: <copmosite>
+constituent: <consitutent>
+scope: backend and/or frontend
+---
+```
 
 # [Project / Feature Title]
 
 **Instructions:** Provide a brief (1-2 sentences max) description of what we are building. This is the tl;dr that should explain the entire project and its benefits in a few sentences. A reader should understand the core value proposition from this title and description alone.
 
 **What to include:**
+
 - Clear, descriptive title that captures the feature/project
 - One to two sentences summarizing what is being built
 - The primary benefit or value this delivers
@@ -92,6 +126,7 @@ Below is the format for a product spec. Each section should be written with clea
 **Instructions:** Describe the world the problem exists in and the problem in broad strokes. Set the stage for why this work matters. Explain the current state, what's happening in the market or user workflows, and why this problem has emerged or become important now.
 
 **What to include:**
+
 - Current state of the world/workflow/system
 - Why this problem exists or has become relevant
 - Any relevant trends, constraints, or external factors
@@ -102,6 +137,7 @@ Below is the format for a product spec. Each section should be written with clea
 **Instructions:** List the specific problems we are solving. Use bullet format, one problem per bullet. Be succinct and direct—the background context has already been established. Each problem statement should be clear, specific, and actionable.
 
 **What to include:**
+
 - Each problem as a separate bullet point
 - Specific, concrete problems (avoid vague statements)
 - Problems that are directly addressable by the solution
@@ -112,6 +148,7 @@ Below is the format for a product spec. Each section should be written with clea
 **Instructions:** List the used domain model for the given feature. Link what already exists. Explain what is new. Strictly document this with the given template below.
 
 **What to include:**
+
 - Commands and Events
 - Aggregates they operate on
 - Projections into read models
@@ -135,30 +172,25 @@ New Domain Models:
 - [Type: Name](../path/to/file.esdm.yaml): Purpose
 ```
 
-## Requirements
+## Additional Requirements
 
-**Instructions:** List what is necessary for us to build in order to solve this problem. Be specific about functional requirements, technical requirements, and constraints. Organize by priority or category if helpful. Each requirement should be clear enough that an engineer can understand what needs to be built. 
+**Instructions:** Capture what needs to be built that the domain model (ESDM files) and implementation skills do not already define. Behavioural detail for commands and events belongs in the ESDM `description` field — do not duplicate it here. This section is for deviations from standard patterns, decisions no skill covers, and scope-specific needs.
 
 **Must**: Strictly stay to the following order
 
 **What to include:**
-- Functional requirements (what the system/feature must do)
-- Technical requirements (performance, scalability, compatibility needs)
-  - Highest priority is the given Architecture
-  - Then documentation from the used library/frameworks
-  - Then a verified reference implementation
-- User experience requirements (if applicable)
-- Integration or dependency requirements
-- Documentation (what code-related documentation needs to be written)
 
-**What NOT to include:**
-- Reference to existing implementations, make it ALWAYS based on Architecturre
+- Functional requirements — capabilities beyond what the domain model express
+- Technical requirements — deviations from standard architecture, or technical needs no existing guide covers
+- Integration or dependency requirements (business-level decisions)
+- User experience requirements (if applicable)
 
 ## Non-requirements
 
 **Instructions:** Explicitly state what we are not doing, what is out of scope, and what we don't have to do. This prevents scope creep and sets clear boundaries. Be specific about related features or capabilities that might seem related but are explicitly excluded.
 
 **What to include:**
+
 - Features or capabilities explicitly out of scope
 - Related problems we are not solving
 - Future work that might seem related but isn't part of this spec
@@ -166,21 +198,24 @@ New Domain Models:
 
 ## Quality Assurance
 
-**Instructions:** Explain the criteria that verify the feature implementation is correct. 
-
-**Must**: Strictly stay to the following order
+**Instructions:** Explain the criteria that verify the feature implementation is correct.
 
 **What to include:**
+
 - Test Scenarios
   - Given
   - When
   - Then
   - Include the terminology from the used domain model
   - **Must** reference the domain-model file including the scenario by name
-- Implementation Tests
 
-## Tradeoffs and concerns
+## Tradeoffs and Concerns
 
-**Instructions:** When you write this section just include the placeholder below in italics.
+**Instructions:** Document the hard decisions, deferred work, and their consequences. Use the following structure for each tradeoff:
 
-    Especially from engineering, what hard decisions will we have to make in order to implement this solution? What future problems might we have to solve because we chose to implement this?
+### [Title of the tradeoff/deferred decision]
+
+- **What:** What decision was made or deferred?
+- **Why:** Why was it done this way?
+- **Consequence:** What does this mean for correctness, users, or future work?
+- **Follow-up:** Link to the todo file in `docs/specs/_todo/`

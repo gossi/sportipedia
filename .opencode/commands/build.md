@@ -28,6 +28,7 @@ If `$1` is a single description (e.g. "create a new sport in the catalog"):
 
 ## Available Recipes
 
+- `build-spec` — Build everything described in a spec document (parses spec, iterates over all operations, commits after each)
 - `domain-feature` — Build a domain operation + its web endpoint
 - `domain-operation` — Build only the domain operation
 - `domain-endpoint` — Build only the web endpoint
