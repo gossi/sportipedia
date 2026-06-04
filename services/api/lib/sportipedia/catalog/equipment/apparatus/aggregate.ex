@@ -19,4 +19,13 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.ApparatusAggregate do
       description: event.description
     }
   end
+
+  def apply(%__MODULE__{} = aggregate, %Sportipedia.Catalog.Equipment.Apparatus.Event.ApparatusEdited{} = event) do
+    %__MODULE__{
+      aggregate
+      | title: event.title || aggregate.title,
+        slug: event.slug || aggregate.slug,
+        description: event.description || aggregate.description
+    }
+  end
 end

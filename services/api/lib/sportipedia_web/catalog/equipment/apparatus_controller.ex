@@ -5,6 +5,7 @@ defmodule SportipediaWeb.Catalog.Equipment.ApparatusController do
   alias Sportipedia.Catalog.Equipment.Apparatus
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.CatalogApparatus
   alias SportipediaWeb.Catalog.Equipment.Schemas.ApparatusResponse
+  alias SportipediaWeb.Catalog.Equipment.Schemas.EditApparatusRequest
   alias SportipediaWeb.Catalog.Equipment.ApparatusView
 
   use SportipediaWeb, :controller
@@ -34,6 +35,29 @@ defmodule SportipediaWeb.Catalog.Equipment.ApparatusController do
       |> put_status(:created)
       |> put_view(json: ApparatusView)
       |> render("show.json", %{data: apparatus})
+    end
+  end
+
+  operation :edit_apparatus,
+    summary: "Edit an apparatus",
+    request_body: {"Apparatus attributes", "application/json", EditApparatusRequest},
+    responses: [
+      ok: {"Apparatus", "application/vnd.api+json", ApparatusResponse},
+      not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      unprocessable_entity: %Reference{"$ref": "#/components/responses/unprocessable_entity"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      forbidden: %Reference{"$ref": "#/components/responses/forbidden"}
+    ]
+
+  def edit_apparatus(conn, _) do
+    case Apparatus.edit_apparatus(conn.params) do
+      {:ok, apparatus} ->
+        conn
+        |> put_view(json: ApparatusView)
+        |> render("show.json", %{data: apparatus})
+
+      {:error, _reason} ->
+        {:error, :notfound}
     end
   end
 end

@@ -20,4 +20,10 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.ApparatusReadModel do
     |> validate_required([:id, :title, :slug])
     |> unique_constraint(:slug, name: "apparatus_slug_index")
   end
+
+  def update_changeset(struct, params) do
+    struct
+    |> cast(params, [:title, :slug, :description])
+    |> unique_constraint(:slug, name: "apparatus_slug_index")
+  end
 end
