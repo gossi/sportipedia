@@ -1,3 +1,11 @@
+---
+title: Manage Apparatuses in the Backend
+feature: manage-apparatuses
+subdomain: catalog
+composite: equipment
+scope: backend
+---
+
 # Manage Apparatuses in the Backend
 
 **Build the complete backend for the `apparatus` aggregate — domain logic (CQRS/ES), JSON:API web endpoints, and API client requests — so that sports equipment (immovable apparatuses) can be cataloged, edited, listed, read, and archived by the system.**
@@ -52,57 +60,13 @@ New Domain Models:
 
 - [Feature: manage-apparatuses](../../../domain-model/catalog/equipment/feature.apparatus-management.esdm.yaml): Given-When-Then specification for apparatus management. Defines 7 scenarios covering catalog, edit, archive, validation, and rejection cases. Uses Aggregate variant scoped to `apparatus`.
 
-## Requirements
+## Additional Requirements
 
 ### Functional Requirements
 
-- **Catalog an Apparatus** — Users must be able to create a new apparatus with fields: `title` (required), `slug` (required, unique), `description` (optional). Returns the created apparatus with server-generated UUID.
-- **Edit an Apparatus** — Users must be able to partially update any subset of apparatus fields (`title`, `slug`, `description`). Requires `id`. Slug uniqueness must be enforced when slug is being changed.
-- **Archive an Apparatus** — Users must be able to archive (hard-delete from read model) an apparatus. Requires `id`.
+> The domain model invariant `no-archive-when-in-use` is **not enforced** in this iteration (see [Tradeoffs and concerns](#tradeoffs-and-concerns)). Archive is unconditional — always permitted.
 
-  > The domain model invariant `no-archive-when-in-use` is **not enforced** in this iteration (see [Tradeoffs and concerns](#tradeoffs-and-concerns)). Archive is unconditional — always permitted.
-
-  There is no unarchive capability. The event remains in the event store for audit; the read model record is deleted.
-
-- **Read an Apparatus** — Any actor (including unauthenticated guests) can read a single apparatus by its UUID. Returns the apparatus with all fields.
-- **List Apparatuses** — Any actor (including unauthenticated guests) can list all apparatuses. Supports JSON:API filtering (by `title`) and sorting (by `title`).
-
-### Technical Requirements
-
-- **Architecture Compliance** — Must follow the existing CQRS/ES architecture using the `Commanded` framework, matching the `instrument` implementation pattern exactly: Aggregate, Command, Command Handler, Event, Projector, Read Model, Public API, Policy, Validator, Query.
-- **Event Sourcing** — All state mutations must be captured as events in the event store using the existing `Sportipedia.Catalog` Commanded application. Aggregate identity prefix: `equipment/apparatus/`.
-- **Read Model** — An Ecto schema `ApparatusReadModel` in the `catalog` schema prefix with table `apparatus`. Fields: `id` (binary_id, PK), `title` (string, not null), `slug` (string, not null, unique), `description` (string, nullable), `inserted_at`, `updated_at`.
-- **Projector** — An `ApparatusProjector` using `Commanded.Projections.Ecto` with consistency `:strong`, name `"equipment.apparatus_projection"`. Must handle all three events: insert on `ApparatusCataloged`, update on `ApparatusEdited`, delete on `ApparatusArchived`.
-- **Unique Slug Validation** — A `UniqueSlug` validator that queries the read model for slug existence before allowing catalog or edit commands. Must guard against race conditions via database unique constraint.
-- **Authorization** — Implement `ApparatusPolicy` using Bodyguard:
-  - `catalog_apparatus`: authenticated user only
-  - `edit_apparatus`: authenticated user only
-  - `archive_apparatus`: authenticated user only
-  - `read_apparatus`: any (including guest/unauthenticated)
-  - `list_apparatuses`: any (including guest/unauthenticated)
-
-### Integration Requirements
-
-- **Web Controller** — `ApparatusController` under `SportipediaWeb.Catalog.Equipment` with 5 actions:
-  - `POST /catalog/equipment/apparatuses/catalog-apparatus` → `:catalog_apparatus`
-  - `POST /catalog/equipment/apparatuses/edit-apparatus` → `:edit_apparatus`
-  - `POST /catalog/equipment/apparatuses/archive-apparatus` → `:archive_apparatus`
-  - `GET /catalog/equipment/apparatuses` → `:list_apparatuses`
-  - `GET /catalog/equipment/apparatuses/:id` → `:read_apparatus`
-- **JSON:API View** — `ApparatusView` with type `"apparatuses"`, path `"catalog/equipment/apparatuses"`, fields: `:title`, `:description`, `:slug`.
-- **OpenAPI Schemas** — `ApparatusResponse` (single) and `ApparatusListResponse` (collection), titled `"equipment.Apparatus"` and `"equipment.Apparatuses"`.
-- **Router** — Add scope under `/catalog/equipment/apparatuses` in `router.ex`, mirroring the instrument route structure.
-
-### Documentation
-
-- **Bruno API Collection** — Add 5 request files under `bruno/Catalog/Equipment/`:
-  - `Catalog Apparatus.yml` (seq: 6)
-  - `Edit Apparatus.yml` (seq: 7)
-  - `Archive Apparatus.yml` (seq: 8)
-  - `List Apparatuses.yml` (seq: 9)
-  - `Read Apparatus.yml` (seq: 10)
-
-  Following the exact YAML format of the instrument Bruno files: JSON:API body, auth inheritance from parent folder, example responses.
+There is no unarchive capability. The event remains in the event store for audit; the read model record is deleted.
 
 ## Non-requirements
 
@@ -170,35 +134,14 @@ Given an apparatus "Balance Beam" exists
 ```
 Given an apparatus exists
  When a guest sends a GET request to read or list apparatuses
- Then the response includes the apparatus data (200 OK)
+  Then the response includes the apparatus data (200 OK)
 ```
 
-### Implementation Tests
+## Tradeoffs and Concerns
 
-- **Domain Feature Tests** — Three test files under `test/sportipedia/catalog/equipment/apparatus/features/`:
-  - `catalog_apparatus_test.exs` — Policy, Command validation, Handler, Event, Aggregate apply, Projector, Public API (unit + integration tags)
-  - `edit_apparatus_test.exs` — Policy, Command validation, Handler, Event (get_changes, JSON encoding), Aggregate apply (partial updates), Projector, Public API
-  - `archive_apparatus_test.exs` — Policy, Command validation, Handler, Event, Aggregate apply, Projector, Public API
+### Archive Guard Deferred
 
-- **Request Tests** — Three test files under `test/sportipedia_web/catalog/equipment/`:
-  - `catalog_apparatus_request_test.exs` — Authenticated success, 403 unauthenticated, 422 missing fields, 422 duplicate slug
-  - `edit_apparatus_request_test.exs` — Authenticated update, partial update, 403 unauthenticated, 404 on slug conflict
-  - `archive_apparatus_request_test.exs` — Authenticated archive, 403 unauthenticated, 204 on not-found
-
-- **Schema and View Tests** — Two test files under `test/sportipedia_web/catalog/equipment/`:
-  - `apparatus_schema_test.exs` — Schema titles and structure
-  - `apparatus_view_test.exs` — View type/fields/path, render single and collection, GET read and list endpoint behavior
-
-## Tradeoffs and concerns
-
-### Archive guard cannot be implemented in this iteration
-
-The domain model defines the invariant `no-archive-when-in-use` on the `apparatus` aggregate: an apparatus may only be archived when no sport references it via `use-apparatus`. Enforcing this requires a cross-aggregate query against the sport read model.
-
-This guard **cannot be implemented now** because the mechanism to associate an apparatus with a sport (`use-apparatus` / `withdraw-apparatus` commands on the `sport` aggregate) is out of scope. Without those commands, no sport will ever reference an apparatus, making the guard query always return zero results — dead code.
-
-**Consequence:** Archive is unconditional in this iteration. If a future feature introduces `use-apparatus` and associates an apparatus with a sport before this guard is implemented, archiving that apparatus will silently succeed, violating the domain invariant and leaving the sport with a dangling reference.
-
-**Follow-up:** A dedicated [todo file](../../_todo/todo-manage-apparatuses-19-05-2026.md) tracks the prerequisites, implementation steps, and resolution path for this guard. It must be implemented as part of or immediately after the feature that introduces `use-apparatus`/`withdraw-apparatus`.
-
-
+- **What:** The invariant `no-archive-when-in-use` — an apparatus may only be archived when no sport references it — is not enforced in this iteration.
+- **Why:** Enforcing this requires the `use-apparatus` / `withdraw-apparatus` commands on the `sport` aggregate to exist first. Those commands are out of scope.
+- **Consequence:** Archive is unconditional. If a future feature introduces `use-apparatus` before this guard is implemented, archiving an in-use apparatus will silently succeed, violating the domain invariant.
+- **Follow-up:** See the [todo file](../../_todo/todo-manage-apparatuses-19-05-2026.md) for prerequisites and resolution path.
