@@ -23,7 +23,45 @@
       "color": "primary"
     },
     "product-specialist": {
-      "color": "primary"
+      "color": "primary",
+      "permission": {
+        "read": {
+          "*": "deny",
+          "docs/**": "allow",
+          "ARCHITECTURE.md": "allow",
+          "AGENTS.md": "allow"
+        },
+        "edit": {
+          "*": "deny",
+          "docs/domain-model/**": "allow",
+          "docs/specs/**": "allow"
+        },
+        "glob": {
+          "*": "deny",
+          "docs/**": "allow",
+          "ARCHITECTURE.md": "allow",
+          "AGENTS.md": "allow"
+        },
+        "grep": {
+          "*": "deny",
+          "docs/**": "allow",
+          "ARCHITECTURE.md": "allow",
+          "AGENTS.md": "allow"
+        },
+        "list": {
+          "*": "deny",
+          "docs/**": "allow"
+        },
+        "bash": {
+          "*": "deny",
+          "esdm lint": "allow"
+        },
+        "task": "deny",
+        "webfetch": "deny",
+        "question": "allow",
+        "skill": "allow",
+        "todowrite": "allow"
+      }
     },
     "backend-engineer": {
       "color": "primary"
@@ -38,6 +76,9 @@
   "reference": {
     "recipes": {
       "path": ".opencode/recipes"
+    },
+    "specs": {
+      "path": "docs/specs"
     }
   }
 }

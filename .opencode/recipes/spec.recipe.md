@@ -1,6 +1,6 @@
 ---
 $schema: ./recipe.schema.yaml
-name: build-spec
+name: spec
 description: Build everything described in a spec document — parse spec, loop over operations, build each with full domain-feature, commit after each
 parameters:
   spec_path:
