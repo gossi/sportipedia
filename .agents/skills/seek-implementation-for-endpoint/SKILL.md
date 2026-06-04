@@ -321,6 +321,8 @@ There are two responses for a domain object:
 
 Each needing a schema, which is referenced by the `operation` in the controller.
 
+Also: There is no need to register the schema in API spec. Using them in the controller is enough.
+
 #### Single Object Response
 
 File Location: `/services/api/lib/sportipedia_web/<_subdomain>/<_composite>/schemas/<domain_object>_response.ex`
@@ -350,6 +352,25 @@ defmodule SportipediaWeb.<Subdomain>.<Composite>.Schemas.<DomainObject>Collectio
   OpenApiSpex.schema(
     OpenApiSchema.from_view(<DomainObject>View, title: "<-composite>.<DomainObject>s", many: true)
   )
+end
+```
+
+#### Commands
+
+The command used for an endpoint needs to use the `TypedStructOpenApi` plugin for `TypedStruct`. 
+
+Here is the code template highlighing the use of `TypedStructOpenApi`:
+
+```elixir
+defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<Command>
+  use TypedStruct
+  use ExConstructor
+
+  typedstruct do
+    plugin TypedStructOpenApi,
+      title: "<-composite>.<Command>",
+      description: "<describe the endpoint>"
+  end
 end
 ```
 
