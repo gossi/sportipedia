@@ -6,6 +6,7 @@ defmodule SportipediaWeb.Catalog.Equipment.ApparatusController do
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.CatalogApparatus
   alias SportipediaWeb.Catalog.Equipment.Schemas.ApparatusResponse
   alias SportipediaWeb.Catalog.Equipment.Schemas.EditApparatusRequest
+  alias SportipediaWeb.Catalog.Equipment.Schemas.ArchiveApparatusRequest
   alias SportipediaWeb.Catalog.Equipment.ApparatusView
 
   use SportipediaWeb, :controller
@@ -57,6 +58,26 @@ defmodule SportipediaWeb.Catalog.Equipment.ApparatusController do
         |> render("show.json", %{data: apparatus})
 
       {:error, _reason} ->
+        {:error, :notfound}
+    end
+  end
+
+  operation :archive_apparatus,
+    summary: "Archive an apparatus",
+    request_body: {"Apparatus id", "application/json", ArchiveApparatusRequest},
+    responses: [
+      no_content: "Apparatus archived",
+      not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      forbidden: %Reference{"$ref": "#/components/responses/forbidden"}
+    ]
+
+  def archive_apparatus(conn, _) do
+    case Apparatus.archive_apparatus(conn.params["id"]) do
+      :ok ->
+        send_resp(conn, :no_content, "")
+
+      {:error, _} ->
         {:error, :notfound}
     end
   end

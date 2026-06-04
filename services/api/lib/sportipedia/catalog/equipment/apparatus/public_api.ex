@@ -2,6 +2,7 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus do
   alias Sportipedia.Catalog
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.CatalogApparatus
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.EditApparatus
+  alias Sportipedia.Catalog.Equipment.Apparatus.Command.ArchiveApparatus
   alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusInternal
 
   def catalog_apparatus(params) do
@@ -31,6 +32,22 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus do
       end
     rescue
       ArgumentError -> {:error, :missing_id}
+    end
+  end
+
+  def archive_apparatus(id) when is_nil(id) do
+    {:error, :missing_id}
+  end
+
+  def archive_apparatus(id) do
+    case ApparatusInternal.apparatus_by_id(id) do
+      nil -> {:error, :not_found}
+      _ ->
+        cmd = ArchiveApparatus.new(%{id: id})
+
+        with {:ok, _aggregate} <- Catalog.dispatch(cmd, consistency: :strong, include_aggregate_version: true) do
+          :ok
+        end
     end
   end
 end

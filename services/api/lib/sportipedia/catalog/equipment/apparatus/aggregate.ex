@@ -28,4 +28,8 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.ApparatusAggregate do
         description: event.description || aggregate.description
     }
   end
+
+  def apply(%__MODULE__{} = _aggregate, %Sportipedia.Catalog.Equipment.Apparatus.Event.ApparatusArchived{} = _event) do
+    nil
+  end
 end

@@ -6,6 +6,7 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.ApparatusProjector do
     schema_prefix: "catalog",
     consistency: :strong
 
+  alias Sportipedia.Catalog.Equipment.Apparatus.Event.ApparatusArchived
   alias Sportipedia.Catalog.Equipment.Apparatus.Event.ApparatusCataloged
   alias Sportipedia.Catalog.Equipment.Apparatus.Event.ApparatusEdited
   alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusReadModel
@@ -41,6 +42,19 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.ApparatusProjector do
       record
       |> ApparatusReadModel.update_changeset(changes)
       |> repo.update()
+    end)
+  end
+
+  project %ApparatusArchived{} = event, _metadata, fn multi ->
+    multi
+    |> Ecto.Multi.run(:find_apparatus, fn repo, _ ->
+      case repo.get(ApparatusReadModel, event.id) do
+        nil -> {:error, :not_found}
+        record -> {:ok, record}
+      end
+    end)
+    |> Ecto.Multi.run(:delete_apparatus, fn repo, %{find_apparatus: record} ->
+      repo.delete(record)
     end)
   end
 end
