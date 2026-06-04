@@ -31,6 +31,8 @@ Answer these questions BEFORE writing any code. If any answer is "no" or "unsure
 
 - [Respect Code Access Policy](../../code-access-policy.md) — **HARD CONSTRAINT**: Reading implementation code for patterns or reference is a task failure, not a warning. If violated: STOP, announce the violation, discard all knowledge from that code, and restart from documentation.
 - This skill counts as documentation — it is sufficient for implementation
+- Also load the [software-plan-format](../software-plan-format/SKILL.md) skill — it
+  defines the output format for the plan artifact.
 - DO NOT run discovery, DO NOT explore code
 
 > ![CAUTION]
@@ -90,9 +92,11 @@ If not already done, use /find-domain-operation $1
 
 ## Step 4: Present the Result
 
-Present the plan with all necessary implementation details
-
-- **Must**: Modules skip implementation details: (present them like in API docs: Name + function listing with arity)
+Present the plan following the format defined by the `software-plan-format` skill:
+- YAML frontmatter with operation identity
+- Mermaid class diagram showing structural roles and relationships
+- Mermaid sequence diagram showing behavioral flow
+- Module table with full module names, roles, and file paths
 
 ## Verification — Before Declaring Done
 

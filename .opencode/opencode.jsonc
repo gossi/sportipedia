@@ -19,8 +19,25 @@
     }
   },
   "agent": {
-    "domain-driven-developer": {
+    "builder": {
       "color": "primary"
+    },
+    "domain-designer": {
+      "color": "primary"
+    },
+    "backend-engineer": {
+      "color": "primary"
+    },
+    "software-architect": {
+      "color": "primary"
+    },
+    "reviewer": {
+      "color": "primary"
+    }
+  },
+  "reference": {
+    "recipes": {
+      "path": ".opencode/recipes"
     }
   }
 }

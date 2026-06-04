@@ -135,6 +135,7 @@ Directory Structure:
   - `/aggregate.ex`: Aggregate
   - `/policy.ex`: Authorization
   - `/read_model.ex`: Shared Read Model (projection of the aggregate)
+  - `/events/<_event>.ex`: Events
   - `/entities/<_entity>.ex`: Entity
   - `/value-objects/<value_object>.ex`: Value Object
   - `/validators/<_validation>_validation.ex`: Shared Validators in the
@@ -149,6 +150,7 @@ Special Naming Conventions:
 - ReadModel: `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>ReadModel`
 - Projector: `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Projector`
 - Policy: `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Policy`
+- Event: `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Event.<event-name>`
 
 #### Vertical Slice Architecture
 
@@ -166,7 +168,6 @@ Special Naming Conventions:
 Directory Structure:
 
 - `/services/api/lib/sportipedia/catalog/<_composite>/<domain_object>/operation/<_operation>`
-  - `/event.ex`: Event
   - `/command.ex`: Command
   - `/handler.ex`: Command Handler
   - `/read_model.ex`: Custom Read Model
@@ -178,7 +179,6 @@ Directory Structure:
 
 Special Naming Conventions:
 
-- Event: `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Event.<event-name>`
 - Command: `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<command-name>`
 - CommandHandler: `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<command-name>Handler`
 

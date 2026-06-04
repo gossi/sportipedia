@@ -63,8 +63,15 @@ Here is a list of implementation details to seek
 
 ### Public API
 
-- One function per command operation
-- One function per query operation
+What it contains:
+
+- Exactly one function per operation, that is found in the domain model
+  - One function per command operation
+  - One function per query operation
+
+What it does not contain:
+
+- Functions, that live in the internal API
 
 #### Command
 
@@ -72,6 +79,7 @@ Here is a list of implementation details to seek
 - Vex runs as commanded middleware and validates the command
 - If the command results in a CREATE projection, instantiate a UUID for it
 - If the command addresses a read model, return it
+  - Try internal API for fetching it, fallback to using `Repo`
 - Unless the command resuslts in DELETE projection, then don't
 
 #### Query
@@ -131,7 +139,6 @@ defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Policy do
   def authorize(:<_operation>, user, _params) when is_user?(user), do: :ok
 end
 ```
-
 
 ### Aggregate
 
@@ -363,11 +370,11 @@ What it contains:
 
 - Functions with descriptive names do hide implementation details to make the API memorable
 - Functions may call the implementation from elsewhere, eg. use an existing query
+- Function to get the read models via id: `<domain_object>_by_id(id)` and `<domain_object>_by_id!(id)` - the latter used in tests.
 
 What it does not contain:
 
 - Technical implemetation that has a better place to live elsewhere (eg. in a query or a validator)
-
 
 #### Code Template
 

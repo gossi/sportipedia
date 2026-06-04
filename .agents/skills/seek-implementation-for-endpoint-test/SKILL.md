@@ -62,7 +62,7 @@ The test may (if applicable) cover the following:
 
 ### Request Test
 
-File Location: `test/sportipedia_web/<_subdomain>/<_composite>/<_constituent>/operation/<_operation>_request_test.exs`
+File Location: `test/sportipedia_web/<_subdomain>/<_composite>/<domain_object>/operation/<_operation>_request_test.exs`
 
 One file per operation (e.g. `catalog_instrument_request_test.exs`, `edit_instrument_request_test.exs`).
 
@@ -231,7 +231,7 @@ end
 
 ### View Tests
 
-File Location: `test/sportipedia_web/<_subdomain>/<_composite>/<_constituent>/<domain_object>_view_test.exs`
+File Location: `test/sportipedia_web/<_subdomain>/<_composite>/<domain_object>/<domain_object>_view_test.exs`
 
 View unit tests are in a `describe "View"` block alongside the controller tests. The JSONAPI View's `render` function requires a `Plug.Conn` struct with fetched params:
 
@@ -262,7 +262,7 @@ end
 
 ### OpenAPI Schema Tests
 
-File Location: `test/sportipedia_web/<_subdomain>/<_composite>/<_constituent>/<domain_object>_schema_test.exs`
+File Location: `test/sportipedia_web/<_subdomain>/<_composite>/<domain_object>/<domain_object>_schema_test.exs`
 
 Use `use ExUnit.Case` (no DB, no sandbox). Test that the compile-time schema has the expected structure:
 

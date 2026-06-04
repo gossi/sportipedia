@@ -1,7 +1,7 @@
 ---
 name: domain-modelling
-description: Alter the domain model
-agent: domain-driven-developer
+description: Alter the domain model (interactive, no swarm)
+agent: domain-designer
 ---
 
 # Domain Modelling
