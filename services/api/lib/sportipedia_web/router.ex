@@ -64,6 +64,10 @@ defmodule SportipediaWeb.Router do
         get "/", InstrumentController, :list_instruments
         get "/:id", InstrumentController, :read_instrument
       end
+
+      scope "/apparatuses" do
+        post "/catalog-apparatus", ApparatusController, :catalog_apparatus
+      end
     end
   end
 
