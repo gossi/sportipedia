@@ -5,6 +5,7 @@ defmodule SportipediaWeb.Catalog.Equipment.ApparatusController do
   alias Sportipedia.Catalog.Equipment.Apparatus
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.CatalogApparatus
   alias SportipediaWeb.Catalog.Equipment.Schemas.ApparatusResponse
+  alias SportipediaWeb.Catalog.Equipment.Schemas.ApparatusListResponse
   alias SportipediaWeb.Catalog.Equipment.Schemas.EditApparatusRequest
   alias SportipediaWeb.Catalog.Equipment.Schemas.ArchiveApparatusRequest
   alias SportipediaWeb.Catalog.Equipment.ApparatusView
@@ -17,6 +18,11 @@ defmodule SportipediaWeb.Catalog.Equipment.ApparatusController do
     action: {Phoenix.Controller, :action_name},
     user: {Sportipedia.Auth, :get_user_from_assigns},
     fallback: FallbackController
+
+  plug JSONAPI.QueryParser,
+    filter: ~w(title),
+    sort: ~w(title),
+    view: ApparatusView
 
   tags ["equipment"]
 
@@ -39,6 +45,21 @@ defmodule SportipediaWeb.Catalog.Equipment.ApparatusController do
 
       {:error, :not_found} ->
         {:error, :notfound}
+    end
+  end
+
+  operation :list_apparatuses,
+    summary: "List all apparatuses with filtering, sorting, and pagination",
+    responses: [
+      ok: {"Apparatus collection", "application/vnd.api+json", ApparatusListResponse}
+    ]
+
+  def list_apparatuses(conn, _) do
+    case Apparatus.list_apparatuses(conn.assigns.jsonapi_query) do
+      {:ok, data} ->
+        conn
+        |> put_view(json: ApparatusView)
+        |> render("index.json", %{data: data})
     end
   end
 

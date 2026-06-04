@@ -14,4 +14,7 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Policy do
 
   def authorize(:read_apparatus, user, _params) when is_guest?(user), do: :ok
   def authorize(:read_apparatus, user, _params) when is_user?(user), do: :ok
+
+  def authorize(:list_apparatuses, user, _params) when is_guest?(user), do: :ok
+  def authorize(:list_apparatuses, user, _params) when is_user?(user), do: :ok
 end

@@ -1,9 +1,20 @@
 defmodule Sportipedia.Catalog.Equipment.Apparatus do
   alias Sportipedia.Catalog
+  alias Sportipedia.Catalog.Repo
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.CatalogApparatus
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.EditApparatus
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.ArchiveApparatus
   alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusInternal
+  alias Sportipedia.Catalog.Equipment.Apparatus.Queries.ListApparatuses
+
+  def list_apparatuses(params) do
+    apparatuses =
+      params
+      |> ListApparatuses.new()
+      |> Repo.all()
+
+    {:ok, apparatuses}
+  end
 
   def catalog_apparatus(params) do
     params = Map.put_new(params, :id, UUID.uuid4())

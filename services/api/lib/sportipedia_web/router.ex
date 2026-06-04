@@ -72,6 +72,7 @@ defmodule SportipediaWeb.Router do
         patch "/edit-apparatus", ApparatusController, :edit_apparatus
 
         # queries
+        get "/", ApparatusController, :list_apparatuses
         get "/:id", ApparatusController, :read_apparatus
       end
     end
