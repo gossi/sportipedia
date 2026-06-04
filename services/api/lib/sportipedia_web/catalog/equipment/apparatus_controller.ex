@@ -20,6 +20,28 @@ defmodule SportipediaWeb.Catalog.Equipment.ApparatusController do
 
   tags ["equipment"]
 
+  operation :read_apparatus,
+    summary: "Retrieve a single apparatus by its id or slug",
+    parameters: [
+      id: [in: :path, description: "ID or slug of the apparatus", type: :string]
+    ],
+    responses: [
+      ok: {"Apparatus", "application/vnd.api+json", ApparatusResponse},
+      not_found: %Reference{"$ref": "#/components/responses/not_found"}
+    ]
+
+  def read_apparatus(conn, _) do
+    case Apparatus.read_apparatus(conn.params["id"]) do
+      {:ok, apparatus} ->
+        conn
+        |> put_view(json: ApparatusView)
+        |> render("show.json", %{data: apparatus})
+
+      {:error, :not_found} ->
+        {:error, :notfound}
+    end
+  end
+
   operation :catalog_apparatus,
     summary: "Catalog an apparatus",
     request_body: {"Apparatus attributes", "application/json", CatalogApparatus},

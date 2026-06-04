@@ -35,6 +35,43 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus do
     end
   end
 
+  def read_apparatus(id_or_slug) do
+    with {:ok, apparatus} <- by_id(id_or_slug) do
+      {:ok, apparatus}
+    else
+      :not_found ->
+        case ApparatusInternal.apparatus_by_slug(id_or_slug) do
+          nil -> {:error, :not_found}
+          apparatus -> {:ok, apparatus}
+        end
+
+      :invalid_id ->
+        case ApparatusInternal.apparatus_by_slug(id_or_slug) do
+          nil -> {:error, :not_found}
+          apparatus -> {:ok, apparatus}
+        end
+    end
+  end
+
+  defp by_id(id_or_slug) do
+    case uuid?(id_or_slug) do
+      true ->
+        case ApparatusInternal.apparatus_by_id(id_or_slug) do
+          nil -> :not_found
+          apparatus -> {:ok, apparatus}
+        end
+
+      false ->
+        :invalid_id
+    end
+  end
+
+  defp uuid?(value) when is_binary(value) do
+    String.match?(value, ~r/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+  end
+
+  defp uuid?(_), do: false
+
   def archive_apparatus(id) when is_nil(id) do
     {:error, :missing_id}
   end
