@@ -27,8 +27,7 @@ steps:
         - agent: backend-engineer
           skills:
             - tdd
-            - seek-implementation-for-domain-operation
-            - seek-implementation-for-domain-operation-test
+            - use-blueprints
           with: { operation: ${parameters.operation} }
 approval: auto
 ---

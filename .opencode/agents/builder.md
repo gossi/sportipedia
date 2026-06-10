@@ -39,6 +39,7 @@ A step can be:
   load — the subagent's system prompt is sufficient.
 
 Each step also has:
+
 - `with: { key: value }` — Parameter bindings using `${...}` expressions.
   - `${parameters.<name>}` — top-level parameter
   - `${steps.<id>.result}` — result from a previous step
@@ -50,6 +51,7 @@ their agents. Load the sub-recipe and execute its steps recursively.
 ### Auto-Approval
 
 The recipe has an `approval` field:
+
 - `approval: auto` — Execute all steps without asking the user. Only pause for
   user approval if the task is unrecognized or the recipe explicitly requests it.
 - `approval: manual` — Present the plan to the user after planning steps, ask
@@ -60,26 +62,32 @@ The recipe has an `approval` field:
 When invoked, you receive a task description. Classify it:
 
 ### Structured Call (2 parameters)
+
 ```
 /build <recipe-name> <argument>
 /build domain-feature CreateSport
 ```
+
 → Load recipe `<recipe-name>` from `@recipes/<recipe-name>.recipe.md`
 → Map `<argument>` to the recipe's first/only parameter. Read the recipe's
   `parameters` frontmatter to determine the parameter name. For `domain-feature`
   the parameter is `operation`; for `build-spec` the parameter is `spec_path`.
 
 ### Single Parameter (NLU fallback)
+
 ```
 /build create a new sport in the catalog
 ```
+
 → Classify the intent:
-  - Does it match a known recipe name? (domain-feature, domain-operation, etc.)
-  - Can you extract an operation name from the text?
-  - If confident: load the recipe and proceed
-  - If uncertain: ask the user "I think this is about [X]. Is that correct?"
+
+- Does it match a known recipe name? (domain-feature, domain-operation, etc.)
+- Can you extract an operation name from the text?
+- If confident: load the recipe and proceed
+- If uncertain: ask the user "I think this is about [X]. Is that correct?"
 
 ### Fallback — Ask
+
 If you cannot classify the task, ask the user:
   "What kind of task is this? Options: domain-feature, domain-operation, domain-endpoint, domain-modelling."
 
@@ -103,9 +111,18 @@ If you cannot classify the task, ask the user:
 6. **Continue** remaining steps.
 7. **Summarize** results to the user.
 
+Before executing steps:
+
+- create a todo list from the step IDs
+- Make sure you delegate the steps as outlined in the recipe
+- Important: In step 4b, You cannot execute that step on behalf of a subagent (this is against your
+  identity of an orchestrator), make sure you do spawn a task here and let the
+  task do its job.
+
 ### Expanding a `recipe:` Step
 
 When a step has `recipe:` instead of `agent:`:
+
 1. Load the sub-recipe file
 2. Resolve its parameter bindings
 3. Execute its steps using the same flow above (recursive)
@@ -114,6 +131,7 @@ When a step has `recipe:` instead of `agent:`:
 ### Example: `/build domain-feature CreateSport`
 
 Recipe `domain-feature.recipe.md`:
+
 ```yaml
 steps:
   - id: find
@@ -144,8 +162,9 @@ Capture result → `${steps.find.result}`.
 
 **Step 2 (build-operation):** Load sub-recipe `domain-operation.recipe.md`.
 Execute its steps:
-  - Delegate `plan-domain-operation` to software-architect, passing `${steps.find.result}` as context
-  - Delegate `[tdd, seek-implementation-for-domain-operation, seek-implementation-for-domain-operation-test]` to backend-engineer, passing the plan
+
+- Delegate `plan-domain-operation` to software-architect, passing `${steps.find.result}` as context
+- Delegate `[tdd, seek-implementation-for-domain-operation, seek-implementation-for-domain-operation-test]` to backend-engineer, passing the plan
 
 **Step 3 (build-endpoint):** Load sub-recipe `domain-endpoint.recipe.md`. Same pattern.
 

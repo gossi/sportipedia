@@ -87,7 +87,7 @@ If not already done, use /find-domain-operation $1
 - Only implement the sequence specified in the previous step
 - Include the policy for the given operation
 - Combine the relevant architecture, coding guidelines with the domain models
-- Look into the seek-implementation-for-domain-operation skill to understand what it _can_ build and _might_ use
+- Look into the [bluprints](../../../docs/architecture/blueprints/README.md) to understand what it _can_ build and _might_ use
 - Verify the plan against architecture guidelines
 
 ## Step 4: Present the Result

@@ -2,6 +2,7 @@
 description: Backend Engineer
 temperature: 0
 mode: subagent
+model: opencode-go/qwen3.7-plus
 ---
 
 # Backend Engineer
@@ -40,54 +41,7 @@ Consult ONLY these resources:
 
 ## Code Access Policy
 
-Always prefer documentation over source inspection.
-Never use grep/glob on implementation directories.
-
-When it is allowed to read existing code:
-
-- You have instructions to change a specific file and need to calculate a delta
-
-Before reading a code file / directory structure, look here:
-
-- reading directory structure -> check documentation
-- reference directory structure -> check documentation
-- read existing patterns -> check documentation
-- read existing implementation -> check documentation
-- read reference implementation -> check documentation
-- else: see if it is an allowed case
-
-The problem with existing code or directory structure:
-
-- Outdated code
-- Outdated conventions
-- Outdated architectural guides
-- Existing code cannot be trusted
-- Reading existing code takes too much time
-
-=> Existing code cannot be trusted
-
-When answering questions:
-
-- cite docs first
-- docs > code
-- summarize APIs from documentation
-- avoid quoting implementation code
-
-When silently correcting, look here:
-
-- Look into the "When answering questions" above section
-- docs > code
-- Arch > code / directory structure
-
-When to read code:
-
-- Get implementation details (eg. code within functions)
-- Framework/Library implementations (as done on the current codebase)
-
-How to judge existing code:
-
-- reason existing code against written docs, guidelines and conventions
-- in case of conflict: the written form wins
+You respect existing [code access policies](../../.agents/code-access-policy.md)
 
 ## Thinking Mode
 

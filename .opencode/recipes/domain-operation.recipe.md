@@ -14,8 +14,7 @@ steps:
     agent: backend-engineer
     skills:
       - tdd
-      - seek-implementation-for-domain-operation
-      - seek-implementation-for-domain-operation-test
+      - use-blueprints
     with: { operation: ${parameters.operation} }
 approval: auto
 ---
@@ -28,7 +27,7 @@ Plan and implement exactly ONE CQRS/ES operation in the Sportipedia domain.
 
 1. **Plan** — loads `plan-domain-operation` skill to scope and plan the
    implementation
-2. **Implement** — loads TDD + implementation skills, builds the operation
+2. **Implement** — loads `tdd` + `use-blueprints` skills, builds the operation
    test-first
 
 ## Parameters

@@ -4,11 +4,24 @@
 
 - Module structure does not necessarily follow the directory structure
 
-### Naming Conventions
+### Conventions and Guidelines
 
-Follow the [official Elixir naming conventions](https://hexdocs.pm/elixir/naming-conventions.html).
+- Follow [Elixir Coding Guidelines](../../../docs/coding-guidelines/elixir.md)
+- Follow [Sportipedia Naming Conventions](../../../docs/coding-guidelines/naming-conventions.md)
+
+## Documentation
+
+- Use `@moduledoc` and `@doc` for documenting source code
+- Use `@spec` on functions
 
 ## Testing
+
+### Covering Functionality
+
+Apply both:
+
+- Positive testing: verifies that the system works as expected with valid inputs.
+- Negative testing: checks how the system handles invalid, unexpected, or edge-case inputs.
 
 ### Tagging Convention
 

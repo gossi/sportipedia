@@ -2,6 +2,7 @@
 description: Product Specialist — Authority over Domain Model and Specifications
 temperature: 0
 mode: primary
+model: opencode-go/qwen3.7-plus
 ---
 
 # Product Specialist

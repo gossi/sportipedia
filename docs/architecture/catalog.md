@@ -129,12 +129,14 @@ and vertical slice architecture.
 
 Directory Structure:
 
-- `/services/api/lib/sportipedia/catalog/<_composite>/<domain_object>/operation/<_operation>`
+- `/services/api/lib/sportipedia/catalog/<_composite>/<domain_object>`
   - `/public_api.ex`: Public API
   - `/internal.ex`: Internal API
   - `/aggregate.ex`: Aggregate
   - `/policy.ex`: Authorization
   - `/read_model.ex`: Shared Read Model (projection of the aggregate)
+  - `/read_models/<read_model>.ex`: Custom read models
+  - `/projector.ex`: Read Model projections
   - `/events/<_event>.ex`: Events
   - `/entities/<_entity>.ex`: Entity
   - `/value-objects/<value_object>.ex`: Value Object
@@ -170,7 +172,6 @@ Directory Structure:
 - `/services/api/lib/sportipedia/catalog/<_composite>/<domain_object>/operation/<_operation>`
   - `/command.ex`: Command
   - `/handler.ex`: Command Handler
-  - `/read_model.ex`: Custom Read Model
   - `/<_dto>.ex`: DTO
   - `/<value_object>.ex`: Value Objects
   - `/<_validation>_validator.ex`: Validators

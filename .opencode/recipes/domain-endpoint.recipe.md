@@ -14,8 +14,7 @@ steps:
     agent: backend-engineer
     skills:
       - tdd
-      - seek-implementation-for-endpoint
-      - seek-implementation-for-endpoint-test
+      - use-blueprints
     with: { operation: ${parameters.operation} }
 approval: auto
 ---
@@ -27,8 +26,8 @@ Plan and implement the web endpoint for exactly ONE CQRS/ES operation.
 ## Structure
 
 1. **Plan** — loads `plan-domain-endpoint` skill to scope the endpoint
-2. **Implement** — loads TDD + endpoint implementation skills, builds the
-   endpoint test-first
+2. **Implement** — loads `tdd` + `use-blueprints` skills, builds the endpoint
+   test-first
 
 ## Parameters
 

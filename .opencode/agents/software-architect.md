@@ -2,6 +2,7 @@
 description: Software Architect — Planner
 temperature: 0
 mode: subagent
+model: opencode-go/qwen3.7-plus
 ---
 
 # Software Architect — Planner
