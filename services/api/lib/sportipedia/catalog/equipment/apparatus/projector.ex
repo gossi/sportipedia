@@ -7,7 +7,9 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.ApparatusProjector do
     consistency: :strong
 
   alias Sportipedia.Catalog.Equipment.Apparatus.Event.ApparatusCataloged
+  alias Sportipedia.Catalog.Equipment.Apparatus.Event.ApparatusEdited
   alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusReadModel
+  alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusInternal
 
   project %ApparatusCataloged{} = event, _metadata, fn multi ->
     multi
@@ -15,5 +17,21 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.ApparatusProjector do
       :apparatus_cataloged,
       ApparatusReadModel.insert_changeset(%ApparatusReadModel{}, Map.from_struct(event))
     )
+  end
+
+  project %ApparatusEdited{} = event, _metadata, fn multi ->
+    case ApparatusInternal.apparatus_by_id(event.id) do
+      nil ->
+        multi
+
+      %ApparatusReadModel{} = apparatus ->
+        attrs = ApparatusEdited.get_changes(event)
+
+        multi
+        |> Ecto.Multi.update(
+          :apparatus_edited,
+          ApparatusReadModel.update_changeset(apparatus, attrs)
+        )
+    end
   end
 end

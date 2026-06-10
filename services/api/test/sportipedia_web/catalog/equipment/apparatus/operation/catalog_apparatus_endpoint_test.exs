@@ -11,7 +11,8 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.CatalogApparatusEndpointTes
         build_conn()
         |> authenticate_conn()
         |> api_conn()
-        |> post("/catalog/equipment/apparatuses/catalog-apparatus",
+        |> post(
+          "/catalog/equipment/apparatuses/catalog-apparatus",
           Jason.encode!(
             jsonapi_body("apparatuses", %{
               "title" => "Vaulting Table",
@@ -42,7 +43,8 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.CatalogApparatusEndpointTes
       conn =
         build_conn()
         |> api_conn()
-        |> post("/catalog/equipment/apparatuses/catalog-apparatus",
+        |> post(
+          "/catalog/equipment/apparatuses/catalog-apparatus",
           Jason.encode!(
             jsonapi_body("apparatuses", %{
               "title" => "Vaulting Table",
@@ -59,7 +61,8 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.CatalogApparatusEndpointTes
         build_conn()
         |> authenticate_conn()
         |> api_conn()
-        |> post("/catalog/equipment/apparatuses/catalog-apparatus",
+        |> post(
+          "/catalog/equipment/apparatuses/catalog-apparatus",
           Jason.encode!(
             jsonapi_body("apparatuses", %{
               "slug" => "vaulting-table"
@@ -75,7 +78,8 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.CatalogApparatusEndpointTes
         build_conn()
         |> authenticate_conn()
         |> api_conn()
-        |> post("/catalog/equipment/apparatuses/catalog-apparatus",
+        |> post(
+          "/catalog/equipment/apparatuses/catalog-apparatus",
           Jason.encode!(
             jsonapi_body("apparatuses", %{
               "title" => "Vaulting Table"
@@ -92,7 +96,8 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.CatalogApparatusEndpointTes
         build_conn()
         |> authenticate_conn()
         |> api_conn()
-        |> post("/catalog/equipment/apparatuses/catalog-apparatus",
+        |> post(
+          "/catalog/equipment/apparatuses/catalog-apparatus",
           Jason.encode!(
             jsonapi_body("apparatuses", %{
               "title" => "Vaulting Table",
@@ -108,7 +113,8 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.CatalogApparatusEndpointTes
         build_conn()
         |> authenticate_conn()
         |> api_conn()
-        |> post("/catalog/equipment/apparatuses/catalog-apparatus",
+        |> post(
+          "/catalog/equipment/apparatuses/catalog-apparatus",
           Jason.encode!(
             jsonapi_body("apparatuses", %{
               "title" => "Another Apparatus",
