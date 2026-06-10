@@ -1,0 +1,109 @@
+info:
+  name: Read Apparatus
+  type: http
+  seq: 4
+
+http:
+  method: GET
+  url: "{{apiUrl}}/catalog/equipment/apparatuses/{{id}}"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+vars:
+  id: vault
+
+examples:
+  - name: Read Apparatus by ID
+    request:
+      url: "{{apiUrl}}/catalog/equipment/apparatuses/d290f1ee-6c54-4b01-90e6-d701748f0851"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: content-type
+          value: application/vnd.api+json; charset=utf-8
+        - name: cache-control
+          value: max-age=0, private, must-revalidate
+      body:
+        type: json
+        data: |-
+          {
+            "data":
+              {
+                "attributes": { "description": "A gymnastics vault", "title": "Vaulting Table", "slug": "vaulting-table" },
+                "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                "links":
+                  {
+                    "self": "http://localhost:3100/catalog/equipment/apparatuses/d290f1ee-6c54-4b01-90e6-d701748f0851"
+                  },
+                "type": "apparatuses",
+                "relationships": {}
+              },
+            "links":
+              {
+                "self": "http://localhost:3100/catalog/equipment/apparatuses/d290f1ee-6c54-4b01-90e6-d701748f0851"
+              },
+            "included": []
+          }
+
+  - name: Read Apparatus by slug
+    request:
+      url: "{{apiUrl}}/catalog/equipment/apparatuses/vault"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: content-type
+          value: application/vnd.api+json; charset=utf-8
+        - name: cache-control
+          value: max-age=0, private, must-revalidate
+      body:
+        type: json
+        data: |-
+          {
+            "data":
+              {
+                "attributes": { "description": "A gymnastics vault", "title": "Vault", "slug": "vault" },
+                "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                "links":
+                  {
+                    "self": "http://localhost:3100/catalog/equipment/apparatuses/d290f1ee-6c54-4b01-90e6-d701748f0851"
+                  },
+                "type": "apparatuses",
+                "relationships": {}
+              },
+            "links":
+              {
+                "self": "http://localhost:3100/catalog/equipment/apparatuses/d290f1ee-6c54-4b01-90e6-d701748f0851"
+              },
+            "included": []
+          }
+
+  - name: Read Apparatus not found
+    request:
+      url: "{{apiUrl}}/catalog/equipment/apparatuses/non-existent"
+      method: GET
+    response:
+      status: 404
+      statusText: Not Found
+      headers:
+        - name: content-type
+          value: application/vnd.api+json; charset=utf-8
+      body:
+        type: json
+        data: |-
+          {
+            "errors": [
+              {
+                "title": "Not found",
+                "status": 404
+              }
+            ]
+          }
