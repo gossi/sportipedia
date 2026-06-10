@@ -3,6 +3,7 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.ApparatusAggregate do
 
   alias Sportipedia.Catalog.Equipment.Apparatus.Event.ApparatusCataloged
   alias Sportipedia.Catalog.Equipment.Apparatus.Event.ApparatusEdited
+  alias Sportipedia.Catalog.Equipment.Apparatus.Event.ApparatusArchived
 
   typedstruct do
     field :id, String.t()
@@ -27,5 +28,9 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.ApparatusAggregate do
       slug: event.slug || aggregate.slug,
       description: event.description || aggregate.description
     }
+  end
+
+  def apply(%__MODULE__{}, %ApparatusArchived{}) do
+    nil
   end
 end

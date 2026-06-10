@@ -8,6 +8,7 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.ApparatusProjector do
 
   alias Sportipedia.Catalog.Equipment.Apparatus.Event.ApparatusCataloged
   alias Sportipedia.Catalog.Equipment.Apparatus.Event.ApparatusEdited
+  alias Sportipedia.Catalog.Equipment.Apparatus.Event.ApparatusArchived
   alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusReadModel
   alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusInternal
 
@@ -32,6 +33,17 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.ApparatusProjector do
           :apparatus_edited,
           ApparatusReadModel.update_changeset(apparatus, attrs)
         )
+    end
+  end
+
+  project %ApparatusArchived{} = event, _metadata, fn multi ->
+    case ApparatusInternal.apparatus_by_id(event.id) do
+      nil ->
+        multi
+
+      %ApparatusReadModel{} = apparatus ->
+        multi
+        |> Ecto.Multi.delete(:apparatus_archived, apparatus)
     end
   end
 end

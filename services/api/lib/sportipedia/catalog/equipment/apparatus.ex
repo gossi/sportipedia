@@ -2,6 +2,7 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus do
   alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusInternal
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.CatalogApparatus
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.EditApparatus
+  alias Sportipedia.Catalog.Equipment.Apparatus.Command.ArchiveApparatus
 
   def catalog_apparatus(params) do
     id = UUID.uuid4()
@@ -17,6 +18,16 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus do
 
     case Sportipedia.Catalog.dispatch(cmd, consistency: :strong) do
       :ok -> {:ok, ApparatusInternal.apparatus_by_id(cmd.id)}
+      {:error, :apparatus_not_found} -> {:error, :notfound}
+      error -> error
+    end
+  end
+
+  def archive_apparatus(id) do
+    apparatus = ApparatusInternal.apparatus_by_id(id)
+
+    case Sportipedia.Catalog.dispatch(ArchiveApparatus.new(id: id), consistency: :strong) do
+      :ok -> {:ok, apparatus}
       {:error, :apparatus_not_found} -> {:error, :notfound}
       error -> error
     end

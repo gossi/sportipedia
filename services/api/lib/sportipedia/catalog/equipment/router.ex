@@ -13,6 +13,8 @@ defmodule Sportipedia.Catalog.Equipment.Router do
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.CatalogApparatus
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.EditApparatusHandler
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.EditApparatus
+  alias Sportipedia.Catalog.Equipment.Apparatus.Command.ArchiveApparatusHandler
+  alias Sportipedia.Catalog.Equipment.Apparatus.Command.ArchiveApparatus
 
   use Commanded.Commands.Router
 
@@ -27,4 +29,5 @@ defmodule Sportipedia.Catalog.Equipment.Router do
   identify ApparatusAggregate, by: :id, prefix: "equipment/apparatus/"
   dispatch CatalogApparatus, to: CatalogApparatusHandler, aggregate: ApparatusAggregate
   dispatch EditApparatus, to: EditApparatusHandler, aggregate: ApparatusAggregate
+  dispatch ArchiveApparatus, to: ArchiveApparatusHandler, aggregate: ApparatusAggregate
 end
