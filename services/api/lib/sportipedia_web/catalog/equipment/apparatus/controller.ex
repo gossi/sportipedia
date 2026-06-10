@@ -8,6 +8,7 @@ defmodule SportipediaWeb.Catalog.Equipment.ApparatusController do
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.ArchiveApparatus
   alias SportipediaWeb.Catalog.Equipment.ApparatusView
   alias SportipediaWeb.Catalog.Equipment.Schemas.ApparatusResponse
+  alias SportipediaWeb.Catalog.Equipment.Schemas.ListApparatusesResponse
 
   use SportipediaWeb, :controller
   use OpenApiSpex.ControllerSpecs
@@ -19,6 +20,11 @@ defmodule SportipediaWeb.Catalog.Equipment.ApparatusController do
     fallback: FallbackController
 
   tags ["equipment"]
+
+  plug JSONAPI.QueryParser,
+    filter: ~w(title),
+    sort: ~w(title slug description),
+    view: ApparatusView
 
   operation :catalog_apparatus,
     summary: "Catalog a new apparatus",
@@ -79,6 +85,32 @@ defmodule SportipediaWeb.Catalog.Equipment.ApparatusController do
         {:error, :notfound}
     end
   end
+
+  operation :list_apparatuses,
+    summary: "List all apparatuses",
+    responses: [
+      ok: {"Apparatus collection", "application/vnd.api+json", ListApparatusesResponse}
+    ]
+
+  def list_apparatuses(conn, _) do
+    jsonapi_query = conn.assigns.jsonapi_query
+
+    params = %{
+      filter: normalize_filter(jsonapi_query.filter),
+      sort: jsonapi_query.sort,
+      page: jsonapi_query.page
+    }
+
+    case Apparatus.list_apparatuses(params) do
+      {:ok, data} ->
+        conn
+        |> put_view(json: ApparatusView)
+        |> render("index.json", %{data: data})
+    end
+  end
+
+  defp normalize_filter([]), do: nil
+  defp normalize_filter(filter), do: filter
 
   operation :read_apparatus,
     summary: "Read a single apparatus",

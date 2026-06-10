@@ -3,6 +3,8 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus do
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.CatalogApparatus
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.EditApparatus
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.ArchiveApparatus
+  alias Sportipedia.Catalog.Equipment.Apparatus.Queries.ListApparatuses
+  alias Sportipedia.Catalog.Repo
 
   def catalog_apparatus(params) do
     id = UUID.uuid4()
@@ -56,5 +58,20 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus do
 
   defp uuid?(value) do
     match?({:ok, _}, UUID.info(value))
+  end
+
+  @doc """
+  Lists apparatuses with optional filtering, sorting, and pagination.
+
+  ## Params
+    - `filter` - map with optional `title` key for case-insensitive partial match
+    - `sort` - sort field(s) following JSON:API sort syntax (e.g. `"title"` or `"-title"`)
+    - `page` - map with `number` and `size` keys for pagination
+
+  Returns `{:ok, [apparatus]}`.
+  """
+  @spec list_apparatuses(map()) :: {:ok, [term()]}
+  def list_apparatuses(params) do
+    {:ok, Repo.all(ListApparatuses.new(params))}
   end
 end

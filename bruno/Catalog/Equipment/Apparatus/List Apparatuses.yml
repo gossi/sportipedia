@@ -1,0 +1,102 @@
+info:
+  name: List Apparatuses
+  type: http
+  seq: 5
+
+http:
+  method: GET
+  url: "{{apiUrl}}/catalog/equipment/apparatuses"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: List all Apparatuses
+    request:
+      url: "{{apiUrl}}/catalog/equipment/apparatuses"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: content-type
+          value: application/vnd.api+json; charset=utf-8
+        - name: cache-control
+          value: max-age=0, private, must-revalidate
+      body:
+        type: json
+        data: |-
+          {
+            "data": [
+              {
+                "attributes": { "description": "A gymnastics vault", "title": "Vaulting Table", "slug": "vaulting-table" },
+                "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                "links": { "self": "http://localhost:3100/catalog/equipment/apparatuses/d290f1ee-6c54-4b01-90e6-d701748f0851" },
+                "type": "apparatuses",
+                "relationships": {}
+              },
+              {
+                "attributes": { "description": "A gymnastics beam", "title": "Balance Beam", "slug": "balance-beam" },
+                "id": "a290f1ee-6c54-4b01-90e6-d701748f0852",
+                "links": { "self": "http://localhost:3100/catalog/equipment/apparatuses/a290f1ee-6c54-4b01-90e6-d701748f0852" },
+                "type": "apparatuses",
+                "relationships": {}
+              }
+            ],
+            "links": { "self": "http://localhost:3100/catalog/equipment/apparatuses" },
+            "included": []
+          }
+
+  - name: List Apparatuses filtered by title
+    request:
+      url: "{{apiUrl}}/catalog/equipment/apparatuses?filter[title]=vault"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: content-type
+          value: application/vnd.api+json; charset=utf-8
+        - name: cache-control
+          value: max-age=0, private, must-revalidate
+      body:
+        type: json
+        data: |-
+          {
+            "data": [
+              {
+                "attributes": { "description": "A gymnastics vault", "title": "Vaulting Table", "slug": "vaulting-table" },
+                "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                "links": { "self": "http://localhost:3100/catalog/equipment/apparatuses/d290f1ee-6c54-4b01-90e6-d701748f0851" },
+                "type": "apparatuses",
+                "relationships": {}
+              }
+            ],
+            "links": { "self": "http://localhost:3100/catalog/equipment/apparatuses" },
+            "included": []
+          }
+
+  - name: List Apparatuses empty collection
+    request:
+      url: "{{apiUrl}}/catalog/equipment/apparatuses?filter[title]=nonexistent"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: content-type
+          value: application/vnd.api+json; charset=utf-8
+        - name: cache-control
+          value: max-age=0, private, must-revalidate
+      body:
+        type: json
+        data: |-
+          {
+            "data": [],
+            "links": { "self": "http://localhost:3100/catalog/equipment/apparatuses" },
+            "included": []
+          }

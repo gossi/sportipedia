@@ -42,5 +42,35 @@ defmodule SportipediaWeb.Catalog.Equipment.ApparatusViewTest do
                }
              } = result
     end
+
+    test "render index.json produces JSON:API collection document" do
+      apparatuses = [
+        %Apparatus{
+          id: "d290f1ee-6c54-4b01-90e6-d701748f0851",
+          title: "Vaulting Table",
+          slug: "vaulting-table",
+          description: "A gymnastics vault"
+        },
+        %Apparatus{
+          id: "a290f1ee-6c54-4b01-90e6-d701748f0852",
+          title: "Balance Beam",
+          slug: "balance-beam",
+          description: nil
+        }
+      ]
+
+      conn = build_conn() |> fetch_query_params()
+
+      result =
+        ApparatusView.render("index.json", %{data: apparatuses, conn: conn})
+
+      assert %{data: [_, _] = data} = result
+      assert Enum.all?(data, fn item -> item.type == "apparatuses" end)
+
+      assert Enum.map(data, & &1.id) == [
+               "d290f1ee-6c54-4b01-90e6-d701748f0851",
+               "a290f1ee-6c54-4b01-90e6-d701748f0852"
+             ]
+    end
   end
 end
