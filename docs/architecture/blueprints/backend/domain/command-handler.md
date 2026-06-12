@@ -23,12 +23,38 @@ Implement the actual command behavior.
   - Shallow by mapping the command to events
   - Deep to handle complex business logic
 
+### Documentation
+
+Derive all documentation from the [Domain Model](../../../../domain-model/README.md):
+
+- **`@moduledoc`**: Describe the handler's purpose in handling the command.
+- **`@doc`**: Describe the `handle/2` function.
+
+Example:
+
+```elixir
+@moduledoc """
+Handles the SuggestSport command.
+"""
+
+@doc """
+Handles the SuggestSport command and returns a SportSuggested event.
+"""
+```
+
 ### Implementation Template
 
 ```elixir
 defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<Command>Handler do
+  @moduledoc """
+  Handles the <Command> command.
+  """
+
   @behaviour Commanded.Commands.Handler
 
+  @doc """
+  Handles the <Command> command and returns <Event> event(s).
+  """
   @spec handle(<DomainObject>Aggregate.t(), <Command>.t()) :: <Event>.t() | [<Event>.t()]
   def handle(%<DomainObject>Aggregate{} = aggregate, %<Command>{} = cmd) do
     # implement logic here

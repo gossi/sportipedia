@@ -63,19 +63,48 @@ Return types for public functions are:
 
 All public functions must include `@spec` annotations using these types.
 
+### Documentation
+
+Derive all documentation from the [Domain Model](../../../../domain-model/README.md):
+
+- **`@moduledoc`**: Describe the aggregate's operations in the bounded context.
+- **`@doc`**: Describe each function using the operation name and return type from the domain model.
+
+Example:
+
+```elixir
+@moduledoc """
+Public API for managing sports in the catalog.
+"""
+
+@doc """
+Suggests a new sport. Returns the created sport.
+"""
+```
+
 ### Implementation Template
 
 ```elixir
 defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject> do
+  @moduledoc """
+  Public API for managing <domain_object>s in the <bounded_context>.
+  """
+
   alias Sportipedia.Architecture
 
   # Variant A: Operation with result (eg. queries, create/update commands)
+  @doc """
+  <Describe the operation using the operation name from the domain model.>
+  """
   @spec <_operation>(<param_type>) :: Architecture.public_api(<return_type>)
   def <_operation>(params) do
     # implementation logic
   end
 
   # Variant B: Void operation (eg. delete commands)
+  @doc """
+  <Describe the operation using the operation name from the domain model.>
+  """
   @spec <_operation>(<param_type>) :: Architecture.public_api()
   def <_operation>(params) do
     # implementation logic

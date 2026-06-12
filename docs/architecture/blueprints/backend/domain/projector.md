@@ -19,10 +19,33 @@ Applies fact changes to the read-model(s)
 - `project` macro on the Projector
 - use changeset functions from [read model](./read-model.md) (if applicable)
 
+### Documentation
+
+Derive all documentation from the [Domain Model](../../../../domain-model/README.md):
+
+- **`@moduledoc`**: Describe the projector's purpose in projecting events to read models.
+- **`@doc`**: Describe each `project/3` function clause.
+
+Example:
+
+```elixir
+@moduledoc """
+Projects sport events to the sport read model.
+"""
+
+@doc """
+Projects a SportSuggested event to create a new sport read model.
+"""
+```
+
 ### Implementation Template
 
 ```elixir
 defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Projector do
+  @moduledoc """
+  Projects <domain_object> events to the <domain_object> read model.
+  """
+
   use Commanded.Projections.Ecto,
     application: Sportipedia.<Subdomain>,
     repo: Sportipedia.<Subdomain>.Repo,
@@ -30,6 +53,9 @@ defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Proje
     schema_prefix: "<_subdomain>",
     consistency: :strong
 
+  @doc """
+  Projects a <Event> event to <describe the projection action>.
+  """
   project %<Event>{} = event, _metadata, fn multi ->
     # projection code
   end

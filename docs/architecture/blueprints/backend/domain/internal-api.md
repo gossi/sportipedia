@@ -20,15 +20,44 @@ What it does not contain:
 
 - Technical implemetation that has a better place to live elsewhere (eg. in a query or a validator)
 
+### Documentation
+
+Derive all documentation from the [Domain Model](../../../../domain-model/README.md):
+
+- **`@moduledoc`**: Describe the internal API's purpose for the aggregate.
+- **`@doc`**: Describe each function's purpose.
+
+Example:
+
+```elixir
+@moduledoc """
+Internal API for querying sport read models within the bounded context.
+"""
+
+@doc """
+Fetches a sport by its ID. Returns nil if not found.
+"""
+```
+
 ### Implementation Template
 
 ```elixir
 defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Internal do
+  @moduledoc """
+  Internal API for querying <domain_object> read models within the bounded context.
+  """
+
+  @doc """
+  Fetches a <domain_object> by its ID. Returns nil if not found.
+  """
   @spec <domain_object>_by_id(String.t()) :: <DomainObject>ReadModel.t() | nil
   def <domain_object>_by_id(id) do
     # ecto query to read one record by id
   end
 
+  @doc """
+  Fetches a <domain_object> by its ID. Raises if not found.
+  """
   @spec <domain_object>_by_id!(String.t()) :: <DomainObject>ReadModel.t()
   def <domain_object>_by_id!(id) do
     # ecto query to read one record by id

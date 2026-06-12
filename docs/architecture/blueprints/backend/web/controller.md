@@ -16,10 +16,33 @@ A phoenix controller.
 - `use SportipediaWeb, :controller`
 - `use OpenApiSpex.ControllerSpecs`
 
+### Documentation
+
+Derive all documentation from the [Domain Model](../../../../domain-model/README.md):
+
+- **`@moduledoc`**: Describe the controller's purpose for the aggregate.
+- **`@doc`**: Describe each action using the operation name from the domain model.
+
+Example:
+
+```elixir
+@moduledoc """
+Handles HTTP requests for sport operations.
+"""
+
+@doc """
+Handles the suggest-sport request.
+"""
+```
+
 ### Empty Controller Template
 
 ```elixir
 defmodule SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>Controller do
+  @moduledoc """
+  Handles HTTP requests for <domain_object> operations.
+  """
+
   alias OpenApiSpex.Reference
   alias SportipediaWeb.System.FallbackController
   alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Policy

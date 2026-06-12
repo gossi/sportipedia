@@ -86,12 +86,38 @@ Query parameter schemas document the available query options:
 - **fields**: Same as single record
 - **include**: Same as single record
 
+### Documentation
+
+Derive all documentation from the [Domain Model](../../../../domain-model/README.md):
+
+- **`@moduledoc`**: Describe the schema's purpose for documenting the endpoint.
+- **`@doc`**: Describe the `schema/0` function.
+
+Example:
+
+```elixir
+@moduledoc """
+OpenAPI schema for documenting sport endpoints.
+"""
+
+@doc """
+Returns the OpenAPI schema for the sport response.
+"""
+```
+
 ### Implementation Template
 
 ```elixir
 defmodule SportipediaWeb.<Subdomain>.<Composite>.Schemas.<Operation>Response do
+  @moduledoc """
+  OpenAPI schema for documenting <domain_object> endpoints.
+  """
+
   require OpenApiSpex
 
+  @doc """
+  Returns the OpenAPI schema for the <operation> response.
+  """
   OpenApiSpex.schema(%{...})
 end
 ```

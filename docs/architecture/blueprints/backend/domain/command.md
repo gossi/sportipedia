@@ -37,15 +37,41 @@ Vex allows custom validations
 - apply it with `by: [function: &<Validator>.validate/2]` and combine it with needed options
   - use `allow_nil: true` when domain logic requires it to
 
+### Documentation
+
+Derive all documentation from the [Domain Model](../../../../domain-model/README.md):
+
+- **`@moduledoc`**: Describe what the command does to the aggregate, using the command name from the domain model.
+- **`@doc`**: Describe the `new/1` function (creates a new command instance).
+
+Example:
+
+```elixir
+@moduledoc """
+Suggests a new sport to the catalog.
+"""
+
+@doc """
+Creates a new SuggestSport command.
+"""
+```
+
 ### Implementation Template
 
 - use `alias` for the validator
 
 ```elixir
 defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<Command> do
+  @moduledoc """
+  <Describe what the command does to the aggregate, derived from the domain model.>
+  """
+
   use TypedStruct
   use ExConstructor
 
+  @doc """
+  Creates a new <Command> command.
+  """
   typedstruct do
     field :<_field>, <field type>, enforce: true/false
   end

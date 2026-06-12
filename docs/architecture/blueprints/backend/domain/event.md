@@ -23,14 +23,40 @@ Facts about the system
 - Use `typedstruct` (no `enforce: true` at struct level) — enforce only on
   required fields individually. Optional fields must NOT have `enforce: true`.
 
+### Documentation
+
+Derive all documentation from the [Domain Model](../../../../domain-model/README.md):
+
+- **`@moduledoc`**: Describe what happened in the domain, using the event name.
+- **`@doc`**: Describe the `new/1` function (creates a new event instance).
+
+Example:
+
+```elixir
+@moduledoc """
+A sport was suggested to the catalog.
+"""
+
+@doc """
+Creates a new SportSuggested event.
+"""
+```
+
 ### Implementation Template
 
 ```elixir
 defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Event.<Event> do
+  @moduledoc """
+  <Describe what happened in the domain, derived from the event name.>
+  """
+
   use TypedStruct
   use ExConstructor
 
   @derive Jason.Encoder
+  @doc """
+  Creates a new <Event> event.
+  """
   typedstruct do
     field :<_field>, <field type>, enforce: true/false
   end

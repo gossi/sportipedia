@@ -30,10 +30,33 @@ A read model usually has a couple of changeset functions.
   - `update_changeset`
 - Use custom changesets, if they are needed for certain operations (only if the two above wouldn't work)
 
+### Documentation
+
+Derive all documentation from the [Domain Model](../../../../domain-model/README.md):
+
+- **`@moduledoc`**: Describe what the read model represents, using the projection rules from the domain model.
+- **`@doc`**: Describe each changeset function's purpose.
+
+Example:
+
+```elixir
+@moduledoc """
+Represents a sport in the catalog, projected from events that add, approve, reject, and archive sports.
+"""
+
+@doc """
+Validates and prepares the sport read model for insertion.
+"""
+```
+
 ### Implementation Template
 
 ```elixir
 defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>ReadModel do
+  @moduledoc """
+  <Describe what the read model represents, derived from the domain model's projection rules.>
+  """
+
   use TypedEctoSchema
   import Ecto.Changeset
 
@@ -47,7 +70,19 @@ defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>ReadM
     timestamps()
   end
 
-  # changesets
+  @doc """
+  Validates and prepares the <domain_object> read model for insertion.
+  """
+  def insert_changeset(read_model, attrs) do
+    # changeset implementation
+  end
+
+  @doc """
+  Validates and prepares the <domain_object> read model for update.
+  """
+  def update_changeset(read_model, attrs) do
+    # changeset implementation
+  end
 end
 ```
 

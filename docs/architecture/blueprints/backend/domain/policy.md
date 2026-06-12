@@ -28,14 +28,40 @@ Derive authorization from the domain model and present rules and invariants.
     When a user is allowed, so are admins.
 - By using the provided guards the checks are centralized and guaranteed to be equal everywhere
 
+### Documentation
+
+Derive all documentation from the [Domain Model](../../../../domain-model/README.md):
+
+- **`@moduledoc`**: Describe the policy's purpose in authorizing operations.
+- **`@doc`**: Describe the `authorize/3` function.
+
+Example:
+
+```elixir
+@moduledoc """
+Authorizes sport operations based on user roles.
+"""
+
+@doc """
+Authorizes whether the given user can perform the operation.
+"""
+```
+
 ### Implementation Template
 
 ```elixir
 defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Policy do
+  @moduledoc """
+  Authorizes <domain_object> operations based on user roles.
+  """
+
   @behaviour Bodyguard.Policy
 
   import Sportipedia.Auth.Roles
 
+  @doc """
+  Authorizes whether the given user can perform the <_operation> operation.
+  """
   @spec authorize(:<_operation>, Sportipedia.Auth.User.t() | nil, map()) :: :ok | :error
   def authorize(:<_operation>, user, _params) when is_guest?(user), do: :error
   def authorize(:<_operation>, user, _params) when is_user?(user), do: :ok

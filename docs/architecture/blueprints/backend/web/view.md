@@ -20,14 +20,47 @@ Representing a domain object in JSON API
 - `use JSONAPI.View`
 - based on the read model
 
+### Documentation
+
+Derive all documentation from the [Domain Model](../../../../domain-model/README.md):
+
+- **`@moduledoc`**: Describe the view's purpose for rendering the read model.
+- **`@doc`**: Describe each function's purpose.
+
+Example:
+
+```elixir
+@moduledoc """
+Renders sport resources in JSON:API format.
+"""
+
+@doc """
+Returns the path for sport resources.
+"""
+
+@doc """
+Returns the fields for rendering a sport.
+"""
+```
+
 ### Implementation Template
 
 ```elixir
 defmodule SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>View do
+  @moduledoc """
+  Renders <domain_object> resources in JSON:API format.
+  """
+
   use JSONAPI.View, type: "<domain-object>s"
 
+  @doc """
+  Returns the path for <domain_object> resources.
+  """
   def path, do: "<-subdomain>/<-composite>/<domain-object>s"
 
+  @doc """
+  Returns the fields for rendering a <domain_object>.
+  """
   def fields, do: [
     # fields
   ]

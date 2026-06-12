@@ -23,12 +23,38 @@
   - DO NOT: `def validate(nil, _contex), do: :ok`
   - DO: use [`allow_nil: true`](./command.md#custom-validations)
 
+### Documentation
+
+Derive all documentation from the [Domain Model](../../../../domain-model/README.md):
+
+- **`@moduledoc`**: Describe the validator's purpose in validating the invariant.
+- **`@doc`**: Describe the `validate/2` function.
+
+Example:
+
+```elixir
+@moduledoc """
+Validates that a sport slug is unique within the catalog.
+"""
+
+@doc """
+Validates the given slug value for uniqueness.
+"""
+```
+
 ### Implementation Template
 
 ```elixir
 defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Validators.<Validator> do
+  @moduledoc """
+  Validates that a <domain_object> <field> <describe the invariant>.
+  """
+
   use Vex.Validator
 
+  @doc """
+  Validates the given <field> value.
+  """
   @spec validate(<value_type>, map()) :: :ok | {:error, String.t()}
   def validate(value, _options) do
     # run logic
