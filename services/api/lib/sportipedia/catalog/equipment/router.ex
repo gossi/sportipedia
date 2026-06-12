@@ -9,6 +9,8 @@ defmodule Sportipedia.Catalog.Equipment.Router do
   alias Sportipedia.Catalog.Equipment.Instrument.Command.EditInstrumentHandler
   alias Sportipedia.Catalog.Equipment.Instrument.Command.EditInstrument
   alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusAggregate
+  alias Sportipedia.Catalog.Equipment.Apparatus.Command.ArchiveApparatusHandler
+  alias Sportipedia.Catalog.Equipment.Apparatus.Command.ArchiveApparatus
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.CatalogApparatusHandler
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.CatalogApparatus
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.EditApparatusHandler
@@ -27,4 +29,5 @@ defmodule Sportipedia.Catalog.Equipment.Router do
   identify ApparatusAggregate, by: :id, prefix: "equipment/apparatus/"
   dispatch CatalogApparatus, to: CatalogApparatusHandler, aggregate: ApparatusAggregate
   dispatch EditApparatus, to: EditApparatusHandler, aggregate: ApparatusAggregate
+  dispatch ArchiveApparatus, to: ArchiveApparatusHandler, aggregate: ApparatusAggregate
 end

@@ -7,6 +7,7 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus do
   alias Sportipedia.Catalog
   alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusInternal
   alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusReadModel
+  alias Sportipedia.Catalog.Equipment.Apparatus.Command.ArchiveApparatus
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.CatalogApparatus
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.EditApparatus
 
@@ -43,5 +44,13 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus do
     with :ok <- Catalog.dispatch(cmd, consistency: :strong) do
       {:ok, ApparatusInternal.apparatus_by_id(id)}
     end
+  end
+
+  @doc """
+  Archives an apparatus. Returns :ok on success.
+  """
+  @spec archive_apparatus(String.t()) :: Architecture.public_api()
+  def archive_apparatus(id) do
+    Catalog.dispatch(ArchiveApparatus.new(id: id), consistency: :strong)
   end
 end

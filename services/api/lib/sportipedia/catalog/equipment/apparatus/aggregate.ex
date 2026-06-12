@@ -5,6 +5,7 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.ApparatusAggregate do
 
   use TypedStruct
 
+  alias Sportipedia.Catalog.Equipment.Apparatus.Event.ApparatusArchived
   alias Sportipedia.Catalog.Equipment.Apparatus.Event.ApparatusCataloged
   alias Sportipedia.Catalog.Equipment.Apparatus.Event.ApparatusEdited
 
@@ -38,5 +39,14 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.ApparatusAggregate do
 
     aggregate
     |> Map.merge(changes)
+  end
+
+  @doc """
+  Applies an ApparatusArchived event to the apparatus aggregate state.
+  Returns nil to indicate the aggregate is archived.
+  """
+  @spec apply(%__MODULE__{}, ApparatusArchived.t()) :: nil
+  def apply(%__MODULE__{} = _aggregate, %ApparatusArchived{} = _event) do
+    nil
   end
 end

@@ -72,4 +72,27 @@ defmodule SportipediaWeb.Catalog.Equipment.ApparatusController do
       |> render("show.json", %{data: apparatus})
     end
   end
+
+  @doc """
+  Handles the archive-apparatus request.
+  """
+  operation :archive_apparatus,
+    summary: "Archives an apparatus",
+    responses: [
+      no_content: "The apparatus has been archived",
+      not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      forbidden: %Reference{"$ref": "#/components/responses/forbidden"}
+    ]
+
+  @spec archive_apparatus(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def archive_apparatus(conn, _) do
+    case Apparatus.archive_apparatus(conn.params["id"]) do
+      :ok ->
+        send_resp(conn, :no_content, "")
+
+      {:error, _} ->
+        {:error, :notfound}
+    end
+  end
 end
