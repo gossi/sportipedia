@@ -63,7 +63,7 @@ Each endpoint has an `operation` with function to it.
 
   operation :<_operation>,
     summary: "<describe the operation>",
-    request_body: {"<describe the params>", "application/json", <Command>},
+    request_body: {"<describe the params>", "application/json", <Command>Request},
     responses: [
       ok: {"<describe the result>", "application/vnd.api+json", <DomainObject>Response},
       unprocessable_entity: %Reference{"$ref": "#/components/responses/unprocessable_entity"},
@@ -84,12 +84,14 @@ Each endpoint has an `operation` with function to it.
 #### Read ReadModel Operation
 
 - Adjust the params mentioned in the query based on the domain model
+- Include the `<Operation>QueryParams` if there is any
 
 ```elixir
   operation :<_operation>,
     summary: "<describe the operation>",
     parameters: [
-      id: [in: :path, description: "<describe the param>", type: :string]
+      id: [in: :path, description: "<describe the param>", type: :string],
+      query: [in: :query, schema: <Operation>QueryParams, type: :object]
     ],
     responses: [
       ok: {"<DomainObject>", "application/vnd.api+json", <DomainObject>Response},
@@ -113,6 +115,7 @@ Each endpoint has an `operation` with function to it.
 #### Read Collection Operation
 
 - Adjust the params mentioned in the query based on the domain model
+- Include the `<Operation>QueryParams` if there is any
 
 ```elixir
   # when including JSONAPI compatible query params
@@ -123,6 +126,9 @@ Each endpoint has an `operation` with function to it.
 
   operation :<_operation>,
     summary: "<describe the operation>",
+    parameters: [
+      query: [in: :query, schema: <Operation>QueryParams, type: :object]
+    ],
     responses: [
       ok: {"<DomainObject> collection", "application/vnd.api+json", <DomainObject>ListResponse}
     ]
@@ -143,7 +149,7 @@ Each endpoint has an `operation` with function to it.
 ```elixir
   operation :<_operation>,
     summary: "<describe the operation>",
-    request_body: {"<describe the params>", "application/json", <Command>},
+    request_body: {"<describe the params>", "application/json", <Command>Request},
     responses: [
       ok: {"<DomainObject>", "application/vnd.api+json", <DomainObject>Response},
       not_found: %Reference{"$ref": "#/components/responses/not_found"},
@@ -171,7 +177,7 @@ Each endpoint has an `operation` with function to it.
 ```elixir
   operation :<_operation>,
     summary: "<describe the operation>",
-    request_body: {"<describe the params>", "application/json", <Command>},
+    request_body: {"<describe the params>", "application/json", <Command>Request},
     responses: [
       no_content: "<describe response>",
       not_found: %Reference{"$ref": "#/components/responses/not_found"},
