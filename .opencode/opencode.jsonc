@@ -76,9 +76,6 @@
   "reference": {
     "recipes": {
       "path": ".opencode/recipes"
-    },
-    "specs": {
-      "path": "docs/specs"
     }
   }
 }
