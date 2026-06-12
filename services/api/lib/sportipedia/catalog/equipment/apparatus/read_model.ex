@@ -27,4 +27,13 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.ApparatusReadModel do
     |> validate_required([:id, :title, :slug])
     |> unique_constraint(:slug, name: :apparatus_slug_index)
   end
+
+  @doc """
+  Validates and prepares the apparatus read model for partial updates.
+  """
+  def update_changeset(read_model, attrs) do
+    read_model
+    |> cast(attrs, [:title, :slug, :description])
+    |> unique_constraint(:slug, name: :apparatus_slug_index)
+  end
 end

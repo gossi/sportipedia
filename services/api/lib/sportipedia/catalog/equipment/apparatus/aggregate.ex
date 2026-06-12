@@ -6,6 +6,7 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.ApparatusAggregate do
   use TypedStruct
 
   alias Sportipedia.Catalog.Equipment.Apparatus.Event.ApparatusCataloged
+  alias Sportipedia.Catalog.Equipment.Apparatus.Event.ApparatusEdited
 
   typedstruct do
     field :id, String.t()
@@ -25,5 +26,17 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.ApparatusAggregate do
       slug: event.slug,
       description: event.description
     }
+  end
+
+  @doc """
+  Applies an ApparatusEdited event to the apparatus aggregate state.
+  Merges non-nil event fields into the existing aggregate state.
+  """
+  @spec apply(%__MODULE__{}, ApparatusEdited.t()) :: %__MODULE__{}
+  def apply(%__MODULE__{} = aggregate, %ApparatusEdited{} = event) do
+    changes = ApparatusEdited.get_changes(event)
+
+    aggregate
+    |> Map.merge(changes)
   end
 end

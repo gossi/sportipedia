@@ -5,10 +5,10 @@ defmodule SportipediaWeb.Catalog.Equipment.ApparatusController do
 
   alias OpenApiSpex.Reference
   alias Sportipedia.Catalog.Equipment.Apparatus
-  alias Sportipedia.Catalog.Equipment.Apparatus.Command.CatalogApparatus
   alias SportipediaWeb.Catalog.Equipment.ApparatusView
   alias SportipediaWeb.Catalog.Equipment.Schemas.ApparatusResponse
   alias SportipediaWeb.Catalog.Equipment.Schemas.CatalogApparatusRequest
+  alias SportipediaWeb.Catalog.Equipment.Schemas.EditApparatusRequest
   alias SportipediaWeb.System.FallbackController
 
   use SportipediaWeb, :controller
@@ -27,13 +27,10 @@ defmodule SportipediaWeb.Catalog.Equipment.ApparatusController do
   """
   operation :catalog_apparatus,
     summary: "Catalogs a new apparatus",
-    request_body:
-      {"The apparatus attributes", "application/json", CatalogApparatusRequest},
+    request_body: {"The apparatus attributes", "application/json", CatalogApparatusRequest},
     responses: [
-      created:
-        {"The cataloged apparatus", "application/vnd.api+json", ApparatusResponse},
-      unprocessable_entity:
-        %Reference{"$ref": "#/components/responses/unprocessable_entity"},
+      created: {"The cataloged apparatus", "application/vnd.api+json", ApparatusResponse},
+      unprocessable_entity: %Reference{"$ref": "#/components/responses/unprocessable_entity"},
       unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
       forbidden: %Reference{"$ref": "#/components/responses/forbidden"}
     ]
@@ -43,6 +40,34 @@ defmodule SportipediaWeb.Catalog.Equipment.ApparatusController do
     with {:ok, apparatus} <- Apparatus.catalog_apparatus(conn.params) do
       conn
       |> put_status(:created)
+      |> put_view(json: ApparatusView)
+      |> render("show.json", %{data: apparatus})
+    end
+  end
+
+  @doc """
+  Handles the edit-apparatus request.
+  """
+  operation :edit_apparatus,
+    summary: "Edits an existing apparatus",
+    request_body: {"The apparatus attributes to edit", "application/json", EditApparatusRequest},
+    responses: [
+      ok: {"The edited apparatus", "application/vnd.api+json", ApparatusResponse},
+      not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      unprocessable_entity: %Reference{"$ref": "#/components/responses/unprocessable_entity"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      forbidden: %Reference{"$ref": "#/components/responses/forbidden"}
+    ]
+
+  @spec edit_apparatus(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def edit_apparatus(conn, _) do
+    params =
+      conn.params
+      |> Map.take(["id", "title", "slug", "description"])
+
+    with {:ok, apparatus} <- Apparatus.edit_apparatus(params),
+          true <- apparatus != nil || {:error, :notfound} do
+      conn
       |> put_view(json: ApparatusView)
       |> render("show.json", %{data: apparatus})
     end
