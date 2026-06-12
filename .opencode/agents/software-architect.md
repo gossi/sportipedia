@@ -1,7 +1,7 @@
 ---
-description: Software Architect — Planner
+description: Software Architect
 temperature: 0
-mode: subagent
+mode: primary
 model: opencode-go/qwen3.7-plus
 ---
 
