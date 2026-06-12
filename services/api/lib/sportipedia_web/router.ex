@@ -59,6 +59,9 @@ defmodule SportipediaWeb.Router do
         post "/catalog-apparatus", ApparatusController, :catalog_apparatus
         patch "/:id/edit-apparatus", ApparatusController, :edit_apparatus
         delete "/:id/archive-apparatus", ApparatusController, :archive_apparatus
+
+        # queries
+        get "/:id_or_slug", ApparatusController, :read_apparatus
       end
 
       scope "/instruments" do

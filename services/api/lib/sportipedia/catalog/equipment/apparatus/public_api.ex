@@ -53,4 +53,32 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus do
   def archive_apparatus(id) do
     Catalog.dispatch(ArchiveApparatus.new(id: id), consistency: :strong)
   end
+
+  @doc """
+  Reads a single apparatus by its id or slug. Returns the apparatus or :not_found.
+  """
+  @spec read_apparatus(String.t()) :: {:ok, ApparatusReadModel.t()} | {:error, :not_found}
+  def read_apparatus(id_or_slug) do
+    case lookup(id_or_slug) do
+      nil -> {:error, :not_found}
+      read_model -> {:ok, read_model}
+    end
+  end
+
+  defp lookup(id_or_slug) do
+    if uuid?(id_or_slug) do
+      ApparatusInternal.apparatus_by_id(id_or_slug)
+    else
+      ApparatusInternal.apparatus_by_slug(id_or_slug)
+    end
+  end
+
+  defp uuid?(
+         <<_::binary-size(8), "-", _::binary-size(4), "-", _::binary-size(4), "-",
+           _::binary-size(4), "-", _::binary-size(12)>>
+       ) do
+    true
+  end
+
+  defp uuid?(_), do: false
 end

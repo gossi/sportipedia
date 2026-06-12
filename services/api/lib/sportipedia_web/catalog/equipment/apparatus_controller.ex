@@ -5,6 +5,7 @@ defmodule SportipediaWeb.Catalog.Equipment.ApparatusController do
 
   alias OpenApiSpex.Reference
   alias Sportipedia.Catalog.Equipment.Apparatus
+  alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusReadModel
   alias SportipediaWeb.Catalog.Equipment.ApparatusView
   alias SportipediaWeb.Catalog.Equipment.Schemas.ApparatusResponse
   alias SportipediaWeb.Catalog.Equipment.Schemas.CatalogApparatusRequest
@@ -92,6 +93,32 @@ defmodule SportipediaWeb.Catalog.Equipment.ApparatusController do
         send_resp(conn, :no_content, "")
 
       {:error, _} ->
+        {:error, :notfound}
+    end
+  end
+
+  @doc """
+  Handles the read-apparatus request.
+  """
+  operation :read_apparatus,
+    summary: "Reads a single apparatus by id or slug",
+    parameters: [
+      id_or_slug: [in: :path, description: "The apparatus id or slug", type: :string]
+    ],
+    responses: [
+      ok: {"The apparatus", "application/vnd.api+json", ApparatusResponse},
+      not_found: %Reference{"$ref": "#/components/responses/not_found"}
+    ]
+
+  @spec read_apparatus(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def read_apparatus(conn, _) do
+    case Apparatus.read_apparatus(conn.params["id_or_slug"]) do
+      {:ok, %ApparatusReadModel{} = apparatus} ->
+        conn
+        |> put_view(json: ApparatusView)
+        |> render("show.json", %{data: apparatus})
+
+      {:error, :not_found} ->
         {:error, :notfound}
     end
   end
