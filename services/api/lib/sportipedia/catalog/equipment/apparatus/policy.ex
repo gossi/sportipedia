@@ -34,4 +34,11 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Policy do
   @spec authorize(:read_apparatus, map() | nil, map()) :: :ok | :error
   def authorize(:read_apparatus, user, _params) when is_guest?(user), do: :ok
   def authorize(:read_apparatus, user, _params) when is_user?(user), do: :ok
+
+  @doc """
+  Authorizes whether the given user can perform the list_apparatuses operation.
+  """
+  @spec authorize(:list_apparatuses, map() | nil, map()) :: :ok | :error
+  def authorize(:list_apparatuses, user, _params) when is_guest?(user), do: :ok
+  def authorize(:list_apparatuses, user, _params) when is_user?(user), do: :ok
 end

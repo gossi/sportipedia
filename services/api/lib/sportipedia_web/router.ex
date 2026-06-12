@@ -61,6 +61,7 @@ defmodule SportipediaWeb.Router do
         delete "/:id/archive-apparatus", ApparatusController, :archive_apparatus
 
         # queries
+        get "/", ApparatusController, :list_apparatuses
         get "/:id_or_slug", ApparatusController, :read_apparatus
       end
 

@@ -29,6 +29,30 @@ defmodule Sportipedia.Support.JSONAPI.QueryBuilder do
     |> apply_fields(config.fields, config.view, schema)
   end
 
+  @doc """
+  Builds an Ecto query from a base query, a JSONAPI.Config, and an Ecto schema module.
+  Applies sorting, pagination, and sparse fieldsets on top of the base query.
+  Filtering is expected to be already applied in the base query.
+
+  ## Parameters
+    - config: A %JSONAPI.Config{} struct (from the `jsonapi` library)
+    - base_query: A pre-built Ecto.Query (e.g. from a custom query module)
+    - schema: An Ecto schema module (e.g. MyApp.Post)
+
+  ## Examples
+      iex> base_query = MyCustomQuery.new(config)
+      iex> query = JSONAPIQuery.build(config, base_query, MyApp.Post)
+      iex> Repo.all(query)
+  """
+  @spec build(JSONAPI.Config.t(), Ecto.Query.t(), module()) :: Ecto.Query.t()
+  def build(%JSONAPI.Config{} = config, %Ecto.Query{} = base_query, schema)
+      when is_atom(schema) do
+    base_query
+    |> apply_sort(config.sort, schema)
+    |> apply_pagination(config.page)
+    |> apply_fields(config.fields, config.view, schema)
+  end
+
   # ---------------------------------------------------------------------------
   # Filtering
   # ---------------------------------------------------------------------------

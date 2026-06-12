@@ -10,6 +10,9 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus do
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.ArchiveApparatus
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.CatalogApparatus
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.EditApparatus
+  alias Sportipedia.Catalog.Equipment.Apparatus.Queries.ListApparatuses
+  alias Sportipedia.Catalog.Repo
+  alias Sportipedia.Support.JSONAPI.QueryBuilder
 
   @doc """
   Catalogs a new apparatus. Returns the created apparatus.
@@ -81,4 +84,13 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus do
   end
 
   defp uuid?(_), do: false
+
+  @doc """
+  Lists all apparatuses with optional filtering, sorting, and pagination.
+  """
+  @spec list_apparatuses(JSONAPI.Config.t()) :: Architecture.public_api([ApparatusReadModel.t()])
+  def list_apparatuses(jsonapi_config) do
+    base_query = ListApparatuses.new(jsonapi_config)
+    {:ok, Repo.all(QueryBuilder.build(jsonapi_config, base_query, ApparatusReadModel))}
+  end
 end
