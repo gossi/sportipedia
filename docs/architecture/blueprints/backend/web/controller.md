@@ -71,6 +71,7 @@ Each endpoint has an `operation` with function to it.
       forbidden: %Reference{"$ref": "#/components/responses/forbidden"}
     ]
 
+  @spec <_operation>(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def <_operation>(conn, _) do
     with {:ok, <domain_object>} <- <PublicAPI>.<operation>(conn.params) do
       conn
@@ -95,6 +96,7 @@ Each endpoint has an `operation` with function to it.
       not_found: %Reference{"$ref": "#/components/responses/not_found"}
     ]
 
+  @spec <_operation>(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def <_operation>(conn, _) do
     case <PublicAPI>.<_operation>(conn.params["id"]) do
       %<DomainObject>ReadModel{} = <domain_object> ->
@@ -125,6 +127,7 @@ Each endpoint has an `operation` with function to it.
       ok: {"<DomainObject> collection", "application/vnd.api+json", <DomainObject>ListResponse}
     ]
 
+  @spec <_operation>(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def <_operation>(conn, _) do
     case <PublicAPI>.<_operation>(conn.assigns.jsonapi_query) do
       data ->
@@ -149,6 +152,7 @@ Each endpoint has an `operation` with function to it.
       forbidden: %Reference{"$ref": "#/components/responses/forbidden"}
     ]
 
+  @spec <_operation>(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def <_operation>(conn, _) do
     case <PublicAPI>.<_operation>(conn.params) do
       {:ok, <domain_object>} ->
@@ -175,6 +179,7 @@ Each endpoint has an `operation` with function to it.
       forbidden: %Reference{"$ref": "#/components/responses/forbidden"}
     ]
 
+  @spec <_operation>(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def <_operation>(conn, _) do
     case <PublicAPI>.<_operation>(conn.params["id"]) do
       :ok ->

@@ -36,6 +36,7 @@ defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Policy do
 
   import Sportipedia.Auth.Roles
 
+  @spec authorize(:<_operation>, Sportipedia.Auth.User.t() | nil, map()) :: :ok | :error
   def authorize(:<_operation>, user, _params) when is_guest?(user), do: :error
   def authorize(:<_operation>, user, _params) when is_user?(user), do: :ok
 end

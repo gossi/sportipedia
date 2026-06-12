@@ -21,7 +21,8 @@
 defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Queries.<Query> do
   import Ecto.Query
 
-  def new(params) do
+  @spec new(<param_type>) :: Ecto.Query.t()
+  def new(<params>) do
     # construct and return query
   end
 end

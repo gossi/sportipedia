@@ -29,7 +29,8 @@ Implement the actual command behavior.
 defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<Command>Handler do
   @behaviour Commanded.Commands.Handler
 
-  def handle(aggregate, %<Command>{} = cmd) do
+  @spec handle(<DomainObject>Aggregate.t(), <Command>.t()) :: <Event>.t() | [<Event>.t()]
+  def handle(%<DomainObject>Aggregate{} = aggregate, %<Command>{} = cmd) do
     # implement logic here
     # return events
   end

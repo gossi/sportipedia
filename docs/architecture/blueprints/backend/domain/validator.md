@@ -29,7 +29,8 @@
 defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Validators.<Validator> do
   use Vex.Validator
 
-  def validate(value, _context) do
+  @spec validate(<value_type>, map()) :: :ok | {:error, String.t()}
+  def validate(value, _options) do
     # run logic
   end
 end

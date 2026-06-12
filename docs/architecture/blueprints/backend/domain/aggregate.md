@@ -32,6 +32,7 @@ defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Aggre
     field :<field>, type
   end
 
+  @spec apply(%__MODULE__{}, <Event>.t()) :: %__MODULE__{} | nil
   def apply(%__MODULE__{} = aggregate, %<Event>{} = event) do
     # apply event to aggregate
   end

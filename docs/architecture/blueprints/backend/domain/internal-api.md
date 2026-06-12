@@ -24,12 +24,14 @@ What it does not contain:
 
 ```elixir
 defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Internal do
+  @spec <domain_object>_by_id(String.t()) :: <DomainObject>ReadModel.t() | nil
   def <domain_object>_by_id(id) do
-    # ecto query to read on record by id
+    # ecto query to read one record by id
   end
 
+  @spec <domain_object>_by_id!(String.t()) :: <DomainObject>ReadModel.t()
   def <domain_object>_by_id!(id) do
-    # ecto query to read on record by id
+    # ecto query to read one record by id
   end
 end
 ```
