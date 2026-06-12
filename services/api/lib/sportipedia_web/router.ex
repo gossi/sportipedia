@@ -54,6 +54,11 @@ defmodule SportipediaWeb.Router do
     pipe_through [:api, :catalog]
 
     scope "/equipment", Equipment do
+      scope "/apparatuses" do
+        # commands
+        post "/catalog-apparatus", ApparatusController, :catalog_apparatus
+      end
+
       scope "/instruments" do
         # commands
         post "/catalog-instrument", InstrumentController, :catalog_instrument

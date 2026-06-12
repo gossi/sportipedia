@@ -46,8 +46,8 @@ examples:
             }
           }
     response:
-      status: 200
-      statusText: OK
+      status: 201
+      statusText: Created
       headers:
         - name: content-type
           value: application/vnd.api+json; charset=utf-8
