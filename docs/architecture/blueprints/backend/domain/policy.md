@@ -2,7 +2,7 @@
 
 | Attribute | Value |
 | --- | --- |
-| Schema | [Core](../../schemas/core/v1.yaml) (see `command` + `actor`) |
+| Schema | [Core](../../../../schemas/core/v1.yaml) (see `command` + `actor`) |
 | File Path | `/services/api/lib/sportipedia/<_subdomain>/<_composite>/<domain_object>/policy.ex` |
 | Module Name | `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Policy` |
 | Test | See [Operation Test](./operation-test.md) |

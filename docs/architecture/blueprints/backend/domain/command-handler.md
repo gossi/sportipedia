@@ -2,7 +2,7 @@
 
 | Attribute | Value |
 | --- | --- |
-| Schema | [Core](../../schemas/core/v1.yaml) (see `command`) |
+| Schema | [Core](../../../../schemas/core/v1.yaml) (see `command`) |
 | File Path | `/services/api/lib/sportipedia/<_subdomain>/<_composite>/<domain_object>/<_operation>/handler.ex` |
 | Module Name | `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<Command>Handler` |
 | Test | See [Operation Test](./operation-test.md) |

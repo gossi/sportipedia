@@ -9,7 +9,7 @@ Blueprint for testing an endpoint (CQRS/ES operation) in the Sportipedia domain.
 
 ## Prerequisite
 
-- The [Domain Model](../../../docs/domain-model/README.md) contains the operation but also its behavior and/or test instructions.
+- The [Domain Model](../../../../domain-model/README.md) contains the operation but also its behavior and/or test instructions.
 
 ## Test
 

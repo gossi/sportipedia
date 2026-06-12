@@ -2,7 +2,7 @@
 
 | Attribute | Value |
 | --- | --- |
-| Schema | [Core](../../schemas/core/v1.yaml) |
+| Schema | [Core](../../../../schemas/core/v1.yaml) |
 | File Path | `/services/api/lib/sportipedia/<_subdomain>/<_composite>/<domain_object>/validators/<_validator>.ex` |
 | Module Name | `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Validators.<Validator>` |
 | Test | See [Operation Test](./operation-test.md) |

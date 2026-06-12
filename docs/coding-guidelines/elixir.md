@@ -6,8 +6,7 @@
 
 ### Conventions and Guidelines
 
-- Follow [Elixir Coding Guidelines](../../../docs/coding-guidelines/elixir.md)
-- Follow [Sportipedia Naming Conventions](../../../docs/coding-guidelines/naming-conventions.md)
+- Follow [Sportipedia Naming Conventions](./naming-conventions.md)
 
 ## Documentation
 

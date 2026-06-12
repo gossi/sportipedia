@@ -2,7 +2,7 @@
 
 | Attribute | Value |
 | --- | --- |
-| Schema | [Core](../../schemas/core/v1.yaml) |
+| Schema | [Core](../../../../schemas/core/v1.yaml) |
 | File Path | `/services/api/lib/sportipedia/<_subdomain>/<_composite>/<domain_object>/` |
 | Module Name | `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.` |
 | Test File | `/services/api/test/sportipedia/<_subdomain>/<_composite>/<domain_object>/operation/<_operation>_test.exs` |

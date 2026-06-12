@@ -2,7 +2,7 @@
 
 | Attribute | Value |
 | --- | --- |
-| Schema | [Core](../../schemas/core/v1.yaml) (see `projection`) |
+| Schema | [Core](../../../../schemas/core/v1.yaml) (see `projection`) |
 | File Path | `/services/api/lib/sportipedia/<_subdomain>/<_composite>/<domain_object>/projector.ex` |
 | Module Name | `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Projector` |
 | Test | See [Operation Test](./operation-test.md) |
