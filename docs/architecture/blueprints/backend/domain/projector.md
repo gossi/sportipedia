@@ -32,10 +32,6 @@ Example:
 @moduledoc """
 Projects sport events to the sport read model.
 """
-
-@doc """
-Projects a SportSuggested event to create a new sport read model.
-"""
 ```
 
 ### Implementation Template
@@ -53,9 +49,6 @@ defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Proje
     schema_prefix: "<_subdomain>",
     consistency: :strong
 
-  @doc """
-  Projects a <Event> event to <describe the projection action>.
-  """
   project %<Event>{} = event, _metadata, fn multi ->
     # projection code
   end

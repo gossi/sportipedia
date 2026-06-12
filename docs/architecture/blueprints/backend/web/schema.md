@@ -129,11 +129,18 @@ Using the [view](./view.md).
 
 ```elixir
 defmodule SportipediaWeb.<Subdomain>.<Composite>.Schemas.<DomainObject>Response do
+  @moduledoc """
+  OpenAPI schema for documenting <domain_object> endpoints.
+  """
+
   alias SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>View
   alias Sportipedia.Support.JSONAPI.OpenApiSchema
 
   require OpenApiSpex
 
+  @doc """
+  Returns the OpenAPI schema for the <domain_object> response.
+  """
   OpenApiSpex.schema(OpenApiSchema.from_view(<DomainObject>View, title: "<composite>.<DomainObject>"))
 end
 ```
@@ -145,11 +152,18 @@ Using the [view](./view.md).
 
 ```elixir
 defmodule SportipediaWeb.<Subdomain>.<Composite>.Schemas.<DomainObject>CollectionResponse do
+  @moduledoc """
+  OpenAPI schema for documenting <domain_object> collection endpoints.
+  """
+
   alias SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>View
   alias Sportipedia.Support.JSONAPI.OpenApiSchema
 
   require OpenApiSpex
 
+  @doc """
+  Returns the OpenAPI schema for the <domain_object> collection response.
+  """
   OpenApiSpex.schema(
     OpenApiSchema.from_view(<DomainObject>View, title: "<-composite>.<DomainObject>s", many: true)
   )
@@ -162,8 +176,15 @@ A single record query needs a query parameter schema documenting fields and incl
 
 ```elixir
 defmodule SportipediaWeb.<Subdomain>.<Composite>.Schemas.<Operation>QueryParams do
+  @moduledoc """
+  OpenAPI schema for documenting <operation> query parameters.
+  """
+
   require OpenApiSpex
 
+  @doc """
+  Returns the OpenAPI schema for the <operation> query parameters.
+  """
   OpenApiSpex.schema(%{
     title: "<composite>.<Operation>QueryParams",
     type: :object,
@@ -194,8 +215,15 @@ A collection query needs a query parameter schema documenting filter, sort, page
 
 ```elixir
 defmodule SportipediaWeb.<Subdomain>.<Composite>.Schemas.<Operation>QueryParams do
+  @moduledoc """
+  OpenAPI schema for documenting <operation> collection query parameters.
+  """
+
   require OpenApiSpex
 
+  @doc """
+  Returns the OpenAPI schema for the <operation> collection query parameters.
+  """
   OpenApiSpex.schema(%{
     title: "<composite>.<Operation>QueryParams",
     type: :object,
@@ -245,8 +273,15 @@ A command request schema is derived from the public API's parameter `@spec`.
 
 ```elixir
 defmodule SportipediaWeb.<Subdomain>.<Composite>.Schemas.<Command>Request do
+  @moduledoc """
+  OpenAPI schema for documenting <command> request parameters.
+  """
+
   require OpenApiSpex
 
+  @doc """
+  Returns the OpenAPI schema for the <command> request.
+  """
   OpenApiSpex.schema(%{
     title: "<composite>.<Command>Request",
     type: :object,
