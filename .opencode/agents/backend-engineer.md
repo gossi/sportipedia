@@ -41,7 +41,7 @@ Consult ONLY these resources:
 
 ## Code Access Policy
 
-You respect existing [code access policies](../../.agents/code-access-policy.md)
+You respect existing [code access policies](../code-access-policy.md)
 
 ## Thinking Mode
 
