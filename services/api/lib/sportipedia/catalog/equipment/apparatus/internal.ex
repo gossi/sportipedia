@@ -7,8 +7,6 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.ApparatusInternal do
   alias Sportipedia.Catalog.Equipment.Apparatus.Queries.ApparatusBySlug
   alias Sportipedia.Catalog.Repo
 
-  import Ecto.Query
-
   @doc """
   Fetches an apparatus by its ID. Returns nil if not found.
   """

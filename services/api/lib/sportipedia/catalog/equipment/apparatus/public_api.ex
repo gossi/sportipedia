@@ -3,6 +3,7 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus do
   Public API for managing apparatuses in the sport equipment catalog.
   """
 
+  alias Sportipedia.Support.ErrorClassifier
   alias Sportipedia.Architecture
   alias Sportipedia.Catalog
   alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusInternal
@@ -10,7 +11,6 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus do
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.ArchiveApparatus
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.CatalogApparatus
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.EditApparatus
-  alias Sportipedia.Catalog.Equipment.Apparatus.Queries.ListApparatuses
   alias Sportipedia.Catalog.Repo
   alias Sportipedia.Support.JSONAPI.QueryBuilder
 
@@ -41,11 +41,13 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus do
           optional(:description) => String.t() | nil
         }) :: Architecture.public_api(ApparatusReadModel.t())
   def edit_apparatus(params) do
-    id = params[:id] || params["id"]
-    cmd = EditApparatus.new(params)
+    case Catalog.dispatch(EditApparatus.new(params), consistency: :strong) do
+      :ok ->
+        id = params[:id] || params["id"]
+        {:ok, ApparatusInternal.apparatus_by_id(id)}
 
-    with :ok <- Catalog.dispatch(cmd, consistency: :strong) do
-      {:ok, ApparatusInternal.apparatus_by_id(id)}
+      {:error, errors} ->
+        ErrorClassifier.classify_error(errors)
     end
   end
 
@@ -54,7 +56,10 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus do
   """
   @spec archive_apparatus(String.t()) :: Architecture.public_api()
   def archive_apparatus(id) do
-    Catalog.dispatch(ArchiveApparatus.new(id: id), consistency: :strong)
+    case Catalog.dispatch(ArchiveApparatus.new(id: id), consistency: :strong) do
+      :ok -> :ok
+      {:error, errors} -> ErrorClassifier.classify_error(errors)
+    end
   end
 
   @doc """
@@ -62,13 +67,13 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus do
   """
   @spec read_apparatus(String.t()) :: {:ok, ApparatusReadModel.t()} | {:error, :not_found}
   def read_apparatus(id_or_slug) do
-    case lookup(id_or_slug) do
+    case lookup_apparatus(id_or_slug) do
       nil -> {:error, :not_found}
       read_model -> {:ok, read_model}
     end
   end
 
-  defp lookup(id_or_slug) do
+  defp lookup_apparatus(id_or_slug) do
     if uuid?(id_or_slug) do
       ApparatusInternal.apparatus_by_id(id_or_slug)
     else
@@ -76,21 +81,18 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus do
     end
   end
 
-  defp uuid?(
-         <<_::binary-size(8), "-", _::binary-size(4), "-", _::binary-size(4), "-",
-           _::binary-size(4), "-", _::binary-size(12)>>
-       ) do
-    true
+  defp uuid?(maybe_id) do
+    case UUID.info(maybe_id) do
+      {:ok, _} -> true
+      {:error, _} -> false
+    end
   end
-
-  defp uuid?(_), do: false
 
   @doc """
   Lists all apparatuses with optional filtering, sorting, and pagination.
   """
   @spec list_apparatuses(JSONAPI.Config.t()) :: Architecture.public_api([ApparatusReadModel.t()])
-  def list_apparatuses(jsonapi_config) do
-    base_query = ListApparatuses.new(jsonapi_config)
-    {:ok, Repo.all(QueryBuilder.build(jsonapi_config, base_query, ApparatusReadModel))}
+  def list_apparatuses(query) do
+    {:ok, Repo.all(QueryBuilder.build(query, ApparatusReadModel))}
   end
 end

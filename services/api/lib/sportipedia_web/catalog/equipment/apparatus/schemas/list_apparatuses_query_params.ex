@@ -1,4 +1,4 @@
-defmodule SportipediaWeb.Catalog.Equipment.Schemas.ListApparatusesQueryParams do
+defmodule SportipediaWeb.Catalog.Equipment.Apparatus.Schemas.ListApparatusesQueryParams do
   @moduledoc """
   OpenAPI schema for documenting list-apparatuses collection query parameters.
   """

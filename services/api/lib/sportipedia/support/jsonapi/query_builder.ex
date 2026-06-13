@@ -81,12 +81,26 @@ defmodule Sportipedia.Support.JSONAPI.QueryBuilder do
       # List filter: comma-separated values -> IN clause
       is_binary(value) and String.contains?(value, ",") ->
         values = value |> String.split(",") |> Enum.map(&String.trim/1)
-        where(query, [r], field(r, ^atom_field) in ^values)
 
-      # Exact match
+        if string_field?(schema, atom_field) do
+          where(query, [r],
+            fragment("lower(?)", field(r, ^atom_field)) in ^Enum.map(values, &String.downcase/1)
+          )
+        else
+          where(query, [r], field(r, ^atom_field) in ^values)
+        end
+
+      # Exact match (case-insensitive for string/text fields)
       true ->
         cast_val = cast_value(schema, atom_field, value)
-        where(query, [r], field(r, ^atom_field) == ^cast_val)
+
+        if string_field?(schema, atom_field) do
+          where(query, [r],
+            fragment("lower(?) LIKE ?", field(r, ^atom_field), ^"%#{String.downcase(cast_val)}%")
+          )
+        else
+          where(query, [r], field(r, ^atom_field) == ^cast_val)
+        end
     end
   end
 
@@ -232,6 +246,11 @@ defmodule Sportipedia.Support.JSONAPI.QueryBuilder do
     |> Module.split()
     |> List.last()
     |> Macro.underscore()
+  end
+
+  defp string_field?(schema, field) do
+    type = schema.__schema__(:type, field)
+    type in [:string, :text]
   end
 
   defp parse_int(value, default) when is_binary(value) do

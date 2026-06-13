@@ -37,6 +37,7 @@ defmodule SportipediaWeb.Router do
     Verb: #{inspect(conn.method)}
     Path: #{inspect(conn.request_path)}
     Headers: #{inspect(conn.req_headers)}
+    Payload: #{inspect(conn.body_params)}
     ---
     """)
 
@@ -54,11 +55,11 @@ defmodule SportipediaWeb.Router do
     pipe_through [:api, :catalog]
 
     scope "/equipment", Equipment do
-      scope "/apparatuses" do
+      scope "/apparatuses", Apparatus do
         # commands
         post "/catalog-apparatus", ApparatusController, :catalog_apparatus
-        patch "/:id/edit-apparatus", ApparatusController, :edit_apparatus
-        delete "/:id/archive-apparatus", ApparatusController, :archive_apparatus
+        post "/edit-apparatus", ApparatusController, :edit_apparatus
+        post "/archive-apparatus", ApparatusController, :archive_apparatus
 
         # queries
         get "/", ApparatusController, :list_apparatuses

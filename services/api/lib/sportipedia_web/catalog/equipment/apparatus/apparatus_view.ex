@@ -1,4 +1,4 @@
-defmodule SportipediaWeb.Catalog.Equipment.ApparatusView do
+defmodule SportipediaWeb.Catalog.Equipment.Apparatus.ApparatusView do
   @moduledoc """
   Renders apparatus resources in JSON:API format.
   """

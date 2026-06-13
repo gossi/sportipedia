@@ -65,5 +65,50 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.ListApparatusesEndpointTest
 
       assert %{"data" => []} = body
     end
+
+    test "filters apparatuses by title (case-insensitive partial match)", %{conn: conn} do
+      {:ok, _a1} =
+        Apparatus.catalog_apparatus(%{title: "Vaulting Table", slug: "vaulting-table"})
+
+      {:ok, _a2} =
+        Apparatus.catalog_apparatus(%{title: "Pommel Horse", slug: "pommel-horse"})
+
+      {:ok, _a3} =
+        Apparatus.catalog_apparatus(%{title: "Still Rings", slug: "still-rings"})
+
+      conn =
+        conn
+        |> authenticate_conn()
+        |> api_conn()
+        |> get("/catalog/equipment/apparatuses?filter[title]=vault")
+
+      body = json_response(conn, 200)
+
+      assert %{"data" => data} = body
+      assert is_list(data)
+      assert length(data) == 1
+      assert jsonapi_attr(hd(data), "title") == "Vaulting Table"
+    end
+
+    test "filters apparatuses by title with case-insensitive match", %{conn: conn} do
+      {:ok, _a1} =
+        Apparatus.catalog_apparatus(%{title: "Vaulting Table", slug: "vaulting-table"})
+
+      {:ok, _a2} =
+        Apparatus.catalog_apparatus(%{title: "Pommel Horse", slug: "pommel-horse"})
+
+      conn =
+        conn
+        |> authenticate_conn()
+        |> api_conn()
+        |> get("/catalog/equipment/apparatuses?filter[title]=HORSE")
+
+      body = json_response(conn, 200)
+
+      assert %{"data" => data} = body
+      assert is_list(data)
+      assert length(data) == 1
+      assert jsonapi_attr(hd(data), "title") == "Pommel Horse"
+    end
   end
 end

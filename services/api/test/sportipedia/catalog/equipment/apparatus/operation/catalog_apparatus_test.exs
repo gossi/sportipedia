@@ -60,6 +60,33 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Operation.CatalogApparatusTest
 
       assert {:error, _errors} = Vex.validate(cmd)
     end
+
+    test "check slug for uniqueness" do
+      cmd = %CatalogApparatus{
+        id: UUID.uuid4(),
+        title: "Vaulting Table",
+        slug: "any-slug"
+      }
+
+      assert {:ok, _} = Vex.validate(cmd)
+    end
+
+    test "rejects when slug is not unique" do
+      new_apparatus(%{
+        id: UUID.uuid4(),
+        title: "Beam",
+        slug: "beam"
+      })
+
+      cmd = %CatalogApparatus{
+        id: UUID.uuid4(),
+        title: "Balance Beam",
+        slug: "beam"
+      }
+
+      assert {:error, [{:error, :slug, :by, :slug_exists}]} =
+               Vex.validate(cmd)
+    end
   end
 
   describe "CatalogApparatusHandler" do
@@ -270,5 +297,12 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Operation.CatalogApparatusTest
       json = Jason.encode!(event)
       assert Jason.decode!(json)["title"] == "Vaulting Table"
     end
+  end
+
+  @spec new_apparatus(ApparatusReadModel.t()) ::
+          {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
+  defp new_apparatus(attributes) do
+    ApparatusReadModel.insert_changeset(%ApparatusReadModel{}, attributes)
+    |> Repo.insert()
   end
 end

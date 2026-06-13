@@ -107,19 +107,106 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Operation.EditApparatusTest do
       end
     end
 
-    test "does not have Vex slug validation (uniqueness checked in handler)" do
-      # Slug uniqueness is now checked in the handler, not via Vex
+    test "id cannot be nil" do
+      cmd = %EditApparatus{id: nil}
+
+      assert_raise ArgumentError, fn ->
+        Vex.validate(cmd)
+      end
+    end
+
+    test "error when id does not exist" do
+      id = UUID.uuid4()
+      cmd = %EditApparatus{id: id}
+
+      assert {:error, [{:error, :id, :by, :not_found}]} = Vex.validate(cmd)
+    end
+
+    test "validates id must exist" do
+      id = UUID.uuid4()
+
+      new_apparatus(%{
+        id: id,
+        title: "Vaulting Table",
+        slug: "vaulting-table"
+      })
+
+      cmd = %EditApparatus{id: id}
+
+      assert {:ok, _} = Vex.validate(cmd)
+    end
+
+    test "change title, but keep slug" do
+      id = UUID.uuid4()
+
+      new_apparatus(%{
+        id: id,
+        title: "Vaulting Table",
+        slug: "vaulting-table"
+      })
+
       cmd = %EditApparatus{
-        id: UUID.uuid4(),
+        id: id,
+        title: "Vaulting",
+        slug: "vaulting-table"
+      }
+
+      assert {:ok, _} = Vex.validate(cmd)
+    end
+
+    test "check slug for uniqueness" do
+      id = UUID.uuid4()
+
+      new_apparatus(%{
+        id: id,
+        title: "Vaulting Table",
+        slug: "vaulting-table"
+      })
+
+      cmd = %EditApparatus{
+        id: id,
         slug: "any-slug"
       }
 
       assert {:ok, _} = Vex.validate(cmd)
     end
 
-    test "does not validate slug when slug is nil" do
+    test "rejects when slug is not unique" do
+      id = UUID.uuid4()
+
+      new_apparatuses([
+        %{
+          id: UUID.uuid4(),
+          title: "Beam",
+          slug: "beam"
+        },
+        %{
+          id: id,
+          title: "Vaulting Table",
+          slug: "vaulting-table"
+        }
+      ])
+
       cmd = %EditApparatus{
-        id: UUID.uuid4(),
+        id: id,
+        slug: "beam"
+      }
+
+      assert {:error, [{:error, :slug, :by, :slug_exists}]} =
+               Vex.validate(cmd)
+    end
+
+    test "does not validate slug when slug is nil" do
+      id = UUID.uuid4()
+
+      new_apparatus(%{
+        id: id,
+        title: "Vaulting Table",
+        slug: "vaulting-table"
+      })
+
+      cmd = %EditApparatus{
+        id: id,
         slug: nil
       }
 
@@ -162,66 +249,13 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Operation.EditApparatusTest do
         title: "Updated Title"
       }
 
-      aggregate = %ApparatusAggregate{
-        id: id,
-        title: "Original Title",
-        slug: "original-slug",
-        description: "Original description"
-      }
-
-      events = EditApparatusHandler.handle(aggregate, cmd)
+      events = EditApparatusHandler.handle(%ApparatusAggregate{}, cmd)
 
       assert %ApparatusEdited{} = events
       assert events.id == id
       assert events.title == "Updated Title"
       assert events.slug == nil
       assert events.description == nil
-    end
-
-    test "allows keeping the same slug" do
-      id = UUID.uuid4()
-
-      cmd = %EditApparatus{
-        id: id,
-        title: "Updated Title",
-        slug: "original-slug"
-      }
-
-      aggregate = %ApparatusAggregate{
-        id: id,
-        title: "Original Title",
-        slug: "original-slug",
-        description: "Original description"
-      }
-
-      result = EditApparatusHandler.handle(aggregate, cmd)
-
-      assert %ApparatusEdited{} = result
-      assert result.slug == "original-slug"
-    end
-
-    test "rejects changing to a slug that already exists" do
-      # First, catalog an apparatus with a known slug
-      params = %{title: "Other Apparatus", slug: "taken-slug"}
-      assert {:ok, _} = Apparatus.catalog_apparatus(params)
-
-      id = UUID.uuid4()
-
-      cmd = %EditApparatus{
-        id: id,
-        slug: "taken-slug"
-      }
-
-      aggregate = %ApparatusAggregate{
-        id: id,
-        title: "My Apparatus",
-        slug: "my-slug",
-        description: nil
-      }
-
-      result = EditApparatusHandler.handle(aggregate, cmd)
-
-      assert {:error, {:validation_failure, %{slug: ["slug already exists"]}}} = result
     end
   end
 
@@ -407,10 +441,10 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Operation.EditApparatusTest do
         description: "A gymnastics vault"
       }
 
-      assert {:ok, created} = Apparatus.catalog_apparatus(params)
+      assert {:ok, apparatus} = Apparatus.catalog_apparatus(params)
 
       # Edit only the title
-      edit_params = %{id: created.id, title: "Updated Vaulting Table"}
+      edit_params = %{id: apparatus.id, title: "Updated Vaulting Table"}
       assert {:ok, updated} = Apparatus.edit_apparatus(edit_params)
 
       assert updated.title == "Updated Vaulting Table"
@@ -420,9 +454,9 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Operation.EditApparatusTest do
 
     test "edits an apparatus slug successfully" do
       params = %{title: "Pommel Horse", slug: "pommel-horse"}
-      assert {:ok, created} = Apparatus.catalog_apparatus(params)
+      assert {:ok, apparatus} = Apparatus.catalog_apparatus(params)
 
-      edit_params = %{id: created.id, slug: "pommel-horse-updated"}
+      edit_params = %{id: apparatus.id, slug: "pommel-horse-updated"}
       assert {:ok, updated} = Apparatus.edit_apparatus(edit_params)
 
       assert updated.title == "Pommel Horse"
@@ -431,9 +465,9 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Operation.EditApparatusTest do
 
     test "edits an apparatus description successfully" do
       params = %{title: "Balance Beam", slug: "balance-beam"}
-      assert {:ok, created} = Apparatus.catalog_apparatus(params)
+      assert {:ok, apparatus} = Apparatus.catalog_apparatus(params)
 
-      edit_params = %{id: created.id, description: "A narrow beam"}
+      edit_params = %{id: apparatus.id, description: "A narrow beam"}
       assert {:ok, updated} = Apparatus.edit_apparatus(edit_params)
 
       assert updated.title == "Balance Beam"
@@ -494,5 +528,16 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Operation.EditApparatusTest do
       edit_params = %{id: created.id, slug: "apparatus-a"}
       assert {:error, {:validation_failure, _errors}} = Apparatus.edit_apparatus(edit_params)
     end
+  end
+
+  @spec new_apparatus(ApparatusReadModel.t()) ::
+          {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
+  defp new_apparatus(attributes) do
+    ApparatusReadModel.insert_changeset(%ApparatusReadModel{}, attributes)
+    |> Repo.insert()
+  end
+
+  defp new_apparatuses(attribute_collection) do
+    Enum.each(attribute_collection, fn elem -> new_apparatus(elem) end)
   end
 end

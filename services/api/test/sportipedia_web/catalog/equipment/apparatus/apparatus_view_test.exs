@@ -1,8 +1,8 @@
-defmodule SportipediaWeb.Catalog.Equipment.ApparatusViewTest do
+defmodule SportipediaWeb.Catalog.Equipment.Apparatus.ApparatusViewTest do
   use SportipediaWeb.ConnCase
 
   alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusReadModel
-  alias SportipediaWeb.Catalog.Equipment.ApparatusView
+  alias SportipediaWeb.Catalog.Equipment.Apparatus.ApparatusView
 
   describe "type/0" do
     test "returns apparatuses" do
@@ -44,9 +44,19 @@ defmodule SportipediaWeb.Catalog.Equipment.ApparatusViewTest do
                    title: "Vaulting Table",
                    slug: "vaulting-table",
                    description: "A gymnastics vault"
-                 }
+                 },
+                 links: %{
+                   self:
+                     "http://www.example.com/catalog/equipment/apparatuses/d290f1ee-6c54-4b01-90e6-d701748f0851"
+                 },
+                 relationships: %{}
+               },
+               included: [],
+               links: %{
+                 self:
+                   "http://www.example.com/catalog/equipment/apparatuses/d290f1ee-6c54-4b01-90e6-d701748f0851"
                }
-             } = result
+             } == result
     end
   end
 end

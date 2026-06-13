@@ -6,7 +6,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.EditApparatusEndpointTest d
   alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusReadModel
   alias Sportipedia.Catalog.Repo
 
-  describe "PATCH /catalog/equipment/apparatuses/:id/edit-apparatus" do
+  describe "POST /catalog/equipment/apparatuses/edit-apparatus" do
     test "edits an existing apparatus and returns 200", %{conn: conn} do
       # First, catalog an apparatus
       catalog_conn =
@@ -32,8 +32,8 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.EditApparatusEndpointTest d
         conn
         |> authenticate_conn()
         |> api_conn()
-        |> patch(
-          "/catalog/equipment/apparatuses/#{apparatus_id}/edit-apparatus",
+        |> post(
+          "/catalog/equipment/apparatuses/edit-apparatus",
           Jason.encode!(jsonapi_body("apparatuses", %{title: "Vault"}, apparatus_id))
         )
 
@@ -76,8 +76,8 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.EditApparatusEndpointTest d
         conn
         |> authenticate_conn()
         |> api_conn()
-        |> patch(
-          "/catalog/equipment/apparatuses/#{apparatus_id}/edit-apparatus",
+        |> post(
+          "/catalog/equipment/apparatuses/edit-apparatus",
           Jason.encode!(
             jsonapi_body("apparatuses", %{description: "Used for gymnastics"}, apparatus_id)
           )
@@ -114,10 +114,14 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.EditApparatusEndpointTest d
         conn
         |> authenticate_conn()
         |> api_conn()
-        |> patch(
-          "/catalog/equipment/apparatuses/#{apparatus_id}/edit-apparatus",
+        |> post(
+          "/catalog/equipment/apparatuses/edit-apparatus",
           Jason.encode!(
-            jsonapi_body("apparatuses", %{title: "Updated Vault", slug: "vaulting-table"}, apparatus_id)
+            jsonapi_body(
+              "apparatuses",
+              %{title: "Updated Vault", slug: "vaulting-table"},
+              apparatus_id
+            )
           )
         )
 
@@ -130,24 +134,22 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.EditApparatusEndpointTest d
       conn =
         build_conn()
         |> api_conn()
-        |> patch(
-          "/catalog/equipment/apparatuses/some-id/edit-apparatus",
-          Jason.encode!(jsonapi_body("apparatuses", %{title: "Vault"}, "some-id"))
+        |> post(
+          "/catalog/equipment/apparatuses/edit-apparatus",
+          Jason.encode!(jsonapi_body("apparatuses", "some-id"))
         )
 
       assert json_response(conn, 403)
     end
 
     test "returns 404 when apparatus does not exist", %{conn: conn} do
-      non_existent_id = UUID.uuid4()
-
       conn =
         conn
         |> authenticate_conn()
         |> api_conn()
-        |> patch(
-          "/catalog/equipment/apparatuses/#{non_existent_id}/edit-apparatus",
-          Jason.encode!(jsonapi_body("apparatuses", %{title: "Vault"}, non_existent_id))
+        |> post(
+          "/catalog/equipment/apparatuses/edit-apparatus",
+          Jason.encode!(jsonapi_body("apparatuses", UUID.uuid4()))
         )
 
       assert json_response(conn, 404)
@@ -195,8 +197,8 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.EditApparatusEndpointTest d
         conn
         |> authenticate_conn()
         |> api_conn()
-        |> patch(
-          "/catalog/equipment/apparatuses/#{second_id}/edit-apparatus",
+        |> post(
+          "/catalog/equipment/apparatuses/edit-apparatus",
           Jason.encode!(jsonapi_body("apparatuses", %{slug: "vaulting-table"}, second_id))
         )
 

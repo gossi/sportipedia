@@ -1,4 +1,4 @@
-defmodule SportipediaWeb.Catalog.Equipment.Schemas.EditApparatusRequest do
+defmodule SportipediaWeb.Catalog.Equipment.Apparatus.Schemas.EditApparatusRequest do
   @moduledoc """
   OpenAPI schema for documenting the edit-apparatus request parameters.
   """

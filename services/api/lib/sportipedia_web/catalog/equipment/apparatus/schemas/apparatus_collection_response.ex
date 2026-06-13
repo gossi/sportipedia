@@ -1,9 +1,9 @@
-defmodule SportipediaWeb.Catalog.Equipment.Schemas.ApparatusCollectionResponse do
+defmodule SportipediaWeb.Catalog.Equipment.Apparatus.Schemas.ApparatusCollectionResponse do
   @moduledoc """
   OpenAPI schema for documenting apparatus collection endpoints.
   """
 
-  alias SportipediaWeb.Catalog.Equipment.ApparatusView
+  alias SportipediaWeb.Catalog.Equipment.Apparatus.ApparatusView
   alias Sportipedia.Support.JSONAPI.OpenApiSchema
 
   require OpenApiSpex

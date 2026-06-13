@@ -68,7 +68,7 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentController do
         |> render("show.json", %{data: instrument})
 
       nil ->
-        {:error, :notfound}
+        {:error, :not_found}
     end
   end
 
@@ -106,7 +106,7 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentController do
         |> render("show.json", %{data: instrument})
 
       {:error, _} ->
-        {:error, :notfound}
+        {:error, :not_found}
     end
   end
 
@@ -126,7 +126,7 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentController do
         send_resp(conn, :no_content, "")
 
       {:error, _} ->
-        {:error, :notfound}
+        {:error, :not_found}
     end
   end
 end

@@ -1,4 +1,4 @@
-defmodule SportipediaWeb.Catalog.Equipment.ApparatusController do
+defmodule SportipediaWeb.Catalog.Equipment.Apparatus.ApparatusController do
   @moduledoc """
   Handles HTTP requests for apparatus operations.
   """
@@ -6,12 +6,12 @@ defmodule SportipediaWeb.Catalog.Equipment.ApparatusController do
   alias OpenApiSpex.Reference
   alias Sportipedia.Catalog.Equipment.Apparatus
   alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusReadModel
-  alias SportipediaWeb.Catalog.Equipment.ApparatusView
-  alias SportipediaWeb.Catalog.Equipment.Schemas.ApparatusCollectionResponse
-  alias SportipediaWeb.Catalog.Equipment.Schemas.ApparatusResponse
-  alias SportipediaWeb.Catalog.Equipment.Schemas.CatalogApparatusRequest
-  alias SportipediaWeb.Catalog.Equipment.Schemas.EditApparatusRequest
-  alias SportipediaWeb.Catalog.Equipment.Schemas.ListApparatusesQueryParams
+  alias SportipediaWeb.Catalog.Equipment.Apparatus.ApparatusView
+  alias SportipediaWeb.Catalog.Equipment.Apparatus.Schemas.ApparatusCollectionResponse
+  alias SportipediaWeb.Catalog.Equipment.Apparatus.Schemas.ApparatusResponse
+  alias SportipediaWeb.Catalog.Equipment.Apparatus.Schemas.CatalogApparatusRequest
+  alias SportipediaWeb.Catalog.Equipment.Apparatus.Schemas.EditApparatusRequest
+  alias SportipediaWeb.Catalog.Equipment.Apparatus.Schemas.ListApparatusesQueryParams
   alias SportipediaWeb.System.FallbackController
 
   use SportipediaWeb, :controller
@@ -73,11 +73,14 @@ defmodule SportipediaWeb.Catalog.Equipment.ApparatusController do
       conn.params
       |> Map.take(["id", "title", "slug", "description"])
 
-    with {:ok, apparatus} <- Apparatus.edit_apparatus(params),
-          true <- apparatus != nil || {:error, :notfound} do
-      conn
-      |> put_view(json: ApparatusView)
-      |> render("show.json", %{data: apparatus})
+    case Apparatus.edit_apparatus(params) do
+      {:ok, apparatus} ->
+        conn
+        |> put_view(json: ApparatusView)
+        |> render("show.json", %{data: apparatus})
+
+      {:error, errors} ->
+        {:error, errors}
     end
   end
 
@@ -99,8 +102,8 @@ defmodule SportipediaWeb.Catalog.Equipment.ApparatusController do
       :ok ->
         send_resp(conn, :no_content, "")
 
-      {:error, _} ->
-        {:error, :notfound}
+      {:error, errors} ->
+        {:error, errors}
     end
   end
 
@@ -148,7 +151,7 @@ defmodule SportipediaWeb.Catalog.Equipment.ApparatusController do
         |> render("show.json", %{data: apparatus})
 
       {:error, :not_found} ->
-        {:error, :notfound}
+        {:error, :not_found}
     end
   end
 end

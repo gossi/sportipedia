@@ -26,10 +26,34 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Operation.ArchiveApparatusTest
       end
     end
 
-    test "validates presence of id" do
+    test "id cannot be nil" do
       cmd = %ArchiveApparatus{id: nil}
 
-      assert {:error, _errors} = Vex.validate(cmd)
+      assert_raise ArgumentError, fn ->
+        Vex.validate(cmd)
+      end
+    end
+
+    test "error when id does not exist" do
+      id = UUID.uuid4()
+      cmd = %ArchiveApparatus{id: id}
+
+      assert {:error, [{:error, :id, :by, :not_found}]} = Vex.validate(cmd)
+    end
+
+    test "validates id must exist" do
+      id = UUID.uuid4()
+
+      ApparatusReadModel.insert_changeset(%ApparatusReadModel{}, %{
+        id: id,
+        title: "Vaulting Table",
+        slug: "vaulting-table"
+      })
+      |> Repo.insert()
+
+      cmd = %ArchiveApparatus{id: id}
+
+      assert {:ok, _} = Vex.validate(cmd)
     end
   end
 
@@ -203,7 +227,7 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Operation.ArchiveApparatusTest
 
       # This should still succeed at dispatch level (event sourcing allows archiving non-existent)
       # but the read model won't exist
-      assert :ok = Apparatus.archive_apparatus(id)
+      assert {:error, :not_found} = Apparatus.archive_apparatus(id)
     end
   end
 end

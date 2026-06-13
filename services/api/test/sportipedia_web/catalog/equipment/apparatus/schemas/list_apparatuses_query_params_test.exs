@@ -1,7 +1,7 @@
-defmodule SportipediaWeb.Catalog.Equipment.Schemas.ListApparatusesQueryParamsTest do
+defmodule SportipediaWeb.Catalog.Equipment.Apparatus.Schemas.ListApparatusesQueryParamsTest do
   use ExUnit.Case
 
-  alias SportipediaWeb.Catalog.Equipment.Schemas.ListApparatusesQueryParams
+  alias SportipediaWeb.Catalog.Equipment.Apparatus.Schemas.ListApparatusesQueryParams
 
   describe "ListApparatusesQueryParams" do
     test "schema/0 has the correct title" do

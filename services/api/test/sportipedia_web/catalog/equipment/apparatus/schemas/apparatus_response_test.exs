@@ -1,7 +1,7 @@
-defmodule SportipediaWeb.Catalog.Equipment.Schemas.ApparatusResponseTest do
+defmodule SportipediaWeb.Catalog.Equipment.Apparatus.Schemas.ApparatusResponseTest do
   use ExUnit.Case
 
-  alias SportipediaWeb.Catalog.Equipment.Schemas.ApparatusResponse
+  alias SportipediaWeb.Catalog.Equipment.Apparatus.Schemas.ApparatusResponse
 
   describe "ApparatusResponse" do
     test "schema/0 has the correct title" do

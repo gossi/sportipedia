@@ -3,6 +3,8 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Command.EditApparatus do
   Edits an existing apparatus in the sport equipment catalog.
   All fields except id are optional, allowing partial updates.
   """
+  alias Sportipedia.Catalog.Equipment.Apparatus.Validators.ApparatusExists
+  alias Sportipedia.Catalog.Equipment.Apparatus.Validators.UniqueSlug
 
   use TypedStruct
   use ExConstructor
@@ -18,4 +20,7 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Command.EditApparatus do
   end
 
   use Vex.Struct
+
+  validates :id, presence: true, by: [function: &ApparatusExists.validate/2]
+  validates :slug, by: [function: &UniqueSlug.validate/2, allow_nil: true]
 end
