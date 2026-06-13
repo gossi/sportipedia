@@ -76,8 +76,7 @@ defmodule Sportipedia.MixProject do
       {:commanded, "~> 1.4"},
       {:commanded_ecto_projections, "~> 1.4"},
       {:commanded_eventstore_adapter, "~> 1.4"},
-      # {:commanded_eventsourcingdb_adapter, github: "gossi/commanded_eventsourcingdb_adapter"},
-      {:commanded_eventsourcingdb_adapter, path: "../../../commanded_eventsourcingdb_adapter"},
+      {:commanded_eventsourcingdb_adapter, "0.0.1"},
       {:eventstore, "~> 1.4"}
     ]
   end
