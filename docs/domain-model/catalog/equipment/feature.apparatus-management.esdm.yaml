@@ -1,0 +1,120 @@
+apiVersion: schema.esdm.io/given-when-then/v1
+kind: feature
+name: manage-apparatuses
+description: "Managing immovable sport equipment in the catalog"
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: apparatus
+scenarios:
+  - name: catalog-apparatus
+    description: "A user catalogs a new apparatus"
+    given: []
+    when:
+      command: catalog-apparatus
+      data:
+        title: "Vaulting Table"
+        slug: "vaulting-table"
+        description: "A gymnastics vault"
+      actor: user
+    then:
+      events:
+        - event: apparatus-cataloged
+          data:
+            id: "{{ generated }}"
+            title: "Vaulting Table"
+            slug: "vaulting-table"
+            description: "A gymnastics vault"
+
+  - name: edit-apparatus
+    description: "A user edits an existing apparatus"
+    given:
+      - event: apparatus-cataloged
+        data:
+          id: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+          title: "Vaulting Table"
+          slug: "vaulting-table"
+          description: "A gymnastics vault"
+    when:
+      command: edit-apparatus
+      data:
+        id: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+        title: "Vault"
+      actor: user
+    then:
+      events:
+        - event: apparatus-edited
+          data:
+            id: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+            title: "Vault"
+            slug: null
+            description: null
+
+  - name: archive-apparatus
+    description: "A user archives an apparatus that is not in use"
+    given:
+      - event: apparatus-cataloged
+        data:
+          id: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+          title: "Balance Beam"
+          slug: "balance-beam"
+          description: null
+    when:
+      command: archive-apparatus
+      data:
+        id: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+      actor: user
+    then:
+      events:
+        - event: apparatus-archived
+          data:
+            id: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+
+  - name: archive-apparatus-when-in-use
+    description: "Archive is rejected when a sport uses the apparatus (not yet enforceable)"
+    given:
+      - event: apparatus-cataloged
+        data:
+          id: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+          title: "Balance Beam"
+          slug: "balance-beam"
+          description: null
+    when:
+      command: archive-apparatus
+      data:
+        id: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+      actor: user
+    then:
+      rejection:
+        invariant: no-archive-when-in-use
+
+  - name: catalog-apparatus-invalid-without-title
+    description: "Catalog command is rejected when title is missing"
+    given: []
+    when:
+      command: catalog-apparatus
+      data:
+        slug: "vaulting-table"
+      actor: user
+    then:
+      rejection:
+        reason: "title must be present"
+
+  - name: catalog-apparatus-duplicate-slug
+    description: "Catalog command is rejected when slug already exists"
+    given:
+      - event: apparatus-cataloged
+        data:
+          id: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+          title: "Vaulting Table"
+          slug: "vaulting-table"
+          description: null
+    when:
+      command: catalog-apparatus
+      data:
+        title: "Another Vaulting Table"
+        slug: "vaulting-table"
+      actor: user
+    then:
+      rejection:
+        reason: "slug already exists"

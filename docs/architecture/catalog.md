@@ -6,6 +6,9 @@ model](../domain-model/README.md) for detailed meaning of the domain language.
 Hierarchical organization is loosly based on the C4 Model, used for its
 representation with four levels and its capability of diagramming it.
 
+Refer to [naming substitution](./naming-substitution.md) for interpreting used
+placeholders correctly.
+
 ## 1. Context: Catalog
 
 Catalog is a knowledge system. It's key is to store and retrieve information
@@ -47,18 +50,22 @@ me accountable!
 
 Directory Structure:
 
-- `/services/api/lib/sportipedia/catalog/<composite>`
-  - `/<domain-object>/`: see below
-- `/services/api/lib/sportipedia_web/catalog/<composite>`
-  - `/<domain-object>_controller.ex`: Controller for the given domain object
+- `/services/api/lib/sportipedia/catalog/<_composite>`
+  - `/<domain_object>/`: see below
+  - `/<domain_object>/public_api.ex`: Port
+- `/services/api/lib/sportipedia_web/catalog/<_composite>`
+  - `/<domain_object>_controller.ex`: Controller for the given domain object
   - `/views/`: Views for the API responses
-  - `/schema/`: Schema describing the API response (for OpenAPI/JSON:API/Swagger docs)
+  - `/schema/`: Schema describing the API response (for OpenAPI/JSON:API/Swagger
+    docs)
+
+See: [Backend Architecture](./backend.md)
 
 ### Frontend
 
 Directory Structure:
 
-- `/apps/catalog/src/domain/<composite>`
+- `/apps/catalog/src/domain/<_composite>`
   - `/manifest.ts`: Manifest (see below)
   - `/domain-objects/`: see below
   - `/ui/`: Components, modifiers and helpers
@@ -100,9 +107,9 @@ that public interface, there is no way around.
 Architecture wise the domain-object is organized as a hybrid of clean architecture
 and vertical slice architecture.
 
-- __Vertical Slice Architecture (VSA)__: Everything feature based rsp. business process related follows VSA and is
-organized in the same directory.
-- __Clean Architecture__: Makes the core substance of the domain-object. Citizens that doesn't fall under VSA are organized through clean architecture.
+- **Vertical Slice Architecture (VSA)**: Everything feature based rsp. business process related follows VSA and is
+  organized in the same directory.
+- **Clean Architecture**: Makes the core substance of the domain-object. Citizens that doesn't fall under VSA are organized through clean architecture.
 
 ### Backend
 
@@ -110,19 +117,45 @@ organized in the same directory.
 
 #### Clean Architecture
 
-- Location: `/services/api/lib/sportipedia/catalog/<composite>/<domain-object>`
 - Citizens:
-  - Public API
+  - Public API (Port)
   - Aggregates
   - Entities
   - Value Objects
   - (Validations)
   - (Queries)
   - (Generic) Read Models
+  - Policies (Authorization)
+
+Directory Structure:
+
+- `/services/api/lib/sportipedia/catalog/<_composite>/<domain_object>`
+  - `/public_api.ex`: Public API
+  - `/internal.ex`: Internal API
+  - `/aggregate.ex`: Aggregate
+  - `/policy.ex`: Authorization
+  - `/read_model.ex`: Shared Read Model (projection of the aggregate)
+  - `/read_models/<read_model>.ex`: Custom read models
+  - `/projector.ex`: Read Model projections
+  - `/events/<_event>.ex`: Events
+  - `/entities/<_entity>.ex`: Entity
+  - `/value-objects/<value_object>.ex`: Value Object
+  - `/validators/<_validation>_validation.ex`: Shared Validators in the
+    Domain Object
+  - `/queries/<_query>.ex`: Custom queries
+
+Special Naming Conventions:
+
+- Public API: `Sportipedia.<Subdomain>.<Composite>.<DomainObject>`
+- Internal API: `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Internal`
+- Aggregate: `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Aggregate`
+- ReadModel: `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>ReadModel`
+- Projector: `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Projector`
+- Policy: `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Policy`
+- Event: `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Event.<event-name>`
 
 #### Vertical Slice Architecture
 
-- Location: `/services/api/lib/sportipedia/catalog/<composite>/<domain-object>/features/<feature>`
 - Citizens:
   - Events
   - Commands
@@ -134,26 +167,42 @@ organized in the same directory.
   - (Validations)
   - (Queries)
 
+Directory Structure:
+
+- `/services/api/lib/sportipedia/catalog/<_composite>/<domain_object>/operation/<_operation>`
+  - `/command.ex`: Command
+  - `/handler.ex`: Command Handler
+  - `/<_dto>.ex`: DTO
+  - `/<value_object>.ex`: Value Objects
+  - `/<_validation>_validator.ex`: Validators
+  - `/<_query>_query.ex`: Queries
+- `/services/api/test/sportipedia/catalog/<_composite>/<domain_object>/operation/<_operation>_test.exs`
+
+Special Naming Conventions:
+
+- Command: `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<command-name>`
+- CommandHandler: `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<command-name>Handler`
+
 ### Frontend
 
-- Location: `/apps/catalog/src/domain/<composite>/domain-objects/<domain-object>`
+- Location: `/apps/catalog/src/domain/<-composite>/domain-objects/<domain-object>`
 - Architecture: CQS (command-query separation)
 - Citizens: Public API, domain objects, entities, value objects, actions (commands), questions (queries)
 
 Directory Structure (Simple):
 
-- `/apps/catalog/src/domain/<composite>/domain-objects/<domain-object>/`
+- `/apps/catalog/src/domain/<-composite>/domain-objects/<domain-object>/`
   - `/index.ts`: Public API
-  - `/<object>.ts`: The object in question including all its citizens
+  - `/<-object>.ts`: The object in question including all its citizens
 
 Directory Structure (Verbose):
 
-- `/apps/catalog/src/domain/<composite>/domain-objects/<domain-object>`
-  - `/<object>.ts`: The object in question
-  - `/<object>/value-objects/<value-object>.ts`
-  - `/<object>/entities/<entity>.ts`
-  - `/<object>/abilities.ts`
-  - `/<object>/questions.ts`
+- `/apps/catalog/src/domain/<-composite>/domain-objects/<domain-object>`
+  - `/<-object>.ts`: The object in question
+  - `/<-object>/value-objects/<value-object>.ts`
+  - `/<-object>/entities/<-entity>.ts`
+  - `/<-object>/abilities.ts`
+  - `/<-object>/questions.ts`
   - `/features/*`: abilities, requests, DTO
 
 Depending on the volume of citizens one directory structure is favorable over
@@ -162,3 +211,27 @@ the other. Start simple, grow as volume/complexity requires it.
 ## 4. Code
 
 Code follows the [coding conventions](../coding-guidelines/README.md) of the respective framework
+
+## Appendix
+
+### Sample Constituent/Domain Object in the Backend
+
+Sample structure for a constituent:
+
+```txt
+/services/api/lib/sportipedia/catalog/<_composite>/<domain_object>/
+|- operation/
+|  `- <_operation>/
+|     |- command.ex
+|     |- event.ex
+|     `- handler.ex
+|- queries/
+|  `- some_query.ex
+|- validators/
+|  `- some_validator.ex
+|- aggregate.ex
+|- policy.ex
+|- projector.ex
+|- public_api.ex
+`- read_model.ex
+```

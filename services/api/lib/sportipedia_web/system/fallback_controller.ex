@@ -18,7 +18,7 @@ defmodule SportipediaWeb.System.FallbackController do
   def call(conn, {:error, {:validation_failure, errors}}),
     do: ErrorView.send(conn, ValidationErrorFormatter.format(errors), 422)
 
-  def call(conn, {:error, :notfound}),
+  def call(conn, {:error, :not_found}),
     do: ErrorView.send(conn, %{title: "Not found", status: 404}, 404)
 
   def call(conn, unknown) do

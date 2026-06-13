@@ -1,0 +1,24 @@
+info:
+  name: Archive Apparatus
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{apiUrl}}/catalog/equipment/apparatuses/archive-apparatus"
+  body:
+    type: json
+    data: |-
+      {
+        "data": {
+          "type": "apparatuses",
+          "id": "a290f1ee-6c54-4b01-90e6-d701748f0852"
+        }
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

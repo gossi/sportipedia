@@ -29,6 +29,30 @@ defmodule Sportipedia.Support.JSONAPI.QueryBuilder do
     |> apply_fields(config.fields, config.view, schema)
   end
 
+  @doc """
+  Builds an Ecto query from a base query, a JSONAPI.Config, and an Ecto schema module.
+  Applies sorting, pagination, and sparse fieldsets on top of the base query.
+  Filtering is expected to be already applied in the base query.
+
+  ## Parameters
+    - config: A %JSONAPI.Config{} struct (from the `jsonapi` library)
+    - base_query: A pre-built Ecto.Query (e.g. from a custom query module)
+    - schema: An Ecto schema module (e.g. MyApp.Post)
+
+  ## Examples
+      iex> base_query = MyCustomQuery.new(config)
+      iex> query = JSONAPIQuery.build(config, base_query, MyApp.Post)
+      iex> Repo.all(query)
+  """
+  @spec build(JSONAPI.Config.t(), Ecto.Query.t(), module()) :: Ecto.Query.t()
+  def build(%JSONAPI.Config{} = config, %Ecto.Query{} = base_query, schema)
+      when is_atom(schema) do
+    base_query
+    |> apply_sort(config.sort, schema)
+    |> apply_pagination(config.page)
+    |> apply_fields(config.fields, config.view, schema)
+  end
+
   # ---------------------------------------------------------------------------
   # Filtering
   # ---------------------------------------------------------------------------
@@ -57,12 +81,26 @@ defmodule Sportipedia.Support.JSONAPI.QueryBuilder do
       # List filter: comma-separated values -> IN clause
       is_binary(value) and String.contains?(value, ",") ->
         values = value |> String.split(",") |> Enum.map(&String.trim/1)
-        where(query, [r], field(r, ^atom_field) in ^values)
 
-      # Exact match
+        if string_field?(schema, atom_field) do
+          where(query, [r],
+            fragment("lower(?)", field(r, ^atom_field)) in ^Enum.map(values, &String.downcase/1)
+          )
+        else
+          where(query, [r], field(r, ^atom_field) in ^values)
+        end
+
+      # Exact match (case-insensitive for string/text fields)
       true ->
         cast_val = cast_value(schema, atom_field, value)
-        where(query, [r], field(r, ^atom_field) == ^cast_val)
+
+        if string_field?(schema, atom_field) do
+          where(query, [r],
+            fragment("lower(?) LIKE ?", field(r, ^atom_field), ^"%#{String.downcase(cast_val)}%")
+          )
+        else
+          where(query, [r], field(r, ^atom_field) == ^cast_val)
+        end
     end
   end
 
@@ -208,6 +246,11 @@ defmodule Sportipedia.Support.JSONAPI.QueryBuilder do
     |> Module.split()
     |> List.last()
     |> Macro.underscore()
+  end
+
+  defp string_field?(schema, field) do
+    type = schema.__schema__(:type, field)
+    type in [:string, :text]
   end
 
   defp parse_int(value, default) when is_binary(value) do

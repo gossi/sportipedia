@@ -1,0 +1,16 @@
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: bibliography
+scope:
+  domain: sport
+  boundedContext: sport
+projections:
+  - boundedContext: sport
+    aggregate: skill
+    event: source-recorded
+    rule: "Add source to the skill's bibliography"
+  - boundedContext: sport
+    aggregate: skill
+    event: source-unrecorded
+    rule: "Remove source from the skill's bibliography"
+schema: {}

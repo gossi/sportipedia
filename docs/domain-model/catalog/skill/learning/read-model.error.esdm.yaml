@@ -1,0 +1,12 @@
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: error
+scope:
+  domain: sport
+  boundedContext: sport
+projections:
+  - boundedContext: sport
+    aggregate: skill
+    event: error-cataloged
+    rule: "Project common errors for the skill"
+schema: {}

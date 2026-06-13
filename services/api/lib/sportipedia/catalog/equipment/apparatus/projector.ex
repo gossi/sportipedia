@@ -1,0 +1,62 @@
+defmodule Sportipedia.Catalog.Equipment.Apparatus.ApparatusProjector do
+  @moduledoc """
+  Projects apparatus events to the apparatus read model.
+  """
+
+  use Commanded.Projections.Ecto,
+    application: Sportipedia.Catalog,
+    repo: Sportipedia.Catalog.Repo,
+    name: "equipment.apparatus_projection",
+    schema_prefix: "catalog",
+    consistency: :strong
+
+  alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusReadModel
+  alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusInternal
+  alias Sportipedia.Catalog.Equipment.Apparatus.Event.ApparatusArchived
+  alias Sportipedia.Catalog.Equipment.Apparatus.Event.ApparatusCataloged
+  alias Sportipedia.Catalog.Equipment.Apparatus.Event.ApparatusEdited
+
+  @doc """
+  Projects an ApparatusCataloged event to the apparatus read model.
+  """
+  project %ApparatusCataloged{} = event, _metadata, fn multi ->
+    multi
+    |> Ecto.Multi.insert(
+      :apparatus_cataloged,
+      ApparatusReadModel.insert_changeset(%ApparatusReadModel{}, Map.from_struct(event))
+    )
+  end
+
+  @doc """
+  Projects an ApparatusEdited event to update the apparatus read model.
+  """
+  project %ApparatusEdited{} = event, _metadata, fn multi ->
+    case ApparatusInternal.apparatus_by_id(event.id) do
+      nil ->
+        multi
+
+      %ApparatusReadModel{} = apparatus ->
+        attrs = ApparatusEdited.get_changes(event)
+
+        multi
+        |> Ecto.Multi.update(
+          :apparatus_edited,
+          ApparatusReadModel.update_changeset(apparatus, attrs)
+        )
+    end
+  end
+
+  @doc """
+  Projects an ApparatusArchived event to hard-delete the apparatus read model.
+  """
+  project %ApparatusArchived{} = event, _metadata, fn multi ->
+    case ApparatusInternal.apparatus_by_id(event.id) do
+      nil ->
+        multi
+
+      %ApparatusReadModel{} = apparatus ->
+        multi
+        |> Ecto.Multi.delete(:apparatus_archived, apparatus)
+    end
+  end
+end

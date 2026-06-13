@@ -1,0 +1,12 @@
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: construct-instructional-progression
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: skill
+data: {}
+publishes:
+  - instructional-progression-constructed
+actors:
+  - user

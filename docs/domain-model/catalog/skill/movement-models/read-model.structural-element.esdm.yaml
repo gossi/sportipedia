@@ -1,0 +1,16 @@
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: structural-element
+scope:
+  domain: sport
+  boundedContext: sport
+projections:
+  - boundedContext: sport
+    aggregate: constitutive-structure
+    event: constitutive-structure-constructed
+    rule: "Project structural elements from constitutive structure"
+  - boundedContext: sport
+    aggregate: constitutive-structure
+    event: constitutive-structure-amended
+    rule: "Update structural elements from constitutive structure amendment"
+schema: {}

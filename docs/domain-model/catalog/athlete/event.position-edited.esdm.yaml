@@ -1,0 +1,8 @@
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: position-edited
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: position
+data: {}

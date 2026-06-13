@@ -1,0 +1,16 @@
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: picture
+scope:
+  domain: sport
+  boundedContext: sport
+projections:
+  - boundedContext: sport
+    aggregate: skill
+    event: picture-uploaded
+    rule: "Add picture to the skill's media gallery"
+  - boundedContext: sport
+    aggregate: skill
+    event: media-deleted
+    rule: "Remove picture from the skill's media gallery"
+schema: {}

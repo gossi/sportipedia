@@ -1,0 +1,14 @@
+apiVersion: schema.esdm.io/core/v1
+kind: aggregate
+name: instrument
+description: "sport equipment that instrumentally supports the athlete. A movendum the athlete controls and moves around (see Göhner)"
+scope:
+  domain: sport
+  boundedContext: sport
+identifiedBy:
+  source: generated
+  generator: uuid
+invariants:
+  - name: unique-slug
+    rule: The slug for the instrument must be unique within the domain
+state: {}

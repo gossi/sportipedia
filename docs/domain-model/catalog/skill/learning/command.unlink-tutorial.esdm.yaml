@@ -1,0 +1,12 @@
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: unlink-tutorial
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: skill
+data: {}
+publishes:
+  - tutorial-unlinked
+actors:
+  - user

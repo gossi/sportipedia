@@ -1,0 +1,16 @@
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: functionphase
+scope:
+  domain: sport
+  boundedContext: sport
+projections:
+  - boundedContext: sport
+    aggregate: function-model
+    event: function-model-constructed
+    rule: "Project function phases from function model construction"
+  - boundedContext: sport
+    aggregate: function-model
+    event: function-model-amended
+    rule: "Update function phases from function model amendment"
+schema: {}

@@ -1,0 +1,26 @@
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: catalog-apparatus
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: apparatus
+data:
+  type: object
+  properties:
+    title:
+      type: string
+      description: "Name of the apparatus"
+    slug:
+      type: string
+      description: "URL-friendly unique identifier"
+    description:
+      type: string
+      description: "Optional description"
+  required:
+    - title
+    - slug
+publishes:
+  - apparatus-cataloged
+actors:
+  - user

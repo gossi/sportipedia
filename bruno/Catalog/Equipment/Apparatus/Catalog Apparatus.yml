@@ -1,0 +1,76 @@
+info:
+  name: Catalog Apparatus
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{apiUrl}}/catalog/equipment/apparatuses/catalog-apparatus"
+  body:
+    type: json
+    data: |-
+      {
+        "data": {
+          "type": "apparatuses",
+          "attributes": {
+            "title": "Vaulting Table",
+            "slug": "vaulting-table",
+            "description": "A gymnastics vault"
+          }
+        }
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: Catalog Vaulting Table
+    request:
+      url: "{{apiUrl}}/catalog/equipment/apparatuses/catalog-apparatus"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "data": {
+              "type": "apparatuses",
+              "attributes": {
+                "title": "Vaulting Table",
+                "slug": "vaulting-table",
+                "description": "A gymnastics vault"
+              }
+            }
+          }
+    response:
+      status: 201
+      statusText: Created
+      headers:
+        - name: content-type
+          value: application/vnd.api+json; charset=utf-8
+        - name: cache-control
+          value: max-age=0, private, must-revalidate
+      body:
+        type: json
+        data: |-
+          {
+            "data":
+              {
+                "attributes": { "description": "A gymnastics vault", "title": "Vaulting Table", "slug": "vaulting-table" },
+                "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                "links":
+                  {
+                    "self": "http://localhost:3100/catalog/equipment/apparatuses/d290f1ee-6c54-4b01-90e6-d701748f0851"
+                  },
+                "type": "apparatuses",
+                "relationships": {}
+              },
+            "links":
+              {
+                "self": "http://localhost:3100/catalog/equipment/apparatuses/d290f1ee-6c54-4b01-90e6-d701748f0851"
+              },
+            "included": []
+          }

@@ -1,0 +1,20 @@
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: instrument
+scope:
+  domain: sport
+  boundedContext: sport
+projections:
+  - boundedContext: sport
+    aggregate: instrument
+    event: instrument-cataloged
+    rule: "Project the instrument when it is cataloged"
+  - boundedContext: sport
+    aggregate: instrument
+    event: instrument-edited
+    rule: "Update instrument details"
+  - boundedContext: sport
+    aggregate: instrument
+    event: instrument-archived
+    rule: "Delete the instrument"
+schema: {}

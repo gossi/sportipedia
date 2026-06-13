@@ -1,0 +1,39 @@
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: apparatus
+scope:
+  domain: sport
+  boundedContext: sport
+projections:
+  - boundedContext: sport
+    aggregate: apparatus
+    event: apparatus-cataloged
+    rule: "Project the apparatus when it is cataloged"
+  - boundedContext: sport
+    aggregate: apparatus
+    event: apparatus-edited
+    rule: "Update apparatus details"
+  - boundedContext: sport
+    aggregate: apparatus
+    event: apparatus-archived
+    rule: "Delete the apparatus"
+schema:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier"
+    title:
+      type: string
+      description: "Name of the apparatus"
+    slug:
+      type: string
+      description: "URL-friendly unique identifier"
+    description:
+      type: string
+      description: "Optional description"
+  required:
+    - id
+    - title
+    - slug

@@ -1,0 +1,12 @@
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: withdraw-instrument
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: sport
+data: {}
+publishes:
+  - instrument-withdrawn
+actors:
+  - user

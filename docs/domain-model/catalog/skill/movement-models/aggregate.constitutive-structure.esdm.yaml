@@ -1,0 +1,11 @@
+apiVersion: schema.esdm.io/core/v1
+kind: aggregate
+name: constitutive-structure
+description: "The constitutive movement structure by Kassat"
+scope:
+  domain: sport
+  boundedContext: sport
+identifiedBy:
+  source: generated
+  generator: uuid
+state: {}

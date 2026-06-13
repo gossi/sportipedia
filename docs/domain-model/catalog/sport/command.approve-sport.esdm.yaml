@@ -1,0 +1,12 @@
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: approve-sport
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: sport
+data: {}
+publishes:
+  - sport-approved
+actors:
+  - admin

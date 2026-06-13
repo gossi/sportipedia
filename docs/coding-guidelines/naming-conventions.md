@@ -11,3 +11,10 @@ Test names should be human-readable and form a coherent narrative. Tests tell a
 story for humans. That excludes any technical jargon.
 
 Execption: When the test names are purely technical/utility
+
+## Vocabulary
+
+CRUD - Create, Read, Update or Delete for comments or function names are bad and
+banned words
+
+Exception: When working on database queries

@@ -1,5 +1,13 @@
 {
   "$schema": "https://opencode.ai/config.json",
+  "permission": {
+    "read": {
+      "*": "allow",
+      "*.env": "deny",
+      "*.env.*": "deny",
+      "*.env.example": "allow"
+    },
+  },
   "mcp": {
     "elixir-ls": {
       "type": "local",
@@ -8,6 +16,66 @@
         "scripts/start-elixir-ls-mcp.sh"
       ],
       "enabled": true
+    }
+  },
+  "agent": {
+    "builder": {
+      "color": "primary"
+    },
+    "product-specialist": {
+      "color": "primary",
+      "permission": {
+        "read": {
+          "*": "deny",
+          "docs/**": "allow",
+          "ARCHITECTURE.md": "allow",
+          "AGENTS.md": "allow"
+        },
+        "edit": {
+          "*": "deny",
+          "docs/domain-model/**": "allow",
+          "docs/specs/**": "allow"
+        },
+        "glob": {
+          "*": "deny",
+          "docs/**": "allow",
+          "ARCHITECTURE.md": "allow",
+          "AGENTS.md": "allow"
+        },
+        "grep": {
+          "*": "deny",
+          "docs/**": "allow",
+          "ARCHITECTURE.md": "allow",
+          "AGENTS.md": "allow"
+        },
+        "list": {
+          "*": "deny",
+          "docs/**": "allow"
+        },
+        "bash": {
+          "*": "deny",
+          "esdm lint": "allow"
+        },
+        "task": "deny",
+        "webfetch": "deny",
+        "question": "allow",
+        "skill": "allow",
+        "todowrite": "allow"
+      }
+    },
+    "backend-engineer": {
+      "color": "primary"
+    },
+    "software-architect": {
+      "color": "primary"
+    },
+    "reviewer": {
+      "color": "primary"
+    }
+  },
+  "reference": {
+    "recipes": {
+      "path": ".opencode/recipes"
     }
   }
 }

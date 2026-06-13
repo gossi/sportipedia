@@ -1,0 +1,16 @@
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: apparatus-archived
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: apparatus
+data:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier of the apparatus"
+  required:
+    - id

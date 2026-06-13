@@ -9,3 +9,7 @@ The domain is described using the [Event-Sourced Domain Modeling](https://www.es
 
 - [Bibliography](../references/literature.bib) Bibtex file with references to
   literature
+
+## Subdomains
+
+- [Catalog](./catalog/README.md)

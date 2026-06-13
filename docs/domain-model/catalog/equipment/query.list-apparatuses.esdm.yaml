@@ -1,0 +1,63 @@
+apiVersion: schema.esdm.io/core/v1
+kind: query
+name: list-apparatuses
+description: "List all apparatus with filtering, sorting, and pagination"
+scope:
+  domain: sport
+  boundedContext: sport
+readModel: apparatus
+result:
+  type: array
+  items:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+        description: "Unique identifier"
+      title:
+        type: string
+        description: "Name of the apparatus"
+      slug:
+        type: string
+        description: "URL-friendly unique identifier"
+      description:
+        type: string
+        description: "Optional description"
+    required:
+      - id
+      - title
+      - slug
+parameters:
+  type: object
+  properties:
+    filter:
+      type: object
+      properties:
+        title:
+          type: string
+          description: "Filter apparatus by title (partial match)"
+    sort:
+      type: string
+      description: "Sort field(s) following JSON:API sort syntax"
+    page:
+      type: object
+      description: "Pagination following JSON:API pagination"
+      properties:
+        number:
+          type: integer
+          description: "Page number"
+        size:
+          type: integer
+          description: "Page size"
+actors:
+  - guest
+  - user
+  - admin
+constraints:
+  - name: filter-by-title
+    rule: "Filter apparatus whose title contains the given string (case-insensitive partial match)"
+  - name: sort-by-fields
+    rule: "Sort results by one or more fields following JSON:API sort syntax (e.g. `title` or `-title` for descending)"
+  - name: paginate
+    rule: "Paginate results following JSON:API pagination with page number and page size"

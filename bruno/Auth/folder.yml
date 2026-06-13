@@ -4,6 +4,9 @@ info:
   seq: 1
 
 request:
+  headers:
+    - name: Origin
+      value: "{{authUrl}}"
   auth:
     type: bearer
     token: "{{authToken}}"

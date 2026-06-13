@@ -1,0 +1,260 @@
+# Controller
+
+Blueprint for a phoenix controller implementing the request to an operation in
+the Sportipedia domain.
+
+| --- | --- |
+| File Path | `/services/api/lib/sportipedia_web/<_subdomain>/<_composite>/<domain_object>/controller.ex` |
+| Module Name | `Sportipedia.Catalog.<Composite>.<DomainObject>Controller` |
+| Test File | `/services/api/test/sportipedia/catalog/<_composite>/<domain_object>/operation/<_operation>_test.exs` |
+| Test Module Name | `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Operation.<Operation>Test` |
+
+## Implementation
+
+A phoenix controller.
+
+- `use SportipediaWeb, :controller`
+- `use OpenApiSpex.ControllerSpecs`
+
+### Documentation
+
+Derive all documentation from the [Domain Model](../../../../domain-model/README.md):
+
+- **`@moduledoc`**: Describe the controller's purpose for the aggregate.
+- **`@doc`**: Describe each action using the operation name from the domain model.
+
+Example:
+
+```elixir
+@moduledoc """
+Handles HTTP requests for sport operations.
+"""
+
+@doc """
+Handles the suggest-sport request.
+"""
+```
+
+### Empty Controller Template
+
+```elixir
+defmodule SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>Controller do
+  @moduledoc """
+  Handles HTTP requests for <domain_object> operations.
+  """
+
+  alias OpenApiSpex.Reference
+  alias SportipediaWeb.System.FallbackController
+  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Policy
+
+  use SportipediaWeb, :controller
+  use OpenApiSpex.ControllerSpecs
+
+  plug Bodyguard.Plug.Authorize,
+    policy: Policy,
+    action: {Phoenix.Controller, :action_name},
+    user: {Sportipedia.Auth, :get_user_from_assigns},
+    fallback: FallbackController
+
+  tags ["<-composite>"]
+end
+```
+
+### Collection Endpoints
+
+For collection endpoints, that offer filtering and paging, it needs to be specified by which fields they can do this:
+
+```elixir
+  plug JSONAPI.QueryParser,
+    filter: ~w(<_field>),
+    sort: ~w(<_field>),
+    view: <DomainObject>View
+```
+
+### Operation Endpoints
+
+Each endpoint has an `operation` with function to it.
+
+- `operation :<_operation>` for the open API specs
+- Take fitting descriptions from domain model
+- An `<_operation>` may result in a create, read, update or delete database operation. Find a template for each below.
+
+#### Create Operation
+
+```elixir
+  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<Command>
+
+  operation :<_operation>,
+    summary: "<describe the operation>",
+    request_body: {"<describe the params>", "application/json", <Command>Request},
+    responses: [
+      ok: {"<describe the result>", "application/vnd.api+json", <DomainObject>Response},
+      unprocessable_entity: %Reference{"$ref": "#/components/responses/unprocessable_entity"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      forbidden: %Reference{"$ref": "#/components/responses/forbidden"}
+    ]
+
+  @spec <_operation>(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def <_operation>(conn, _) do
+    with {:ok, <domain_object>} <- <PublicAPI>.<operation>(conn.params) do
+      conn
+      |> put_view(json: <DomainObject>View)
+      |> render("show.json", %{data: <domain_object>})
+    end
+  end
+```
+
+#### Read ReadModel Operation
+
+- Adjust the params mentioned in the query based on the domain model
+- Include the `<Operation>QueryParams` if there is any
+
+```elixir
+  operation :<_operation>,
+    summary: "<describe the operation>",
+    parameters: [
+      id: [in: :path, description: "<describe the param>", type: :string],
+      query: [in: :query, schema: <Operation>QueryParams, type: :object]
+    ],
+    responses: [
+      ok: {"<DomainObject>", "application/vnd.api+json", <DomainObject>Response},
+      not_found: %Reference{"$ref": "#/components/responses/not_found"}
+    ]
+
+  @spec <_operation>(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def <_operation>(conn, _) do
+    case <PublicAPI>.<_operation>(conn.params["id"]) do
+      %<DomainObject>ReadModel{} = <domain_object> ->
+        conn
+        |> put_view(json: <DomainObject>View)
+        |> render("show.json", %{data: <domain_object>})
+
+      {:error, :not_found} ->
+        {:error, :not_found}
+    end
+  end
+```
+
+#### Read Collection Operation
+
+- Adjust the params mentioned in the query based on the domain model
+- Include the `<Operation>QueryParams` if there is any
+
+```elixir
+  # when including JSONAPI compatible query params
+  plug JSONAPI.QueryParser,
+    filter: ~w(<_field>),
+    sort: ~w(<_field>),
+    view: <DomainObject>View
+
+  operation :<_operation>,
+    summary: "<describe the operation>",
+    parameters: [
+      query: [in: :query, schema: <Operation>QueryParams, type: :object]
+    ],
+    responses: [
+      ok: {"<DomainObject> collection", "application/vnd.api+json", <DomainObject>ListResponse}
+    ]
+
+  @spec <_operation>(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def <_operation>(conn, _) do
+    case <PublicAPI>.<_operation>(conn.assigns.jsonapi_query) do
+      data ->
+        conn
+        |> put_view(json: <DomainObject>View)
+        |> render("index.json", %{data: data})
+    end
+  end
+```
+
+#### Udpate Operation
+
+```elixir
+  operation :<_operation>,
+    summary: "<describe the operation>",
+    request_body: {"<describe the params>", "application/json", <Command>Request},
+    responses: [
+      ok: {"<DomainObject>", "application/vnd.api+json", <DomainObject>Response},
+      not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      unprocessable_entity: %Reference{"$ref": "#/components/responses/unprocessable_entity"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      forbidden: %Reference{"$ref": "#/components/responses/forbidden"}
+    ]
+
+  @spec <_operation>(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def <_operation>(conn, _) do
+    case <PublicAPI>.<_operation>(conn.params) do
+      {:ok, <domain_object>} ->
+        conn
+        |> put_view(json: <DomainObject>View)
+        |> render("show.json", %{data: <domain_object>})
+
+      {:error, errors} ->
+        {:error, errors}
+    end
+  end
+```
+
+#### Delete Operation
+
+```elixir
+  operation :<_operation>,
+    summary: "<describe the operation>",
+    request_body: {"<describe the params>", "application/json", <Command>Request},
+    responses: [
+      no_content: "<describe response>",
+      not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      forbidden: %Reference{"$ref": "#/components/responses/forbidden"}
+    ]
+
+  @spec <_operation>(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def <_operation>(conn, _) do
+    case <PublicAPI>.<_operation>(conn.params["id"]) do
+      :ok ->
+        send_resp(conn, :no_content, "")
+
+      {:error, errors} ->
+        {:error, errors}
+    end
+  end
+```
+
+### Router
+
+Use the controller from the router.
+
+File Location: `/services/api/lib/sportipedia_web/router.ex`
+
+Sets route for the operation, there are only two verbs allowed:
+
+- `GET`: queries / read operation
+- `POST`: commands / write operation
+- `PATCH`: no, invalid
+- `PUT`: no, invalid
+- `DELETE`: no, invalid
+
+#### Code Template for a Subdomain
+
+```elixir
+  scope "/<-subdomain>", SportipediaWeb.<Subdomain> do
+    pipe_through [:api, :<_subdomain>]
+
+    scope "/<-composite>", <Composite> do
+      scope "/<domain-object>s" do
+        # commands
+        post "/<-command>", <DomainObject>Controller, :<_operation>
+
+        # queries
+        get "/", <DomainObject>Controller, :<_operation>
+        get "/:<id-or-slug>", <DomainObject>Controller, :<_operation>
+      end
+    end
+  end
+```
+
+Assumption: The `:<_subdomain>` pipeline is given
+
+## Test
+
+see [Endpoint Test](./endpoint-test.md)

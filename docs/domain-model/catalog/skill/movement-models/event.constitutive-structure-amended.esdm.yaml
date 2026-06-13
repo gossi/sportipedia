@@ -1,0 +1,8 @@
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: constitutive-structure-amended
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: constitutive-structure
+data: {}

@@ -1,0 +1,180 @@
+$schema: https://json-schema.org/draft/2020-12/schema
+title: Sportipedia Recipe
+description: >-
+  Schema for Sportipedia recipe files. A recipe defines a reusable workflow
+  with steps that load skills, delegate to subagents, compose sub-recipes,
+  and loop.
+type: object
+properties:
+  name:
+    type: string
+    description: >-
+      Unique name of the recipe, used as identifier in the builder and when
+      referenced by other recipes.
+    pattern: "^[a-z][a-z0-9-]*$"
+  description:
+    type: string
+    description: Human-readable description of what this recipe does.
+  parameters:
+    type: object
+    description: >-
+      Input parameters the recipe accepts. Each key is a parameter name usable
+      as ${parameters.<name>} in step bindings.
+    additionalProperties:
+      type: object
+      properties:
+        type:
+          type: string
+          description: Expected type of the parameter value.
+          enum: [string, number, boolean, array, object]
+        required:
+          type: boolean
+          description: Whether this parameter must be provided.
+          default: false
+        description:
+          type: string
+          description: Human-readable description of the parameter.
+      required: [type]
+      additionalProperties: false
+  approval:
+    type: string
+    description: >-
+      Whether the builder should pause for user approval before executing
+      steps. 'auto' runs autonomously. 'manual' presents the plan to the user
+      before implementation.
+    enum: [auto, manual]
+    default: auto
+  steps:
+    type: array
+    description: >-
+      Ordered list of steps in the recipe. Each step can load a skill, delegate
+      to an agent, compose a sub-recipe, or loop over child steps.
+    items:
+      $ref: "#/$defs/step"
+    minItems: 1
+required: [name, steps]
+additionalProperties: false
+
+$defs:
+  expression:
+    type: string
+    description: >-
+      A template expression using ${...} syntax. Supports ${parameters.<name>}
+      for top-level params, ${steps.<id>.result} for previous step outputs,
+      and ${item} for loop variables.
+
+  with_bindings:
+    type: object
+    description: >-
+      Parameter bindings passed to a skill, agent, or sub-recipe. Values are
+      template expressions.
+    additionalProperties:
+      $ref: "#/$defs/expression"
+
+  step:
+    type: object
+    properties:
+      id:
+        type: string
+        description: >-
+          Unique identifier for the step within this recipe. Used to reference
+          step results as ${steps.<id>.result}.
+        pattern: "^[a-z][a-z0-9-]*$"
+      agent:
+        type: string
+        description: >-
+          Name of the subagent that should execute this step. Required when no
+          sub-recipe is referenced. One of: software-architect,
+          backend-engineer, reviewer.
+        pattern: "^[a-z][a-z0-9-]*$"
+      skill:
+        type: string
+        description: >-
+          Name of a single skill to load via the skill tool. Mutually exclusive
+          with 'skills' and 'recipe'.
+        pattern: "^[a-z][a-z0-9-]*$"
+      skills:
+        type: array
+        description: >-
+          Multiple skills to load in sequence. The agent combines their
+          instructions. Mutually exclusive with 'skill' and 'recipe'.
+        items:
+          type: string
+          pattern: "^[a-z][a-z0-9-]*$"
+        minItems: 2
+      recipe:
+        type: string
+        description: >-
+          Name of a sub-recipe to load and execute recursively. The
+          sub-recipe's own steps declare their agents. Mutually exclusive with
+          'skill' and 'skills'.
+        pattern: "^[a-z][a-z0-9-]*$"
+      with:
+        $ref: "#/$defs/with_bindings"
+      exit-when:
+        $ref: "#/$defs/expression"
+        description: >-
+          Condition expression evaluated after this step completes. When true,
+          exits the enclosing loop. Only valid inside a 'loop' with
+          'max'. ${result} refers to this step's output.
+      loop:
+        $ref: "#/$defs/loop"
+    oneOf:
+      - description: >-
+          Agent-only step: delegate directly to a subagent without loading
+          skills.
+        required: [agent]
+        not:
+          anyOf:
+            - required: [skill]
+            - required: [skills]
+            - required: [recipe]
+      - description: >-
+          Single skill step: load one skill and delegate to the named agent.
+        required: [agent, skill]
+      - description: >-
+          Multi-skill step: load multiple skills and delegate to the named
+          agent.
+        required: [agent, skills]
+      - description: >-
+          Sub-recipe step: load and execute a sub-recipe recursively. Agent
+          not needed — sub-recipe declares its own.
+        required: [recipe]
+      - description: >-
+          Loop step: repeat child steps until exit condition or max
+          iterations.
+        required: [loop]
+    additionalProperties: false
+
+  loop:
+    type: object
+    description: >-
+      Repeated execution of child steps. Two modes: 'over' for iterating a
+      list, or 'max' + 'exit-when' for conditional repetition.
+    properties:
+      over:
+        $ref: "#/$defs/expression"
+        description: >-
+          Expression resolving to a list. The child steps execute once per
+          item. ${item} is available in step bindings.
+      max:
+        type: integer
+        description: >-
+          Maximum number of loop iterations. Required for conditional repeat
+          mode, prevents infinite loops.
+        minimum: 1
+        maximum: 10
+      steps:
+        type: array
+        description: Child steps to execute in each iteration.
+        items:
+          $ref: "#/$defs/step"
+        minItems: 1
+    oneOf:
+      - description: "Iteration mode: loop over a list."
+        required: [over, steps]
+      - description: >-
+          Conditional mode: repeat steps until a step's exit-when condition is
+          met, or max iterations reached.
+        required: [max, steps]
+    additionalProperties: false

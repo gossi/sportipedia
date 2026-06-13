@@ -1,0 +1,74 @@
+info:
+  name: Edit Apparatus
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{apiUrl}}/catalog/equipment/apparatuses/edit-apparatus"
+  body:
+    type: json
+    data: |-
+      {
+        "data": {
+          "type": "apparatuses",
+          "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+          "attributes": {
+            "title": "Vault"
+          }
+        }
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: Edit Apparatus Title
+    request:
+      url: "{{apiUrl}}/catalog/equipment/apparatuses/edit-apparatus"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "data": {
+              "type": "apparatuses",
+              "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+              "attributes": {
+                "title": "Vault"
+              }
+            }
+          }
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: content-type
+          value: application/vnd.api+json; charset=utf-8
+        - name: cache-control
+          value: max-age=0, private, must-revalidate
+      body:
+        type: json
+        data: |-
+          {
+            "data":
+              {
+                "attributes": { "description": "A gymnastics vault", "title": "Vault", "slug": "vaulting-table" },
+                "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+                "links":
+                  {
+                    "self": "http://localhost:3100/catalog/equipment/apparatuses/d290f1ee-6c54-4b01-90e6-d701748f0851"
+                  },
+                "type": "apparatuses",
+                "relationships": {}
+              },
+            "links":
+              {
+                "self": "http://localhost:3100/catalog/equipment/apparatuses/d290f1ee-6c54-4b01-90e6-d701748f0851"
+              },
+            "included": []
+          }

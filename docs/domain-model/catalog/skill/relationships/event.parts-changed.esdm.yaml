@@ -1,0 +1,8 @@
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: parts-changed
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: skill
+data: {}

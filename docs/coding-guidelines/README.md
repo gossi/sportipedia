@@ -13,5 +13,4 @@ Coding guidlines by technology (programming language/framwork/library):
 
 ## Frameworks
 
-- [Commanded](./commanded.md)
 - [Ember](./ember.md)

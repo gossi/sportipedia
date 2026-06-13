@@ -1,0 +1,11 @@
+apiVersion: schema.esdm.io/core/v1
+kind: aggregate
+name: function-model
+description: "The function and function phase model by Göhner"
+scope:
+  domain: sport
+  boundedContext: sport
+identifiedBy:
+  source: generated
+  generator: uuid
+state: {}
