@@ -33,17 +33,12 @@ Derive authorization from the domain model and present rules and invariants.
 Derive all documentation from the [Domain Model](../../../../domain-model/README.md):
 
 - **`@moduledoc`**: Describe the policy's purpose in authorizing operations.
-- **`@doc`**: Describe the `authorize/3` function.
 
 Example:
 
 ```elixir
 @moduledoc """
 Authorizes sport operations based on user roles.
-"""
-
-@doc """
-Authorizes whether the given user can perform the operation.
 """
 ```
 
@@ -59,10 +54,6 @@ defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Policy do
 
   import Sportipedia.Auth.Roles
 
-  @doc """
-  Authorizes whether the given user can perform the <_operation> operation.
-  """
-  @spec authorize(:<_operation>, Sportipedia.Auth.User.t() | nil, map()) :: :ok | :error
   def authorize(:<_operation>, user, _params) when is_guest?(user), do: :error
   def authorize(:<_operation>, user, _params) when is_user?(user), do: :ok
 end

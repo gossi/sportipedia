@@ -27,17 +27,12 @@
 Derive all documentation from the [Domain Model](../../../../domain-model/README.md):
 
 - **`@moduledoc`**: Describe the aggregate's purpose in the bounded context.
-- **`@doc`**: Describe the `apply/2` function.
 
 Example:
 
 ```elixir
 @moduledoc """
 Aggregate representing a sport in the catalog.
-"""
-
-@doc """
-Applies an event to the sport aggregate state.
 """
 ```
 
@@ -55,10 +50,6 @@ defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Aggre
     field :<field>, type
   end
 
-  @doc """
-  Applies an event to the <domain_object> aggregate state.
-  """
-  @spec apply(%__MODULE__{}, <Event>.t()) :: %__MODULE__{} | nil
   def apply(%__MODULE__{} = aggregate, %<Event>{} = event) do
     # apply event to aggregate
   end

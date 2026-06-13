@@ -15,6 +15,20 @@
 
 ## Testing
 
+### Running Tests
+
+There is a couple of ways to run a portion of test.
+
+- Entire Testsuite: `mix test` (use sparingly, only for regression)
+- Directory: `mix test path/to/dir` (use to run a collection of test)
+- File: `mix test path/to/file.exs` (use for TDD)
+- Single test: `mix test path/to/file.exs:lineNumber` (use for TDD)
+
+Run as minimal as possible and as much as needed. No need to run the entire test
+suite, when one test is enough (saves time).
+
+Plus the documentation for `mix test` contains other filter parameters.
+
 ### Covering Functionality
 
 Apply both:
@@ -76,3 +90,5 @@ Attach at the highest level that's correct for all tests in that scope. Only mov
 
 1. **CQRS/ES**: Commands → Events → Aggregates → Projections
 2. **UUID**: When dealing with ids, use the `UUID` module
+    - Use `UUID.info(maybe_id)` for verifying a UUID
+    - Use `UUID.uuid4()` for making a UUID

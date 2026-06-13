@@ -12,15 +12,19 @@
 
 ## Implementation
 
-What it contains:
+- What it contains:
+  - Exactly one function per operation, that is found in the domain model
+    - One function per command operation
+    - One function per query operation
+- What it does not contain:
+  - Functions, that live in the [internal API](./internal-api.md)
 
-- Exactly one function per operation, that is found in the domain model
-  - One function per command operation
-  - One function per query operation
-
-What it does not contain:
-
-- Functions, that live in the [internal API](./internal-api.md)
+- use `Sportipedia.Support.ErrorClassifier` for errors:
+  
+  ```elixir
+  {:error, errors} ->
+    ErrorClassifier.classify_error(errors)
+  ```
 
 ### Command
 
@@ -138,17 +142,26 @@ The fields in the `@spec` come from the command definition, excluding `:id` whic
   end
 ```
 
-### Example: Query with JSONAPI query
-
-We expect a `%JSONAPI.Config{}` struct as param, produced by the `JSONAPI.QueryParser` controller plug.
+### Example: Command resulting in a database `UPDATE` operation
 
 ```elixir
   @doc """
   <Describe the operation using the operation name from the domain model.>
   """
-  @spec <_operation>(JSONAPI.Config.t()) :: Architecture.public_api([<DomainObject>ReadModel.t()])
-  def <_operation>(query) do
-    {:ok, Repo.all(QueryBuilder.build(query, <DomainObject>ReadModel))}
+  @spec <_operation>(%{
+          required(:id) => String.t(),
+          required(:<field_1>) => <type_1>,
+          optional(:<field_2>) => <type_2>,
+          optional(:<field_3>) => <type_3> | nil
+        }) :: Architecture.public_api(<DomainObject>ReadModel.t())
+  def <_operation>(params) do
+    case Catalog.dispatch(<Command>.new(params), consistency: :strong) do
+      :ok ->
+        {:ok, <DomainObject>Internal.<domain_object>_by_id(params["id"])}
+
+      {:error, errors} ->
+        ErrorClassifier.classify_error(errors)
+    end
   end
 ```
 
@@ -162,7 +175,24 @@ Here we return if the command dispatch was handled correctly.
   """
   @spec <_operation>(String.t()) :: Architecture.public_api()
   def <_operation>(id) do
-    Catalog.dispatch(<Command>.new(id: id), consistency: :strong)
+    case Catalog.dispatch(<Command>.new(id: id), consistency: :strong) do
+      :ok -> :ok
+      {:error, errors} -> ErrorClassifier.classify_error(errors)
+    end
+  end
+```
+
+### Example: List Query with JSONAPI query
+
+We expect a `%JSONAPI.Config{}` struct as param, produced by the `JSONAPI.QueryParser` controller plug.
+
+```elixir
+  @doc """
+  <Describe the operation using the operation name from the domain model.>
+  """
+  @spec <_operation>(JSONAPI.Config.t()) :: Architecture.public_api([<DomainObject>ReadModel.t()])
+  def <_operation>(query) do
+    {:ok, Repo.all(QueryBuilder.build(query, <DomainObject>ReadModel))}
   end
 ```
 

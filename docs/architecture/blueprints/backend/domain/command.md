@@ -105,3 +105,202 @@ What to test:
   - Optional fields (no `enforce: true`) can be omitted in struct literals
     without raising — test this by creating events without optional fields
 - Validation
+
+### Example: Command requires an id
+
+```elixir
+    test "requires id" do
+      assert_raise ArgumentError, fn ->
+        struct!(<Command>, %{})
+      end
+    end
+```
+
+### Example: id cannot be nil
+
+```elixir
+    test "id cannot be nil" do
+      cmd = %<Command>{id: nil}
+
+      assert_raise ArgumentError, fn ->
+        Vex.validate(cmd)
+      end
+    end
+```
+
+### Example: When the command has a constraint the id must exist
+
+When the [domain model exists](./examples/domain-object-exists.md) example is used.
+
+```elixir
+    test "error when id does not exist" do
+      cmd = %<Command>{id: UUID.uuid4()}
+
+      assert {:error, [{:error, :id, :by, "<domain_object> does not exist"}]} = Vex.validate(cmd)
+    end
+
+    test "id must exist" do
+      id = UUID.uuid4()
+
+      <DomainObject>ReadModel.insert_changeset(%<DomainObject>ReadModel{}, %{
+        # properties..
+      })
+      |> Repo.insert()
+
+      cmd = %<Command>{id: id}
+
+      assert {:ok, _} = Vex.validate(cmd)
+    end
+```
+
+### Example: Test for Slug (Create Operation)
+
+When using the [unique-slug example](./examples/unique-slug.md). Also include
+these tests.
+
+When slug is required, validate the presence:
+
+```elixir
+    test "validates presence of slug" do
+      cmd = %<Command>{
+        id: UUID.uuid4(),
+        title: "Vaulting Table",
+        slug: nil
+      }
+
+      assert {:error, _errors} = Vex.validate(cmd)
+    end
+```
+
+Check if the slug is unique (against an empty database)
+
+```elixir
+    test "check slug for uniqueness" do
+      cmd = %<Command>{
+        id: UUID.uuid4(),
+        title: "Vaulting Table",
+        slug: "any-slug"
+      }
+
+      assert {:ok, _} = Vex.validate(cmd)
+    end
+```
+
+Reject, when the slug already exists:
+
+```elixir
+    test "rejects when slug is not unique" do
+      new_apparatus(%{
+        id: UUID.uuid4(),
+        title: "Beam",
+        slug: "beam"
+      })
+
+      cmd = %<Command>{
+        id: UUID.uuid4(),
+        title: "Balance Beam",
+        slug: "beam"
+      }
+
+      assert {:error, [{:error, :slug, :by, "slug already exists"}]} =
+               Vex.validate(cmd)
+    end
+```
+
+### Example: Test for Slug (Edit Operation)
+
+When using the [unique-slug example](./examples/unique-slug.md). Also include
+these tests.
+
+Slug stays the same as part of the command. No change intended, but payload was given:
+
+```elixir
+    test "change title, but keep slug" do
+      id = UUID.uuid4()
+
+      new_<domain_object>(%{
+        id: id,
+        title: "Vaulting Table",
+        slug: "vaulting-table"
+      })
+
+      cmd = %<Command>{
+        id: id,
+        title: "Vaulting",
+        slug: "vaulting-table"
+      }
+
+      assert {:ok, _} = Vex.validate(cmd)
+    end
+```
+
+Accept slug, when it doesn't exist:
+
+```elixir
+    test "check slug for uniqueness" do
+      id = UUID.uuid4()
+
+      new_<domain_object>(%{
+        id: id,
+        title: "Vaulting Table",
+        slug: "vaulting-table"
+      })
+
+      cmd = %<Command>{
+        id: id,
+        slug: "any-slug"
+      }
+
+      assert {:ok, _} = Vex.validate(cmd)
+    end
+```
+
+Reject when slug already exists:
+
+```elixir
+    test "rejects when slug is not unique" do
+      id = UUID.uuid4()
+
+      new_<domain_object>s([
+        %{
+          id: UUID.uuid4(),
+          title: "Beam",
+          slug: "beam"
+        },
+        %{
+          id: id,
+          title: "Vaulting Table",
+          slug: "vaulting-table"
+        }
+      ])
+
+      cmd = %<Command>{
+        id: id,
+        slug: "beam"
+      }
+
+      assert {:error, [{:error, :slug, :by, "slug already exists"}]} =
+               Vex.validate(cmd)
+    end
+```
+
+Slug is `nil` is the same as no slug is given:
+
+```elixir
+    test "does not validate slug when slug is nil" do
+      id = UUID.uuid4()
+
+      new_<domain_object>(%{
+        id: id,
+        title: "Vaulting Table",
+        slug: "vaulting-table"
+      })
+
+      cmd = %<Command>{
+        id: id,
+        slug: nil
+      }
+
+      assert {:ok, _} = Vex.validate(cmd)
+    end
+```

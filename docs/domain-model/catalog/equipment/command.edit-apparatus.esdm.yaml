@@ -17,6 +17,9 @@ data:
     description:
       type: string
       description: "Optional description"
+constraints:
+  - name: apparatus-exists
+    rule: An apparatus needs to exist (check by id)
 publishes:
   - apparatus-edited
 actors:

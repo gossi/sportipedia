@@ -129,8 +129,8 @@ Each endpoint has an `operation` with function to it.
         |> put_view(json: <DomainObject>View)
         |> render("show.json", %{data: <domain_object>})
 
-      nil ->
-        {:error, :notfound}
+      {:error, :not_found} ->
+        {:error, :not_found}
     end
   end
 ```
@@ -189,8 +189,8 @@ Each endpoint has an `operation` with function to it.
         |> put_view(json: <DomainObject>View)
         |> render("show.json", %{data: <domain_object>})
 
-      {:error, _} ->
-        {:error, :notfound}
+      {:error, errors} ->
+        {:error, errors}
     end
   end
 ```
@@ -214,8 +214,8 @@ Each endpoint has an `operation` with function to it.
       :ok ->
         send_resp(conn, :no_content, "")
 
-      {:error, _} ->
-        {:error, :notfound}
+      {:error, errors} ->
+        {:error, errors}
     end
   end
 ```
@@ -230,6 +230,9 @@ Sets route for the operation, there are only two verbs allowed:
 
 - `GET`: queries / read operation
 - `POST`: commands / write operation
+- `PATCH`: no, invalid
+- `PUT`: no, invalid
+- `DELETE`: no, invalid
 
 #### Code Template for a Subdomain
 

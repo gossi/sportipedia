@@ -38,7 +38,7 @@ defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Inter
   @doc """
   Fetches a <domain_object> by its slug. Returns nil if not found.
   """
-  def <_domain_object>_by_slug(slug) do
+  def <domain_object>_by_slug(slug) do
     slug
     |> String.downcase()
     |> <DomainObject>BySlug.new()
@@ -62,18 +62,21 @@ defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Validators.UniqueSl
   @doc """
   Validates the given slug value for uniqueness.
   """
-  def validate(value, _context) do
-    case slug_exists?(value) do
-      true -> {:error, "slug already exists"}
-      false -> :ok
+  @spec validate(String.t(), map()) :: :ok | {:error, String.t()}
+  def validate(value, context) do
+    with <domain_object> <- <DomainObject>Internal.<domain_object>_by_slug(value),
+         false <- is_nil(<domain_object>),
+         false <- slug_belongs_to_<domain_object>?(<domain_object>, context) do
+      {:error, "slug already exists"}
+    else
+      _ -> :ok
     end
   end
 
-  defp slug_exists?(slug) do
-    case <DomainObject>Internal.instrument_by_slug(slug) do
-      nil -> false
-      _ -> true
-    end
+  defp slug_belongs_to_<domain_object>?(<domain_object>, context) do
+    id = Map.get(context, :id)
+
+    id == <domain_object>.id
   end
 end
 ```

@@ -2,10 +2,10 @@
 
 | Attribute        | Value                                                                                          |
 | ---------------- | ---------------------------------------------------------------------------------------------- |
-| File Path        | `/services/api/lib/sportipedia_web/<_subdomain>/<_composite>/<domain_object>_view.ex`          |
-| Module Name      | `SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>View`                                    |
-| Test File Path   | `test/sportipedia_web/<_subdomain>/<_composite>/<domain_object>/<domain_object>_view_test.exs` |
-| Test Module Name | `SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>ViewTest`                                |
+| File Path        | `/services/api/lib/sportipedia_web/<_subdomain>/<_composite>/<domain_object>/<domain_object>_view.ex`          |
+| Module Name      | `SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>View`                                    |
+| Test File Path   | `/services/api/test/sportipedia_web/<_subdomain>/<_composite>/<domain_object>/<domain_object>_view_test.exs` |
+| Test Module Name | `SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>ViewTest`                                |
 
 Blueprint for implementing a JSONAPI view for the [web layer](../../../backend.md) representing a read model in the [Sportipedia domain](../../../../domain-model/README.md).
 
@@ -46,7 +46,7 @@ Returns the fields for rendering a sport.
 ### Implementation Template
 
 ```elixir
-defmodule SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>View do
+defmodule SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>View do
   @moduledoc """
   Renders <domain_object> resources in JSON:API format.
   """
@@ -76,10 +76,10 @@ Also test `type/0`, `fields/0`, `path/0` as unit tests.
 ### Test Template
 
 ```elixir
-defmodule SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>ViewTest do
+defmodule SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>ViewTest do
   use SportipediaWeb.ConnCase
 
-  alias SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>View
+  alias SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>View
   alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>ReadModel
 
   import SportipediaWeb.RequestHelpers

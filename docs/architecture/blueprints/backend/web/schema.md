@@ -2,15 +2,15 @@
 
 | Schema Type | File Path | Module Name |
 |-------------|-----------|-------------|
-| Response | `/services/api/lib/sportipedia_web/<_subdomain>/<_composite>/<domain_object>/schemas/<operation>_response.ex` | `SportipediaWeb.<Subdomain>.<Composite>.Schemas.<Operation>Response` |
-| Request | `/services/api/lib/sportipedia_web/<_subdomain>/<_composite>/<domain_object>/schemas/<command>_request.ex` | `SportipediaWeb.<Subdomain>.<Composite>.Schemas.<Command>Request` |
-| Query Params | `/services/api/lib/sportipedia_web/<_subdomain>/<_composite>/<domain_object>/schemas/<operation>_query_params.ex` | `SportipediaWeb.<Subdomain>.<Composite>.Schemas.<Operation>QueryParams` |
+| Response | `/services/api/lib/sportipedia_web/<_subdomain>/<_composite>/<domain_object>/schemas/<operation>_response.ex` | `SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.Schemas.<Operation>Response` |
+| Request | `/services/api/lib/sportipedia_web/<_subdomain>/<_composite>/<domain_object>/schemas/<command>_request.ex` | `SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.Schemas.<Command>Request` |
+| Query Params | `/services/api/lib/sportipedia_web/<_subdomain>/<_composite>/<domain_object>/schemas/<operation>_query_params.ex` | `SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.Schemas.<Operation>QueryParams` |
 
 | Test Type | Test File Path | Test Module Name |
 |-----------|----------------|------------------|
-| Response | `test/sportipedia_web/<_subdomain>/<_composite>/<domain_object>/schemas/<operation>_response_test.exs` | `SportipediaWeb.<Subdomain>.<Composite>.Schemas.<Operation>ResponseTest` |
-| Request | `test/sportipedia_web/<_subdomain>/<_composite>/<domain_object>/schemas/<command>_request_test.exs` | `SportipediaWeb.<Subdomain>.<Composite>.Schemas.<Command>RequestTest` |
-| Query Params | `test/sportipedia_web/<_subdomain>/<_composite>/<domain_object>/schemas/<operation>_query_params_test.exs` | `SportipediaWeb.<Subdomain>.<Composite>.Schemas.<Operation>QueryParamsTest` |
+| Response | `test/sportipedia_web/<_subdomain>/<_composite>/<domain_object>/schemas/<operation>_response_test.exs` | `SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.Schemas.<Operation>ResponseTest` |
+| Request | `test/sportipedia_web/<_subdomain>/<_composite>/<domain_object>/schemas/<command>_request_test.exs` | `SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.Schemas.<Command>RequestTest` |
+| Query Params | `test/sportipedia_web/<_subdomain>/<_composite>/<domain_object>/schemas/<operation>_query_params_test.exs` | `SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.Schemas.<Operation>QueryParamsTest` |
 
 Blueprint for schemas used to document endpoints in JSONAPI.
 
@@ -108,7 +108,7 @@ Returns the OpenAPI schema for the sport response.
 ### Implementation Template
 
 ```elixir
-defmodule SportipediaWeb.<Subdomain>.<Composite>.Schemas.<Operation>Response do
+defmodule SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.Schemas.<Operation>Response do
   @moduledoc """
   OpenAPI schema for documenting <domain_object> endpoints.
   """
@@ -128,12 +128,12 @@ A query returning a single read model will use this template
 Using the [view](./view.md).
 
 ```elixir
-defmodule SportipediaWeb.<Subdomain>.<Composite>.Schemas.<DomainObject>Response do
+defmodule SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.Schemas.<DomainObject>Response do
   @moduledoc """
   OpenAPI schema for documenting <domain_object> endpoints.
   """
 
-  alias SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>View
+  alias SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>View
   alias Sportipedia.Support.JSONAPI.OpenApiSchema
 
   require OpenApiSpex
@@ -151,12 +151,12 @@ A query returning a read model collection will use this template.
 Using the [view](./view.md).
 
 ```elixir
-defmodule SportipediaWeb.<Subdomain>.<Composite>.Schemas.<DomainObject>CollectionResponse do
+defmodule SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.Schemas.<DomainObject>CollectionResponse do
   @moduledoc """
   OpenAPI schema for documenting <domain_object> collection endpoints.
   """
 
-  alias SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>View
+  alias SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>View
   alias Sportipedia.Support.JSONAPI.OpenApiSchema
 
   require OpenApiSpex
@@ -175,7 +175,7 @@ end
 A single record query needs a query parameter schema documenting fields and includes.
 
 ```elixir
-defmodule SportipediaWeb.<Subdomain>.<Composite>.Schemas.<Operation>QueryParams do
+defmodule SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.Schemas.<Operation>QueryParams do
   @moduledoc """
   OpenAPI schema for documenting <operation> query parameters.
   """
@@ -214,7 +214,7 @@ end
 A collection query needs a query parameter schema documenting filter, sort, page, fields, and includes.
 
 ```elixir
-defmodule SportipediaWeb.<Subdomain>.<Composite>.Schemas.<Operation>QueryParams do
+defmodule SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.Schemas.<Operation>QueryParams do
   @moduledoc """
   OpenAPI schema for documenting <operation> collection query parameters.
   """
@@ -272,7 +272,7 @@ end
 A command request schema is derived from the public API's parameter `@spec`.
 
 ```elixir
-defmodule SportipediaWeb.<Subdomain>.<Composite>.Schemas.<Command>Request do
+defmodule SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.Schemas.<Command>Request do
   @moduledoc """
   OpenAPI schema for documenting <command> request parameters.
   """
@@ -310,10 +310,10 @@ Use `use ExUnit.Case` (no DB, no sandbox). Test that the compile-time schema has
 ### Test Template
 
 ```elixir
-defmodule SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>SchemaTest do
+defmodule SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>SchemaTest do
   use ExUnit.Case
 
-  alias SportipediaWeb.<Subdomain>.<Composite>.Schemas.<DomainObject>Response
+  alias SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.Schemas.<DomainObject>Response
 
   describe "<DomainObject>Response" do
     test "schema/0 has the correct title" do

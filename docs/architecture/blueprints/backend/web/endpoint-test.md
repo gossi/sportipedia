@@ -174,3 +174,40 @@ defmodule SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.<Operation>Endpo
   end
 end
 ```
+
+### Example: List Read Model with query params
+
+Here is the example for
+[`list-apparatuses`
+query](../../../../domain-model/catalog/equipment/query.list-apparatuses.esdm.yaml)
+showcasing testing for query params.
+
+```elixir
+    test "filters apparatuses by title (case-insensitive partial match)", %{conn: conn} do
+      # Arrange: Use Public API to seed the read models
+      {:ok, _a1} =
+        Apparatus.catalog_apparatus(%{title: "Vaulting Table", slug: "vaulting-table"})
+
+      {:ok, _a2} =
+        Apparatus.catalog_apparatus(%{title: "Pommel Horse", slug: "pommel-horse"})
+
+      {:ok, _a3} =
+        Apparatus.catalog_apparatus(%{title: "Still Rings", slug: "still-rings"})
+
+      # Act: Here test the query params
+      conn =
+        conn
+        |> authenticate_conn()
+        |> api_conn()
+        |> get("/catalog/equipment/apparatuses?filter[title]=vault")
+
+
+      # Assert: Verify the results
+      body = json_response(conn, 200)
+
+      assert %{"data" => data} = body
+      assert is_list(data)
+      assert length(data) == 1
+      assert jsonapi_attr(hd(data), "title") == "Vaulting Table"
+    end
+```

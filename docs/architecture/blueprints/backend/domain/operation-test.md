@@ -41,3 +41,18 @@ defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Operation.<Operatio
   alias Sportipedia.<Subdomain>.Repo
 end
 ```
+
+Helper methods, use them when needed:
+
+```elixir
+  @spec new_<domain_object>(<DomainObject>ReadModel.t()) ::
+          {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
+  defp new_<domain_object>(attributes) do
+    <DomainObject>ReadModel.insert_changeset(%<DomainObject>ReadModel{}, attributes)
+    |> Repo.insert()
+  end
+
+  defp new_<domain_object>s(attribute_collection) do
+    Enum.each(attribute_collection, fn elem -> new_<domain_object>(elem) end)
+  end
+```
