@@ -83,7 +83,9 @@ defmodule Sportipedia.Support.JSONAPI.QueryBuilder do
         values = value |> String.split(",") |> Enum.map(&String.trim/1)
 
         if string_field?(schema, atom_field) do
-          where(query, [r],
+          where(
+            query,
+            [r],
             fragment("lower(?)", field(r, ^atom_field)) in ^Enum.map(values, &String.downcase/1)
           )
         else
@@ -95,7 +97,9 @@ defmodule Sportipedia.Support.JSONAPI.QueryBuilder do
         cast_val = cast_value(schema, atom_field, value)
 
         if string_field?(schema, atom_field) do
-          where(query, [r],
+          where(
+            query,
+            [r],
             fragment("lower(?) LIKE ?", field(r, ^atom_field), ^"%#{String.downcase(cast_val)}%")
           )
         else
