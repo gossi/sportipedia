@@ -11,7 +11,7 @@ http:
     data: |-
       {
         "data": {
-          "type": "instrument",
+          "type": "instruments",
           "attributes": {
             "title": "Skateboard",
             "slug": "skateboard"
@@ -27,25 +27,26 @@ settings:
   maxRedirects: 5
 
 examples:
-  - name: Create Unicycle
+  - name: Catalog Unicycle
     request:
-      url: "{{apiUrl}}/catalog/equipment/instruments/create-instrument"
+      url: "{{apiUrl}}/catalog/equipment/instruments/catalog-instrument"
       method: POST
       body:
         type: json
         data: |-
           {
             "data": {
-              "type": "instrument",
+              "type": "instruments",
               "attributes": {
                 "title": "Unicycle",
-                "slug": "unicycle"
+                "slug": "unicycle",
+                "description": "A single-wheeled vehicle"
               }
             }
           }
     response:
-      status: 200
-      statusText: OK
+      status: 201
+      statusText: Created
       headers:
         - name: date
           value: Wed, 29 Apr 2026 19:08:41 GMT
@@ -71,7 +72,7 @@ examples:
           {
             "data":
               {
-                "attributes": { "description": null, "title": "Unicycle", "slug": "unicycle" },
+                "attributes": { "description": "A single-wheeled vehicle", "title": "Unicycle", "slug": "unicycle" },
                 "id": "27c20d96-63ec-4f6e-a022-546ab92415bd",
                 "links":
                   {
