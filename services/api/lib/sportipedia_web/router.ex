@@ -71,6 +71,9 @@ defmodule SportipediaWeb.Router do
         post "/catalog-instrument", InstrumentController, :catalog_instrument
         post "/edit-instrument", InstrumentController, :edit_instrument
         post "/archive-instrument", InstrumentController, :archive_instrument
+
+        # queries
+        get "/", InstrumentController, :list_instruments
       end
     end
   end

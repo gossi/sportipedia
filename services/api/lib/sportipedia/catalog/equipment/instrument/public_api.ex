@@ -9,7 +9,9 @@ defmodule Sportipedia.Catalog.Equipment.Instrument do
   alias Sportipedia.Catalog.Equipment.Instrument.Command.EditInstrument
   alias Sportipedia.Catalog.Equipment.Instrument.InstrumentInternal
   alias Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel
+  alias Sportipedia.Catalog.Repo
   alias Sportipedia.Support.ErrorClassifier
+  alias Sportipedia.Support.JSONAPI.QueryBuilder
 
   @doc """
   Catalogs a new instrument. Returns the created instrument.
@@ -70,5 +72,13 @@ defmodule Sportipedia.Catalog.Equipment.Instrument do
   @spec instrument_by_id(String.t()) :: InstrumentReadModel.t() | nil
   def instrument_by_id(id) do
     InstrumentInternal.instrument_by_id(id)
+  end
+
+  @doc """
+  Lists all instruments with filtering, sorting, and pagination.
+  """
+  @spec list_instruments(JSONAPI.Config.t()) :: Architecture.public_api([InstrumentReadModel.t()])
+  def list_instruments(query) do
+    {:ok, Repo.all(QueryBuilder.build(query, InstrumentReadModel))}
   end
 end

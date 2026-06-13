@@ -142,6 +142,7 @@ defmodule Sportipedia.Support.JSONAPI.QueryBuilder do
     end)
   end
 
+  defp parse_sort_field({direction, field}) when direction in [:asc, :desc], do: {direction, field}
   defp parse_sort_field("-" <> field), do: {:desc, field}
   defp parse_sort_field(field), do: {:asc, field}
 

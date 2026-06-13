@@ -10,6 +10,8 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentController do
   alias SportipediaWeb.Catalog.Equipment.Instrument.Schemas.CatalogInstrumentRequest
   alias SportipediaWeb.Catalog.Equipment.Instrument.Schemas.EditInstrumentRequest
   alias SportipediaWeb.Catalog.Equipment.Instrument.Schemas.InstrumentResponse
+  alias SportipediaWeb.Catalog.Equipment.Instrument.Schemas.ListInstrumentsQueryParams
+  alias SportipediaWeb.Catalog.Equipment.Instrument.Schemas.ListInstrumentsResponse
   alias SportipediaWeb.System.FallbackController
 
   use SportipediaWeb, :controller
@@ -20,6 +22,11 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentController do
     action: {Phoenix.Controller, :action_name},
     user: {Sportipedia.Auth, :get_user_from_assigns},
     fallback: FallbackController
+
+  plug JSONAPI.QueryParser,
+    filter: ~w(title),
+    sort: ~w(title),
+    view: InstrumentView
 
   tags ["equipment"]
 
@@ -94,6 +101,28 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentController do
 
       {:error, errors} ->
         {:error, errors}
+    end
+  end
+
+  @doc """
+  Handles the list-instruments request.
+  """
+  operation :list_instruments,
+    summary: "Lists all instruments with filtering, sorting, and pagination",
+    parameters: [
+      query: [in: :query, schema: ListInstrumentsQueryParams]
+    ],
+    responses: [
+      ok: {"Instrument collection", "application/vnd.api+json", ListInstrumentsResponse}
+    ]
+
+  @spec list_instruments(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def list_instruments(conn, _) do
+    case Instrument.list_instruments(conn.assigns.jsonapi_query) do
+      {:ok, data} ->
+        conn
+        |> put_view(json: InstrumentView)
+        |> render("index.json", %{data: data})
     end
   end
 end
