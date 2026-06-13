@@ -5,7 +5,11 @@ info:
 
 http:
   method: GET
-  url: "{{apiUrl}}/catalog/equipment/apparatuses/{{id}}"
+  url: "{{apiUrl}}/catalog/equipment/apparatuses/:id"
+  params:
+    - name: id
+      value: d290f1ee-6c54-4b01-90e6-d701748f0851
+      type: path
   auth: inherit
 
 settings:
@@ -13,9 +17,6 @@ settings:
   timeout: 0
   followRedirects: true
   maxRedirects: 5
-
-vars:
-  id: vault
 
 examples:
   - name: Read Apparatus by ID
@@ -51,7 +52,6 @@ examples:
               },
             "included": []
           }
-
   - name: Read Apparatus by slug
     request:
       url: "{{apiUrl}}/catalog/equipment/apparatuses/vault"
@@ -85,7 +85,6 @@ examples:
               },
             "included": []
           }
-
   - name: Read Apparatus not found
     request:
       url: "{{apiUrl}}/catalog/equipment/apparatuses/non-existent"
