@@ -5,7 +5,21 @@ scope:
   domain: sport
   boundedContext: sport
   aggregate: instrument
-data: {}
+data:
+  type: object
+  properties:
+    title:
+      type: string
+      description: "Name of the instrument"
+    slug:
+      type: string
+      description: "URL-friendly unique identifier"
+    description:
+      type: string
+      description: "Optional description"
+constraints:
+  - name: instrument-exists
+    rule: An instrument needs to exist (check by id)
 publishes:
   - instrument-edited
 actors:

@@ -1,0 +1,120 @@
+apiVersion: schema.esdm.io/given-when-then/v1
+kind: feature
+name: manage-instruments
+description: "Managing movable sport equipment in the catalog"
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: instrument
+scenarios:
+  - name: catalog-instrument
+    description: "A user catalogs a new instrument"
+    given: []
+    when:
+      command: catalog-instrument
+      data:
+        title: "Unicycle"
+        slug: "unicycle"
+        description: "A single-wheeled vehicle"
+      actor: user
+    then:
+      events:
+        - event: instrument-cataloged
+          data:
+            id: "{{ generated }}"
+            title: "Unicycle"
+            slug: "unicycle"
+            description: "A single-wheeled vehicle"
+
+  - name: edit-instrument
+    description: "A user edits an existing instrument"
+    given:
+      - event: instrument-cataloged
+        data:
+          id: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+          title: "Unicycle"
+          slug: "unicycle"
+          description: "A single-wheeled vehicle"
+    when:
+      command: edit-instrument
+      data:
+        id: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+        title: "Einrad"
+      actor: user
+    then:
+      events:
+        - event: instrument-edited
+          data:
+            id: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+            title: "Einrad"
+            slug: null
+            description: null
+
+  - name: archive-instrument
+    description: "A user archives an instrument that is not in use"
+    given:
+      - event: instrument-cataloged
+        data:
+          id: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+          title: "Skateboard"
+          slug: "skateboard"
+          description: null
+    when:
+      command: archive-instrument
+      data:
+        id: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+      actor: user
+    then:
+      events:
+        - event: instrument-archived
+          data:
+            id: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+
+  - name: archive-instrument-when-in-use
+    description: "Archive is rejected when a sport uses the instrument (not yet enforceable)"
+    given:
+      - event: instrument-cataloged
+        data:
+          id: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+          title: "Skateboard"
+          slug: "skateboard"
+          description: null
+    when:
+      command: archive-instrument
+      data:
+        id: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+      actor: user
+    then:
+      rejection:
+        invariant: no-archive-when-in-use
+
+  - name: catalog-instrument-invalid-without-title
+    description: "Catalog command is rejected when title is missing"
+    given: []
+    when:
+      command: catalog-instrument
+      data:
+        slug: "unicycle"
+      actor: user
+    then:
+      rejection:
+        reason: "title must be present"
+
+  - name: catalog-instrument-duplicate-slug
+    description: "Catalog command is rejected when slug already exists"
+    given:
+      - event: instrument-cataloged
+        data:
+          id: "d290f1ee-6c54-4b01-90e6-d701748f0851"
+          title: "Unicycle"
+          slug: "unicycle"
+          description: null
+    when:
+      command: catalog-instrument
+      data:
+        title: "Another Unicycle"
+        slug: "unicycle"
+      actor: user
+    then:
+      rejection:
+        reason: "slug already exists"
