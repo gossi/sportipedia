@@ -4,6 +4,7 @@ defmodule Sportipedia.Catalog.Equipment.Instrument do
   """
 
   alias Sportipedia.Architecture
+  alias Sportipedia.Catalog.Equipment.Instrument.Command.ArchiveInstrument
   alias Sportipedia.Catalog.Equipment.Instrument.Command.CatalogInstrument
   alias Sportipedia.Catalog.Equipment.Instrument.Command.EditInstrument
   alias Sportipedia.Catalog.Equipment.Instrument.InstrumentInternal
@@ -50,5 +51,24 @@ defmodule Sportipedia.Catalog.Equipment.Instrument do
       {:error, errors} ->
         ErrorClassifier.classify_error(errors)
     end
+  end
+
+  @doc """
+  Archives an existing instrument. Returns :ok on success.
+  """
+  @spec archive_instrument(String.t()) :: Architecture.public_api()
+  def archive_instrument(id) do
+    case Sportipedia.Catalog.dispatch(ArchiveInstrument.new(id: id), consistency: :strong) do
+      :ok -> :ok
+      {:error, errors} -> ErrorClassifier.classify_error(errors)
+    end
+  end
+
+  @doc """
+  Fetches an instrument by its ID. Returns nil if not found.
+  """
+  @spec instrument_by_id(String.t()) :: InstrumentReadModel.t() | nil
+  def instrument_by_id(id) do
+    InstrumentInternal.instrument_by_id(id)
   end
 end

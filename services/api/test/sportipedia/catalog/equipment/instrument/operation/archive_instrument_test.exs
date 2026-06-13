@@ -1,4 +1,4 @@
-defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.ArchiveInstrumentTest do
+defmodule Sportipedia.Catalog.Equipment.Instrument.Operation.ArchiveInstrumentTest do
   use Sportipedia.CatalogTestCase
 
   alias Sportipedia.Catalog.Equipment.Instrument
@@ -26,8 +26,13 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.ArchiveInstrumentTest
   describe "Command" do
     @describetag :unit
 
+    @tag :integration
     test "is valid with id" do
-      cmd = ArchiveInstrument.new(id: UUID.uuid4())
+      id = UUID.uuid4()
+
+      Repo.insert!(%InstrumentReadModel{id: id, title: "Unicycle", slug: "unicycle"})
+
+      cmd = ArchiveInstrument.new(id: id)
 
       assert Vex.valid?(cmd)
     end
@@ -43,6 +48,25 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.ArchiveInstrumentTest
 
       refute Vex.valid?(cmd)
       assert Enum.any?(Vex.errors(cmd), &match?({:error, :id, _, _}, &1))
+    end
+
+    @tag :integration
+    test "is invalid when id does not exist" do
+      cmd = ArchiveInstrument.new(id: UUID.uuid4())
+
+      refute Vex.valid?(cmd)
+      assert Enum.any?(Vex.errors(cmd), &match?({:error, :id, :by, :not_found}, &1))
+    end
+
+    @tag :integration
+    test "is valid when id exists" do
+      id = UUID.uuid4()
+
+      Repo.insert!(%InstrumentReadModel{id: id, title: "Unicycle", slug: "unicycle"})
+
+      cmd = ArchiveInstrument.new(id: id)
+
+      assert Vex.valid?(cmd)
     end
   end
 

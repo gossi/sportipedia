@@ -1,4 +1,4 @@
-defmodule SportipediaWeb.Catalog.Equipment.ArchiveInstrumentRequestTest do
+defmodule SportipediaWeb.Catalog.Equipment.Instrument.Schemas.ArchiveInstrumentRequestTest do
   use SportipediaWeb.ConnCase
 
   import SportipediaWeb.RequestHelpers
@@ -42,7 +42,7 @@ defmodule SportipediaWeb.Catalog.Equipment.ArchiveInstrumentRequestTest do
       assert json_response(conn, 403)
     end
 
-    test "returns 204 when instrument not found (no existence check)" do
+    test "returns 404 when instrument not found" do
       conn =
         build_conn()
         |> authenticate_conn()
@@ -52,7 +52,7 @@ defmodule SportipediaWeb.Catalog.Equipment.ArchiveInstrumentRequestTest do
           Jason.encode!(jsonapi_body("instruments", %{}, UUID.uuid4()))
         )
 
-      assert conn.status == 204
+      assert json_response(conn, 404)
     end
   end
 end

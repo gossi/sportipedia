@@ -12,4 +12,7 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Policy do
 
   def authorize(:edit_instrument, user, _params) when is_guest?(user), do: :error
   def authorize(:edit_instrument, user, _params) when is_user?(user), do: :ok
+
+  def authorize(:archive_instrument, user, _params) when is_guest?(user), do: :error
+  def authorize(:archive_instrument, user, _params) when is_user?(user), do: :ok
 end

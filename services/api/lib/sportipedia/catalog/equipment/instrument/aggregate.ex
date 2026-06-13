@@ -5,6 +5,7 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.InstrumentAggregate do
 
   use TypedStruct
 
+  alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentArchived
   alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentCataloged
   alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentEdited
 
@@ -32,5 +33,9 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.InstrumentAggregate do
       description:
         if(is_nil(event.description), do: aggregate.description, else: event.description)
     }
+  end
+
+  def apply(%__MODULE__{} = _aggregate, %InstrumentArchived{} = _event) do
+    nil
   end
 end

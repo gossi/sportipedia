@@ -6,6 +6,7 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentController do
   alias OpenApiSpex.Reference
   alias Sportipedia.Catalog.Equipment.Instrument
   alias SportipediaWeb.Catalog.Equipment.Instrument.InstrumentView
+  alias SportipediaWeb.Catalog.Equipment.Instrument.Schemas.ArchiveInstrumentRequest
   alias SportipediaWeb.Catalog.Equipment.Instrument.Schemas.CatalogInstrumentRequest
   alias SportipediaWeb.Catalog.Equipment.Instrument.Schemas.EditInstrumentRequest
   alias SportipediaWeb.Catalog.Equipment.Instrument.Schemas.InstrumentResponse
@@ -66,6 +67,30 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentController do
         conn
         |> put_view(json: InstrumentView)
         |> render("show.json", %{data: instrument})
+
+      {:error, errors} ->
+        {:error, errors}
+    end
+  end
+
+  @doc """
+  Handles the archive-instrument request.
+  """
+  operation :archive_instrument,
+    summary: "Archives an existing instrument",
+    request_body: {"The instrument id", "application/json", ArchiveInstrumentRequest},
+    responses: [
+      no_content: "The instrument was archived",
+      not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      forbidden: %Reference{"$ref": "#/components/responses/forbidden"}
+    ]
+
+  @spec archive_instrument(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def archive_instrument(conn, _) do
+    case Instrument.archive_instrument(conn.params["id"]) do
+      :ok ->
+        send_resp(conn, :no_content, "")
 
       {:error, errors} ->
         {:error, errors}

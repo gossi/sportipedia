@@ -10,6 +10,7 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.InstrumentProjector do
     schema_prefix: "catalog",
     consistency: :strong
 
+  alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentArchived
   alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentCataloged
   alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentEdited
   alias Sportipedia.Catalog.Equipment.Instrument.InstrumentInternal
@@ -36,6 +37,17 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.InstrumentProjector do
           :instrument_edited,
           InstrumentReadModel.update_changeset(instrument, attrs)
         )
+    end
+  end
+
+  project %InstrumentArchived{} = event, _metadata, fn multi ->
+    case InstrumentInternal.instrument_by_id(event.id) do
+      nil ->
+        multi
+
+      %InstrumentReadModel{} = instrument ->
+        multi
+        |> Ecto.Multi.delete(:instrument_archived, instrument)
     end
   end
 end

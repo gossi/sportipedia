@@ -11,7 +11,7 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Validators.InstrumentExists d
   Validates the given id exists.
   """
   @spec validate(String.t() | nil, map()) :: :ok | {:error, :not_found}
-  def validate(nil, _context), do: {:error, :not_found}
+  def validate(nil, _context), do: :ok
 
   def validate(id, _context) do
     case InstrumentInternal.instrument_by_id(id) do
