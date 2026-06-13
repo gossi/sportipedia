@@ -10,7 +10,9 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Validators.UniqueSlug do
   @doc """
   Validates the given slug value for uniqueness.
   """
-  @spec validate(String.t(), map()) :: :ok | {:error, String.t()}
+  @spec validate(String.t() | nil, map()) :: :ok | {:error, String.t()}
+  def validate(nil, _context), do: :ok
+
   def validate(value, context) do
     with instrument when not is_nil(instrument) <-
            InstrumentInternal.instrument_by_slug(value),

@@ -22,6 +22,7 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Command.CatalogInstrument do
   use Vex.Struct
 
   validates :title, presence: true
+
   validates :slug,
     presence: true,
     by: [function: &UniqueSlug.validate/2, allow_nil: true]

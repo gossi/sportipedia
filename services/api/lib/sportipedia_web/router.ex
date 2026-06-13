@@ -69,6 +69,7 @@ defmodule SportipediaWeb.Router do
       scope "/instruments" do
         # commands
         post "/catalog-instrument", InstrumentController, :catalog_instrument
+        post "/edit-instrument", InstrumentController, :edit_instrument
       end
     end
   end

@@ -7,6 +7,7 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentController do
   alias Sportipedia.Catalog.Equipment.Instrument
   alias SportipediaWeb.Catalog.Equipment.Instrument.InstrumentView
   alias SportipediaWeb.Catalog.Equipment.Instrument.Schemas.CatalogInstrumentRequest
+  alias SportipediaWeb.Catalog.Equipment.Instrument.Schemas.EditInstrumentRequest
   alias SportipediaWeb.Catalog.Equipment.Instrument.Schemas.InstrumentResponse
   alias SportipediaWeb.System.FallbackController
 
@@ -41,6 +42,33 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentController do
       |> put_status(:created)
       |> put_view(json: InstrumentView)
       |> render("show.json", %{data: instrument})
+    end
+  end
+
+  @doc """
+  Handles the edit-instrument request.
+  """
+  operation :edit_instrument,
+    summary: "Edits an existing instrument",
+    request_body: {"The instrument attributes", "application/json", EditInstrumentRequest},
+    responses: [
+      ok: {"The edited instrument", "application/vnd.api+json", InstrumentResponse},
+      not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      unprocessable_entity: %Reference{"$ref": "#/components/responses/unprocessable_entity"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      forbidden: %Reference{"$ref": "#/components/responses/forbidden"}
+    ]
+
+  @spec edit_instrument(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def edit_instrument(conn, _) do
+    case Instrument.edit_instrument(conn.params) do
+      {:ok, instrument} ->
+        conn
+        |> put_view(json: InstrumentView)
+        |> render("show.json", %{data: instrument})
+
+      {:error, errors} ->
+        {:error, errors}
     end
   end
 end

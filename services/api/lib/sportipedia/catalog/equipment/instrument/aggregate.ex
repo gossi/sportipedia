@@ -6,6 +6,7 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.InstrumentAggregate do
   use TypedStruct
 
   alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentCataloged
+  alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentEdited
 
   typedstruct do
     field :id, String.t()
@@ -20,6 +21,16 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.InstrumentAggregate do
       title: event.title,
       slug: event.slug,
       description: event.description
+    }
+  end
+
+  def apply(%__MODULE__{} = aggregate, %InstrumentEdited{} = event) do
+    %__MODULE__{
+      id: aggregate.id,
+      title: event.title || aggregate.title,
+      slug: event.slug || aggregate.slug,
+      description:
+        if(is_nil(event.description), do: aggregate.description, else: event.description)
     }
   end
 end

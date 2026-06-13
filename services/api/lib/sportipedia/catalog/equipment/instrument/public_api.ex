@@ -5,7 +5,9 @@ defmodule Sportipedia.Catalog.Equipment.Instrument do
 
   alias Sportipedia.Architecture
   alias Sportipedia.Catalog.Equipment.Instrument.Command.CatalogInstrument
+  alias Sportipedia.Catalog.Equipment.Instrument.Command.EditInstrument
   alias Sportipedia.Catalog.Equipment.Instrument.InstrumentInternal
+  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel
   alias Sportipedia.Support.ErrorClassifier
 
   @doc """
@@ -23,6 +25,27 @@ defmodule Sportipedia.Catalog.Equipment.Instrument do
     case Sportipedia.Catalog.dispatch(cmd, consistency: :strong) do
       :ok ->
         {:ok, InstrumentInternal.instrument_by_id(id)}
+
+      {:error, errors} ->
+        ErrorClassifier.classify_error(errors)
+    end
+  end
+
+  @doc """
+  Edits an existing instrument. Returns the updated instrument.
+  """
+  @spec edit_instrument(%{
+          required(:id) => String.t(),
+          optional(:title) => String.t() | nil,
+          optional(:slug) => String.t() | nil,
+          optional(:description) => String.t() | nil
+        }) :: Architecture.public_api(InstrumentReadModel.t())
+  def edit_instrument(params) do
+    cmd = EditInstrument.new(params)
+
+    case Sportipedia.Catalog.dispatch(cmd, consistency: :strong) do
+      :ok ->
+        {:ok, InstrumentInternal.instrument_by_id(params["id"])}
 
       {:error, errors} ->
         ErrorClassifier.classify_error(errors)
