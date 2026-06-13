@@ -65,17 +65,6 @@ defmodule SportipediaWeb.Router do
         get "/", ApparatusController, :list_apparatuses
         get "/:id_or_slug", ApparatusController, :read_apparatus
       end
-
-      scope "/instruments" do
-        # commands
-        post "/catalog-instrument", InstrumentController, :catalog_instrument
-        post "/edit-instrument", InstrumentController, :edit_instrument
-        post "/archive-instrument", InstrumentController, :archive_instrument
-
-        # queries
-        get "/", InstrumentController, :list_instruments
-        get "/:id", InstrumentController, :read_instrument
-      end
     end
   end
 
