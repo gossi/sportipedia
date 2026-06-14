@@ -1,9 +1,7 @@
 defmodule Sportipedia.Catalog.Equipment.Instrument.InstrumentProjector do
-  alias Sportipedia.Catalog.Equipment.Instrument
-  alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentArchived
-  alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentEdited
-  alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentCataloged
-  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel
+  @moduledoc """
+  Projects instrument events to the instrument read model.
+  """
 
   use Commanded.Projections.Ecto,
     application: Sportipedia.Catalog,
@@ -12,16 +10,22 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.InstrumentProjector do
     schema_prefix: "catalog",
     consistency: :strong
 
+  alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentArchived
+  alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentCataloged
+  alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentEdited
+  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentInternal
+  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel
+
   project %InstrumentCataloged{} = event, _metadata, fn multi ->
     multi
     |> Ecto.Multi.insert(
-      :catalog_instrument,
-      InstrumentReadModel.insert_changeset(Map.from_struct(event))
+      :instrument_cataloged,
+      InstrumentReadModel.insert_changeset(%InstrumentReadModel{}, Map.from_struct(event))
     )
   end
 
   project %InstrumentEdited{} = event, _metadata, fn multi ->
-    case Instrument.instrument_by_id(event.id) do
+    case InstrumentInternal.instrument_by_id(event.id) do
       nil ->
         multi
 
@@ -30,20 +34,20 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.InstrumentProjector do
 
         multi
         |> Ecto.Multi.update(
-          :edit_instrument,
+          :instrument_edited,
           InstrumentReadModel.update_changeset(instrument, attrs)
         )
     end
   end
 
   project %InstrumentArchived{} = event, _metadata, fn multi ->
-    case Instrument.instrument_by_id(event.id) do
+    case InstrumentInternal.instrument_by_id(event.id) do
       nil ->
         multi
 
       %InstrumentReadModel{} = instrument ->
         multi
-        |> Ecto.Multi.delete(:archive_instrument, instrument)
+        |> Ecto.Multi.delete(:instrument_archived, instrument)
     end
   end
 end

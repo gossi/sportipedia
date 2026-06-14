@@ -1,31 +1,41 @@
 defmodule Sportipedia.Catalog.Equipment.Instrument.InstrumentAggregate do
-  alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentArchived
-  alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentEdited
-  alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentCataloged
-  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentAggregate
+  @moduledoc """
+  Aggregate representing an instrument in the equipment catalog.
+  """
 
   use TypedStruct
+
+  alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentArchived
+  alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentCataloged
+  alias Sportipedia.Catalog.Equipment.Instrument.Event.InstrumentEdited
 
   typedstruct do
     field :id, String.t()
     field :title, String.t()
-    field :description, String.t()
     field :slug, String.t()
+    field :description, String.t()
   end
 
-  def apply(%InstrumentAggregate{} = aggregate, %InstrumentCataloged{} = event) do
-    %InstrumentCataloged{id: id, title: title, description: description, slug: slug} = event
-
-    %InstrumentAggregate{id: id, title: title, description: description, slug: slug}
+  def apply(%__MODULE__{} = _aggregate, %InstrumentCataloged{} = event) do
+    %__MODULE__{
+      id: event.id,
+      title: event.title,
+      slug: event.slug,
+      description: event.description
+    }
   end
 
-  def apply(%InstrumentAggregate{} = aggregate, %InstrumentEdited{} = event) do
-    changes = InstrumentEdited.get_changes(event)
-
-    Map.merge(aggregate, changes)
+  def apply(%__MODULE__{} = aggregate, %InstrumentEdited{} = event) do
+    %__MODULE__{
+      id: aggregate.id,
+      title: event.title || aggregate.title,
+      slug: event.slug || aggregate.slug,
+      description:
+        if(is_nil(event.description), do: aggregate.description, else: event.description)
+    }
   end
 
-  def apply(%InstrumentAggregate{}, %InstrumentArchived{}) do
+  def apply(%__MODULE__{} = _aggregate, %InstrumentArchived{} = _event) do
     nil
   end
 end

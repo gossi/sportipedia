@@ -5,7 +5,18 @@ scope:
   domain: sport
   boundedContext: sport
   aggregate: instrument
-data: {}
+data:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier of the instrument to archive"
+  required:
+    - id
+constraints:
+  - name: instrument-exists
+    rule: An instrument needs to exist (check by id)
 publishes:
   - instrument-archived
 actors:

@@ -17,4 +17,23 @@ projections:
     aggregate: instrument
     event: instrument-archived
     rule: "Delete the instrument"
-schema: {}
+schema:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier"
+    title:
+      type: string
+      description: "Name of the instrument"
+    slug:
+      type: string
+      description: "URL-friendly unique identifier"
+    description:
+      type: string
+      description: "Optional description"
+  required:
+    - id
+    - title
+    - slug

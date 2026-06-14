@@ -64,10 +64,9 @@ defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Validators.UniqueSl
   """
   @spec validate(String.t(), map()) :: :ok | {:error, String.t()}
   def validate(value, context) do
-    with <domain_object> <- <DomainObject>Internal.<domain_object>_by_slug(value),
-         false <- is_nil(<domain_object>),
+    with <domain_object> when not is_nil(<domain_object>) <- <DomainObject>Internal.<domain_object>_by_slug(value),
          false <- slug_belongs_to_<domain_object>?(<domain_object>, context) do
-      {:error, "slug already exists"}
+      {:error, :slug_exists}
     else
       _ -> :ok
     end
