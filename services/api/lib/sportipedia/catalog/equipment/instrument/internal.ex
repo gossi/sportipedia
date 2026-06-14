@@ -16,14 +16,6 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.InstrumentInternal do
   end
 
   @doc """
-  Fetches an instrument by its ID. Raises if not found.
-  """
-  @spec instrument_by_id!(String.t()) :: InstrumentReadModel.t()
-  def instrument_by_id!(id) do
-    Repo.get!(InstrumentReadModel, id)
-  end
-
-  @doc """
   Fetches an instrument by its slug. Returns nil if not found.
   """
   @spec instrument_by_slug(String.t()) :: InstrumentReadModel.t() | nil

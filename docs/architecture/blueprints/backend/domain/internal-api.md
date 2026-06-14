@@ -1,10 +1,10 @@
 # Internal API
 
-| Attribute | Value |
-| --- | --- |
-| File Path | `/services/api/lib/sportipedia/<_subdomain>/<_composite>/<domain_object>/internal_api` |
-| Module Name | `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Internal` |
-| Test | See [Operation Test](./operation-test.md) |
+| Attribute   | Value                                                                                  |
+| ----------- | -------------------------------------------------------------------------------------- |
+| File Path   | `/services/api/lib/sportipedia/<_subdomain>/<_composite>/<domain_object>/internal_api` |
+| Module Name | `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Internal`            |
+| Test        | See [Operation Test](./operation-test.md)                                              |
 
 ## Implementation
 
@@ -14,7 +14,7 @@ What it contains:
 
 - Functions with descriptive names do hide implementation details to make the API memorable
 - Functions may call the implementation from elsewhere, eg. use an existing query
-- Function to get the read models via id: `<domain_object>_by_id(id)` and `<domain_object>_by_id!(id)` - the latter used in tests.
+- Function to get the read models via id: `<domain_object>_by_id(id)`
 
 What it does not contain:
 
@@ -52,14 +52,6 @@ defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Inter
   """
   @spec <domain_object>_by_id(String.t()) :: <DomainObject>ReadModel.t() | nil
   def <domain_object>_by_id(id) do
-    # ecto query to read one record by id
-  end
-
-  @doc """
-  Fetches a <domain_object> by its ID. Raises if not found.
-  """
-  @spec <domain_object>_by_id!(String.t()) :: <DomainObject>ReadModel.t()
-  def <domain_object>_by_id!(id) do
     # ecto query to read one record by id
   end
 end
