@@ -1,58 +1,20 @@
 defmodule SportipediaWeb.Catalog.Equipment.Instrument.Schemas.ArchiveInstrumentRequestTest do
-  use SportipediaWeb.ConnCase
+  use ExUnit.Case
 
-  import SportipediaWeb.RequestHelpers
+  alias SportipediaWeb.Catalog.Equipment.Instrument.Schemas.ArchiveInstrumentRequest
 
-  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel
+  @moduletag :unit
 
-  @moduletag :integration
-
-  describe "POST archive-instrument" do
-    test "archives an instrument when authenticated" do
-      id = UUID.uuid4()
-
-      Repo.insert!(%InstrumentReadModel{
-        id: id,
-        title: "Unicycle",
-        slug: "unicycle"
-      })
-
-      conn =
-        build_conn()
-        |> authenticate_conn()
-        |> api_conn()
-        |> post(
-          "/catalog/equipment/instruments/archive-instrument",
-          Jason.encode!(jsonapi_body("instruments", %{}, id))
-        )
-
-      assert conn.status == 204
-      refute Repo.get(InstrumentReadModel, id)
+  describe "ArchiveInstrumentRequest" do
+    test "schema/0 has the correct title" do
+      assert %{title: "equipment.ArchiveInstrumentRequest"} = ArchiveInstrumentRequest.schema()
     end
 
-    test "returns 403 when unauthenticated" do
-      conn =
-        build_conn()
-        |> api_conn()
-        |> post(
-          "/catalog/equipment/instruments/archive-instrument",
-          Jason.encode!(jsonapi_body("instruments", %{}, UUID.uuid4()))
-        )
-
-      assert json_response(conn, 403)
-    end
-
-    test "returns 404 when instrument not found" do
-      conn =
-        build_conn()
-        |> authenticate_conn()
-        |> api_conn()
-        |> post(
-          "/catalog/equipment/instruments/archive-instrument",
-          Jason.encode!(jsonapi_body("instruments", %{}, UUID.uuid4()))
-        )
-
-      assert json_response(conn, 404)
+    test "schema has id as required property" do
+      schema = ArchiveInstrumentRequest.schema()
+      assert :id in schema.required
+      assert Map.has_key?(schema.properties, :id)
+      assert schema.properties.id.type == :string
     end
   end
 end

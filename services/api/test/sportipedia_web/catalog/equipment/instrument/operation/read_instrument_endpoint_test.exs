@@ -1,40 +1,64 @@
 defmodule SportipediaWeb.Catalog.Equipment.Instrument.ReadInstrumentEndpointTest do
+  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel
   use SportipediaWeb.ConnCase
 
   import SportipediaWeb.RequestHelpers
 
   alias Sportipedia.Catalog.Equipment.Instrument
-  alias Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel
-  alias SportipediaWeb.Catalog.Equipment.Instrument.InstrumentView
 
   describe "GET /catalog/equipment/instruments/:id (read-instrument by id)" do
-    test "returns 200 with the instrument when found", %{conn: conn} do
+    test "returns 200 with the instrument when found by id", %{conn: conn} do
       # Arrange: Catalog an instrument via public API
-      {:ok, instrument} =
-        Instrument.catalog_instrument(%{title: "Vaulting Table", slug: "vaulting-table"})
+      {:ok, %InstrumentReadModel{id: id}} =
+        Instrument.catalog_instrument(%{title: "Unicycle", slug: "unicycle"})
 
       # Act: Read the instrument by id
       conn =
         conn
         |> authenticate_conn()
         |> api_conn()
-        |> get("/catalog/equipment/instruments/#{instrument.id}")
+        |> get("/catalog/equipment/instruments/#{id}")
 
       # Assert: 200 with the instrument
       body = json_response(conn, 200)
 
       assert %{
                "data" => %{
-                 "id" => id,
+                 "id" => ^id,
                  "type" => "instruments",
                  "attributes" => %{
-                   "title" => "Vaulting Table",
-                   "slug" => "vaulting-table"
+                   "title" => "Unicycle",
+                   "slug" => "unicycle"
                  }
                }
              } = body
+    end
 
-      assert id == instrument.id
+    test "returns 200 with instrument when found by slug", %{conn: conn} do
+      # Arrange: Catalog an instrument via public API
+      {:ok, %InstrumentReadModel{id: id}} =
+        Instrument.catalog_instrument(%{title: "Unicycle", slug: "unicycle"})
+
+      # Act: Read the instrument by id
+      conn =
+        conn
+        |> authenticate_conn()
+        |> api_conn()
+        |> get("/catalog/equipment/instruments/unicycle")
+
+      # Assert: 200 with the instrument
+      body = json_response(conn, 200)
+
+      assert %{
+               "data" => %{
+                 "id" => ^id,
+                 "type" => "instruments",
+                 "attributes" => %{
+                   "title" => "Unicycle",
+                   "slug" => "unicycle"
+                 }
+               }
+             } = body
     end
 
     test "returns 404 when instrument not found", %{conn: conn} do
@@ -51,61 +75,18 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.ReadInstrumentEndpointTest
 
     test "returns 200 for unauthenticated (guest) request", %{conn: conn} do
       # Arrange: Catalog an instrument
-      {:ok, instrument} =
-        Instrument.catalog_instrument(%{title: "Pommel Horse", slug: "pommel-horse"})
+      {:ok, %InstrumentReadModel{id: id}} =
+        Instrument.catalog_instrument(%{title: "Skateboard", slug: "skateboard"})
 
       # Act: Read without authentication
       conn =
         conn
         |> api_conn()
-        |> get("/catalog/equipment/instruments/#{instrument.id}")
+        |> get("/catalog/equipment/instruments/#{id}")
 
       # Assert: 200 (guest allowed)
       body = json_response(conn, 200)
-      assert jsonapi_id(body) == instrument.id
-    end
-  end
-
-  describe "GET /catalog/equipment/instruments?filter[slug]=... (read-instrument by slug)" do
-    test "returns 200 with the instrument when slug matches", %{conn: conn} do
-      # Arrange: Catalog an instrument
-      {:ok, _instrument} =
-        Instrument.catalog_instrument(%{title: "Still Rings", slug: "still-rings"})
-
-      # Act: Read by slug
-      conn =
-        conn
-        |> authenticate_conn()
-        |> api_conn()
-        |> get("/catalog/equipment/instruments?filter[slug]=still-rings")
-
-      # Assert: 200 with the instrument
-      body = json_response(conn, 200)
-
-      assert %{
-               "data" => %{
-                 "id" => id,
-                 "type" => "instruments",
-                 "attributes" => %{
-                   "title" => "Still Rings",
-                   "slug" => "still-rings"
-                 }
-               }
-             } = body
-
-      assert id == _instrument.id
-    end
-
-    test "returns 404 when slug does not match any instrument", %{conn: conn} do
-      # Act: Read by non-existing slug
-      conn =
-        conn
-        |> authenticate_conn()
-        |> api_conn()
-        |> get("/catalog/equipment/instruments?filter[slug]=non-existing-slug")
-
-      # Assert: 404
-      assert json_response(conn, 404)
+      assert jsonapi_id(body) == id
     end
   end
 end

@@ -3,6 +3,8 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.Schemas.EditInstrumentRequ
 
   alias SportipediaWeb.Catalog.Equipment.Instrument.Schemas.EditInstrumentRequest
 
+  @moduletag :unit
+
   describe "EditInstrumentRequest" do
     test "schema/0 has the correct title" do
       assert %{title: "equipment.EditInstrumentRequest"} = EditInstrumentRequest.schema()

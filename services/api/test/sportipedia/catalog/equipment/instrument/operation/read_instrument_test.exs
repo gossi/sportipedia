@@ -27,7 +27,7 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Operation.ReadInstrumentTest 
       {:ok, created} =
         Instrument.catalog_instrument(%{title: "Unicycle", slug: "unicycle"})
 
-      assert {:ok, instrument} = Instrument.read_instrument(%{id: created.id})
+      assert {:ok, instrument} = Instrument.read_instrument(created.id)
       assert instrument.id == created.id
       assert instrument.title == "Unicycle"
       assert instrument.slug == "unicycle"
@@ -37,19 +37,19 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Operation.ReadInstrumentTest 
       {:ok, _} =
         Instrument.catalog_instrument(%{title: "Skateboard", slug: "skateboard"})
 
-      assert {:ok, instrument} = Instrument.read_instrument(%{slug: "skateboard"})
+      assert {:ok, instrument} = Instrument.read_instrument("skateboard")
       assert instrument.title == "Skateboard"
       assert instrument.slug == "skateboard"
     end
 
     test "returns not_found when instrument does not exist by id" do
       assert {:error, :not_found} =
-               Instrument.read_instrument(%{id: "00000000-0000-0000-0000-000000000000"})
+               Instrument.read_instrument(UUID.uuid4())
     end
 
     test "returns not_found when instrument does not exist by slug" do
       assert {:error, :not_found} =
-               Instrument.read_instrument(%{slug: "non-existent-slug"})
+               Instrument.read_instrument("non-existent-slug")
     end
   end
 end

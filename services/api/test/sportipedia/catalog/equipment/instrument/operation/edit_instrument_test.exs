@@ -26,16 +26,28 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.EditInstrumentTest do
   describe "Command" do
     @describetag :unit
 
-    test "is valid with all fields" do
-      cmd =
-        EditInstrument.new(
-          id: UUID.uuid4(),
-          title: "Tennis Racket",
-          slug: "tennis-racket",
-          description: "A racket"
-        )
+    test "creates command with required id field" do
+      cmd = %EditInstrument{
+        id: UUID.uuid4()
+      }
 
-      assert Vex.valid?(cmd)
+      assert cmd.id != nil
+      assert cmd.title == nil
+      assert cmd.slug == nil
+      assert cmd.description == nil
+    end
+
+    test "creates command with optional fields" do
+      cmd = %EditInstrument{
+        id: UUID.uuid4(),
+        title: "Updated Title",
+        slug: "updated-slug",
+        description: "Updated description"
+      }
+
+      assert cmd.title == "Updated Title"
+      assert cmd.slug == "updated-slug"
+      assert cmd.description == "Updated description"
     end
 
     test "requires id" do
@@ -62,10 +74,10 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.EditInstrumentTest do
     test "validates id must exist" do
       id = UUID.uuid4()
 
-      new_apparatus(%{
+      new_instrument(%{
         id: id,
-        title: "Vaulting Table",
-        slug: "vaulting-table"
+        title: "Unicycle",
+        slug: "unicycle"
       })
 
       cmd = %EditInstrument{id: id}
@@ -73,23 +85,81 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.EditInstrumentTest do
       assert {:ok, _} = Vex.validate(cmd)
     end
 
-    test "is valid when slug is omitted" do
-      cmd = EditInstrument.new(id: UUID.uuid4(), title: "Tennis Racket")
+    test "change title, but keep slug" do
+      id = UUID.uuid4()
 
-      assert Vex.valid?(cmd)
+      new_instrument(%{
+        id: id,
+        title: "Tennis Racket",
+        slug: "tennis-racket"
+      })
+
+      cmd = %EditInstrument{
+        id: id,
+        title: "Tennis Raquet",
+        slug: "tennis-racket"
+      }
+
+      assert {:ok, _} = Vex.validate(cmd)
     end
 
-    @tag :integration
-    test "is invalid with duplicate slug" do
-      slug = "tennis-racket"
+    test "check slug for uniqueness" do
+      id = UUID.uuid4()
 
-      InstrumentReadModel.insert_changeset(%{id: UUID.uuid4(), title: "Existing", slug: slug})
-      |> Repo.insert!()
+      new_instrument(%{
+        id: id,
+        title: "Unicycle",
+        slug: "unicycle"
+      })
 
-      cmd = EditInstrument.new(id: UUID.uuid4(), title: "Tennis Racket", slug: slug)
+      cmd = %EditInstrument{
+        id: id,
+        slug: "any-slug"
+      }
 
-      refute Vex.valid?(cmd)
-      assert Enum.any?(Vex.errors(cmd), &match?({:error, :slug, _, "slug already exists"}, &1))
+      assert {:ok, _} = Vex.validate(cmd)
+    end
+
+    test "rejects when slug is not unique" do
+      id = UUID.uuid4()
+
+      new_instruments([
+        %{
+          id: UUID.uuid4(),
+          title: "Unicycle",
+          slug: "unicycle"
+        },
+        %{
+          id: id,
+          title: "Skateboard",
+          slug: "skateboard"
+        }
+      ])
+
+      cmd = %EditInstrument{
+        id: id,
+        slug: "unicycle"
+      }
+
+      assert {:error, [{:error, :slug, :by, :slug_exists}]} =
+               Vex.validate(cmd)
+    end
+
+    test "does not validate slug when slug is nil" do
+      id = UUID.uuid4()
+
+      new_instrument(%{
+        id: id,
+        title: "Unicycle",
+        slug: "unicycle"
+      })
+
+      cmd = %EditInstrument{
+        id: id,
+        slug: nil
+      }
+
+      assert {:ok, _} = Vex.validate(cmd)
     end
   end
 
@@ -408,7 +478,7 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.EditInstrumentTest do
 
       cmd = EditInstrument.new(id: UUID.uuid4(), slug: "taken")
 
-      assert {:error, {:validation_failure, %{slug: ["slug already exists"]}}} =
+      assert {:error, {:validation_failure, %{slug: [:slug_exists]}}} =
                Sportipedia.Catalog.dispatch(cmd)
     end
 
@@ -435,5 +505,16 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.EditInstrumentTest do
       assert updated.slug == "unicycle"
       assert updated.description == "New description"
     end
+  end
+
+  @spec new_instrument(InstrumentReadModel.t()) ::
+          {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
+  defp new_instrument(attributes) do
+    InstrumentReadModel.insert_changeset(%InstrumentReadModel{}, attributes)
+    |> Repo.insert()
+  end
+
+  defp new_instruments(attribute_collection) do
+    Enum.each(attribute_collection, fn elem -> new_instrument(elem) end)
   end
 end

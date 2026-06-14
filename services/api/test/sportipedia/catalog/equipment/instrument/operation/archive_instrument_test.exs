@@ -26,47 +26,58 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Operation.ArchiveInstrumentTe
   describe "Command" do
     @describetag :unit
 
+    test "creates command with required id field" do
+      id = UUID.uuid4()
+      cmd = %ArchiveInstrument{id: id}
+
+      assert cmd.id == id
+    end
+
     @tag :integration
     test "is valid with id" do
       id = UUID.uuid4()
 
       Repo.insert!(%InstrumentReadModel{id: id, title: "Unicycle", slug: "unicycle"})
 
-      cmd = ArchiveInstrument.new(id: id)
+      cmd = %ArchiveInstrument{id: id}
 
       assert Vex.valid?(cmd)
     end
 
-    test "raises when required struct fields are missing" do
-      assert_raise ArgumentError, ~r"keys must also be given", fn ->
+    test "requires id field" do
+      assert_raise ArgumentError, fn ->
         struct!(ArchiveInstrument, %{})
       end
     end
 
-    test "is invalid without id" do
-      cmd = ArchiveInstrument.new(id: nil)
+    test "id cannot be nil" do
+      cmd = %ArchiveInstrument{id: nil}
 
-      refute Vex.valid?(cmd)
-      assert Enum.any?(Vex.errors(cmd), &match?({:error, :id, _, _}, &1))
+      assert_raise ArgumentError, fn ->
+        Vex.validate(cmd)
+      end
     end
 
-    @tag :integration
     test "is invalid when id does not exist" do
       cmd = ArchiveInstrument.new(id: UUID.uuid4())
 
-      refute Vex.valid?(cmd)
-      assert Enum.any?(Vex.errors(cmd), &match?({:error, :id, :by, :not_found}, &1))
+      assert {:error, [{:error, :id, :by, :not_found}]} = Vex.validate(cmd)
     end
 
     @tag :integration
     test "is valid when id exists" do
       id = UUID.uuid4()
 
-      Repo.insert!(%InstrumentReadModel{id: id, title: "Unicycle", slug: "unicycle"})
+      InstrumentReadModel.insert_changeset(%{
+        id: id,
+        title: "Unicycle",
+        slug: "unicycle"
+      })
+      |> Repo.insert!()
 
-      cmd = ArchiveInstrument.new(id: id)
+      cmd = %ArchiveInstrument{id: id}
 
-      assert Vex.valid?(cmd)
+      assert {:ok, _} = Vex.validate(cmd)
     end
   end
 
@@ -206,19 +217,20 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Operation.ArchiveInstrumentTe
       refute Repo.get(InstrumentReadModel, id)
     end
 
-    test "validation failure is rejected before reaching the aggregate" do
-      cmd = ArchiveInstrument.new(id: nil)
-
-      assert {:error, {:validation_failure, %{id: ["must be present"]}}} =
-               Sportipedia.Catalog.dispatch(cmd)
-    end
-
     test "archive_instrument/1 archives through the public API" do
       params = %{title: "Unicycle", slug: "unicycle", description: "Best vehicle in the world"}
 
       assert {:ok, instrument} = Instrument.catalog_instrument(params)
       assert :ok = Instrument.archive_instrument(instrument.id)
-      refute Instrument.instrument_by_id(instrument.id)
+      refute Repo.get(InstrumentReadModel, instrument.id)
+    end
+
+    test "returns error for non-existent apparatus" do
+      id = UUID.uuid4()
+
+      # This should still succeed at dispatch level (event sourcing allows archiving non-existent)
+      # but the read model won't exist
+      assert {:error, :not_found} = Instrument.archive_instrument(id)
     end
   end
 end

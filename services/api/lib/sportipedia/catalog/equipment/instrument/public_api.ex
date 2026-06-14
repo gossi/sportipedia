@@ -67,14 +67,6 @@ defmodule Sportipedia.Catalog.Equipment.Instrument do
   end
 
   @doc """
-  Fetches an instrument by its ID. Returns nil if not found.
-  """
-  @spec instrument_by_id(String.t()) :: InstrumentReadModel.t() | nil
-  def instrument_by_id(id) do
-    InstrumentInternal.instrument_by_id(id)
-  end
-
-  @doc """
   Lists all instruments with filtering, sorting, and pagination.
   """
   @spec list_instruments(JSONAPI.Config.t()) :: Architecture.public_api([InstrumentReadModel.t()])
@@ -85,19 +77,26 @@ defmodule Sportipedia.Catalog.Equipment.Instrument do
   @doc """
   Reads a single instrument by its id or slug. Returns the instrument or not_found.
   """
-  @spec read_instrument(%{required(:id) => String.t()} | %{required(:slug) => String.t()}) ::
-          {:ok, InstrumentReadModel.t()} | {:error, :not_found}
-  def read_instrument(%{id: id}) do
-    case InstrumentInternal.instrument_by_id(id) do
+  @spec read_instrument(String.t()) :: Architecture.public_api(InstrumentReadModel.t())
+  def read_instrument(id_or_slug) do
+    case lookup_instrument(id_or_slug) do
       nil -> {:error, :not_found}
-      instrument -> {:ok, instrument}
+      read_model -> {:ok, read_model}
     end
   end
 
-  def read_instrument(%{slug: slug}) do
-    case InstrumentInternal.instrument_by_slug(slug) do
-      nil -> {:error, :not_found}
-      instrument -> {:ok, instrument}
+  defp lookup_instrument(id_or_slug) do
+    if uuid?(id_or_slug) do
+      InstrumentInternal.instrument_by_id(id_or_slug)
+    else
+      InstrumentInternal.instrument_by_slug(id_or_slug)
+    end
+  end
+
+  defp uuid?(maybe_id) do
+    case UUID.info(maybe_id) do
+      {:ok, _} -> true
+      {:error, _} -> false
     end
   end
 end

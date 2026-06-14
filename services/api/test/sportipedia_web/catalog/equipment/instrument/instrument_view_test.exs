@@ -4,8 +4,6 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.InstrumentViewTest do
   alias SportipediaWeb.Catalog.Equipment.Instrument.InstrumentView
   alias Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel
 
-  import SportipediaWeb.RequestHelpers
-
   describe "View" do
     @describetag :unit
 

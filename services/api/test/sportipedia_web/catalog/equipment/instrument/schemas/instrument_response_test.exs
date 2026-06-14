@@ -18,5 +18,19 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.Schemas.InstrumentResponse
       assert Map.has_key?(data_props, :type)
       assert Map.has_key?(data_props, :attributes)
     end
+
+    test "attributes contain title, slug, and description" do
+      schema = InstrumentResponse.schema()
+      attrs = schema.properties.data.properties.attributes.properties
+
+      assert Map.has_key?(attrs, :title)
+      assert attrs.title.type == :string
+
+      assert Map.has_key?(attrs, :slug)
+      assert attrs.slug.type == :string
+
+      assert Map.has_key?(attrs, :description)
+      assert attrs.description.type == :string
+    end
   end
 end

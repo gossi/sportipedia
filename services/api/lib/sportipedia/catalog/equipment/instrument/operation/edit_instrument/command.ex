@@ -23,7 +23,5 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Command.EditInstrument do
   use Vex.Struct
 
   validates :id, presence: true, by: [function: &InstrumentExists.validate/2]
-
-  validates :slug,
-    by: [function: &UniqueSlug.validate/2]
+  validates :slug, by: [function: &UniqueSlug.validate/2, allow_nil: true]
 end
