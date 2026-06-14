@@ -70,8 +70,8 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.CatalogInstrumentTest
 
       cmd = CatalogInstrument.new(id: UUID.uuid4(), title: "Tennis Racket", slug: slug)
 
-      refute Vex.valid?(cmd)
-      assert Enum.any?(Vex.errors(cmd), &match?({:error, :slug, _, "slug already exists"}, &1))
+      assert {:error, [{:error, :slug, :by, :slug_exists}]} =
+               Vex.validate(cmd)
     end
   end
 

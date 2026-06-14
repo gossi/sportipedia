@@ -38,17 +38,39 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.EditInstrumentTest do
       assert Vex.valid?(cmd)
     end
 
-    test "is valid with only id" do
-      cmd = EditInstrument.new(id: UUID.uuid4())
-
-      assert Vex.valid?(cmd)
+    test "requires id" do
+      assert_raise ArgumentError, fn ->
+        struct!(EditInstrument, %{})
+      end
     end
 
-    test "is invalid without id" do
-      cmd = EditInstrument.new(id: nil)
+    test "id cannot be nil" do
+      cmd = %EditInstrument{id: nil}
 
-      refute Vex.valid?(cmd)
-      assert Enum.any?(Vex.errors(cmd), &match?({:error, :id, _, _}, &1))
+      assert_raise ArgumentError, fn ->
+        Vex.validate(cmd)
+      end
+    end
+
+    test "error when id does not exist" do
+      id = UUID.uuid4()
+      cmd = %EditInstrument{id: id}
+
+      assert {:error, [{:error, :id, :by, :not_found}]} = Vex.validate(cmd)
+    end
+
+    test "validates id must exist" do
+      id = UUID.uuid4()
+
+      new_apparatus(%{
+        id: id,
+        title: "Vaulting Table",
+        slug: "vaulting-table"
+      })
+
+      cmd = %EditInstrument{id: id}
+
+      assert {:ok, _} = Vex.validate(cmd)
     end
 
     test "is valid when slug is omitted" do

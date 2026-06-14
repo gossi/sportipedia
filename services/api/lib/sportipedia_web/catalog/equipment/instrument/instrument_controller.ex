@@ -1,4 +1,4 @@
-defmodule SportipediaWeb.Catalog.Equipment.InstrumentController do
+defmodule SportipediaWeb.Catalog.Equipment.Instrument.InstrumentController do
   @moduledoc """
   Handles HTTP requests for instrument operations.
   """
@@ -12,7 +12,6 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentController do
   alias SportipediaWeb.Catalog.Equipment.Instrument.Schemas.InstrumentResponse
   alias SportipediaWeb.Catalog.Equipment.Instrument.Schemas.ListInstrumentsQueryParams
   alias SportipediaWeb.Catalog.Equipment.Instrument.Schemas.ListInstrumentsResponse
-  alias SportipediaWeb.Catalog.Equipment.Instrument.Schemas.ReadInstrumentQueryParams
   alias SportipediaWeb.System.FallbackController
 
   use SportipediaWeb, :controller
@@ -119,16 +118,11 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentController do
 
   @spec list_instruments(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def list_instruments(conn, _) do
-    # If filter[slug] is present, delegate to read_instrument for single-record lookup
-    if conn.params["filter"] && conn.params["filter"]["slug"] do
-      read_instrument(conn, %{})
-    else
-      case Instrument.list_instruments(conn.assigns.jsonapi_query) do
-        {:ok, data} ->
-          conn
-          |> put_view(json: InstrumentView)
-          |> render("index.json", %{data: data})
-      end
+    case Instrument.list_instruments(conn.assigns.jsonapi_query) do
+      {:ok, data} ->
+        conn
+        |> put_view(json: InstrumentView)
+        |> render("index.json", %{data: data})
     end
   end
 
@@ -138,8 +132,7 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentController do
   operation :read_instrument,
     summary: "Retrieve a single instrument by its id or slug",
     parameters: [
-      id: [in: :path, description: "The instrument id", type: :string],
-      query: [in: :query, schema: ReadInstrumentQueryParams]
+      id_or_slug: [in: :path, description: "The instrument id or slug", type: :string]
     ],
     responses: [
       ok: {"Instrument", "application/vnd.api+json", InstrumentResponse},
@@ -148,14 +141,7 @@ defmodule SportipediaWeb.Catalog.Equipment.InstrumentController do
 
   @spec read_instrument(Plug.Conn.t(), map()) :: Plug.Conn.t()
   def read_instrument(conn, _) do
-    lookup_key =
-      cond do
-        conn.params["id"] -> %{id: conn.params["id"]}
-        conn.params["filter"] && conn.params["filter"]["slug"] -> %{slug: conn.params["filter"]["slug"]}
-        true -> %{id: nil}
-      end
-
-    case Instrument.read_instrument(lookup_key) do
+    case Instrument.read_instrument(conn.params["id_or_slug"]) do
       {:ok, instrument} ->
         conn
         |> put_view(json: InstrumentView)

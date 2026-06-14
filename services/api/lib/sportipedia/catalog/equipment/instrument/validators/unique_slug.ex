@@ -17,7 +17,7 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Validators.UniqueSlug do
     with instrument when not is_nil(instrument) <-
            InstrumentInternal.instrument_by_slug(value),
          false <- slug_belongs_to_instrument?(instrument, context) do
-      {:error, "slug already exists"}
+      {:error, :slug_exists}
     else
       _ -> :ok
     end
