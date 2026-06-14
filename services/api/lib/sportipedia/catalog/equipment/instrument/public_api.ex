@@ -81,4 +81,23 @@ defmodule Sportipedia.Catalog.Equipment.Instrument do
   def list_instruments(query) do
     {:ok, Repo.all(QueryBuilder.build(query, InstrumentReadModel))}
   end
+
+  @doc """
+  Reads a single instrument by its id or slug. Returns the instrument or not_found.
+  """
+  @spec read_instrument(%{required(:id) => String.t()} | %{required(:slug) => String.t()}) ::
+          {:ok, InstrumentReadModel.t()} | {:error, :not_found}
+  def read_instrument(%{id: id}) do
+    case InstrumentInternal.instrument_by_id(id) do
+      nil -> {:error, :not_found}
+      instrument -> {:ok, instrument}
+    end
+  end
+
+  def read_instrument(%{slug: slug}) do
+    case InstrumentInternal.instrument_by_slug(slug) do
+      nil -> {:error, :not_found}
+      instrument -> {:ok, instrument}
+    end
+  end
 end

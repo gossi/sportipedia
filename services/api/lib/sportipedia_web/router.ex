@@ -74,6 +74,7 @@ defmodule SportipediaWeb.Router do
 
         # queries
         get "/", InstrumentController, :list_instruments
+        get "/:id", InstrumentController, :read_instrument
       end
     end
   end

@@ -18,7 +18,8 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.EditInstrumentEndpointTest
         conn
         |> authenticate_conn()
         |> api_conn()
-        |> post("/catalog/equipment/instruments/edit-instrument",
+        |> post(
+          "/catalog/equipment/instruments/edit-instrument",
           Jason.encode!(jsonapi_body("instruments", %{title: "Einrad"}, id))
         )
 
@@ -44,7 +45,8 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.EditInstrumentEndpointTest
       conn =
         build_conn()
         |> api_conn()
-        |> post("/catalog/equipment/instruments/edit-instrument",
+        |> post(
+          "/catalog/equipment/instruments/edit-instrument",
           Jason.encode!(jsonapi_body("instruments", %{title: "Einrad"}, "some-id"))
         )
 
@@ -56,9 +58,14 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.EditInstrumentEndpointTest
         conn
         |> authenticate_conn()
         |> api_conn()
-        |> post("/catalog/equipment/instruments/edit-instrument",
+        |> post(
+          "/catalog/equipment/instruments/edit-instrument",
           Jason.encode!(
-            jsonapi_body("instruments", %{title: "Einrad"}, "00000000-0000-0000-0000-000000000000")
+            jsonapi_body(
+              "instruments",
+              %{title: "Einrad"},
+              "00000000-0000-0000-0000-000000000000"
+            )
           )
         )
 
@@ -78,7 +85,8 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.EditInstrumentEndpointTest
         conn
         |> authenticate_conn()
         |> api_conn()
-        |> post("/catalog/equipment/instruments/edit-instrument",
+        |> post(
+          "/catalog/equipment/instruments/edit-instrument",
           Jason.encode!(jsonapi_body("instruments", %{slug: "unicycle"}, id2))
         )
 

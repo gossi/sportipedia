@@ -22,10 +22,18 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.ListInstrumentsEndpointTes
 
     test "returns 200 with a collection of instruments", %{conn: conn} do
       {:ok, _i1} =
-        Instrument.catalog_instrument(%{title: "Unicycle", slug: "unicycle", description: "One wheel"})
+        Instrument.catalog_instrument(%{
+          title: "Unicycle",
+          slug: "unicycle",
+          description: "One wheel"
+        })
 
       {:ok, _i2} =
-        Instrument.catalog_instrument(%{title: "Skateboard", slug: "skateboard", description: nil})
+        Instrument.catalog_instrument(%{
+          title: "Skateboard",
+          slug: "skateboard",
+          description: nil
+        })
 
       conn =
         conn
@@ -46,7 +54,11 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.ListInstrumentsEndpointTes
 
     test "returns 200 for unauthenticated (guest) requests", %{conn: conn} do
       {:ok, _i1} =
-        Instrument.catalog_instrument(%{title: "Trampoline", slug: "trampoline", description: nil})
+        Instrument.catalog_instrument(%{
+          title: "Trampoline",
+          slug: "trampoline",
+          description: nil
+        })
 
       conn =
         conn
@@ -62,13 +74,25 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.ListInstrumentsEndpointTes
 
     test "filters instruments by title (case-insensitive partial match)", %{conn: conn} do
       {:ok, _i1} =
-        Instrument.catalog_instrument(%{title: "Vaulting Table", slug: "vaulting-table", description: nil})
+        Instrument.catalog_instrument(%{
+          title: "Vaulting Table",
+          slug: "vaulting-table",
+          description: nil
+        })
 
       {:ok, _i2} =
-        Instrument.catalog_instrument(%{title: "Pommel Horse", slug: "pommel-horse", description: nil})
+        Instrument.catalog_instrument(%{
+          title: "Pommel Horse",
+          slug: "pommel-horse",
+          description: nil
+        })
 
       {:ok, _i3} =
-        Instrument.catalog_instrument(%{title: "Still Rings", slug: "still-rings", description: nil})
+        Instrument.catalog_instrument(%{
+          title: "Still Rings",
+          slug: "still-rings",
+          description: nil
+        })
 
       conn =
         conn
@@ -86,13 +110,21 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.ListInstrumentsEndpointTes
 
     test "sorts instruments by title ascending", %{conn: conn} do
       {:ok, _i1} =
-        Instrument.catalog_instrument(%{title: "Skateboard", slug: "skateboard", description: nil})
+        Instrument.catalog_instrument(%{
+          title: "Skateboard",
+          slug: "skateboard",
+          description: nil
+        })
 
       {:ok, _i2} =
         Instrument.catalog_instrument(%{title: "Unicycle", slug: "unicycle", description: nil})
 
       {:ok, _i3} =
-        Instrument.catalog_instrument(%{title: "Trampoline", slug: "trampoline", description: nil})
+        Instrument.catalog_instrument(%{
+          title: "Trampoline",
+          slug: "trampoline",
+          description: nil
+        })
 
       conn =
         conn
@@ -109,13 +141,21 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.ListInstrumentsEndpointTes
 
     test "sorts instruments by title descending", %{conn: conn} do
       {:ok, _i1} =
-        Instrument.catalog_instrument(%{title: "Skateboard", slug: "skateboard", description: nil})
+        Instrument.catalog_instrument(%{
+          title: "Skateboard",
+          slug: "skateboard",
+          description: nil
+        })
 
       {:ok, _i2} =
         Instrument.catalog_instrument(%{title: "Unicycle", slug: "unicycle", description: nil})
 
       {:ok, _i3} =
-        Instrument.catalog_instrument(%{title: "Trampoline", slug: "trampoline", description: nil})
+        Instrument.catalog_instrument(%{
+          title: "Trampoline",
+          slug: "trampoline",
+          description: nil
+        })
 
       conn =
         conn
