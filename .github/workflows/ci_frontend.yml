@@ -1,0 +1,66 @@
+name: CI Frontend
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/ci_frontend.yml"
+      - "services/auth"
+      - "apps/**"
+      - "packages/**"
+      - "support/**"
+      - ".node-version"
+      - "package.json"
+      - "pnpm-workspace.yaml"
+  pull_request:
+    paths:
+      - ".github/workflows/ci_frontend.yml"
+      - "services/auth"
+      - "apps/**"
+      - "packages/**"
+      - "support/**"
+      - ".node-version"
+      - "package.json"
+      - "pnpm-workspace.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint-js:
+    name: lint:js
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - run: pnpm run -r --parallel --aggregate-output lint:js
+
+  lint-css:
+    name: lint:css
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - run: pnpm run -r --parallel --aggregate-output lint:css
+
+  lint-hbs:
+    name: lint:hbs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - run: pnpm run -r --parallel --aggregate-output lint:hbs
+
+  lint-types:
+    name: lint:types
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - run: pnpm run -r --parallel --aggregate-output lint:types
