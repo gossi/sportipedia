@@ -10,8 +10,9 @@ export default class PingPage extends Component {
 
   ping = async () => {
     const result = await this.store.request({
-      url: `${__API_URL__}/catalog/ping`,
-      method: 'POST'
+      url: `${__API_URL__}/system/ping`,
+      method: 'POST',
+      headers: new Headers([['accept', 'application/json']])
     });
 
     console.log('ping result', result);
