@@ -65,7 +65,7 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus do
   @doc """
   Reads a single apparatus by its id or slug. Returns the apparatus or :not_found.
   """
-  @spec read_apparatus(String.t()) :: {:ok, ApparatusReadModel.t()} | {:error, :not_found}
+  @spec read_apparatus(String.t()) :: Architecture.public_api(ApparatusReadModel.t())
   def read_apparatus(id_or_slug) do
     case lookup_apparatus(id_or_slug) do
       nil -> {:error, :not_found}

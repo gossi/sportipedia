@@ -21,7 +21,6 @@ defmodule SportipediaWeb.System.ApiSpec do
         version: "1.0"
       },
       components: %Components{
-        # schemas: TypedStructOpenApi.Registry.schemas(),
         securitySchemes: %{
           "authorization" => %SecurityScheme{type: "http", scheme: "bearer"}
         },
