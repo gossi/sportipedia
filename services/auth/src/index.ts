@@ -11,7 +11,7 @@ app.use(logger());
 // app.use('/api/auth/*', cors());
 
 app.use(
-  '/*', // or replace with "*" to enable cors for all routes
+  '/*', // or replace with "*" to enable CORS for all routes
   cors({
     origin: [process.env.ADMIN_URL as string, process.env.CATALOG_URL as string], // replace with your origin
     allowHeaders: ['Content-Type', 'Authorization'],
