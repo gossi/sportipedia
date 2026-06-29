@@ -15,7 +15,6 @@ export class AccountsResource {
 
   @cached
   get load() {
-    // eslint-disable-next-line unicorn/consistent-function-scoping
     return async () => {
       const request = await auth.listAccounts();
 

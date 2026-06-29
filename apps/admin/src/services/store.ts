@@ -23,6 +23,7 @@ export default class Store extends DataStore {
   //   manager.useCache(CacheHandler);
   // }
 
+  // eslint-disable-next-line unicorn/no-unreadable-new-expression
   requestManager = new RequestManager().use([Fetch]);
   // .useCache(CacheHandler)
 

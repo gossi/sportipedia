@@ -17,8 +17,9 @@ class Router extends EmberRouter {
   rootURL = '/';
 }
 
+// eslint-disable-next-line unicorn/no-top-level-side-effects
 Router.map(function () {
-  /* eslint-disable @typescript-eslint/no-invalid-this */
+  /* eslint-disable @typescript-eslint/no-invalid-this, unicorn/no-this-outside-of-class */
   this.route('login');
   this.route('logout');
   this.route('protected', { path: '' }, function () {
@@ -28,7 +29,7 @@ Router.map(function () {
       this.route('details', { path: '/:id' });
     });
   });
-  /* eslint-enable @typescript-eslint/no-invalid-this */
+  /* eslint-enable @typescript-eslint/no-invalid-this, unicorn/no-this-outside-of-class */
 });
 
 export default class App extends EmberApp {

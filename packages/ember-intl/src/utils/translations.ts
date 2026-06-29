@@ -30,6 +30,7 @@ export function flattenKeys<T extends IndexSignatureParameter>(
         const translation = hash[suffix];
 
         if (translation !== undefined) {
+          // eslint-disable-next-line unicorn/no-unsafe-property-key
           result[`${key}.${suffix}`] = translation;
         }
       }
