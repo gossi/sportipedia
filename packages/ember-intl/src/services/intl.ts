@@ -230,14 +230,17 @@ export class IntlService extends Service {
   }
 
   formatNumber(value: number, options?: Intl.NumberFormatOptions) {
+    // eslint-disable-next-line unicorn/no-unreadable-new-expression
     return new Intl.NumberFormat(this._locale, options).format(value);
   }
 
   formatDuration(value: Intl.DurationInput, options?: Intl.DurationFormatOptions) {
+    // eslint-disable-next-line unicorn/no-unreadable-new-expression
     return new Intl.DurationFormat(this._locale, options).format(value);
   }
 
   formatDateTime(value: Date | number, options?: Intl.DateTimeFormatOptions) {
+    // eslint-disable-next-line unicorn/no-unreadable-new-expression
     return new Intl.DateTimeFormat(this._locale, options).format(value);
   }
 
@@ -246,6 +249,7 @@ export class IntlService extends Service {
     unit: Intl.RelativeTimeFormatUnit,
     options?: Intl.RelativeTimeFormatOptions
   ) {
+    // eslint-disable-next-line unicorn/no-unreadable-new-expression
     return new Intl.RelativeTimeFormat(this._locale, options).format(value, unit);
   }
 

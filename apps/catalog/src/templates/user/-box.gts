@@ -38,8 +38,8 @@ class BoxItem extends Component<BoxItemSignature> {
     }
   };
 
-  // eslint-disable-next-line unicorn/consistent-function-scoping
   ref = modifier((elem: HTMLElement) => {
+    // eslint-disable-next-line unicorn/prefer-early-return
     if (elem instanceof HTMLDetailsElement) {
       this.detailsElement = elem;
 

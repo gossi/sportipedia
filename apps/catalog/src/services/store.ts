@@ -15,6 +15,7 @@ import type { Cache } from '@warp-drive/core/types/cache';
 import type { ResourceKey } from '@warp-drive/core/types/identifier';
 
 export default class Store extends DataStore {
+  // eslint-disable-next-line unicorn/no-unreadable-new-expression
   requestManager = new RequestManager().use([AuthHandler, Fetch]).useCache(CacheHandler);
 
   lifetimes = new DefaultCachePolicy({
