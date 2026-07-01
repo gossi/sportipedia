@@ -12,6 +12,9 @@ import { LinkManagerService } from 'ember-link';
 import PageTitleService from 'ember-page-title/services/page-title';
 import EmberApp from 'ember-strict-application-resolver';
 
+// constituents
+import { equipmentRegistry, equipmentRoutes } from '#equipment';
+
 import { hokuleaRegistry } from '@hokulea/ember/registry';
 
 import type ApplicationInstance from '@ember/application/instance';
@@ -35,6 +38,7 @@ Router.map(function () {
     this.route('sessions');
     this.route('auth');
   });
+  equipmentRoutes(this);
   /* eslint-enable @typescript-eslint/no-invalid-this, unicorn/no-this-outside-of-class */
 });
 
@@ -44,6 +48,7 @@ export default class App extends EmberApp {
     ...hokuleaRegistry(),
     ...userRegistry(),
     ...intlRegistry(),
+    ...equipmentRegistry(),
     ...import.meta.glob('./services/**/*.{ts,gts}', { eager: true }),
     ...import.meta.glob('./routes/**/*.{ts,gts}', { eager: true }),
     ...import.meta.glob('./templates/**/*.{ts,gts}', { eager: true }),

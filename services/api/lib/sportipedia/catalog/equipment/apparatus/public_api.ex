@@ -24,7 +24,7 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus do
         }) :: Architecture.public_api(ApparatusReadModel.t())
   def catalog_apparatus(params) do
     id = UUID.uuid4()
-    cmd = CatalogApparatus.new(Map.put(params, :id, id))
+    cmd = CatalogApparatus.new(Map.put(params, "id", id))
 
     with :ok <- Catalog.dispatch(cmd, consistency: :strong) do
       {:ok, ApparatusInternal.apparatus_by_id(id)}

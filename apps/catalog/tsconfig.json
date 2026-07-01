@@ -5,18 +5,21 @@
     "tests",
     "types"
   ],
-  "glint": {
-    "environment": [
-      "ember-loose",
-      "ember-template-imports"
-    ]
-  },
   "compilerOptions": {
     "allowJs": true,
     "target": "esnext",
     "paths": {
       "#/*": [
         "./src/*"
+      ],
+      "#auth/*": [
+        "./src/support/auth/*"
+      ],
+      "#support/*": [
+        "./src/support/*"
+      ],
+      "#equipment": [
+        "./src/domain/equipment/index.ts"
       ],
       "#tests/*": [
         "./tests/*"

@@ -11,8 +11,9 @@ import { AppHeader } from '@hokulea/ember';
 
   <AppHeader @home={{link "application"}}>
     <:brand>Sportipedia</:brand>
-    <:nav>
+    <:nav as |n|>
       hi
+      <n.Item @href="/equipment">Equipment</n.Item>
       {{!-- <n.Item @push={{link "blog"}}>Blog</n.Item> --}}
     </:nav>
     <:aux as |n|>

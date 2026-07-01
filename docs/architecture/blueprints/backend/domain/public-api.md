@@ -134,7 +134,7 @@ The fields in the `@spec` come from the command definition, excluding `:id` whic
   }) :: Architecture.public_api(<DomainObject>ReadModel.t())
   def <_operation>(params) do
     id = UUID.uuid4()
-    cmd = <Command>.new(Map.put(params, :id, id))
+    cmd = <Command>.new(Map.put(params, "id", id))
 
     with {:ok, _aggregate} <- Catalog.dispatch(cmd, consistency: :strong) do
       {:ok, <DomainObject>Internal.<domain_object>_by_id(id)}

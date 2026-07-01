@@ -2,7 +2,7 @@ import { cached } from '@glimmer/tracking';
 
 import { cell } from 'ember-resources';
 
-import { auth } from '#/auth';
+import { auth } from '#auth/client';
 
 import type { Account } from 'better-auth';
 

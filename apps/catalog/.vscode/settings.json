@@ -1,0 +1,7 @@
+{
+  "i18n-ally-next.localesPaths": [
+		"locales",
+		"../../support/ui/locales",
+		"../../support/user/locales"
+	],
+}

@@ -11,7 +11,7 @@ defmodule SportipediaWeb.Router do
   end
 
   pipeline :api do
-    plug :accepts, ["json"]
+    plug :accepts, ["json", "json-api"]
     plug OpenApiSpex.Plug.PutApiSpec, module: SportipediaWeb.System.ApiSpec
     plug JSONAPI.EnsureSpec
     plug JSONAPI.Deserializer

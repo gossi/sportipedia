@@ -1,6 +1,15 @@
 {
   "elixirLS.projectDir": "./services/api/",
   "elixirLS.dotFormatter": ".formatter.exs",
+  "elixirLS.mcpPort": 4328, // Optional: set a fixed port to avoid guessing
   "elixirLS.mcpEnabled": true,
-  "elixirLS.mcpPort": 4328 // Optional: set a fixed port to avoid guessing
+  "[glimmer-ts]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.foldingStrategy": "indentation",
+    "editor.codeActionsOnSave": {
+      "source.fixAll": "never",
+      "source.fixAll.eslint": "explicit",
+      "source.organizeImports": "never"
+    }
+  }
 }

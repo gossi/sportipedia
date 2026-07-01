@@ -8,7 +8,7 @@ import {
 import { DefaultCachePolicy } from '@warp-drive/core/store';
 import { JSONAPICache } from '@warp-drive/json-api';
 
-import { AuthHandler } from '../auth-handler';
+import { AuthHandler } from '#auth/auth-handler';
 
 import type { CacheCapabilitiesManager } from '@warp-drive/core/types';
 import type { Cache } from '@warp-drive/core/types/cache';

@@ -38,6 +38,8 @@
   "dependencies": {
     "@hokulea/ember": "catalog:lib",
     "decorator-transforms": "catalog:build",
+    "ember-intl": "workspace:*",
+    "ember-modifier": "^4.3.0",
     "ember-strict-application-resolver": "catalog:ember",
     "ember-truth-helpers": "catalog:ember",
     "ua-parser-js": "^2.0.6"

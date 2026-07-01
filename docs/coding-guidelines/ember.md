@@ -2,6 +2,10 @@
 
 - **Ember**: Ember Polaris (Ember with vite)
 
+| DO | DO NOT |
+| --- | --- |
+| Ember Polaris | Ember Classic |
+
 ## Ember Components
 
 ### Class Components (.gts)
@@ -21,7 +25,7 @@ export default class MyComponent extends Component<Args> {
 }
 ```
 
-### Template-Only Components (.gts)
+### Template-Only Components (TOC) (.gts)
 
 ```typescript
 import type { TOC } from '@ember/component/template-only';
@@ -32,6 +36,27 @@ const MyComponent: TOC<{ Args: { title: string } }> = <template>
 
 export default MyComponent;
 ```
+
+### Actions
+
+Actions are either regular functions (in TOC) or arrow functions in class
+components.
+
+```glimmer-ts
+export default class MyComponent extends Component<Args> {
+  doSomething = () => {
+    // do something
+  }
+
+  <template>
+    <button type="button" {{on "click" this.doSomething}}>Do Something</button>
+  </template>
+}
+```
+
+| DO | DO NOT |
+| --- | --- |
+| - Arrow functions <br> - `{{on}}` modifier | - `@action` decorator <br> - `{{action}}` modifier |
 
 ### State Management
 
@@ -49,3 +74,15 @@ export default MyComponent;
 
 - **ember-scoped-css** for component-scoped styles
 - **Stylelint** for CSS linting
+
+In components:
+
+```hbs
+<template>
+  <style scoped> {{! needs to be the first child of <template> }}
+    /* Styles go here */
+  </style>
+
+  {{! rest of the template }}
+</template>
+```

@@ -2,6 +2,9 @@
   "name": "@sportipedia/catalog",
   "type": "module",
   "imports": {
+    "#equipment": "./src/domain/equipment/index.ts",
+    "#auth/*": "./src/support/auth/*",
+    "#support/*": "./src/support/*",
     "#/*": "./src/*",
     "#tests/*": "./tests/*"
   },
@@ -51,6 +54,7 @@
     "@iconify-json/material-symbols": "catalog:icons",
     "@iconify-json/ph": "catalog:icons",
     "@rollup/plugin-babel": "catalog:build",
+    "@standard-schema/spec": "^1.1.0",
     "@theemo/ember": "catalog:lib",
     "@theemo/vite": "catalog:lib",
     "@types/qunit": "catalog:types",

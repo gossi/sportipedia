@@ -36,9 +36,9 @@ catalogs:
     "@embroider/router": ^3.0.6
     "@embroider/vite": ^1.7.8
     "@glimmer/component": ^2.1.1
-    "@glint/ember-tsc": ^1.8.4
+    "@glint/ember-tsc": ^1.8.6
     "@glint/template": ^1.7.8
-    "@glint/tsserver-plugin": ^2.5.10
+    "@glint/tsserver-plugin": ^2.5.12
     "@warp-drive/core": ^5.8.2
     "@warp-drive/ember": ^5.8.2
     "@warp-drive/json-api": ^5.8.2
@@ -66,7 +66,7 @@ catalogs:
     "eslint": ^10.6.0
     "eslint-plugin-ember": ^13.4.0
     "eslint-plugin-qunit": ^8.2.6
-    "prettier": ^3.9.1
+    "prettier": ^3.9.4
     "stylelint": ^17.14.0
   types:
     "@types/qunit": ^2.19.13
@@ -75,8 +75,8 @@ catalogs:
     "@iconify-json/ph": ^1.2.2
     "unplugin-icons": ^22.5.0
   lib:
-    "@hokulea/core": ^0.11.0
-    "@hokulea/ember": ^0.15.1
+    "@hokulea/core": ^0.12.0
+    "@hokulea/ember": ^0.16.1
     "@hokulea/theme-moana": ^0.4.0
     "@theemo/ember": ^1.0.1
     "@theemo/vite": ^1.0.1

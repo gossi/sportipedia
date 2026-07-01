@@ -23,7 +23,7 @@ defmodule Sportipedia.Catalog.Equipment.Instrument do
         }) :: Architecture.public_api(InstrumentReadModel.t())
   def catalog_instrument(params) do
     id = UUID.uuid4()
-    cmd = CatalogInstrument.new(Map.put(params, :id, id))
+    cmd = CatalogInstrument.new(Map.put(params, "id", id))
 
     case Sportipedia.Catalog.dispatch(cmd, consistency: :strong) do
       :ok ->

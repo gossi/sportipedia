@@ -6,7 +6,7 @@ import { Await } from '@warp-drive/ember';
 import { t } from 'ember-intl';
 import { resource, resourceFactory } from 'ember-resources';
 
-import { auth } from '#/auth';
+import { auth } from '#auth/client';
 import { AccountsResource } from '#/domain/user/accounts';
 import PhPassword from '~icons/ph/password';
 

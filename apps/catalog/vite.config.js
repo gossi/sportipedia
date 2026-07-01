@@ -35,7 +35,11 @@ export default defineConfig({
       // }
     }),
     intl({
-      paths: ['./locales', './node_modules/@sportipedia/user/locales']
+      paths: [
+        './locales',
+        './node_modules/@sportipedia/user/locales',
+        './node_modules/@sportipedia/ui/locales'
+      ]
     }),
     {
       name: 'watch-locales',

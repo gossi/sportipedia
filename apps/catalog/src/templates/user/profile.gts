@@ -1,7 +1,7 @@
 import { getUser } from '@sportipedia/user';
 import { t } from 'ember-intl';
 
-import { auth } from '#/auth';
+import { auth } from '#auth/client';
 
 import { Card, Form, Page, Section, type SubmitHandler } from '@hokulea/ember';
 
