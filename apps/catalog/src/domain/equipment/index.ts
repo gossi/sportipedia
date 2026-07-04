@@ -12,6 +12,7 @@ import { OverviewRoute, OverviewTemplate } from './pages/overview.gts';
 export type { Apparatus } from './domain-objects/apparatus/apparatus.ts';
 export type { Instrument } from './domain-objects/instrument/instrument.ts';
 import { CatalogInstrumentTemplate } from './pages/catalog-instrument.gts';
+import { IndexTemplate } from './pages/index.gts';
 import { apparatusSchema } from './schemas/apparatus';
 import { instrumentSchema } from './schemas/instrument';
 
@@ -26,6 +27,7 @@ export const equipmentRegistry = buildRegistry({
   './routes/equipment/apparatus/edit': EditApparatusRoute,
   './routes/equipment': OverviewRoute,
   './templates/equipment': OverviewTemplate,
+  './templates/equipment/index': IndexTemplate,
   './templates/equipment/catalog-apparatus': CatalogApparatusTemplate,
   './templates/equipment/catalog-instrument': CatalogInstrumentTemplate,
   './templates/equipment/instrument/index': InstrumentTemplate,

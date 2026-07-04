@@ -1,0 +1,5 @@
+header:
+  nav:
+    manage:
+      label: Verwalten
+      equipment: Equipment

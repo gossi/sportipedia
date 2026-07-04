@@ -1,9 +1,11 @@
 // import '../ui/styles.css';
 
 import Component from '@glimmer/component';
+import { cached } from '@glimmer/tracking';
 import Route from '@ember/routing/route';
 import { service } from '@ember/service';
 
+import { createRequestSubscription } from '@warp-drive/ember';
 import { ability } from 'ember-ability';
 import { t } from 'ember-intl';
 
@@ -13,7 +15,7 @@ import { Button, Icon, NavigationList, SectionedPage } from '@hokulea/ember';
 
 import { canCatalogApparatus as upstreamCanCatalogApparatus } from '../domain-objects/apparatus/abilities';
 import { readApparatuses } from '../domain-objects/apparatus/queries';
-import { type Equipment, getType } from '../domain-objects/equipment';
+import { getType } from '../domain-objects/equipment';
 import { canCatalogInstrument as upstreamCanCatalogInstrument } from '../domain-objects/instrument/abilities';
 import { readInstruments } from '../domain-objects/instrument/queries';
 import { EquipmentType } from '../ui/equipment-type.gts';
@@ -26,8 +28,8 @@ class OverviewRoute extends Route {
   @service declare store: Store;
 
   model() {
-    void this.store.request(readApparatuses());
-    void this.store.request(readInstruments());
+    // void this.store.request(readApparatuses());
+    // void this.store.request(readInstruments());
   }
 }
 
@@ -46,15 +48,59 @@ const canCatalogInstrument = ability(
 class OverviewTemplate extends Component {
   @service declare store: Store;
 
+  // get apparatuses(): Apparatus[] {
+  //   return this.store.peekAll('apparatuses') as unknown as Apparatus[];
+  // }
+
+  // get instruments(): Instrument[] {
+  //   return this.store.peekAll('instruments') as unknown as Instrument[];
+  // }
+
+  // get equipment(): Equipment[] {
+  //   return [...this.apparatuses, ...this.instruments].toSorted((a, b) =>
+  //     a.title.localeCompare(b.title)
+  //   );
+  // }
+
+  @cached
+  get apparatusesSub() {
+    return createRequestSubscription(this.store, {
+      query: {
+        ...readApparatuses(),
+        cacheOptions: {
+          types: ['apparatuses']
+        }
+      },
+      autorefresh: true,
+      autorefreshBehavior: 'refresh'
+    });
+  }
+
+  @cached
+  get instrumentsSub() {
+    return createRequestSubscription(this.store, {
+      query: {
+        ...readInstruments(),
+        cacheOptions: {
+          types: ['instruments']
+        }
+      },
+      autorefresh: true,
+      autorefreshBehavior: 'refresh'
+    });
+  }
+
   get apparatuses(): Apparatus[] {
-    return this.store.peekAll('apparatuses') as unknown as Apparatus[];
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    return this.apparatusesSub.result?.data ?? [];
   }
 
   get instruments(): Instrument[] {
-    return this.store.peekAll('instruments') as unknown as Instrument[];
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    return this.instrumentsSub.result?.data ?? [];
   }
 
-  get equipment(): Equipment[] {
+  get equipment() {
     return [...this.apparatuses, ...this.instruments].toSorted((a, b) =>
       a.title.localeCompare(b.title)
     );
