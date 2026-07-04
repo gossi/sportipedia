@@ -68,6 +68,9 @@ catalogs:
     "eslint-plugin-qunit": ^8.2.6
     "prettier": ^3.9.4
     "stylelint": ^17.14.0
+  test:
+    "@vitest/ui": "4.1.9"
+    vitest: 4.1.9
   types:
     "@types/qunit": ^2.19.13
   icons:

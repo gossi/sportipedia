@@ -20,6 +20,9 @@ export default defineConfig({
   css: {
     transformer: 'lightningcss'
   },
+  test: {
+    setupFiles: ['./tests/test-setup.ts']
+  },
   plugins: [
     ember(),
     scopedCSS({ layerName: 'app' }),
