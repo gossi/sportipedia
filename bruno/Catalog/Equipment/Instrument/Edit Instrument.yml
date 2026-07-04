@@ -11,10 +11,10 @@ http:
     data: |-
       {
         "data": {
-          "type": "instruments",
-          "id": "20020f43-d654-498c-9678-ddf815e34879",
+          "type": "instrument",
+          "id": "1a3c309a-8056-47f2-8f88-1f093a71540f",
           "attributes": {
-            "description": "For the streets"
+            "description": "The best"
           }
         }
       }
@@ -36,7 +36,7 @@ examples:
         data: |-
           {
             "data": {
-              "type": "instruments",
+              "type": "instrument",
               "id": "27c20d96-63ec-4f6e-a022-546ab92415bd",
               "attributes": {
                 "description": "The best vehicle in the world"
@@ -82,7 +82,7 @@ examples:
                   {
                     "self": "http://localhost:3100/catalog/equipment/instruments/27c20d96-63ec-4f6e-a022-546ab92415bd"
                   },
-                "type": "instruments",
+                "type": "",
                 "relationships": {}
               },
             "links":

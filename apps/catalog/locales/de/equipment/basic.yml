@@ -1,0 +1,6 @@
+instrument: 
+  label: Sportgerät
+  explanation: Sportausrüstung zur instrumentellen Unterstützung von Athleten. Athleten kontrollieren und bewegen dieses Movendum (siehe Göhner).
+apparatus: 
+  label: Sportapparat
+  explanation: Fest installierte, immobile Sportausrüstung. Athleten bewegen sich am bzw. interagieren mit dem Sportapparat, werden diesen aber nie bewegen.

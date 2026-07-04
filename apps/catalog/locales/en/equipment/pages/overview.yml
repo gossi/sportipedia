@@ -1,0 +1,8 @@
+title: Equipment
+description: Manage equipment used for skills
+actions:
+  catalog-instrument: Catalog Instrument
+  catalog-apparatus: Catalog Apparatus
+
+detail:
+  no-description: No description

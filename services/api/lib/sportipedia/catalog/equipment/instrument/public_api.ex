@@ -12,6 +12,7 @@ defmodule Sportipedia.Catalog.Equipment.Instrument do
   alias Sportipedia.Catalog.Repo
   alias Sportipedia.Support.ErrorClassifier
   alias Sportipedia.Support.JSONAPI.QueryBuilder
+  alias Sportipedia.Support.Validators.UuidValidator
 
   @doc """
   Catalogs a new instrument. Returns the created instrument.
@@ -23,7 +24,7 @@ defmodule Sportipedia.Catalog.Equipment.Instrument do
         }) :: Architecture.public_api(InstrumentReadModel.t())
   def catalog_instrument(params) do
     id = UUID.uuid4()
-    cmd = CatalogInstrument.new(Map.put(params, :id, id))
+    cmd = CatalogInstrument.new(Map.put(params, "id", id))
 
     case Sportipedia.Catalog.dispatch(cmd, consistency: :strong) do
       :ok ->
@@ -86,17 +87,10 @@ defmodule Sportipedia.Catalog.Equipment.Instrument do
   end
 
   defp lookup_instrument(id_or_slug) do
-    if uuid?(id_or_slug) do
+    if UuidValidator.valid_uuid?(id_or_slug) do
       InstrumentInternal.instrument_by_id(id_or_slug)
     else
       InstrumentInternal.instrument_by_slug(id_or_slug)
-    end
-  end
-
-  defp uuid?(maybe_id) do
-    case UUID.info(maybe_id) do
-      {:ok, _} -> true
-      {:error, _} -> false
     end
   end
 end

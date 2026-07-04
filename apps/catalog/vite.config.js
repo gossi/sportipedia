@@ -17,6 +17,12 @@ export default defineConfig({
   server: {
     port: 4101
   },
+  css: {
+    transformer: 'lightningcss'
+  },
+  test: {
+    setupFiles: ['./tests/test-setup.ts']
+  },
   plugins: [
     ember(),
     scopedCSS({ layerName: 'app' }),
@@ -35,7 +41,11 @@ export default defineConfig({
       // }
     }),
     intl({
-      paths: ['./locales', './node_modules/@sportipedia/user/locales']
+      paths: [
+        './locales',
+        './node_modules/@sportipedia/user/locales',
+        './node_modules/@sportipedia/ui/locales'
+      ]
     }),
     {
       name: 'watch-locales',

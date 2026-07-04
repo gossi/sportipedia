@@ -16,7 +16,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.EditApparatusEndpointTest d
         |> post(
           "/catalog/equipment/apparatuses/catalog-apparatus",
           Jason.encode!(
-            jsonapi_body("apparatuses", %{
+            jsonapi_body("apparatus", %{
               title: "Vaulting Table",
               slug: "vaulting-table",
               description: "A gymnastics vault"
@@ -34,7 +34,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.EditApparatusEndpointTest d
         |> api_conn()
         |> post(
           "/catalog/equipment/apparatuses/edit-apparatus",
-          Jason.encode!(jsonapi_body("apparatuses", %{title: "Vault"}, apparatus_id))
+          Jason.encode!(jsonapi_body("apparatus", %{title: "Vault"}, apparatus_id))
         )
 
       body = json_response(edit_conn, 200)
@@ -42,7 +42,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.EditApparatusEndpointTest d
       assert %{
                "data" => %{
                  "id" => ^apparatus_id,
-                 "type" => "apparatuses",
+                 "type" => "apparatus",
                  "attributes" => %{
                    "title" => "Vault",
                    "slug" => "vaulting-table",
@@ -62,7 +62,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.EditApparatusEndpointTest d
         |> post(
           "/catalog/equipment/apparatuses/catalog-apparatus",
           Jason.encode!(
-            jsonapi_body("apparatuses", %{
+            jsonapi_body("apparatus", %{
               title: "Parallel Bars",
               slug: "parallel-bars"
             })
@@ -79,7 +79,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.EditApparatusEndpointTest d
         |> post(
           "/catalog/equipment/apparatuses/edit-apparatus",
           Jason.encode!(
-            jsonapi_body("apparatuses", %{description: "Used for gymnastics"}, apparatus_id)
+            jsonapi_body("apparatus", %{description: "Used for gymnastics"}, apparatus_id)
           )
         )
 
@@ -99,7 +99,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.EditApparatusEndpointTest d
         |> post(
           "/catalog/equipment/apparatuses/catalog-apparatus",
           Jason.encode!(
-            jsonapi_body("apparatuses", %{
+            jsonapi_body("apparatus", %{
               title: "Vaulting Table",
               slug: "vaulting-table"
             })
@@ -118,7 +118,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.EditApparatusEndpointTest d
           "/catalog/equipment/apparatuses/edit-apparatus",
           Jason.encode!(
             jsonapi_body(
-              "apparatuses",
+              "apparatus",
               %{title: "Updated Vault", slug: "vaulting-table"},
               apparatus_id
             )
@@ -136,7 +136,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.EditApparatusEndpointTest d
         |> api_conn()
         |> post(
           "/catalog/equipment/apparatuses/edit-apparatus",
-          Jason.encode!(jsonapi_body("apparatuses", "some-id"))
+          Jason.encode!(jsonapi_body("apparatus", "some-id"))
         )
 
       assert json_response(conn, 403)
@@ -149,7 +149,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.EditApparatusEndpointTest d
         |> api_conn()
         |> post(
           "/catalog/equipment/apparatuses/edit-apparatus",
-          Jason.encode!(jsonapi_body("apparatuses", UUID.uuid4()))
+          Jason.encode!(jsonapi_body("apparatus", UUID.uuid4()))
         )
 
       assert json_response(conn, 404)
@@ -164,7 +164,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.EditApparatusEndpointTest d
         |> post(
           "/catalog/equipment/apparatuses/catalog-apparatus",
           Jason.encode!(
-            jsonapi_body("apparatuses", %{
+            jsonapi_body("apparatus", %{
               title: "Vaulting Table",
               slug: "vaulting-table"
             })
@@ -182,7 +182,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.EditApparatusEndpointTest d
         |> post(
           "/catalog/equipment/apparatuses/catalog-apparatus",
           Jason.encode!(
-            jsonapi_body("apparatuses", %{
+            jsonapi_body("apparatus", %{
               title: "Parallel Bars",
               slug: "parallel-bars"
             })
@@ -199,7 +199,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.EditApparatusEndpointTest d
         |> api_conn()
         |> post(
           "/catalog/equipment/apparatuses/edit-apparatus",
-          Jason.encode!(jsonapi_body("apparatuses", %{slug: "vaulting-table"}, second_id))
+          Jason.encode!(jsonapi_body("apparatus", %{slug: "vaulting-table"}, second_id))
         )
 
       assert json_response(edit_conn, 422)

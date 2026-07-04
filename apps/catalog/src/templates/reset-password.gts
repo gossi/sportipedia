@@ -1,7 +1,7 @@
 import { ResetPasswordPage } from '@sportipedia/user';
 import { link } from 'ember-link';
 
-import { auth } from '#/auth';
+import { auth } from '#auth/client';
 
 <template>
   <ResetPasswordPage

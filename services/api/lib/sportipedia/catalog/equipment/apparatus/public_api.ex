@@ -3,7 +3,6 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus do
   Public API for managing apparatuses in the sport equipment catalog.
   """
 
-  alias Sportipedia.Support.ErrorClassifier
   alias Sportipedia.Architecture
   alias Sportipedia.Catalog
   alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusInternal
@@ -12,7 +11,9 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus do
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.CatalogApparatus
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.EditApparatus
   alias Sportipedia.Catalog.Repo
+  alias Sportipedia.Support.ErrorClassifier
   alias Sportipedia.Support.JSONAPI.QueryBuilder
+  alias Sportipedia.Support.Validators.UuidValidator
 
   @doc """
   Catalogs a new apparatus. Returns the created apparatus.
@@ -24,10 +25,14 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus do
         }) :: Architecture.public_api(ApparatusReadModel.t())
   def catalog_apparatus(params) do
     id = UUID.uuid4()
-    cmd = CatalogApparatus.new(Map.put(params, :id, id))
+    cmd = CatalogApparatus.new(Map.put(params, "id", id))
 
-    with :ok <- Catalog.dispatch(cmd, consistency: :strong) do
-      {:ok, ApparatusInternal.apparatus_by_id(id)}
+    case Catalog.dispatch(cmd, consistency: :strong) do
+      :ok ->
+        {:ok, ApparatusInternal.apparatus_by_id(id)}
+
+      {:error, errors} ->
+        ErrorClassifier.classify_error(errors)
     end
   end
 
@@ -74,17 +79,10 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus do
   end
 
   defp lookup_apparatus(id_or_slug) do
-    if uuid?(id_or_slug) do
+    if UuidValidator.valid_uuid?(id_or_slug) do
       ApparatusInternal.apparatus_by_id(id_or_slug)
     else
       ApparatusInternal.apparatus_by_slug(id_or_slug)
-    end
-  end
-
-  defp uuid?(maybe_id) do
-    case UUID.info(maybe_id) do
-      {:ok, _} -> true
-      {:error, _} -> false
     end
   end
 

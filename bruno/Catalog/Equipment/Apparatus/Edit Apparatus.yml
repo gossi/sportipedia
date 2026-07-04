@@ -11,7 +11,7 @@ http:
     data: |-
       {
         "data": {
-          "type": "apparatuses",
+          "type": "apparatus",
           "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
           "attributes": {
             "title": "Vault"
@@ -36,7 +36,7 @@ examples:
         data: |-
           {
             "data": {
-              "type": "apparatuses",
+              "type": "apparatus",
               "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
               "attributes": {
                 "title": "Vault"
@@ -63,7 +63,7 @@ examples:
                   {
                     "self": "http://localhost:3100/catalog/equipment/apparatuses/d290f1ee-6c54-4b01-90e6-d701748f0851"
                   },
-                "type": "apparatuses",
+                "type": "apparatus",
                 "relationships": {}
               },
             "links":

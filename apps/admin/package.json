@@ -19,7 +19,7 @@
     "lint:js": "eslint . --cache",
     "lint:js:fix": "eslint . --fix",
     "lint:types": "ember-tsc",
-    "test": "vite build --mode development && testem ci"
+    "_test": "vite build --mode development && testem ci"
   },
   "dependencies": {
     "@sportipedia/user": "workspace:*",

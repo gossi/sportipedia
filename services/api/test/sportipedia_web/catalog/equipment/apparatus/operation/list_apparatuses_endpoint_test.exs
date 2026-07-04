@@ -31,7 +31,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.ListApparatusesEndpointTest
       assert id2 in ids
 
       for item <- data do
-        assert item["type"] == "apparatuses"
+        assert item["type"] == "apparatus"
         assert %{"title" => _, "slug" => _} = item["attributes"]
       end
     end
@@ -51,7 +51,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.ListApparatusesEndpointTest
       assert is_list(data)
       assert length(data) == 1
       assert hd(data)["id"] == id
-      assert hd(data)["type"] == "apparatuses"
+      assert hd(data)["type"] == "apparatus"
     end
 
     test "returns 200 with empty data when no apparatuses exist", %{conn: conn} do

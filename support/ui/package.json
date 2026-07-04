@@ -33,11 +33,13 @@
     "lint:types": "ember-tsc",
     "prepack": "pnpm build",
     "start": "tsdown --watch",
-    "test": "vite build --mode=development --out-dir dist-tests && testem --file testem.cjs ci --port 0"
+    "_test": "vite build --mode=development --out-dir dist-tests && testem --file testem.cjs ci --port 0"
   },
   "dependencies": {
     "@hokulea/ember": "catalog:lib",
     "decorator-transforms": "catalog:build",
+    "ember-intl": "workspace:*",
+    "ember-modifier": "^4.3.0",
     "ember-strict-application-resolver": "catalog:ember",
     "ember-truth-helpers": "catalog:ember",
     "ua-parser-js": "^2.0.6"

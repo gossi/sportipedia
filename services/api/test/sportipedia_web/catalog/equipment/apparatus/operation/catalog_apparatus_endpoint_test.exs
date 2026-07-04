@@ -16,7 +16,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.CatalogApparatusEndpointTes
         |> post(
           "/catalog/equipment/apparatuses/catalog-apparatus",
           Jason.encode!(
-            jsonapi_body("apparatuses", %{
+            jsonapi_body("apparatus", %{
               title: "Vaulting Table",
               slug: "vaulting-table",
               description: "A gymnastics vault"
@@ -29,7 +29,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.CatalogApparatusEndpointTes
       assert %{
                "data" => %{
                  "id" => id,
-                 "type" => "apparatuses",
+                 "type" => "apparatus",
                  "attributes" => %{
                    "title" => "Vaulting Table",
                    "slug" => "vaulting-table",
@@ -54,7 +54,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.CatalogApparatusEndpointTes
         |> post(
           "/catalog/equipment/apparatuses/catalog-apparatus",
           Jason.encode!(
-            jsonapi_body("apparatuses", %{
+            jsonapi_body("apparatus", %{
               title: "Parallel Bars",
               slug: "parallel-bars"
             })
@@ -66,7 +66,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.CatalogApparatusEndpointTes
       assert %{
                "data" => %{
                  "id" => id,
-                 "type" => "apparatuses",
+                 "type" => "apparatus",
                  "attributes" => %{
                    "title" => "Parallel Bars",
                    "slug" => "parallel-bars"
@@ -84,7 +84,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.CatalogApparatusEndpointTes
         |> post(
           "/catalog/equipment/apparatuses/catalog-apparatus",
           Jason.encode!(
-            jsonapi_body("apparatuses", %{
+            jsonapi_body("apparatus", %{
               title: "Vaulting Table",
               slug: "vaulting-table"
             })
@@ -102,7 +102,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.CatalogApparatusEndpointTes
         |> post(
           "/catalog/equipment/apparatuses/catalog-apparatus",
           Jason.encode!(
-            jsonapi_body("apparatuses", %{
+            jsonapi_body("apparatus", %{
               slug: "vaulting-table"
             })
           )
@@ -119,7 +119,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.CatalogApparatusEndpointTes
         |> post(
           "/catalog/equipment/apparatuses/catalog-apparatus",
           Jason.encode!(
-            jsonapi_body("apparatuses", %{
+            jsonapi_body("apparatus", %{
               title: "Vaulting Table"
             })
           )
@@ -136,7 +136,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.CatalogApparatusEndpointTes
       |> post(
         "/catalog/equipment/apparatuses/catalog-apparatus",
         Jason.encode!(
-          jsonapi_body("apparatuses", %{
+          jsonapi_body("apparatus", %{
             title: "Vaulting Table",
             slug: "vaulting-table",
             description: "A gymnastics vault"
@@ -152,7 +152,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.CatalogApparatusEndpointTes
         |> post(
           "/catalog/equipment/apparatuses/catalog-apparatus",
           Jason.encode!(
-            jsonapi_body("apparatuses", %{
+            jsonapi_body("apparatus", %{
               title: "Another Vault",
               slug: "vaulting-table"
             })

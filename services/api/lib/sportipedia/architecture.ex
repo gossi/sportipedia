@@ -7,6 +7,6 @@ defmodule Sportipedia.Architecture do
 
   @type result :: term()
 
-  @type public_api(t) :: {:ok, t} | {:error, validation_failures()}
-  @type public_api() :: :ok | {:error, validation_failures()}
+  @type public_api(t) :: {:ok, t} | {:error, validation_failures()} | {:error, :not_found}
+  @type public_api() :: :ok | {:error, validation_failures()} | {:error, :not_found}
 end

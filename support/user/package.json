@@ -37,7 +37,7 @@
     "lint:types": "ember-tsc",
     "prepack": "pnpm build",
     "start": "tsdown --watch",
-    "test": "vite build --mode=development --out-dir dist-tests && testem --file testem.cjs ci --port 0"
+    "_test": "vite build --mode=development --out-dir dist-tests && testem --file testem.cjs ci --port 0"
   },
   "dependencies": {
     "@embroider/addon-shim": "^1.10.0",

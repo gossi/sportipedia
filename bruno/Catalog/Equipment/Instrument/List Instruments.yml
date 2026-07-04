@@ -54,7 +54,7 @@ examples:
                       {
                         "self": "http://localhost:3100/catalog/equipment/instruments/27c20d96-63ec-4f6e-a022-546ab92415bd"
                       },
-                    "type": "instruments",
+                    "type": "instrument",
                     "relationships": {}
                   },
                 {
@@ -64,7 +64,7 @@ examples:
                       {
                         "self": "http://localhost:3100/catalog/equipment/instruments/3e435097-f61e-4ed9-91ec-3eeb2f729f55"
                       },
-                    "type": "instruments",
+                    "type": "",
                     "relationships": {}
                   }
               ],

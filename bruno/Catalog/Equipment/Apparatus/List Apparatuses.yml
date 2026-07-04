@@ -36,14 +36,14 @@ examples:
                 "attributes": { "description": "A gymnastics vault", "title": "Vaulting Table", "slug": "vaulting-table" },
                 "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
                 "links": { "self": "http://localhost:3100/catalog/equipment/apparatuses/d290f1ee-6c54-4b01-90e6-d701748f0851" },
-                "type": "apparatuses",
+                "type": "apparatus",
                 "relationships": {}
               },
               {
                 "attributes": { "description": "A gymnastics beam", "title": "Balance Beam", "slug": "balance-beam" },
                 "id": "a290f1ee-6c54-4b01-90e6-d701748f0852",
                 "links": { "self": "http://localhost:3100/catalog/equipment/apparatuses/a290f1ee-6c54-4b01-90e6-d701748f0852" },
-                "type": "apparatuses",
+                "type": "apparatus",
                 "relationships": {}
               }
             ],
@@ -72,7 +72,7 @@ examples:
                 "attributes": { "description": "A gymnastics vault", "title": "Vaulting Table", "slug": "vaulting-table" },
                 "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
                 "links": { "self": "http://localhost:3100/catalog/equipment/apparatuses/d290f1ee-6c54-4b01-90e6-d701748f0851" },
-                "type": "apparatuses",
+                "type": ",
                 "relationships": {}
               }
             ],

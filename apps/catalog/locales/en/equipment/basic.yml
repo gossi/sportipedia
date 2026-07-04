@@ -1,0 +1,6 @@
+instrument: 
+  label: Instrument
+  explanation: Sport equipment that instrumentally supports the athlete. A movendum the athlete controls and moves around (see Göhner)
+apparatus: 
+  label: Apparatus
+  explanation: Immovable sport equipment. An athlete moves or interacts with an apparatus, but will never move it

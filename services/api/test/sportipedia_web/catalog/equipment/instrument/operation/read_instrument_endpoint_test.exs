@@ -25,7 +25,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.ReadInstrumentEndpointTest
       assert %{
                "data" => %{
                  "id" => ^id,
-                 "type" => "instruments",
+                 "type" => "instrument",
                  "attributes" => %{
                    "title" => "Unicycle",
                    "slug" => "unicycle"
@@ -52,7 +52,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.ReadInstrumentEndpointTest
       assert %{
                "data" => %{
                  "id" => ^id,
-                 "type" => "instruments",
+                 "type" => "instrument",
                  "attributes" => %{
                    "title" => "Unicycle",
                    "slug" => "unicycle"

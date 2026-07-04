@@ -29,7 +29,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.EditInstrumentEndpointTest
       assert %{
                "data" => %{
                  "id" => ^id,
-                 "type" => "instruments",
+                 "type" => "instrument",
                  "attributes" => %{
                    "title" => "Einrad",
                    "slug" => "unicycle",
@@ -62,7 +62,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.EditInstrumentEndpointTest
           "/catalog/equipment/instruments/edit-instrument",
           Jason.encode!(
             jsonapi_body(
-              "instruments",
+              "instrument",
               %{title: "Einrad"},
               "00000000-0000-0000-0000-000000000000"
             )
@@ -87,7 +87,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.EditInstrumentEndpointTest
         |> api_conn()
         |> post(
           "/catalog/equipment/instruments/edit-instrument",
-          Jason.encode!(jsonapi_body("instruments", %{slug: "unicycle"}, id2))
+          Jason.encode!(jsonapi_body("instrument", %{slug: "unicycle"}, id2))
         )
 
       # Assert

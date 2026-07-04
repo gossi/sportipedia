@@ -5,5 +5,11 @@ export default [
   {
     files: ['./src/components/user-agent.gts'],
     rules: { '@typescript-eslint/no-unsafe-assignment': 'off' }
+  },
+  {
+    files: ['src/**/*.ts', 'src/**/*.gts'],
+    rules: {
+      'unicorn/consistent-class-member-order': 'off'
+    }
   }
 ];

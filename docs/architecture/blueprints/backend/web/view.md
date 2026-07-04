@@ -51,7 +51,7 @@ defmodule SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Vi
   Renders <domain_object> resources in JSON:API format.
   """
 
-  use JSONAPI.View, type: "<domain-object>s"
+  use JSONAPI.View, type: "<jsonapi-type>"
 
   @doc """
   Returns the path for <domain_object> resources.

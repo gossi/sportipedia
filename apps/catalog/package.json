@@ -2,6 +2,9 @@
   "name": "@sportipedia/catalog",
   "type": "module",
   "imports": {
+    "#equipment": "./src/domain/equipment/index.ts",
+    "#auth/*": "./src/support/auth/*",
+    "#support/*": "./src/support/*",
     "#/*": "./src/*",
     "#tests/*": "./tests/*"
   },
@@ -19,7 +22,8 @@
     "lint:js": "eslint . --cache",
     "lint:js:fix": "eslint . --fix",
     "lint:types": "ember-tsc",
-    "test": "vite build --mode development && testem ci"
+    "test": "vitest run",
+    "test:ui": "vitest --ui"
   },
   "dependencies": {
     "@sportipedia/ui": "workspace:*",
@@ -51,9 +55,10 @@
     "@iconify-json/material-symbols": "catalog:icons",
     "@iconify-json/ph": "catalog:icons",
     "@rollup/plugin-babel": "catalog:build",
+    "@standard-schema/spec": "^1.1.0",
     "@theemo/ember": "catalog:lib",
     "@theemo/vite": "catalog:lib",
-    "@types/qunit": "catalog:types",
+    "@vitest/ui": "catalog:test",
     "@warp-drive/core": "catalog:ember",
     "@warp-drive/ember": "catalog:ember",
     "@warp-drive/json-api": "catalog:ember",
@@ -70,7 +75,6 @@
     "ember-link": "catalog:ember",
     "ember-modifier": "catalog:ember",
     "ember-page-title": "catalog:ember",
-    "ember-qunit": "^9.0.1",
     "ember-resolver": "catalog:ember",
     "ember-resources": "catalog:ember",
     "ember-scoped-css": "catalog:ember",
@@ -80,16 +84,13 @@
     "ember-truth-helpers": "catalog:ember",
     "eslint": "catalog:lint",
     "eslint-plugin-ember": "catalog:lint",
-    "eslint-plugin-qunit": "catalog:lint",
     "prettier": "catalog:lint",
-    "qunit": "^2.19.4",
-    "qunit-dom": "^3.4.0",
     "stylelint": "catalog:lint",
     "temporal-polyfill": "catalog:lib",
-    "testem": "^3.16.0",
     "typescript": "catalog:build",
     "unplugin-icons": "catalog:icons",
-    "vite": "catalog:build"
+    "vite": "catalog:build",
+    "vitest": "catalog:test"
   },
   "engines": {
     "node": ">=24"

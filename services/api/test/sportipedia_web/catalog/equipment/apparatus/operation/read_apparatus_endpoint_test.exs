@@ -27,7 +27,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.ReadApparatusEndpointTest d
       assert %{
                "data" => %{
                  "id" => ^id,
-                 "type" => "apparatuses",
+                 "type" => "apparatus",
                  "attributes" => %{
                    "title" => "Vaulting Table",
                    "slug" => "vaulting-table",
@@ -56,7 +56,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.ReadApparatusEndpointTest d
       assert %{
                "data" => %{
                  "id" => ^id,
-                 "type" => "apparatuses",
+                 "type" => "apparatus",
                  "attributes" => %{
                    "title" => "Parallel Bars",
                    "slug" => "parallel-bars",
@@ -94,7 +94,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.ReadApparatusEndpointTest d
       assert %{
                "data" => %{
                  "id" => ^id,
-                 "type" => "apparatuses",
+                 "type" => "apparatus",
                  "attributes" => %{
                    "title" => "Rings",
                    "slug" => "rings"

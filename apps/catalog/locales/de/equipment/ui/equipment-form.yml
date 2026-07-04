@@ -1,0 +1,11 @@
+title: Titel
+slug: Slug
+description: Beschreibung
+
+actions:
+  catalog: Katalogisieren
+  edit: Ändern
+  auto: Auto
+
+errors:
+  slug_exists: Slug ist schon vergeben

@@ -1,4 +1,4 @@
-import { auth } from './auth';
+import { auth } from './client';
 
 import type { Context, Handler, NextFn } from '@warp-drive/core/request';
 

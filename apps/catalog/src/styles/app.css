@@ -25,6 +25,7 @@ body {
   --typography-display-feature-settings: "liga" 1, "calt" 1, "salt" 1, "kern" 1;
   --typography-display-weight: 325;
   --typography-display-tracking: -0.003em;
+  --typography-monospace-family: "Fira Code", monospace;
   --layout-page-max-content-width: 60rem;
 }
 
@@ -38,4 +39,8 @@ body {
   white-space: nowrap;
 
   background-color: hsl(from var(--typography-code-background) h s calc(l - 3));
+}
+
+pre {
+  font-family: var(--typography-monospace-family);
 }

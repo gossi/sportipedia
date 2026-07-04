@@ -18,7 +18,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.ArchiveInstrumentEndpointT
         |> api_conn()
         |> post(
           "/catalog/equipment/instruments/archive-instrument",
-          Jason.encode!(jsonapi_body("instruments", %{}, id))
+          Jason.encode!(jsonapi_body("instrument", %{}, id))
         )
 
       # Assert
@@ -31,7 +31,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.ArchiveInstrumentEndpointT
         |> api_conn()
         |> post(
           "/catalog/equipment/instruments/archive-instrument",
-          Jason.encode!(jsonapi_body("instruments", %{}, "some-id"))
+          Jason.encode!(jsonapi_body("instrument", %{}, "some-id"))
         )
 
       assert json_response(conn, 403)

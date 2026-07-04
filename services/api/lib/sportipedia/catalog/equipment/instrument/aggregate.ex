@@ -26,13 +26,18 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.InstrumentAggregate do
   end
 
   def apply(%__MODULE__{} = aggregate, %InstrumentEdited{} = event) do
-    %__MODULE__{
-      id: aggregate.id,
-      title: event.title || aggregate.title,
-      slug: event.slug || aggregate.slug,
-      description:
-        if(is_nil(event.description), do: aggregate.description, else: event.description)
-    }
+    changes = InstrumentEdited.get_changes(event)
+
+    aggregate
+    |> Map.merge(changes)
+
+    # %__MODULE__{
+    #   id: aggregate.id,
+    #   title: event.title || aggregate.title,
+    #   slug: event.slug || aggregate.slug,
+    #   description:
+    #     if(is_nil(event.description), do: aggregate.description, else: event.description)
+    # }
   end
 
   def apply(%__MODULE__{} = _aggregate, %InstrumentArchived{} = _event) do
