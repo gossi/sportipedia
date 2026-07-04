@@ -64,3 +64,12 @@ jobs:
       - name: Setup
         uses: ./.github/actions/setup
       - run: pnpm run -r --parallel --aggregate-output lint:types
+
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Setup
+        uses: ./.github/actions/setup
+      - run: pnpm run -r --parallel --aggregate-output test

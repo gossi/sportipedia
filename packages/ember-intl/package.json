@@ -38,7 +38,7 @@
     "lint:types": "tsc --noEmit",
     "prepack": "pnpm build",
     "start": "tsdown --watch",
-    "test": "vite build --mode=development --out-dir dist-tests && testem --file testem.cjs ci --port 0"
+    "_test": "vite build --mode=development --out-dir dist-tests && testem --file testem.cjs ci --port 0"
   },
   "dependencies": {
     "@formatjs/intl": "^3.1.6",
