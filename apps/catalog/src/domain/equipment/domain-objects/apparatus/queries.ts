@@ -9,14 +9,14 @@ import type { FindRecordRequestOptions, QueryRequestOptions } from '@warp-drive/
 export function readApparatuses(
   params: QueryParamsSource = {}
 ): QueryRequestOptions<ReactiveDataDocument<Apparatus[]>> {
-  return query<Apparatus>('apparatuses', params, { resourcePath: 'equipment/apparatuses' });
+  return query<Apparatus>('apparatus', params, { resourcePath: 'equipment/apparatuses' });
 }
 
 export function readApparatus(
   idOrSlug: string,
   params: FindRecordOptions = {}
 ): FindRecordRequestOptions<ReactiveDataDocument<Apparatus>, Apparatus> {
-  return findRecord<Apparatus>('apparatuses', idOrSlug, {
+  return findRecord<Apparatus>('apparatus', idOrSlug, {
     resourcePath: 'equipment/apparatuses',
     ...params
   });

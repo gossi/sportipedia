@@ -23,7 +23,7 @@ export function catalogApparatus(
   data: CatalogApparatusData,
   { store }: { store: Store }
 ): CreateRequestOptions<Apparatus> {
-  const apparatus = store.createRecord<Apparatus>('apparatuses', data);
+  const apparatus = store.createRecord<Apparatus>('apparatus', data);
   const options = createRecord(apparatus, {
     resourcePath: 'equipment/apparatuses/catalog-apparatus',
     reload: true

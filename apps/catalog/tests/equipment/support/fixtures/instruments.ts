@@ -3,7 +3,7 @@ import { Type } from '@warp-drive/core/types/symbols';
 import type { Instrument } from '#equipment';
 
 export const UNICYCLE: Instrument = Object.freeze({
-  [Type]: 'instruments',
+  [Type]: 'instrument',
   id: 'unicycle',
   title: 'Unicycle',
   slug: 'unicycle',
@@ -13,7 +13,7 @@ export const UNICYCLE: Instrument = Object.freeze({
 });
 
 export const SKATEBOARD: Instrument = Object.freeze({
-  [Type]: 'instruments',
+  [Type]: 'instrument',
   id: 'skateboard',
   title: 'Skateboard',
   slug: 'skateboard',

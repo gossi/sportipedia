@@ -23,7 +23,7 @@ export function catalogInstrument(
   data: CatalogInstrumentData,
   { store }: { store: Store }
 ): CreateRequestOptions<Instrument> {
-  const person = store.createRecord<Instrument>('instruments', data);
+  const person = store.createRecord<Instrument>('instrument', data);
   const options = createRecord(person, {
     resourcePath: 'equipment/instruments/catalog-instrument',
     reload: true

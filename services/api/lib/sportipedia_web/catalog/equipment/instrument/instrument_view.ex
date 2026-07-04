@@ -3,7 +3,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.InstrumentView do
   Renders instrument resources in JSON:API format.
   """
 
-  use JSONAPI.View, type: "instruments"
+  use JSONAPI.View, type: "instrument"
 
   @doc """
   Returns the path for instrument resources.

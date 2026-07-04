@@ -11,7 +11,7 @@ http:
     data: |-
       {
         "data": {
-          "type": "instruments",
+          "type": "instrument",
           "id": "6d3e425d-778c-4da7-a0da-8bae0fda303a"
         }
       }
@@ -33,7 +33,7 @@ examples:
         data: |-
           {
             "data": {
-              "type": "instruments",
+              "type": "instrument",
               "id": "3e435097-f61e-4ed9-91ec-3eeb2f729f55"
             }
           }

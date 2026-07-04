@@ -3,7 +3,7 @@ import { Type } from '@warp-drive/core/types/symbols';
 import type { Apparatus } from '#equipment';
 
 export const PARALLEL_BARS: Apparatus = Object.freeze({
-  [Type]: 'apparatuses',
+  [Type]: 'apparatus',
   id: 'parallel-bars',
   title: 'Parallel Bars',
   slug: 'parallel-bars',
@@ -14,7 +14,7 @@ export const PARALLEL_BARS: Apparatus = Object.freeze({
 });
 
 export const BALANCE_BEAM: Apparatus = Object.freeze({
-  [Type]: 'apparatuses',
+  [Type]: 'apparatus',
   id: 'balance-beam',
   title: 'Balance Beam',
   slug: 'balance-beam',
@@ -25,7 +25,7 @@ export const BALANCE_BEAM: Apparatus = Object.freeze({
 });
 
 export const RINGS: Apparatus = Object.freeze({
-  [Type]: 'apparatuses',
+  [Type]: 'apparatus',
   id: 'rings',
   title: 'Rings',
   slug: 'rings',

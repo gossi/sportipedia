@@ -11,7 +11,7 @@ http:
     data: |-
       {
         "data": {
-          "type": "instruments",
+          "type": "instrument",
           "attributes": {
             "title": "Skateboard",
             "slug": "skateboard"
@@ -36,7 +36,7 @@ examples:
         data: |-
           {
             "data": {
-              "type": "instruments",
+              "type": "",
               "attributes": {
                 "title": "Unicycle",
                 "slug": "unicycle",
@@ -78,7 +78,7 @@ examples:
                   {
                     "self": "http://localhost:3100/catalog/equipment/instruments/27c20d96-63ec-4f6e-a022-546ab92415bd"
                   },
-                "type": "instruments",
+                "type": "",
                 "relationships": {}
               },
             "links":

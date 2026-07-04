@@ -3,7 +3,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.ApparatusView do
   Renders apparatus resources in JSON:API format.
   """
 
-  use JSONAPI.View, type: "apparatuses"
+  use JSONAPI.View, type: "apparatus"
 
   @doc """
   Returns the path for apparatus resources.

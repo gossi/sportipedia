@@ -3,7 +3,7 @@ import type { ID, Slug } from '#/support/domain-objects/fields';
 import type { Timestamps } from '#/support/domain-objects/timestamps';
 
 export interface Instrument extends Timestamps {
-  [Type]: 'instruments';
+  [Type]: 'instrument';
 
   id: ID;
   title: string;
