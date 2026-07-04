@@ -1,19 +1,22 @@
+import Component from '@glimmer/component';
 import Route from '@ember/routing/route';
 import { service } from '@ember/service';
 
 import { Request } from '@warp-drive/ember';
 import { ability } from 'ember-ability';
 
+import { asReactiveInstrumentResource } from '../domain-objects/equipment';
 import {
   canArchiveInstrument as upstreamCanArchiveInstrument,
   canEditInstrument as upstreamCanEditInstrument
 } from '../domain-objects/instrument/abilities';
+import { archiveInstrument } from '../domain-objects/instrument/actions';
 import { readInstrument } from '../domain-objects/instrument/queries';
 import { EquipmentDetail } from '../ui/equipment-detail.gts';
 
 import type { Instrument } from '../domain-objects/instrument/instrument';
-import type { TOC } from '@ember/component/template-only';
-import type { ReactiveDataDocument } from '@warp-drive/core/reactive';
+import type RouterService from '@ember/routing/router-service';
+import type { ReactiveDataDocument, ReactiveResource } from '@warp-drive/core/reactive';
 import type { Future } from '@warp-drive/core/request';
 import type Store from '#/services/store';
 
@@ -39,19 +42,34 @@ class InstrumentRoute extends Route {
   }
 }
 
-const InstrumentTemplate: TOC<{
+class InstrumentTemplate extends Component<{
   Args: { model: { request: Future<ReactiveDataDocument<Instrument>> } };
-}> = <template>
-  <Request @request={{@model.request}}>
-    <:content as |result|>
-      <EquipmentDetail
-        @equipment={{result.data}}
-        @editingAllowed={{canEditInstrument result.data}}
-        @archivingAllowed={{canArchiveInstrument result.data}}
-        @editHref="/equipment/instrument/{{result.data.slug}}/edit"
-      />
-    </:content>
-  </Request>
-</template>;
+}> {
+  @service declare store: Store;
+  @service declare router: RouterService;
 
+  archive = async (record: Instrument & ReactiveResource) => {
+    try {
+      await this.store.request(archiveInstrument(record, { store: this.store }));
+
+      this.router.transitionTo('equipment');
+    } catch (error) {
+      console.log('error', error);
+    }
+  };
+
+  <template>
+    <Request @request={{@model.request}}>
+      <:content as |result|>
+        <EquipmentDetail
+          @equipment={{result.data}}
+          @editingAllowed={{canEditInstrument result.data}}
+          @archivingAllowed={{canArchiveInstrument result.data}}
+          @editHref="/equipment/instrument/{{result.data.slug}}/edit"
+          @archive={{fn this.archive (asReactiveInstrumentResource result.data)}}
+        />
+      </:content>
+    </Request>
+  </template>
+}
 export { InstrumentRoute, InstrumentTemplate };

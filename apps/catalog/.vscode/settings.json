@@ -4,4 +4,5 @@
 		"../../support/ui/locales",
 		"../../support/user/locales"
 	],
+	"stylelint.configFile": ".stylelintrc.js",
 }

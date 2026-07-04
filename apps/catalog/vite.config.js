@@ -17,6 +17,9 @@ export default defineConfig({
   server: {
     port: 4101
   },
+  css: {
+    transformer: 'lightningcss'
+  },
   plugins: [
     ember(),
     scopedCSS({ layerName: 'app' }),

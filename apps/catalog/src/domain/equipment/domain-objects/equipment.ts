@@ -1,3 +1,5 @@
+import { asReactiveResource } from '#support/data';
+
 import type { Apparatus } from './apparatus/apparatus';
 import type { Instrument } from './instrument/instrument';
 
@@ -18,3 +20,6 @@ export function getType(equipment: Equipment & { $type?: string }): string | und
     return MAP[type];
   }
 }
+
+export const asReactiveApparatusResource = asReactiveResource<Apparatus>;
+export const asReactiveInstrumentResource = asReactiveResource<Instrument>;

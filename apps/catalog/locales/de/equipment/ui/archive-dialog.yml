@@ -1,0 +1,5 @@
+title: "{name} Archivieren"
+body: "Soll {name} archiviert werden?"
+actions:
+  archive: Archivieren
+  cancel: Abbrechen

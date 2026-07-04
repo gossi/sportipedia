@@ -2,10 +2,15 @@ import Component from '@glimmer/component';
 import Route from '@ember/routing/route';
 import { service } from '@ember/service';
 
+import {
+  checkout,
+  type ReactiveDataDocument,
+  type ReactiveResource
+} from '@warp-drive/core/reactive';
 import { Request } from '@warp-drive/ember';
 import { type IntlService, t } from 'ember-intl';
 
-import { handleErrorResponse, makeMessageTranslator } from '#support/data/validation.ts';
+import { withValidation } from '#support/data/validation.ts';
 
 import { Page } from '@hokulea/ember';
 
@@ -15,11 +20,8 @@ import { EquipmentForm } from '../ui/equipment-form.gts';
 import type { Equipment } from '../domain-objects/equipment';
 import type { Instrument } from '../domain-objects/instrument/instrument';
 import type RouterService from '@ember/routing/router-service';
-import type { ReactiveDataDocument, ReactiveResource } from '@warp-drive/core/reactive';
 import type { Future } from '@warp-drive/core/request';
-import type { StructuredErrorDocument } from '@warp-drive/core/types/request';
 import type Store from '#/services/store';
-import type { JsonApiErrorResponse } from '#support/data/jsonapi.ts';
 
 function asReactiveResource(record: Instrument): ReactiveResource & Instrument {
   return record as ReactiveResource & Instrument;
@@ -41,22 +43,29 @@ class EditInstrumentTemplate extends Component<{
   @service declare intl: IntlService;
 
   submit = async (record: Instrument & ReactiveResource, changes: Equipment) => {
-    try {
-      await editInstrument(record, changes as Instrument, { store: this.store });
+    return withValidation(
+      async () => {
+        const result = await this.store.request<ReactiveDataDocument<Instrument>>({
+          ...editInstrument(await checkout(record), changes as Instrument, { store: this.store }),
+          cacheOptions: {
+            types: ['instruments']
+          }
+        });
 
-      // maybe re-reroute
-      if (record.slug !== changes.slug) {
-        this.router.transitionTo('equipment.instrument.edit', changes.slug);
+        this.router.transitionTo('equipment.instrument', result.content.data.slug);
+      },
+      {
+        namespace: 'equipment.ui.equipment-form.errors',
+        intl: this.intl
       }
-    } catch (error) {
-      return handleErrorResponse(error as StructuredErrorDocument<JsonApiErrorResponse>, {
-        message: makeMessageTranslator('equipment.ui.equipment-form.errors', this.intl)
-      });
-    }
+    );
   };
 
   <template>
-    <Page @title={{t "equipment.pages.edit-instrument.title"}}>
+    <Page
+      @title={{t "equipment.pages.edit-instrument.title"}}
+      @description={{t "equipment.basic.instrument.explanation"}}
+    >
       <Request @request={{@model.request}}>
         <:content as |result|>
           <EquipmentForm

@@ -1,1 +1,3 @@
 unknown: Unbekannter Fehler
+slug_exists: Slug ist schon vergeben
+slug_invalid: Ungültiges Format

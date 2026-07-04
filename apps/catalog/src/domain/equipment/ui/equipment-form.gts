@@ -33,6 +33,8 @@ class EquipmentForm extends Component<EquipmentFormSignature> {
 
   <template>
     <Form @data={{@equipment}} @submit={{@submit}} @validate={{@validate}} ...attributes as |f|>
+      <f.Errors />
+
       <f.Text
         @name="title"
         @label={{t "equipment.ui.equipment-form.title"}}

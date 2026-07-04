@@ -1,15 +1,29 @@
 import { cacheKeyFor } from '@warp-drive/core';
-import { checkout, type ReactiveResource } from '@warp-drive/core/reactive';
 import { buildBaseURL } from '@warp-drive/utilities';
-import { createRecord, serializePatch, updateRecord } from '@warp-drive/utilities/json-api';
+import {
+  createRecord,
+  deleteRecord,
+  serializePatch,
+  serializeResources,
+  updateRecord
+} from '@warp-drive/utilities/json-api';
 
 import type { Instrument } from './instrument';
+import type { ReactiveResource } from '@warp-drive/core/reactive';
+import type {
+  CreateRequestOptions,
+  DeleteRequestOptions,
+  UpdateRequestOptions
+} from '@warp-drive/core/types/request';
 import type Store from '#/services/store';
 
 type CatalogInstrumentData = Omit<Instrument, 'ID'>;
 
-export async function catalogInstrument(data: CatalogInstrumentData, { store }: { store: Store }) {
-  const person = store.createRecord('instruments', data);
+export function catalogInstrument(
+  data: CatalogInstrumentData,
+  { store }: { store: Store }
+): CreateRequestOptions<Instrument> {
+  const person = store.createRecord<Instrument>('instruments', data);
   const options = createRecord(person, {
     resourcePath: 'equipment/instruments/catalog-instrument',
     reload: true
@@ -20,24 +34,17 @@ export async function catalogInstrument(data: CatalogInstrumentData, { store }: 
     data: store.cache.peek(cacheKeyFor(person))
   });
 
-  return await store.request({
-    ...options,
-    cacheOptions: {
-      types: ['instruments']
-    }
-  });
+  return options;
 }
 
-export async function editInstrument(
+export function editInstrument(
   record: ReactiveResource,
   changes: Instrument,
   { store }: { store: Store }
-) {
-  const mutable = await checkout(record);
+): UpdateRequestOptions {
+  Object.assign(record, changes);
 
-  Object.assign(mutable, changes);
-
-  const requestOptions = updateRecord(mutable, {
+  const requestOptions = updateRecord(record, {
     reload: true
   });
 
@@ -46,15 +53,27 @@ export async function editInstrument(
   requestOptions.url = buildBaseURL({ resourcePath: 'equipment/instruments/edit-instrument' });
   requestOptions.headers.append('Content-Type', 'application/vnd.api+json');
 
-  const payload = serializePatch(store.cache, cacheKeyFor(mutable));
+  const payload = serializePatch(store.cache, cacheKeyFor(record));
 
-  // payload.data.attributes = data;
   requestOptions.body = JSON.stringify(payload);
 
-  return await store.request({
-    ...requestOptions,
-    cacheOptions: {
-      types: ['instruments']
-    }
-  });
+  return requestOptions;
+}
+
+export function archiveInstrument(
+  record: ReactiveResource,
+  { store }: { store: Store }
+): DeleteRequestOptions<ReactiveResource> {
+  const requestOptions = deleteRecord(record);
+
+  // @ts-expect-error warp-drive thinks, this must be DELETE (haiyaa, so wrong!)
+  requestOptions.method = 'POST';
+  requestOptions.url = buildBaseURL({ resourcePath: 'equipment/instruments/archive-instrument' });
+  requestOptions.headers.append('Content-Type', 'application/vnd.api+json');
+
+  const payload = serializeResources(store.cache, cacheKeyFor(record));
+
+  requestOptions.body = JSON.stringify(payload);
+
+  return requestOptions;
 }

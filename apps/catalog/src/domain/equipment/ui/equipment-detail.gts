@@ -1,9 +1,12 @@
+import { openDialog } from '@sportipedia/ui';
 import { t } from 'ember-intl';
 
 import ArchiveBoxIcon from '~icons/ph/archive-box?width=unset&height=unset';
 import PencilSimpleIcon from '~icons/ph/pencil-simple?width=unset&height=unset';
 
 import { Button, Icon } from '@hokulea/ember';
+
+import { ArchiveDialog } from './archive-dialog.gts';
 
 import type { Equipment } from '../domain-objects/equipment';
 import type { TOC } from '@ember/component/template-only';
@@ -14,7 +17,7 @@ const EquipmentDetail: TOC<{
     editingAllowed: boolean;
     archivingAllowed: boolean;
     editHref: string;
-    archive?: () => void;
+    archive: () => void;
   };
 }> = <template>
   <style scoped>
@@ -30,7 +33,7 @@ const EquipmentDetail: TOC<{
     .actions {
       display: flex;
       flex-direction: column;
-      gap: var(--spacing-container-3);
+      gap: var(--spacing-container-4);
     }
 
     .no-desc {
@@ -58,10 +61,14 @@ const EquipmentDetail: TOC<{
         </Button>
       {{/if}}
       {{#if @archivingAllowed}}
-        <Button @intent="danger">
-          <:before><Icon @icon={{ArchiveBoxIcon}} /></:before>
-          <:label>{{t "equipment.ui.equipment-detail.actions.archive"}}</:label>
-        </Button>
+        {{#let (openDialog modal=true) as |od|}}
+          <Button @intent="danger" {{od.trigger}}>
+            <:before><Icon @icon={{ArchiveBoxIcon}} /></:before>
+            <:label>{{t "equipment.ui.equipment-detail.actions.archive"}}</:label>
+          </Button>
+
+          <ArchiveDialog @equipment={{@equipment}} @confirm={{@archive}} {{od.target}} />
+        {{/let}}
       {{/if}}
     </div>
   </div>

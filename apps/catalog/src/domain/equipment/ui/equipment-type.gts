@@ -15,7 +15,7 @@ interface EquipmentTypeSignature {
 const EquipmentType: TOC<EquipmentTypeSignature> = <template>
   {{#let (getType @equipment) as |type|}}
     {{#if type}}
-      {{t (concat "equipment.basic.type." type)}}
+      {{t (concat "equipment.basic." type ".label")}}
     {{/if}}
   {{/let}}
 </template>;

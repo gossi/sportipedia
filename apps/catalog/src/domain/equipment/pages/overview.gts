@@ -1,3 +1,5 @@
+// import '../ui/styles.css';
+
 import Component from '@glimmer/component';
 import Route from '@ember/routing/route';
 import { service } from '@ember/service';
@@ -67,6 +69,16 @@ class OverviewTemplate extends Component {
         gap: var(--spacing-container0);
       }
 
+      .actions {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-container-4);
+
+        & > .button {
+          justify-content: flex-start;
+        }
+      }
+
       .type {
         margin-inline-start: auto;
         color: var(--typography-muted);
@@ -89,31 +101,32 @@ class OverviewTemplate extends Component {
       @title={{t "equipment.pages.overview.title"}}
       @description={{t "equipment.pages.overview.description"}}
     >
-      <div>
-        {{#if (canCatalogInstrument)}}
-          <Button @href="/equipment/catalog-instrument">
-            <:before><Icon @icon={{PlusIcon}} /></:before>
-            <:label>{{t "equipment.pages.overview.actions.catalog-instrument"}}</:label>
-          </Button>
-        {{/if}}
-
-        {{#if (canCatalogApparatus)}}
-          <Button @href="/equipment/catalog-apparatus">
-            <:before><Icon @icon={{PlusIcon}} /></:before>
-            <:label>{{t "equipment.pages.overview.actions.catalog-apparatus"}}</:label>
-          </Button>
-        {{/if}}
-      </div>
       <div class="equipment-layout">
-        <NavigationList class="nav" as |n|>
-          {{#each this.equipment as |e|}}
-            <n.Item @href="/equipment/{{getType e}}/{{e.slug}}">
-              {{e.title}}
+        <div class="actions">
+          {{#if (canCatalogInstrument)}}
+            <Button @href="/equipment/catalog-instrument">
+              <:before><Icon @icon={{PlusIcon}} /></:before>
+              <:label>{{t "equipment.pages.overview.actions.catalog-instrument"}}</:label>
+            </Button>
+          {{/if}}
 
-              <span class="type"><EquipmentType @equipment={{e}} /></span>
-            </n.Item>
-          {{/each}}
-        </NavigationList>
+          {{#if (canCatalogApparatus)}}
+            <Button @href="/equipment/catalog-apparatus">
+              <:before><Icon @icon={{PlusIcon}} /></:before>
+              <:label>{{t "equipment.pages.overview.actions.catalog-apparatus"}}</:label>
+            </Button>
+          {{/if}}
+
+          <NavigationList class="nav" as |n|>
+            {{#each this.equipment as |e|}}
+              <n.Item @href="/equipment/{{getType e}}/{{e.slug}}">
+                {{e.title}}
+
+                <span class="type"><EquipmentType @equipment={{e}} /></span>
+              </n.Item>
+            {{/each}}
+          </NavigationList>
+        </div>
 
         <div class="content">
           {{outlet}}

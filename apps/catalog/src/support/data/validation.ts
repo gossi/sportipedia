@@ -67,8 +67,26 @@ export function handleErrorResponse(
 
 export function makeMessageTranslator(namespace: string, intl: IntlService) {
   return (message: string | undefined) => {
-    const key = `${namespace}.${message}`;
+    const keys = [`${namespace}.${message}`, `errors.${message}`];
+    const key = keys.find((k) => intl.exists(k));
 
-    return intl.exists(key) ? intl.t(key) : intl.t('errors.unknown');
+    if (key) {
+      return intl.t(key);
+    }
+
+    return intl.t('errors.unknown');
   };
+}
+
+export async function withValidation(
+  promise: () => Promise<unknown>,
+  options: { namespace: string; intl: IntlService }
+): Promise<ValidationResult | void> {
+  try {
+    await promise();
+  } catch (error) {
+    return handleErrorResponse(error as StructuredErrorDocument<JsonApiErrorResponse>, {
+      message: makeMessageTranslator(options.namespace, options.intl)
+    });
+  }
 }
