@@ -14,7 +14,6 @@ export interface NamedOptions {
 type ValidationElements =
   HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement | HTMLDivElement;
 
-// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
 export const manageValidation = modifier<ValidationElements, [], NamedOptions>(
   (element: ValidationElements, _: [], { showErrors, invalid, errorMessageId }: NamedOptions) => {
     if (showErrors !== false) {
