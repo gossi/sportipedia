@@ -7,8 +7,8 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.InstrumentViewTest do
   describe "View" do
     @describetag :unit
 
-    test "type/0 returns instruments" do
-      assert InstrumentView.type() == "instruments"
+    test "type/0 returns instrument" do
+      assert InstrumentView.type() == "instrument"
     end
 
     test "fields/0 lists the attributes" do
@@ -33,7 +33,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.InstrumentViewTest do
       assert %{
                data: %{
                  id: "abc-123",
-                 type: "instruments",
+                 type: "instrument",
                  attributes: %{
                    title: "Unicycle",
                    slug: "unicycle",
@@ -56,7 +56,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.InstrumentViewTest do
 
       assert %{data: [item]} = result
       assert item.id == "abc-123"
-      assert item.type == "instruments"
+      assert item.type == "instrument"
       assert item.attributes.title == "Unicycle"
     end
   end

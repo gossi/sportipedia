@@ -48,7 +48,8 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus do
   def edit_apparatus(params) do
     case Catalog.dispatch(EditApparatus.new(params), consistency: :strong) do
       :ok ->
-        {:ok, ApparatusInternal.apparatus_by_id(params["id"])}
+        id = params[:id] || params["id"]
+        {:ok, ApparatusInternal.apparatus_by_id(id)}
 
       {:error, errors} ->
         ErrorClassifier.classify_error(errors)

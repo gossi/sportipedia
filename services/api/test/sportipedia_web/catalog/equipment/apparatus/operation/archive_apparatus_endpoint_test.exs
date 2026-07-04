@@ -16,7 +16,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.ArchiveApparatusEndpointTes
         |> post(
           "/catalog/equipment/apparatuses/catalog-apparatus",
           Jason.encode!(
-            jsonapi_body("apparatuses", %{
+            jsonapi_body("apparatus", %{
               title: "Balance Beam",
               slug: "balance-beam",
               description: "A gymnastics beam"
@@ -34,7 +34,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.ArchiveApparatusEndpointTes
         |> api_conn()
         |> post(
           "/catalog/equipment/apparatuses/archive-apparatus",
-          Jason.encode!(jsonapi_body("apparatuses", apparatus_id))
+          Jason.encode!(jsonapi_body("apparatus", apparatus_id))
         )
 
       assert archive_conn.status == 204
@@ -50,7 +50,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.ArchiveApparatusEndpointTes
         |> api_conn()
         |> post(
           "/catalog/equipment/apparatuses/archive-apparatus",
-          Jason.encode!(jsonapi_body("apparatuses", UUID.uuid4()))
+          Jason.encode!(jsonapi_body("apparatus", UUID.uuid4()))
         )
 
       assert json_response(conn, 403)
@@ -65,7 +65,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.ArchiveApparatusEndpointTes
         |> api_conn()
         |> post(
           "/catalog/equipment/apparatuses/archive-apparatus",
-          Jason.encode!(jsonapi_body("apparatuses", non_existent_id))
+          Jason.encode!(jsonapi_body("apparatus", non_existent_id))
         )
 
       body = json_response(conn, 404)

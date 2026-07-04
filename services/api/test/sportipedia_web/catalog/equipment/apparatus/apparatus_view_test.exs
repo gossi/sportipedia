@@ -5,8 +5,8 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.ApparatusViewTest do
   alias SportipediaWeb.Catalog.Equipment.Apparatus.ApparatusView
 
   describe "type/0" do
-    test "returns apparatuses" do
-      assert ApparatusView.type() == "apparatuses"
+    test "returns apparatus" do
+      assert ApparatusView.type() == "apparatus"
     end
   end
 
@@ -39,7 +39,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.ApparatusViewTest do
       assert %{
                data: %{
                  id: "d290f1ee-6c54-4b01-90e6-d701748f0851",
-                 type: "apparatuses",
+                 type: "apparatus",
                  attributes: %{
                    title: "Vaulting Table",
                    slug: "vaulting-table",

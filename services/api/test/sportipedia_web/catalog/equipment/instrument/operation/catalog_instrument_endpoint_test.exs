@@ -15,7 +15,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.CatalogInstrumentEndpointT
         |> post(
           "/catalog/equipment/instruments/catalog-instrument",
           Jason.encode!(
-            jsonapi_body("instruments", %{
+            jsonapi_body("instrument", %{
               title: "Unicycle",
               slug: "unicycle",
               description: "A single-wheeled vehicle"
@@ -28,7 +28,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.CatalogInstrumentEndpointT
       assert %{
                "data" => %{
                  "id" => id,
-                 "type" => "instruments",
+                 "type" => "instrument",
                  "attributes" => %{
                    "title" => "Unicycle",
                    "slug" => "unicycle",
@@ -49,7 +49,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.CatalogInstrumentEndpointT
         |> post(
           "/catalog/equipment/instruments/catalog-instrument",
           Jason.encode!(
-            jsonapi_body("instruments", %{
+            jsonapi_body("instrument", %{
               title: "Pogo Stick",
               slug: "pogo-stick"
             })
@@ -61,7 +61,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.CatalogInstrumentEndpointT
       assert %{
                "data" => %{
                  "id" => id,
-                 "type" => "instruments",
+                 "type" => "instrument",
                  "attributes" => %{
                    "title" => "Pogo Stick",
                    "slug" => "pogo-stick"
@@ -79,7 +79,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.CatalogInstrumentEndpointT
         |> post(
           "/catalog/equipment/instruments/catalog-instrument",
           Jason.encode!(
-            jsonapi_body("instruments", %{
+            jsonapi_body("instrument", %{
               title: "Unicycle",
               slug: "unicycle"
             })
@@ -97,7 +97,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.CatalogInstrumentEndpointT
         |> post(
           "/catalog/equipment/instruments/catalog-instrument",
           Jason.encode!(
-            jsonapi_body("instruments", %{
+            jsonapi_body("instrument", %{
               slug: "unicycle"
             })
           )
@@ -114,7 +114,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.CatalogInstrumentEndpointT
         |> post(
           "/catalog/equipment/instruments/catalog-instrument",
           Jason.encode!(
-            jsonapi_body("instruments", %{
+            jsonapi_body("instrument", %{
               title: "Unicycle"
             })
           )
@@ -131,7 +131,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.CatalogInstrumentEndpointT
       |> post(
         "/catalog/equipment/instruments/catalog-instrument",
         Jason.encode!(
-          jsonapi_body("instruments", %{
+          jsonapi_body("instrument", %{
             title: "Unicycle",
             slug: "unicycle",
             description: "A single-wheeled vehicle"
@@ -147,7 +147,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.CatalogInstrumentEndpointT
         |> post(
           "/catalog/equipment/instruments/catalog-instrument",
           Jason.encode!(
-            jsonapi_body("instruments", %{
+            jsonapi_body("instrument", %{
               title: "Another Unicycle",
               slug: "unicycle"
             })
