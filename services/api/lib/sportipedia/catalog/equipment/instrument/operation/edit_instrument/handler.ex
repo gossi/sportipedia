@@ -14,6 +14,13 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Command.EditInstrumentHandler
   """
   @spec handle(InstrumentAggregate.t(), EditInstrument.t()) :: InstrumentEdited.t()
   def handle(%InstrumentAggregate{} = _aggregate, %EditInstrument{} = cmd) do
+    IO.inspect(%InstrumentEdited{
+      id: cmd.id,
+      title: cmd.title,
+      slug: cmd.slug,
+      description: cmd.description
+    }, label: "EditInstrumentHandler")
+
     %InstrumentEdited{
       id: cmd.id,
       title: cmd.title,

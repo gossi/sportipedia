@@ -1,4 +1,4 @@
-defmodule Sportipedia.Support.Validators.Uuid do
+defmodule Sportipedia.Support.Validators.UuidValidator do
   use Vex.Validator
 
   def validate(value, _options) do
@@ -9,10 +9,10 @@ defmodule Sportipedia.Support.Validators.Uuid do
     )
   end
 
-  defp valid_uuid?(uuid) do
-    case UUID.info(uuid) do
+  def valid_uuid?(maybe_id) do
+    case Ecto.UUID.dump(maybe_id) do
       {:ok, _} -> true
-      {:error, _} -> false
+      _ -> false
     end
   end
 end
