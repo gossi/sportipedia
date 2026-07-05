@@ -1,25 +1,27 @@
 import type { User } from '@sportipedia/user';
 
 export const USER: User = Object.freeze({
-  email: 'max.mustermann@example.com',
-  emailVerified: true,
+  id: '1',
   givenName: 'Max',
   familyName: 'Mustermann',
-  role: 'user',
-  id: '1',
   name: 'Max Mustermann',
+  email: 'max.mustermann@example.com',
+  emailVerified: true,
+  role: 'user',
+  lang: 'en',
   createdAt: new Date(),
   updatedAt: new Date()
 });
 
 export const ADMIN: User = Object.freeze({
-  email: 'admin@example.com',
-  emailVerified: true,
+  id: '1',
   givenName: 'Armin',
   familyName: 'Nistrator',
-  role: 'admin',
-  id: '1',
   name: 'Armin Nistrator',
+  email: 'admin@example.com',
+  emailVerified: true,
+  role: 'admin',
+  lang: 'en',
   createdAt: new Date(),
   updatedAt: new Date()
 });

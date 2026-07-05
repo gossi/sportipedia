@@ -1,0 +1,9 @@
+title: Profile
+
+sections:
+  name: Name
+  email: Email
+
+actions:
+  change-name: Change Name
+  change-email: Change Email

@@ -8,6 +8,7 @@ import { RegistrationTemplate } from './pages/registration.gts';
 import { RequestPasswordResetTemplate } from './pages/request-password-reset.gts';
 import { ResetPasswordTemplate } from './pages/reset-password.gts';
 import { UserRoute, UserTemplate } from './pages/user.gts';
+import { ApperanceTemplate } from './pages/user/appearance.gts';
 import { AuthTemplate } from './pages/user/auth.gts';
 import { ProfileTemplate } from './pages/user/profile.gts';
 import { SessionsTemplate } from './pages/user/sessions.gts';
@@ -19,6 +20,7 @@ export const userRegistry = buildRegistry({
   './routes/user': UserRoute,
 
   './templates/user/auth': AuthTemplate,
+  './templates/user/appearance': ApperanceTemplate,
   './templates/user/profile': ProfileTemplate,
   './templates/user/sessions': SessionsTemplate,
   './templates/login': LoginTemplate,
@@ -39,6 +41,7 @@ export const userRoutes = buildRoutes(function () {
   this.route('reset-password');
   this.route('user', function () {
     this.route('profile');
+    this.route('appearance');
     this.route('sessions');
     this.route('auth');
   });
@@ -48,3 +51,7 @@ export const userRoutes = buildRoutes(function () {
 // UI
 
 export { UserMenu } from './ui/user-menu.gts';
+
+// Settings
+
+export { changeLocale, persistLanguage, renderLocale } from './domain-objects/language';

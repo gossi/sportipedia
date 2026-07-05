@@ -1,0 +1,7 @@
+given-name: Given name
+family-name: Family name
+email: Email
+password: Password
+new-password: New Password
+confirm-password: Confirm password
+language: Language

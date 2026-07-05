@@ -1,0 +1,6 @@
+{
+  "i18n-ally-next.localesPaths": [
+		"locales"
+	],
+	"stylelint.configFile": ".stylelintrc.js",
+}

@@ -6,6 +6,7 @@ export interface User extends BetterAuthUser {
   familyName: string;
   email: string;
   emailVerified: boolean;
+  lang: string;
   readonly role: 'user' | 'admin';
 }
 
