@@ -18,8 +18,7 @@
     "lint:hbs:fix": "ember-template-lint . --fix",
     "lint:js": "eslint . --cache",
     "lint:js:fix": "eslint . --fix",
-    "lint:types": "ember-tsc",
-    "_test": "vite build --mode development && testem ci"
+    "lint:types": "ember-tsc"
   },
   "dependencies": {
     "@sportipedia/user": "workspace:*",
@@ -52,7 +51,6 @@
     "@rollup/plugin-babel": "catalog:build",
     "@theemo/ember": "catalog:lib",
     "@theemo/vite": "catalog:lib",
-    "@types/qunit": "catalog:types",
     "@warp-drive/core": "catalog:ember",
     "@warp-drive/ember": "catalog:ember",
     "@warp-drive/json-api": "catalog:ember",
@@ -65,7 +63,6 @@
     "ember-link": "catalog:ember",
     "ember-modifier": "catalog:ember",
     "ember-page-title": "catalog:ember",
-    "ember-qunit": "^9.0.1",
     "ember-resolver": "catalog:ember",
     "ember-resources": "catalog:ember",
     "ember-source": "catalog:ember",
@@ -74,13 +71,9 @@
     "ember-truth-helpers": "catalog:ember",
     "eslint": "catalog:lint",
     "eslint-plugin-ember": "catalog:lint",
-    "eslint-plugin-qunit": "catalog:lint",
     "glimmer-scoped-css": "^0.8.1",
     "prettier": "catalog:lint",
-    "qunit": "^2.19.4",
-    "qunit-dom": "^3.4.0",
     "stylelint": "catalog:lint",
-    "testem": "^3.16.0",
     "typescript": "catalog:build",
     "unplugin-icons": "catalog:icons",
     "vite": "catalog:build"
