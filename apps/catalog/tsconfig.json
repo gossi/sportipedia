@@ -19,7 +19,10 @@
         "./src/support/*"
       ],
       "#equipment": [
-        "./src/domain/equipment/index.ts"
+        "./src/equipment/index.ts"
+      ],
+      "#user": [
+        "./src/user/index.ts"
       ],
       "#tests/*": [
         "./tests/*"

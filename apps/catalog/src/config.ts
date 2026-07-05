@@ -4,10 +4,8 @@ import translations from 'virtual:ember-intl-loader';
 import { auth } from '#auth/client';
 import { configureEquipmentSchema } from '#equipment';
 
-import { configureSchema } from './support/data/schema';
-
 import type ApplicationInstance from '@ember/application/instance';
-import type Store from '#/services/store';
+import type { Store } from '#support/data';
 
 function configureAuth(app: ApplicationInstance) {
   const authService = app.lookup('service:auth');
@@ -39,7 +37,6 @@ function configureApi(app: ApplicationInstance) {
   const store = app.lookup('service:store') as Store;
 
   configureEquipmentSchema(store.schema);
-  configureSchema(store.schema);
 }
 
 export function configure(app: ApplicationInstance) {
