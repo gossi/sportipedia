@@ -4,7 +4,7 @@ import {
   canArchiveApparatus,
   canCatalogApparatus,
   canEditApparatus
-} from '#/domain/equipment/domain-objects/apparatus/abilities';
+} from '#/equipment/domain-objects/apparatus/abilities';
 import { RINGS } from '#tests/equipment/support/fixtures/apparatuses.ts';
 import { ADMIN, GUEST, USER } from '#tests/user/support/fixtures';
 

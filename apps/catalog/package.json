@@ -2,7 +2,8 @@
   "name": "@sportipedia/catalog",
   "type": "module",
   "imports": {
-    "#equipment": "./src/domain/equipment/index.ts",
+    "#equipment": "./src/equipment/index.ts",
+    "#user": "./src/user/index.ts",
     "#auth/*": "./src/support/auth/*",
     "#support/*": "./src/support/*",
     "#/*": "./src/*",

@@ -4,7 +4,7 @@ import {
   canArchiveInstrument,
   canCatalogInstrument,
   canEditInstrument
-} from '#/domain/equipment/domain-objects/instrument/abilities';
+} from '#/equipment/domain-objects/instrument/abilities';
 import { UNICYCLE } from '#tests/equipment/support/fixtures/instruments.ts';
 import { ADMIN, GUEST, USER } from '#tests/user/support/fixtures';
 
