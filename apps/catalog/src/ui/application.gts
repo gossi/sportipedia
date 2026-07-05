@@ -5,6 +5,7 @@ import { pageTitle } from 'ember-page-title';
 import { UserMenu } from '#user';
 
 import { AppHeader } from '@hokulea/ember';
+
 import { LocaleSwitcher } from './components/locale-switcher.gts';
 
 const ApplicationTemplate = <template>
