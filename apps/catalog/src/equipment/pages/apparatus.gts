@@ -18,7 +18,7 @@ import type { Apparatus } from '../domain-objects/apparatus/apparatus';
 import type RouterService from '@ember/routing/router-service';
 import type { ReactiveDataDocument, ReactiveResource } from '@warp-drive/core/reactive';
 import type { Future } from '@warp-drive/core/request';
-import type { Store } from '#support/data';;
+import type { Store } from '#support/data';
 
 const canEditApparatus = ability(
   ({ services }) =>

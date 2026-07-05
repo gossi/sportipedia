@@ -22,7 +22,7 @@ import { EquipmentType } from '../ui/equipment-type.gts';
 
 import type { Apparatus } from '../domain-objects/apparatus/apparatus';
 import type { Instrument } from '../domain-objects/instrument/instrument';
-import type { Store } from '#support/data';;
+import type { Store } from '#support/data';
 
 class OverviewRoute extends Route {
   @service declare store: Store;

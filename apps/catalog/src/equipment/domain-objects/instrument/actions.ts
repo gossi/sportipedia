@@ -15,7 +15,7 @@ import type {
   DeleteRequestOptions,
   UpdateRequestOptions
 } from '@warp-drive/core/types/request';
-import type { Store } from '#support/data';;
+import type { Store } from '#support/data';
 
 type CatalogInstrumentData = Omit<Instrument, 'ID'>;
 

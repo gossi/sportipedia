@@ -21,7 +21,7 @@ import type { Equipment } from '../domain-objects/equipment';
 import type { Instrument } from '../domain-objects/instrument/instrument';
 import type RouterService from '@ember/routing/router-service';
 import type { Future } from '@warp-drive/core/request';
-import type { Store } from '#support/data';;
+import type { Store } from '#support/data';
 
 function asReactiveResource(record: Instrument): ReactiveResource & Instrument {
   return record as ReactiveResource & Instrument;

@@ -14,7 +14,7 @@ import type { Apparatus } from '../domain-objects/apparatus/apparatus';
 import type { Equipment } from '../domain-objects/equipment';
 import type RouterService from '@ember/routing/router-service';
 import type { ReactiveDataDocument } from '@warp-drive/core/reactive';
-import type { Store } from '#support/data';;
+import type { Store } from '#support/data';
 
 export class CatalogApparatusTemplate extends Component {
   @service declare store: Store;

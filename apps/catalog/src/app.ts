@@ -45,7 +45,7 @@ export default class App extends EmberApp {
     // constituents
     ...equipmentRegistry(),
     ...userRegistry(),
-    // application concerns
+    // app concerns
     './router': { default: Router },
     './templates/application': ApplicationTemplate,
     './templates/index': IndexTemplate,
