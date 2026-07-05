@@ -1,12 +1,12 @@
 import { getUser, isAuthenticated } from '@sportipedia/user';
 import { t } from 'ember-intl';
 
-import PhBroadcast from '~icons/ph/broadcast';
-import PhGear from '~icons/ph/gear';
-import PhKey from '~icons/ph/key';
-import PhSignOut from '~icons/ph/sign-out';
+import BroadcastIcon from '~icons/ph/broadcast';
+import GearIcon from '~icons/ph/gear';
+import KeyIcon from '~icons/ph/key';
+import PaintBrushIcon from '~icons/ph/paint-brush';
+import SignOutIcon from '~icons/ph/sign-out';
 
-// import PhUser from '~icons/ph/user';
 import { Avatar, Icon, type MenuBuilder } from '@hokulea/ember';
 
 import type { TOC } from '@ember/component/template-only';
@@ -26,21 +26,25 @@ const UserMenu: TOC<UserMenuSignature> = <template>
         </:label>
         <:menu as |um|>
           <um.Item @href="/user/profile">
-            <Icon @icon={{PhGear}} />
-            {{t "user.components.user-menu.settings"}}
+            <Icon @icon={{GearIcon}} />
+            {{t "user.ui.user-menu.settings"}}
+          </um.Item>
+          <um.Item @href="/user/appearance">
+            <Icon @icon={{PaintBrushIcon}} />
+            {{t "user.pages.appearance.title"}}
           </um.Item>
           <um.Item @href="/user/sessions">
-            <Icon @icon={{PhBroadcast}} />
+            <Icon @icon={{BroadcastIcon}} />
             {{t "user.pages.sessions.title"}}
           </um.Item>
           <um.Item @href="/user/auth">
-            <Icon @icon={{PhKey}} />
+            <Icon @icon={{KeyIcon}} />
             {{t "user.pages.auth.title"}}
           </um.Item>
           <hr />
           <um.Item @href="/logout">
-            <Icon @icon={{PhSignOut}} />
-            {{t "user.components.user-menu.logout"}}
+            <Icon @icon={{SignOutIcon}} />
+            {{t "user.ui.user-menu.logout"}}
           </um.Item>
         </:menu>
       </@nav.Item>

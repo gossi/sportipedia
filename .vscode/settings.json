@@ -11,5 +11,11 @@
       "source.fixAll.eslint": "explicit",
       "source.organizeImports": "never"
     }
-  }
+  },
+  "i18n-ally-next.localesPaths": [
+		"apps/catalog/locales",
+		"apps/admin/locales",
+		"support/ui/locales",
+		"support/user/locales"
+	]
 }

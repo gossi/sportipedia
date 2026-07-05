@@ -1,0 +1,33 @@
+form:
+  givenName:
+    label: Given name
+  familyName:
+    label: Family name
+  username:
+    label: User name
+    description: |
+      Used for <b>@mention</b> and in the URL to your
+      profile <code>/&lt;username&gt;</code>.<br><small>Format: Letters,
+      Numbers, Dots <code>.</code> and Dashes <code>-</code></small>
+  email:
+    label: Email
+  password:
+    label: Password
+    rules:
+      min-character: Minimum 8 characters
+      uppercase-letter: Minimum 1 upper case character
+      lowercase-letter: Minimum 1 lower case character
+      number: Minimumn 1 number
+      special-character: Minimum 1 special character
+  password-confirm:
+    label: Confirm password
+  name:
+    label: Name (optional)
+    description: Your full name
+
+errors:
+  passwords-must-match: Passwords must match
+  username-allowed-chars: Invalid characters for user name
+
+actions:
+  register: Register

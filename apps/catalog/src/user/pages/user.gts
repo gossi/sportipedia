@@ -6,6 +6,7 @@ import { t } from 'ember-intl';
 
 import BroadcastIcon from '~icons/ph/broadcast';
 import KeyIcon from '~icons/ph/key';
+import PaintBrushIcon from '~icons/ph/paint-brush';
 import UserIcon from '~icons/ph/user';
 
 import { Avatar, NavigationList, Page } from '@hokulea/ember';
@@ -49,6 +50,9 @@ const UserTemplate = <template>
       <div class="navigation">
         <NavigationList as |n|>
           <n.Item @href="/user/profile" @icon={{UserIcon}}>{{t "user.pages.profile.title"}}</n.Item>
+          <n.Item @href="/user/appearance" @icon={{PaintBrushIcon}}>{{t
+              "user.pages.appearance.title"
+            }}</n.Item>
           <n.Item @href="/user/sessions" @icon={{BroadcastIcon}}>{{t
               "user.pages.sessions.title"
             }}</n.Item>

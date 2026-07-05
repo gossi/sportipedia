@@ -1,0 +1,9 @@
+title: Sessions
+
+current-session: Current Session
+last-accessed: Last accessed
+
+actions:
+  revoke-other-sessions: Revoke other devices
+  revoke-all-sessions: Revoke all sessions
+  revoke-session: Revoke this sesssion

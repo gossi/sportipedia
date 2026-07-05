@@ -5,6 +5,7 @@ import { pageTitle } from 'ember-page-title';
 import { UserMenu } from '#user';
 
 import { AppHeader } from '@hokulea/ember';
+import { LocaleSwitcher } from './components/locale-switcher.gts';
 
 const ApplicationTemplate = <template>
   {{pageTitle "Sportipedia"}}
@@ -23,6 +24,8 @@ const ApplicationTemplate = <template>
         </:menu>
       </n.Item>
 
+      {{! @glint-expect-error see: https://github.com/hokulea/hokulea/issues/548 }}
+      <LocaleSwitcher @nav={{n}} />
       {{! @glint-expect-error see: https://github.com/hokulea/hokulea/issues/548 }}
       <UserMenu @nav={{n}} />
     </:aux>

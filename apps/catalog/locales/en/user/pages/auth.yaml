@@ -1,0 +1,17 @@
+title: Password and Authentication
+
+password:
+  title: Password
+  set: Exists
+  unset: Not existing
+
+actions:
+  change-password: Change password
+  set-password: Set a password
+  hide: Hide
+  link: Link
+  unlink: Unlink
+
+errors:
+  title: "{error, select, account_already_linked_to_different_user {Link account} other {Error}}"
+  message: "{error, select, account_already_linked_to_different_user {Account already linked.} other {Unknown Error}} "

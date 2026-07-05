@@ -5,7 +5,10 @@ import { auth } from '#auth/client';
 import { configureEquipmentSchema } from '#equipment';
 
 import type ApplicationInstance from '@ember/application/instance';
+import type { User } from '@sportipedia/user';
 import type { Store } from '#support/data';
+
+const DEFAULT_LOCALE = 'de';
 
 function configureAuth(app: ApplicationInstance) {
   const authService = app.lookup('service:auth');
@@ -19,8 +22,13 @@ function configureAuth(app: ApplicationInstance) {
 
 function configureIntl(app: ApplicationInstance) {
   const intl = app.lookup('service:intl');
+  const authService = app.lookup('service:auth');
 
-  intl.setLocale('de');
+  authService.subscribe('sessionAuthenticated', ({ user }: { user: User }) => {
+    intl.setLocale(user.lang);
+  });
+
+  intl.setLocale(authService.user?.lang ?? DEFAULT_LOCALE);
 
   for (const [locale, messages] of Object.entries(translations)) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
