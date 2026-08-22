@@ -1,3 +1,7 @@
+/**
+ * @module Accounts
+ * @category Domain Objects
+ */
 import { cached } from '@glimmer/tracking';
 
 import { cell } from 'ember-resources';
@@ -6,6 +10,10 @@ import { auth } from '#auth/client';
 
 import type { Account } from 'better-auth';
 
+/**
+ * @group Accounts
+ * @category Accounts
+ */
 export class AccountsResource {
   #accounts = cell<Account[]>();
 

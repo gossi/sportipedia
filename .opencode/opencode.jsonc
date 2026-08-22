@@ -16,6 +16,15 @@
         "scripts/start-elixir-ls-mcp.sh"
       ],
       "enabled": true
+    },
+    "playwright": {
+      "type": "local",
+      "command": ["node_modules/.bin/playwright-mcp"],
+      "enabled": true,
+      "environment": {
+        "PLAYWRIGHT_MCP_BROWSER": "chromium",
+        "PLAYWRIGHT_MCP_HEADLESS": "true"
+      }
     }
   },
   "agent": {

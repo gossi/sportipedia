@@ -1,3 +1,7 @@
+/**
+ * @module Instrument Actions
+ * @mergeModuleWith Instrument
+ */
 import { cacheKeyFor } from '@warp-drive/core';
 import { buildBaseURL } from '@warp-drive/utilities';
 import {
@@ -19,6 +23,10 @@ import type { Store } from '#support/data';
 
 type CatalogInstrumentData = Omit<Instrument, 'ID'>;
 
+/**
+ * @group Instrument
+ * @category Actions
+ */
 export function catalogInstrument(
   data: CatalogInstrumentData,
   { store }: { store: Store }
@@ -37,6 +45,10 @@ export function catalogInstrument(
   return options;
 }
 
+/**
+ * @group Instrument
+ * @category Actions
+ */
 export function editInstrument(
   record: ReactiveResource,
   changes: Instrument,
@@ -60,6 +72,10 @@ export function editInstrument(
   return requestOptions;
 }
 
+/**
+ * @group Instrument
+ * @category Actions
+ */
 export function archiveInstrument(
   record: ReactiveResource,
   { store }: { store: Store }

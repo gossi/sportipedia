@@ -13,6 +13,8 @@
     "dist"
   ],
   "scripts": {
+    "sb": "storybook dev --port 5101",
+    "build-storybook": "storybook build",
     "build": "vite build",
     "dev": "vite",
     "lint": "pnpm run '/^lint:(?!.*(fix)).*$/'",
@@ -24,7 +26,8 @@
     "lint:js:fix": "eslint . --fix",
     "lint:types": "ember-tsc",
     "test": "vitest run",
-    "test:ui": "vitest --ui"
+    "test:ui": "vitest --ui",
+    "apidoc": "node scripts/apidoc.mjs"
   },
   "dependencies": {
     "@sportipedia/ui": "workspace:*",
@@ -57,6 +60,9 @@
     "@iconify-json/ph": "catalog:icons",
     "@rollup/plugin-babel": "catalog:build",
     "@standard-schema/spec": "^1.1.0",
+    "@storybook/addon-a11y": "^10.5.10",
+    "@storybook/addon-docs": "^10.5.10",
+    "@storybook/addon-vitest": "^10.5.10",
     "@theemo/ember": "catalog:lib",
     "@theemo/vite": "catalog:lib",
     "@vitest/ui": "catalog:test",
@@ -80,14 +86,19 @@
     "ember-resources": "catalog:ember",
     "ember-scoped-css": "catalog:ember",
     "ember-source": "catalog:ember",
+    "ember-storybook": "^0.1.4",
     "ember-strict-application-resolver": "catalog:ember",
     "ember-template-lint": "catalog:lint",
     "ember-truth-helpers": "catalog:ember",
     "eslint": "catalog:lint",
     "eslint-plugin-ember": "catalog:lint",
     "prettier": "catalog:lint",
+    "storybook": "^10.5.10",
     "stylelint": "catalog:lint",
     "temporal-polyfill": "catalog:lib",
+    "typedoc": "^0.28.20",
+    "typedoc-plugin-ember": "^0.0.1",
+    "typedoc-plugin-markdown": "^4.12.0",
     "typescript": "catalog:build",
     "unplugin-icons": "catalog:icons",
     "vite": "catalog:build",

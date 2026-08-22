@@ -1,8 +1,16 @@
+/**
+ * @module Equipment
+ * @category Domain Objects
+ */
 import { asReactiveResource } from '#support/data';
 
 import type { Apparatus } from './apparatus/apparatus';
 import type { Instrument } from './instrument/instrument';
 
+/**
+ * @group Equipment
+ * @category Equipment
+ */
 export type Equipment = Apparatus | Instrument;
 
 const MAP = {
@@ -12,6 +20,10 @@ const MAP = {
   apparatuses: 'apparatus'
 };
 
+/**
+ * @group Equipment
+ * @category Equipment
+ */
 export function getType(equipment: Equipment & { $type?: string }): string | undefined {
   // eslint-disable-next-line unicorn/prefer-early-return
   if (Object.hasOwn(equipment, '$type')) {
@@ -21,5 +33,13 @@ export function getType(equipment: Equipment & { $type?: string }): string | und
   }
 }
 
+/**
+ * @group Equipment
+ * @category Equipment
+ */
 export const asReactiveApparatusResource = asReactiveResource<Apparatus>;
+/**
+ * @group Equipment
+ * @category Equipment
+ */
 export const asReactiveInstrumentResource = asReactiveResource<Instrument>;

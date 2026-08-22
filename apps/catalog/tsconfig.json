@@ -3,7 +3,8 @@
   "include": [
     "src",
     "tests",
-    "types"
+    "types",
+    ".storybook/**/*"
   ],
   "compilerOptions": {
     "allowJs": true,

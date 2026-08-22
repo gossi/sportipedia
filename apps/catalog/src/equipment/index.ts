@@ -1,3 +1,7 @@
+/**
+ * @module Manifest
+ * @category Public API
+ */
 import { buildRegistry } from 'ember-strict-application-resolver/build-registry';
 
 import { buildRoutes } from '#/support/routing';

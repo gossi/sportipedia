@@ -16,6 +16,8 @@
   },
   "devDependencies": {
     "@glint/ember-tsc": "catalog:ember",
+    "@playwright/mcp": "^0.0.79",
+    "playwright": "^1.62.1",
     "turbo": "^2.5.5"
   },
   "engines": {

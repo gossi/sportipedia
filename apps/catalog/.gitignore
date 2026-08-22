@@ -1,3 +1,6 @@
 node_modules/
 dist/
 .eslintcache
+
+# generated storybook docs (mdx)
+apidocs/
