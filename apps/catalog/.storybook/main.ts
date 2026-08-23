@@ -7,7 +7,13 @@ const config: StorybookConfig = {
     name: 'ember-storybook',
     options: {}
   },
-  features: {},
+  refs: {
+    hokulea: {
+      title: 'Hokulea',
+      url: 'https://deploy-preview-623--hokulea.netlify.app/ember/',
+      expanded: false
+    }
+  },
   core: {
     disableWhatsNewNotifications: true
   }

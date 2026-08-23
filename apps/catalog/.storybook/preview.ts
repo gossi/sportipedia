@@ -16,6 +16,21 @@ const preview: Preview = {
     ember: {
       app: (options: Record<string, unknown> = {}) => createApp(options),
       configure
+    },
+    options: {
+      storySort: {
+        order: [
+          'Equipment',
+          [
+            'Public API',
+            'Domain Objects',
+            ['*', ['Domain Object', 'Queries', 'Actions', 'Abilities']],
+            'UI',
+            '*'
+          ],
+          '*'
+        ]
+      }
     }
   },
 

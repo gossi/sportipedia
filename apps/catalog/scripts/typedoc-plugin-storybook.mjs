@@ -5,6 +5,7 @@ import { PageEvent, RendererEvent } from 'typedoc';
 const KIND = {
   Project: 1,
   Module: 2,
+  Enum: 8,
   Variable: 32,
   Function: 64,
   Class: 128,
@@ -13,11 +14,22 @@ const KIND = {
   Reference: 4_194_304
 };
 
+const KIND_NAME = {
+  [KIND.Module]: 'module',
+  [KIND.Enum]: 'enum',
+  [KIND.Variable]: 'variable',
+  [KIND.Function]: 'function',
+  [KIND.Class]: 'class',
+  [KIND.Interface]: 'interface',
+  [KIND.TypeAlias]: 'type-alias'
+};
+
 const MARKDOWN_FOLDER = {
   [KIND.Interface]: 'interfaces',
   [KIND.Function]: 'functions',
   [KIND.Variable]: 'variables',
   [KIND.Class]: 'classes',
+  [KIND.Enum]: 'enumerations',
   [KIND.TypeAlias]: 'type-aliases'
 };
 
@@ -61,13 +73,21 @@ function metaFor(model) {
     if (!pkg || pkg.kind === KIND.Project) {
       const name = titleCase(model.name);
 
-      return { title: name, name };
+      return {
+        title: name,
+        name,
+        tags: ['kind-module', 'api-index', 'api-index-readme']
+      };
     }
 
     // module index page (e.g. `equipment/Apparatus/README.mdx`)
     const segments = segment([titleCase(pkg.name), categoryOf(model)], model.name);
 
-    return { title: segments.join('/'), name: model.name };
+    return {
+      title: segments.join('/'),
+      name: model.name,
+      tags: ['kind-module', 'api-index', 'api-index-module']
+    };
   }
 
   const mod = model.parent;
@@ -86,7 +106,15 @@ function metaFor(model) {
 
   segments.push(model.name);
 
-  return { title: segments.join('/'), name: model.name };
+  return {
+    title: segments.join('/'),
+    name: model.name,
+    tags: [`kind-${KIND_NAME[model.kind]}`]
+  };
+}
+
+function metaTagsOf(meta) {
+  return `tags={[${meta.tags.map((tag) => `"${tag}"`).join(', ')}]}`;
 }
 
 /** @param {import("typedoc").Application} app */
@@ -110,7 +138,7 @@ export function load(app) {
       return;
     }
 
-    page.contents = `${META_IMPORT}\n\n<Meta title="${meta.title}" name="${meta.name}" />\n\n${page.contents}`;
+    page.contents = `${META_IMPORT}\n\n<Meta title="${meta.title}" name="${meta.name}" ${metaTagsOf(meta)} />\n\n${page.contents}`;
   });
 
   app.renderer.on(RendererEvent.END, () => {
