@@ -13,4 +13,5 @@ addons.setConfig({
         !(HIDE_INDEX_PAGES && entry.tags?.includes('api-index'))
     },
     renderLabel
+  }
 });
