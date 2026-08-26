@@ -8,6 +8,7 @@ import type { User } from '@sportipedia/user';
 /**
  * @group Instrument
  * @category Abilities
+ * @source
  */
 export function canCatalogInstrument(user?: User) {
   return user?.role === 'user' || user?.role === 'admin';
@@ -16,6 +17,7 @@ export function canCatalogInstrument(user?: User) {
 /**
  * @group Instrument
  * @category Abilities
+ * @source
  */
 export function canEditInstrument(_instrument: Instrument, user?: User) {
   return user?.role === 'user' || user?.role === 'admin';
@@ -24,6 +26,7 @@ export function canEditInstrument(_instrument: Instrument, user?: User) {
 /**
  * @group Instrument
  * @category Abilities
+ * @source
  */
 export function canArchiveInstrument(_instrument: Instrument, user?: User) {
   return user?.role === 'admin';

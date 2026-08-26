@@ -39,6 +39,7 @@ export default {
   plugin: [
     'typedoc-plugin-ember',
     'typedoc-plugin-markdown',
+    'typedoc-plugin-inline-sources',
     './scripts/typedoc-plugin-storybook.mjs'
   ]
 };
