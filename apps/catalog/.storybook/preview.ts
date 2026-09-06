@@ -1,3 +1,4 @@
+import { mswLoader } from 'msw-storybook-addon/csf3';
 import { themes } from 'storybook/theming';
 
 import { createApp } from '#/app';
@@ -5,10 +6,16 @@ import { configure } from '#/config';
 
 import '@hokulea/core/style.css';
 
+import { authHandlers } from './msw-handlers';
+
 import type { Preview } from 'ember-storybook';
 
 const preview: Preview = {
+  loaders: [mswLoader()],
   parameters: {
+    msw: {
+      handlers: authHandlers
+    },
     docs: {
       codePanel: true,
       theme: themes.dark

@@ -16,8 +16,8 @@ import { EquipmentDetail } from '../ui/equipment-detail.gts';
 
 import type { Instrument } from '../domain-objects/instrument/instrument';
 import type RouterService from '@ember/routing/router-service';
-import type { ReactiveDataDocument, ReactiveResource } from '@warp-drive/core/reactive';
-import type { Future } from '@warp-drive/core/request';
+import type { ReactiveResource } from '@warp-drive/core/reactive';
+// import type { Future } from '@warp-drive/core/request';
 import type { Store } from '#support/data';
 
 const canEditInstrument = ability(
@@ -37,16 +37,22 @@ class InstrumentRoute extends Route {
 
   model({ instrument }: { instrument: string }) {
     return {
-      request: this.store.request(readInstrument(instrument))
+      instrument
+      // request: this.store.request(readInstrument(instrument))
     };
   }
 }
 
 class InstrumentTemplate extends Component<{
-  Args: { model: { request: Future<ReactiveDataDocument<Instrument>> } };
+  // Args: { model: { request: Future<ReactiveDataDocument<Instrument>> } };
+  Args: { model: { instrument: string } };
 }> {
   @service declare store: Store;
   @service declare router: RouterService;
+
+  get request() {
+    return this.store.request(readInstrument(this.args.model.instrument));
+  }
 
   archive = async (record: Instrument & ReactiveResource) => {
     try {
@@ -59,7 +65,7 @@ class InstrumentTemplate extends Component<{
   };
 
   <template>
-    <Request @request={{@model.request}}>
+    <Request @request={{this.request}}>
       <:content as |result|>
         <EquipmentDetail
           @equipment={{result.data}}

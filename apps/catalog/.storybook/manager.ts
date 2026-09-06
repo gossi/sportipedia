@@ -7,7 +7,7 @@ const HIDE_INDEX_PAGES = true;
 
 addons.setConfig({
   sidebar: {
-    showRoots: false,
+    // showRoots: false,
     filters: {
       'hide-apidoc-index-pages': (entry: { tags?: string[] }) =>
         !(HIDE_INDEX_PAGES && entry.tags?.includes('api-index'))

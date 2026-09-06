@@ -22,6 +22,9 @@
       "#equipment": [
         "./src/equipment/index.ts"
       ],
+      "#equipment-test-support": [
+        "./tests/equipment/support/index.ts"
+      ],
       "#user": [
         "./src/user/index.ts"
       ],
@@ -35,7 +38,8 @@
       "@embroider/core/virtual",
       "vite/client",
       "ember-intl/types",
-      "unplugin-icons/types/ember"
+      "unplugin-icons/types/ember",
+      "msw-storybook-addon/csf3"
     ]
   }
 }
