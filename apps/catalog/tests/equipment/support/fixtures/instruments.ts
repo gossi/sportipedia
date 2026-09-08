@@ -21,3 +21,19 @@ export const SKATEBOARD: Instrument = Object.freeze({
   createdAt: Temporal.Now.plainDateTimeISO(),
   updatedAt: Temporal.Now.plainDateTimeISO()
 });
+
+export const INSTRUMENTS = [UNICYCLE, SKATEBOARD];
+
+export function findInstrumentById(
+  id: string,
+  instruments: Instrument[] = INSTRUMENTS
+): Instrument | undefined {
+  return instruments.find((i) => i.id === id);
+}
+
+export function findInstrumentBySlug(
+  slug: string,
+  instruments: Instrument[] = INSTRUMENTS
+): Instrument | undefined {
+  return instruments.find((i) => i.slug === slug);
+}

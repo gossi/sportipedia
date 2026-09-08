@@ -51,6 +51,8 @@ class InstrumentTemplate extends Component<{
   @service declare router: RouterService;
 
   get request() {
+    console.log('store', this.store);
+
     return this.store.request(readInstrument(this.args.model.instrument));
   }
 

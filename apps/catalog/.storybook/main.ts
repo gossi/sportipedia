@@ -20,6 +20,9 @@ const config: StorybookConfig = {
       expanded: false
     }
   },
+  features: {
+    sidebarOnboardingChecklist: false
+  },
   core: {
     disableWhatsNewNotifications: true
   }

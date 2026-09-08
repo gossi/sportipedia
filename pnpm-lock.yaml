@@ -563,8 +563,8 @@ importers:
         specifier: catalog:ember
         version: 7.1.0(@glimmer/component@2.1.1)
       ember-storybook:
-        specifier: ^0.3.1
-        version: 0.3.1(@babel/core@7.29.0)(@glimmer/component@2.1.1)(ember-source@7.1.0(@glimmer/component@2.1.1))(esbuild@0.28.1)(rollup@4.46.2)(storybook@10.5.10(@types/react@19.2.18)(prettier@3.9.4)(react@19.2.8))(typescript@6.0.3)(vite@8.1.0(@types/node@25.0.3)(esbuild@0.28.1)(jiti@2.6.1)(terser@5.44.1)(tsx@4.22.4)(yaml@2.9.0))(webpack@5.101.0(esbuild@0.28.1))
+        specifier: ^0.3.2
+        version: 0.3.2(@babel/core@7.29.0)(@glimmer/component@2.1.1)(ember-source@7.1.0(@glimmer/component@2.1.1))(esbuild@0.28.1)(rollup@4.46.2)(storybook@10.5.10(@types/react@19.2.18)(prettier@3.9.4)(react@19.2.8))(typescript@6.0.3)(vite@8.1.0(@types/node@25.0.3)(esbuild@0.28.1)(jiti@2.6.1)(terser@5.44.1)(tsx@4.22.4)(yaml@2.9.0))(webpack@5.101.0(esbuild@0.28.1))
       ember-strict-application-resolver:
         specifier: catalog:ember
         version: 0.1.1(@babel/core@7.29.0)
@@ -5190,8 +5190,8 @@ packages:
     peerDependencies:
       '@glimmer/component': ^1.1.2 || ^2.0.0
 
-  ember-storybook@0.3.1:
-    resolution: {integrity: sha512-kPXQ3NHzdoSt4fEMZ16VwsMUkuYZWg4/LD3BZrVNRiAjUxOFkHPsz49ShK6ayE3apG4Owj1tSuJOhgL6a0mTPQ==}
+  ember-storybook@0.3.2:
+    resolution: {integrity: sha512-cz+VFdLTaz1//4smGW4Io0x4W52mcpfX6arPia1zvjAEnluoYHcfrcBZij/JGOm5TzcHycraHdcBkZQB1V+QUA==}
     engines: {node: '>=24.0.0'}
     peerDependencies:
       '@glimmer/component': ^2.1.1
@@ -13248,7 +13248,7 @@ snapshots:
       - '@glint/template'
       - supports-color
 
-  ember-storybook@0.3.1(@babel/core@7.29.0)(@glimmer/component@2.1.1)(ember-source@7.1.0(@glimmer/component@2.1.1))(esbuild@0.28.1)(rollup@4.46.2)(storybook@10.5.10(@types/react@19.2.18)(prettier@3.9.4)(react@19.2.8))(typescript@6.0.3)(vite@8.1.0(@types/node@25.0.3)(esbuild@0.28.1)(jiti@2.6.1)(terser@5.44.1)(tsx@4.22.4)(yaml@2.9.0))(webpack@5.101.0(esbuild@0.28.1)):
+  ember-storybook@0.3.2(@babel/core@7.29.0)(@glimmer/component@2.1.1)(ember-source@7.1.0(@glimmer/component@2.1.1))(esbuild@0.28.1)(rollup@4.46.2)(storybook@10.5.10(@types/react@19.2.18)(prettier@3.9.4)(react@19.2.8))(typescript@6.0.3)(vite@8.1.0(@types/node@25.0.3)(esbuild@0.28.1)(jiti@2.6.1)(terser@5.44.1)(tsx@4.22.4)(yaml@2.9.0))(webpack@5.101.0(esbuild@0.28.1)):
     dependencies:
       '@glimmer/component': 2.1.1
       '@storybook/builder-vite': 10.5.10(esbuild@0.28.1)(rollup@4.46.2)(storybook@10.5.10(@types/react@19.2.18)(prettier@3.9.4)(react@19.2.8))(vite@8.1.0(@types/node@25.0.3)(esbuild@0.28.1)(jiti@2.6.1)(terser@5.44.1)(tsx@4.22.4)(yaml@2.9.0))(webpack@5.101.0(esbuild@0.28.1))

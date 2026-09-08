@@ -26,13 +26,20 @@ function parseTimestamps(data: Data) {
   return chronos;
 }
 
+function filterAttributes(data: Record<string, unknown>, attributes: string[]) {
+  return Object.fromEntries(Object.entries(data).filter(([k, _v]) => !attributes.includes(k)));
+}
+
 export function toResource(data: Data, id?: string) {
   return {
     type: data[Type],
     id: id ?? (Object.hasOwn(data, 'id') ? data.id : ''),
-    attributes: {
-      ...data,
-      ...parseTimestamps(data)
-    }
+    attributes: filterAttributes(
+      {
+        ...data,
+        ...parseTimestamps(data)
+      },
+      ['id']
+    )
   };
 }

@@ -3,7 +3,7 @@
   "type": "module",
   "imports": {
     "#equipment": "./src/equipment/index.ts",
-    "#equipment-test-support": "./test/equipment/support/index.ts",
+    "#equipment-test-support": "./tests/equipment/support/index.ts",
     "#user": "./src/user/index.ts",
     "#auth/*": "./src/support/auth/*",
     "#support/*": "./src/support/*",
@@ -87,7 +87,7 @@
     "ember-resources": "catalog:ember",
     "ember-scoped-css": "catalog:ember",
     "ember-source": "catalog:ember",
-    "ember-storybook": "^0.3.1",
+    "ember-storybook": "^0.3.2",
     "ember-strict-application-resolver": "catalog:ember",
     "ember-template-lint": "catalog:lint",
     "ember-truth-helpers": "catalog:ember",

@@ -1,10 +1,10 @@
+import '../src/ui/app.css';
+
 import { mswLoader } from 'msw-storybook-addon/csf3';
 import { themes } from 'storybook/theming';
 
 import { createApp } from '#/app';
 import { configure } from '#/config';
-
-import '@hokulea/core/style.css';
 
 import { authHandlers } from './msw-handlers';
 
