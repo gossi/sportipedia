@@ -5,7 +5,7 @@ import type { Meta, StoryObj } from 'ember-storybook';
 export default {
   title: 'Equipment/Pages/Index',
   component: IndexTemplate,
-  tags: ['vitest', '!autodocs']
+  tags: ['!autodocs']
 } satisfies Meta;
 
 export const Default: StoryObj = {};

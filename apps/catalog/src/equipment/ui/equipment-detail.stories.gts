@@ -18,7 +18,7 @@ import { EquipmentDetail } from './equipment-detail.gts';
 const meta = preview.meta({
   title: 'Equipment/UI/Detail',
   component: EquipmentDetail,
-  tags: ['vitest', '!autodocs'],
+  tags: ['!autodocs'],
   parameters: {
     controls: {
       sort: 'none'

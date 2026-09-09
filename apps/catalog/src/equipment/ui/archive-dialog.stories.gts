@@ -11,7 +11,7 @@ import { ArchiveDialog, type ArchiveDialogSignature } from './archive-dialog.gts
 const meta = preview.type<{ args: ArchiveDialogSignature }>().meta({
   title: 'Equipment/UI/ArchiveDialog',
   component: ArchiveDialog,
-  tags: ['vitest', '!autodocs'],
+  tags: ['!autodocs'],
   render: (args) => <template>
     <ArchiveDialog @equipment={{args.equipment}} @confirm={{args.confirm}} open />
   </template>,

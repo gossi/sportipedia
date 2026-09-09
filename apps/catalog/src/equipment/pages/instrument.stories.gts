@@ -1,5 +1,3 @@
-import { http, HttpResponse } from 'msw';
-
 import {
   findInstrumentBySlug,
   INSTRUMENTS,
@@ -8,7 +6,7 @@ import {
 } from '#equipment-test-support';
 import preview from '#storybook/preview.ts';
 import { mockReadInstrumentWithError } from '#tests/equipment/support/queries/instruments.ts';
-import { NotFoundError } from '#tests/support/data/errors.ts';
+import { NotFoundError, UnknownError } from '#tests/support/data/errors.ts';
 
 import { InstrumentTemplate } from './instrument.gts';
 
@@ -24,7 +22,7 @@ const meta = preview
   .meta({
     title: 'Equipment/Pages/Instrument',
     component: InstrumentTemplate,
-    tags: ['vitest', '!autodocs'],
+    tags: ['!autodocs'],
     parameters: {
       controls: {
         exclude: ['model']
@@ -68,12 +66,11 @@ export const Default = meta.story({
 // @ts-expect-error csf-next has some troubles with types
 export const Error = meta.story({
   // @ts-expect-error csf-next has some troubles with types
-  beforeEach({ msw }) {
+  beforeEach({ msw, args }) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     msw.use(
-      http.get('/api/instrument', () => {
-        return new HttpResponse(undefined, { status: 500 });
-      })
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+      mockReadInstrumentWithError(args.instrument, new UnknownError())
     );
   }
 });

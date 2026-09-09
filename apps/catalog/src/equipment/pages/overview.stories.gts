@@ -33,7 +33,7 @@ function serverErrorResponse() {
 const meta = preview.meta({
   title: 'Equipment/Pages/Overview',
   component: OverviewTemplate,
-  tags: ['vitest', '!autodocs'],
+  tags: ['!autodocs'],
   parameters: {
     layout: 'fullscreen'
   }

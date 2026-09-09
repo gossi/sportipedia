@@ -12,7 +12,7 @@ import { EquipmentForm } from './equipment-form.gts';
 const meta = preview.meta({
   title: 'Equipment/UI/EquipmentForm',
   component: EquipmentForm,
-  tags: ['vitest', '!autodocs'],
+  tags: ['!autodocs'],
   argTypes: {
     // ...makeEquipmentArgTypes(EQUIPMENTS),
     confirm: {
