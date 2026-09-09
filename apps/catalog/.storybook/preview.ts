@@ -1,6 +1,9 @@
 import '../src/ui/app.css';
 
-import { mswLoader } from 'msw-storybook-addon/csf3';
+import addonDocs from '@storybook/addon-docs';
+import addonVitest from '@storybook/addon-vitest';
+import { definePreview } from 'ember-storybook';
+import addonMsw from 'msw-storybook-addon';
 import { themes } from 'storybook/theming';
 
 import { createApp } from '#/app';
@@ -11,10 +14,9 @@ import { StoryAuthService } from './story-auth-service';
 
 import type { SessionChoice } from './story-auth-service';
 import type Owner from '@ember/owner';
-import type { Preview } from 'ember-storybook';
 
-const preview: Preview = {
-  loaders: [mswLoader()],
+export default definePreview({
+  addons: [addonDocs(), addonVitest(), addonMsw()],
   globalTypes: {
     locale: {
       description: 'Internationalization locale (ember-intl)',
@@ -87,6 +89,4 @@ const preview: Preview = {
   },
 
   tags: ['vitest', 'autodocs']
-};
-
-export default preview;
+});

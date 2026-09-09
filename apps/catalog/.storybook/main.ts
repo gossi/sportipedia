@@ -1,6 +1,6 @@
-import type { StorybookConfig } from 'ember-storybook';
+import { defineMain } from 'ember-storybook/node';
 
-const config: StorybookConfig = {
+export default defineMain({
   stories: ['../src/**/*.stories.gts', '../apidocs/markdown/*/**/*.mdx'],
   staticDirs: ['../public'],
   addons: [
@@ -26,6 +26,4 @@ const config: StorybookConfig = {
   core: {
     disableWhatsNewNotifications: true
   }
-};
-
-export default config;
+});
