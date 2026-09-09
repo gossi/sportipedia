@@ -6,69 +6,74 @@ import {
   mockReadInstrument,
   UNICYCLE
 } from '#equipment-test-support';
+import preview from '#storybook/preview.ts';
 import { mockReadInstrumentWithError } from '#tests/equipment/support/queries/instruments.ts';
 import { NotFoundError } from '#tests/support/data/errors.ts';
 
 import { InstrumentTemplate } from './instrument.gts';
 
-import type { Meta, StoryObj } from 'ember-storybook';
-import type { MswApi } from 'msw-storybook-addon';
-
-interface Args {
-  model: {
-    instrument: string;
-  };
-  instrument: string;
-}
-
-export default {
-  title: 'Equipment/Pages/Instrument',
-  component: InstrumentTemplate,
-  tags: ['vitest', '!autodocs'],
-  parameters: {
-    controls: {
-      exclude: ['model']
-    }
-  },
-  argTypes: {
-    instrument: {
-      control: {
-        type: 'select',
-        labels: Object.fromEntries(INSTRUMENTS.map((e) => [e.slug, e.title]))
-      },
-      options: INSTRUMENTS.map((i) => i.slug),
-      table: {
-        category: 'model'
+const meta = preview
+  .type<{
+    args: {
+      model: {
+        instrument: string;
+      };
+      instrument: string;
+    };
+  }>()
+  .meta({
+    title: 'Equipment/Pages/Instrument',
+    component: InstrumentTemplate,
+    tags: ['vitest', '!autodocs'],
+    parameters: {
+      controls: {
+        exclude: ['model']
       }
-    }
-  },
-  args: {
-    instrument: UNICYCLE.slug
-  },
-  decorators: [(story, { args }) => story({ args: { model: { instrument: args.instrument } } })]
-} satisfies Meta<Args>;
+    },
+    argTypes: {
+      instrument: {
+        control: {
+          type: 'select',
+          labels: Object.fromEntries(INSTRUMENTS.map((e) => [e.slug, e.title]))
+        },
+        options: INSTRUMENTS.map((i) => i.slug),
+        table: {
+          category: 'model'
+        }
+      }
+    },
+    args: {
+      instrument: UNICYCLE.slug
+    },
+    decorators: [(story, { args }) => story({ args: { model: { instrument: args.instrument } } })]
+  });
 
-export const Default: StoryObj<Args> = {
+// @ts-expect-error csf-next has some troubles with types
+export const Default = meta.story({
+  // @ts-expect-error csf-next has some troubles with types
   beforeEach({ msw, args }) {
-    const worker = msw as MswApi;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
     const instrument = findInstrumentBySlug(args.instrument);
 
-    worker.use(
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    msw.use(
       instrument
         ? mockReadInstrument(instrument)
-        : mockReadInstrumentWithError(args.instrument, new NotFoundError())
+        : // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
+          mockReadInstrumentWithError(args.instrument, new NotFoundError())
     );
   }
-};
+});
 
-export const Error: StoryObj = {
+// @ts-expect-error csf-next has some troubles with types
+export const Error = meta.story({
+  // @ts-expect-error csf-next has some troubles with types
   beforeEach({ msw }) {
-    const worker = msw as MswApi;
-
-    worker.use(
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+    msw.use(
       http.get('/api/instrument', () => {
         return new HttpResponse(undefined, { status: 500 });
       })
     );
   }
-};
+});

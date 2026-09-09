@@ -1,14 +1,13 @@
 import { Type } from '@warp-drive/core/types/symbols';
 import { http, HttpResponse } from 'msw';
 
+import preview from '#storybook/preview.ts';
 import { BALANCE_BEAM, PARALLEL_BARS, RINGS } from '#tests/equipment/support/fixtures/apparatuses';
 import { SKATEBOARD, UNICYCLE } from '#tests/equipment/support/fixtures/instruments';
 
 import { OverviewTemplate } from './overview.gts';
 
 import type { Apparatus, Instrument } from '#equipment';
-import type { Meta, StoryObj } from 'ember-storybook';
-import type { MswApi } from 'msw-storybook-addon';
 
 function toResource(equipment: Instrument | Apparatus) {
   return {
@@ -31,20 +30,18 @@ function serverErrorResponse() {
   );
 }
 
-export default {
+const meta = preview.meta({
   title: 'Equipment/Pages/Overview',
   component: OverviewTemplate,
   tags: ['vitest', '!autodocs'],
   parameters: {
     layout: 'fullscreen'
   }
-} satisfies Meta;
+});
 
-export const Default: StoryObj = {
+export const Default = meta.story({
   beforeEach({ msw }) {
-    const worker = msw as MswApi;
-
-    worker.use(
+    msw.use(
       http.get('**/equipment/instruments', () => {
         return HttpResponse.json({
           data: [UNICYCLE, SKATEBOARD].map((instrument) => toResource(instrument))
@@ -57,15 +54,13 @@ export const Default: StoryObj = {
       })
     );
   }
-};
+});
 
-export const Error: StoryObj = {
+export const Error = meta.story({
   beforeEach({ msw }) {
-    const worker = msw as MswApi;
-
-    worker.use(
+    msw.use(
       http.get('**/equipment/instruments', serverErrorResponse),
       http.get('**/equipment/apparatuses', serverErrorResponse)
     );
   }
-};
+});
