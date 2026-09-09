@@ -45,6 +45,11 @@ export default defineConfig({
             storybookScript: 'pnpm sb --no-open'
           })
         ],
+        // pre-bundle the runtime template compiler: lazy discovery would trigger
+        // a full reload mid-run and break the browser test runner
+        optimizeDeps: {
+          include: ['ember-source/@ember/template-compiler/index.js']
+        },
         test: {
           name: 'storybook',
           browser: {

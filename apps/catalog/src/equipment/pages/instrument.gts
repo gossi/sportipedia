@@ -2,6 +2,7 @@ import Component from '@glimmer/component';
 import Route from '@ember/routing/route';
 import { service } from '@ember/service';
 
+import { ApiError } from '@sportipedia/ui';
 import { Request } from '@warp-drive/ember';
 import { ability } from 'ember-ability';
 
@@ -51,8 +52,6 @@ class InstrumentTemplate extends Component<{
   @service declare router: RouterService;
 
   get request() {
-    console.log('store', this.store);
-
     return this.store.request(readInstrument(this.args.model.instrument));
   }
 
@@ -68,6 +67,10 @@ class InstrumentTemplate extends Component<{
 
   <template>
     <Request @request={{this.request}}>
+      <:error as |error|>
+        <ApiError @error={{error}} />
+      </:error>
+
       <:content as |result|>
         <EquipmentDetail
           @equipment={{result.data}}

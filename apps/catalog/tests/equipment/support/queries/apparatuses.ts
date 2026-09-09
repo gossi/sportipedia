@@ -9,7 +9,7 @@ import type { Apparatus } from '#equipment';
 import type { ApiError } from '#tests/support/data/errors.ts';
 
 export function mockReadApparatus(apparatus: Apparatus) {
-  return http.get<{ id: string }>(`**/catalog/equipment/apparatuses/${apparatus.id}`, () => {
+  return http.get<{ id: string }>(`**/catalog/equipment/apparatuses/${apparatus.slug}`, () => {
     return HttpResponse.json(toJsonApiDocument(toResource(apparatus)));
   });
 }

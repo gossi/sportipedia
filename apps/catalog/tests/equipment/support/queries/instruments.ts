@@ -9,7 +9,7 @@ import type { Instrument } from '#equipment';
 import type { ApiError } from '#tests/support/data/errors.ts';
 
 export function mockReadInstrument(instrument: Instrument) {
-  return http.get<{ id: string }>(`**/catalog/equipment/instruments/${instrument.id}`, () => {
+  return http.get<{ id: string }>(`**/catalog/equipment/instruments/${instrument.slug}`, () => {
     return HttpResponse.json(toJsonApiDocument(toResource(instrument)));
   });
 }
