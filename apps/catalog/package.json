@@ -68,6 +68,7 @@
     "@theemo/ember": "catalog:lib",
     "@theemo/vite": "catalog:lib",
     "@vitest/ui": "catalog:test",
+    "@vitest/browser-playwright": "catalog:test",
     "@warp-drive/core": "catalog:ember",
     "@warp-drive/ember": "catalog:ember",
     "@warp-drive/json-api": "catalog:ember",

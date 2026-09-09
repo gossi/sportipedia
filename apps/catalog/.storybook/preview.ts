@@ -3,6 +3,7 @@ import '../src/ui/app.css';
 import addonDocs from '@storybook/addon-docs';
 import addonVitest from '@storybook/addon-vitest';
 import { definePreview } from 'ember-storybook';
+import { setupWorker } from 'msw/browser';
 import addonMsw from 'msw-storybook-addon';
 import { themes } from 'storybook/theming';
 
@@ -16,7 +17,17 @@ import type { SessionChoice } from './story-auth-service';
 import type Owner from '@ember/owner';
 
 export default definePreview({
-  addons: [addonDocs(), addonVitest(), addonMsw()],
+  addons: [
+    addonDocs(),
+    addonVitest(),
+    addonMsw(async () => {
+      const worker = setupWorker(...authHandlers);
+
+      await worker.start();
+
+      return worker;
+    })
+  ],
   globalTypes: {
     locale: {
       description: 'Internationalization locale (ember-intl)',
@@ -50,10 +61,10 @@ export default definePreview({
     locale: 'en',
     session: 'guest'
   },
+  // beforeEach: ({ msw }) => {
+  //   msw.use(...authHandlers);
+  // },
   parameters: {
-    msw: {
-      handlers: authHandlers
-    },
     docs: {
       codePanel: true,
       theme: themes.dark
@@ -88,5 +99,5 @@ export default definePreview({
     }
   },
 
-  tags: ['vitest', 'autodocs']
+  tags: ['autodocs']
 });
