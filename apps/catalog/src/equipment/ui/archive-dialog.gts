@@ -7,7 +7,7 @@ import { Button } from '@hokulea/ember';
 
 import type { Equipment } from '../domain-objects/equipment';
 
-interface ArchiveDialogSignature {
+export interface ArchiveDialogSignature {
   Element: HTMLDialogElement;
   Args: {
     equipment: Equipment;

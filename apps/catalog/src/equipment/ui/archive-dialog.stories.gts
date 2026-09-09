@@ -4,12 +4,11 @@ import {
   makeEquipmenDecorator,
   makeEquipmentArgTypes
 } from '#equipment-test-support';
+import preview from '#storybook/preview.ts';
 
-import { ArchiveDialog } from './archive-dialog.gts';
+import { ArchiveDialog, type ArchiveDialogSignature } from './archive-dialog.gts';
 
-import type { Meta, StoryObj } from 'ember-storybook';
-
-export default {
+const meta = preview.type<{ args: ArchiveDialogSignature }>().meta({
   title: 'Equipment/UI/ArchiveDialog',
   component: ArchiveDialog,
   tags: ['vitest', '!autodocs'],
@@ -24,10 +23,11 @@ export default {
       }
     }
   },
+  // @ts-expect-error csf-next has some troubles with the types
   args: {
     ...getEquipmentDefaultArgs()
   },
   decorators: makeEquipmenDecorator(EQUIPMENTS)
-} satisfies Meta;
+});
 
-export const Default: StoryObj = {};
+export const Default = meta.story();
