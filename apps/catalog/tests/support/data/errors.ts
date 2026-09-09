@@ -33,3 +33,9 @@ export class UnauthorizedError extends PlainApiError {
     });
   }
 }
+
+export class UnknownError extends PlainApiError {
+  constructor(payload?: JsonApiError) {
+    super(500, payload ?? { id: 'unknown' });
+  }
+}
