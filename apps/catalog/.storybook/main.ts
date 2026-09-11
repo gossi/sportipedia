@@ -7,7 +7,8 @@ export default defineMain({
     '@storybook/addon-docs',
     '@storybook/addon-a11y',
     '@storybook/addon-vitest',
-    'msw-storybook-addon'
+    'msw-storybook-addon',
+    'storybook-addon-test-codegen'
   ],
   framework: {
     name: 'ember-storybook',

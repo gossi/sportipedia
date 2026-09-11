@@ -1,11 +1,13 @@
 import '../src/ui/app.css';
 
+import addonA11y from '@storybook/addon-a11y';
 import addonDocs from '@storybook/addon-docs';
 import addonVitest from '@storybook/addon-vitest';
 import { definePreview } from 'ember-storybook';
 import { setupWorker } from 'msw/browser';
 import addonMsw from 'msw-storybook-addon';
 import { themes } from 'storybook/theming';
+import addonCodegen from 'storybook-addon-test-codegen';
 
 import { createApp } from '#/app';
 import { configure } from '#/config';
@@ -26,7 +28,9 @@ export default definePreview({
       await worker.start();
 
       return worker;
-    })
+    }),
+    addonA11y(),
+    addonCodegen()
   ],
   globalTypes: {
     locale: {
