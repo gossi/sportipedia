@@ -29,6 +29,7 @@
         "./src/user/index.ts"
       ],
       "#storybook/*": ["./.storybook/*"],
+      "#test-support/*": ["./tests/support/*"],
       "#tests/*": [
         "./tests/*"
       ]

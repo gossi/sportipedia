@@ -1,20 +1,16 @@
-import {
-  EQUIPMENTS,
-  getEquipmentDefaultArgs,
-  makeEquipmenDecorator,
-  makeEquipmentArgTypes,
-  UNICYCLE
-} from '#equipment-test-support';
-import preview from '#storybook/preview.ts';
+import { expect, userEvent } from 'storybook/test';
+
+import { EQUIPMENTS, makeEquipmenDecorator, UNICYCLE } from '#equipment-test-support';
 
 import { EquipmentForm } from './equipment-form.gts';
 
-const meta = preview.meta({
+import type { Meta, StoryObj } from 'ember-storybook';
+
+export default {
   title: 'Equipment/UI/EquipmentForm',
   component: EquipmentForm,
   tags: ['!autodocs'],
   argTypes: {
-    // ...makeEquipmentArgTypes(EQUIPMENTS),
     confirm: {
       table: {
         category: 'Actions'
@@ -23,9 +19,13 @@ const meta = preview.meta({
   },
   args: {
     equipment: UNICYCLE
-    // ...getEquipmentDefaultArgs()
   },
   decorators: makeEquipmenDecorator(EQUIPMENTS)
-});
+} satisfies Meta;
 
-export const Default = meta.story();
+export const Default: StoryObj = {
+  play: async ({ canvas }) => {
+    await userEvent.type(canvas.getByRole('textbox', { name: 'Title' }), 'abc');
+    await expect(canvas.getByRole('textbox', { name: 'Slug' })).toHaveValue('abc');
+  }
+};

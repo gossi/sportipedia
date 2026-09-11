@@ -9,6 +9,7 @@
     "#support/*": "./src/support/*",
     "#storybook/*": "./.storybook/*",
     "#/*": "./src/*",
+    "#test-support/*": "./tests/support/*",
     "#tests/*": "./tests/*"
   },
   "files": [

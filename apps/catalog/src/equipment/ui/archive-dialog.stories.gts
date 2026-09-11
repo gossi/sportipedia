@@ -4,11 +4,12 @@ import {
   makeEquipmenDecorator,
   makeEquipmentArgTypes
 } from '#equipment-test-support';
-import preview from '#storybook/preview.ts';
 
 import { ArchiveDialog, type ArchiveDialogSignature } from './archive-dialog.gts';
 
-const meta = preview.type<{ args: ArchiveDialogSignature }>().meta({
+import type { Meta, StoryObj } from 'ember-storybook';
+
+export default {
   title: 'Equipment/UI/ArchiveDialog',
   component: ArchiveDialog,
   tags: ['!autodocs'],
@@ -23,11 +24,11 @@ const meta = preview.type<{ args: ArchiveDialogSignature }>().meta({
       }
     }
   },
-  // @ts-expect-error csf-next has some troubles with the types
+  // @ts-expect-error the decorator swaps the slug preset for the resolved Equipment
   args: {
     ...getEquipmentDefaultArgs()
   },
   decorators: makeEquipmenDecorator(EQUIPMENTS)
-});
+} satisfies Meta<ArchiveDialogSignature['Args']>;
 
-export const Default = meta.story();
+export const Default: StoryObj<ArchiveDialogSignature['Args']> = {};

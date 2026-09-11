@@ -67,6 +67,10 @@ class InstrumentTemplate extends Component<{
 
   <template>
     <Request @request={{this.request}}>
+      <:loading>
+        Loading...
+      </:loading>
+
       <:error as |error|>
         <ApiError @error={{error}} />
       </:error>

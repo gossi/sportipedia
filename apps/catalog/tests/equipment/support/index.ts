@@ -15,16 +15,18 @@ export {
   UNICYCLE
 } from './fixtures/instruments';
 export {
+  makeApparatusEndpoint,
+  makeApparatusesEndpoint,
+  makeApparatusResponse,
   mockListApparatuses,
-  mockListApparatusesWithError,
-  mockReadApparatus,
-  mockReadApparatusWithError
+  mockReadApparatus
 } from './queries/apparatuses';
 export {
+  makeInstrumentEndpoint,
+  makeInstrumentResponse,
+  makeInstrumentsEndpoint,
   mockListInstruments,
-  mockListInstrumentsWithError,
-  mockReadInstrument,
-  mockReadInstrumentWithError
+  mockReadInstrument
 } from './queries/instruments';
 export {
   type EquipmentArgs,

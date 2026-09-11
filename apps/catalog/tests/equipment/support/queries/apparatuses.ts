@@ -1,33 +1,30 @@
-import { http, HttpResponse } from 'msw';
-
-import { toJsonApiDocument, toJsonApiErrorDocument } from '#tests/support/data/jsonapi.ts';
-import { toResource } from '#tests/support/data/resources.ts';
+import { toJsonApiDocument } from '#test-support/data/jsonapi.ts';
+import { toResource } from '#test-support/data/resources.ts';
+import { type Endpoint, makeJsonResponse, mock } from '#test-support/msw';
 
 import { APPARATUSES } from '../fixtures/apparatuses';
 
 import type { Apparatus } from '#equipment';
-import type { ApiError } from '#tests/support/data/errors.ts';
+import type { RequestHandler, ResponseResolver } from 'msw';
 
-export function mockReadApparatus(apparatus: Apparatus) {
-  return http.get<{ id: string }>(`**/catalog/equipment/apparatuses/${apparatus.slug}`, () => {
-    return HttpResponse.json(toJsonApiDocument(toResource(apparatus)));
-  });
+export function makeApparatusEndpoint(slug: string): Endpoint {
+  return { method: 'GET', path: `**/catalog/equipment/apparatuses/${slug}` };
 }
 
-export function mockReadApparatusWithError(slug: string, error: ApiError) {
-  return http.get<{ id: string }>(`**/catalog/equipment/apparatuses/${slug}`, () => {
-    return HttpResponse.json(toJsonApiErrorDocument(error.error), { status: error.status });
-  });
+export function makeApparatusesEndpoint(): Endpoint {
+  return { method: 'GET', path: '**/catalog/equipment/apparatuses' };
 }
 
-export function mockListApparatuses(apparatuses: Apparatus[] = APPARATUSES) {
-  return http.get(`**/catalog/equipment/apparatuses`, () => {
-    return HttpResponse.json({ data: apparatuses.map((i) => toResource(i)) });
-  });
+export function makeApparatusResponse(apparatus: Apparatus): ResponseResolver {
+  return makeJsonResponse(toJsonApiDocument(toResource(apparatus)));
 }
 
-export function mockListApparatusesWithError(error: ApiError) {
-  return http.get(`**/catalog/equipment/apparatuses`, () => {
-    return HttpResponse.json(toJsonApiErrorDocument(error.error), { status: error.status });
-  });
+export function mockReadApparatus(apparatus: Apparatus): RequestHandler {
+  return mock(makeApparatusEndpoint(apparatus.slug), makeApparatusResponse(apparatus));
+}
+
+export function mockListApparatuses(apparatuses: Apparatus[] = APPARATUSES): RequestHandler {
+  const data = apparatuses.map((apparatus) => toResource(apparatus));
+
+  return mock(makeApparatusesEndpoint(), makeJsonResponse(toJsonApiDocument(data)));
 }

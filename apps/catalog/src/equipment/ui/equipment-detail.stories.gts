@@ -10,13 +10,14 @@ import {
   makeEquipmentArgTypes,
   UNICYCLE
 } from '#equipment-test-support';
-import preview from '#storybook/preview';
-import { withCustom } from '#tests/support/storybook.ts';
+import { withCustom } from '#test-support/storybook.ts';
 
 import { EquipmentDetail } from './equipment-detail.gts';
 
-const meta = preview.meta({
-  title: 'Equipment/UI/Detail',
+import type { Meta, StoryObj } from 'ember-storybook';
+
+export default {
+  title: 'Equipment/UI/EquipmentDetail',
   component: EquipmentDetail,
   tags: ['!autodocs'],
   parameters: {
@@ -52,11 +53,11 @@ const meta = preview.meta({
     ...getEquipmentDefaultArgs(UNICYCLE)
   },
   decorators: makeEquipmenDecorator(EQUIPMENTS)
-});
+} satisfies Meta;
 
-export const Equipment = meta.story({});
+export const Equipment: StoryObj = {};
 
-export const Instrument = meta.story({
+export const Instrument: StoryObj = {
   argTypes: {
     equipment: {
       options: withCustom(INSTRUMENTS.map((i) => i.slug))
@@ -65,9 +66,9 @@ export const Instrument = meta.story({
   args: {
     equipment: UNICYCLE.slug
   }
-});
+};
 
-export const Apparatus = meta.story({
+export const Apparatus: StoryObj = {
   argTypes: {
     equipment: {
       options: withCustom(APPARATUSES.map((i) => i.slug))
@@ -76,4 +77,4 @@ export const Apparatus = meta.story({
   args: {
     equipment: BALANCE_BEAM.slug
   }
-});
+};

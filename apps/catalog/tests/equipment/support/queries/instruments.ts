@@ -1,33 +1,31 @@
-import { http, HttpResponse } from 'msw';
-
-import { toJsonApiDocument, toJsonApiErrorDocument } from '#tests/support/data/jsonapi.ts';
-import { toResource } from '#tests/support/data/resources.ts';
+import { toJsonApiDocument } from '#test-support/data/jsonapi.ts';
+import { toResource } from '#test-support/data/resources.ts';
+import { type Endpoint, makeJsonResponse, mock } from '#test-support/msw';
 
 import { INSTRUMENTS } from '../fixtures/instruments';
 
 import type { Instrument } from '#equipment';
-import type { ApiError } from '#tests/support/data/errors.ts';
+import type { RequestHandler, ResponseResolver } from 'msw';
 
-export function mockReadInstrument(instrument: Instrument) {
-  return http.get<{ id: string }>(`**/catalog/equipment/instruments/${instrument.slug}`, () => {
-    return HttpResponse.json(toJsonApiDocument(toResource(instrument)));
-  });
+export function makeInstrumentEndpoint(slug: string): Endpoint {
+  return { method: 'GET', path: `**/catalog/equipment/instruments/${slug}` };
 }
 
-export function mockReadInstrumentWithError(slug: string, error: ApiError) {
-  return http.get<{ id: string }>(`**/catalog/equipment/instruments/${slug}`, () => {
-    return HttpResponse.json(toJsonApiErrorDocument(error.error), { status: error.status });
-  });
+export function makeInstrumentsEndpoint(): Endpoint {
+  return { method: 'GET', path: '**/catalog/equipment/instruments' };
 }
 
-export function mockListInstruments(instruments: Instrument[] = INSTRUMENTS) {
-  return http.get(`**/catalog/equipment/instruments`, () => {
-    return HttpResponse.json({ data: instruments.map((i) => toResource(i)) });
-  });
+export function makeInstrumentResponse(instrument: Instrument): ResponseResolver {
+  return makeJsonResponse(toJsonApiDocument(toResource(instrument)));
 }
 
-export function mockListInstrumentsWithError(error: ApiError) {
-  return http.get(`**/catalog/equipment/instruments`, () => {
-    return HttpResponse.json(toJsonApiErrorDocument(error.error), { status: error.status });
-  });
+/** Mocks `GET instruments/{slug}` to serve the given instrument. */
+export function mockReadInstrument(instrument: Instrument): RequestHandler {
+  return mock(makeInstrumentEndpoint(instrument.slug), makeInstrumentResponse(instrument));
+}
+
+export function mockListInstruments(instruments: Instrument[] = INSTRUMENTS): RequestHandler {
+  const data = instruments.map((instrument) => toResource(instrument));
+
+  return mock(makeInstrumentsEndpoint(), makeJsonResponse(toJsonApiDocument(data)));
 }

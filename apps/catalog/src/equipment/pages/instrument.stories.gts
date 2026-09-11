@@ -1,76 +1,71 @@
 import {
   findInstrumentBySlug,
   INSTRUMENTS,
+  makeInstrumentEndpoint,
   mockReadInstrument,
   UNICYCLE
 } from '#equipment-test-support';
-import preview from '#storybook/preview.ts';
-import { mockReadInstrumentWithError } from '#tests/equipment/support/queries/instruments.ts';
-import { NotFoundError, UnknownError } from '#tests/support/data/errors.ts';
+import { NotFoundError, UnknownError } from '#test-support/data/errors.ts';
+import { withError, withLoading } from '#test-support/msw';
 
 import { InstrumentTemplate } from './instrument.gts';
 
-const meta = preview
-  .type<{
-    args: {
-      model: {
-        instrument: string;
-      };
-      instrument: string;
-    };
-  }>()
-  .meta({
-    title: 'Equipment/Pages/Instrument',
-    component: InstrumentTemplate,
-    tags: ['!autodocs'],
-    parameters: {
-      controls: {
-        exclude: ['model']
-      }
-    },
-    argTypes: {
-      instrument: {
-        control: {
-          type: 'select',
-          labels: Object.fromEntries(INSTRUMENTS.map((e) => [e.slug, e.title]))
-        },
-        options: INSTRUMENTS.map((i) => i.slug),
-        table: {
-          category: 'model'
-        }
-      }
-    },
-    args: {
-      instrument: UNICYCLE.slug
-    },
-    decorators: [(story, { args }) => story({ args: { model: { instrument: args.instrument } } })]
-  });
+import type { Meta, StoryObj } from 'ember-storybook';
 
-// @ts-expect-error csf-next has some troubles with types
-export const Default = meta.story({
-  // @ts-expect-error csf-next has some troubles with types
+interface InstrumentPageArgs {
+  instrument: string;
+  model: {
+    instrument: string;
+  };
+}
+
+export default {
+  title: 'Equipment/Pages/Instrument',
+  component: InstrumentTemplate,
+  tags: ['!autodocs'],
+  parameters: {
+    controls: {
+      exclude: ['model']
+    }
+  },
+  argTypes: {
+    instrument: {
+      control: {
+        type: 'select',
+        labels: Object.fromEntries(INSTRUMENTS.map((e) => [e.slug, e.title]))
+      },
+      options: INSTRUMENTS.map((i) => i.slug),
+      table: {
+        category: 'model'
+      }
+    }
+  },
+  args: {
+    instrument: UNICYCLE.slug
+  },
+  decorators: [(story, { args }) => story({ args: { model: { instrument: args.instrument } } })]
+} satisfies Meta<InstrumentPageArgs>;
+
+export const Default: StoryObj<InstrumentPageArgs> = {
   beforeEach({ msw, args }) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
     const instrument = findInstrumentBySlug(args.instrument);
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
     msw.use(
       instrument
         ? mockReadInstrument(instrument)
-        : // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-          mockReadInstrumentWithError(args.instrument, new NotFoundError())
+        : withError(makeInstrumentEndpoint(args.instrument), new NotFoundError())
     );
   }
-});
+};
 
-// @ts-expect-error csf-next has some troubles with types
-export const Error = meta.story({
-  // @ts-expect-error csf-next has some troubles with types
+export const Error: StoryObj<InstrumentPageArgs> = {
   beforeEach({ msw, args }) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-    msw.use(
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access
-      mockReadInstrumentWithError(args.instrument, new UnknownError())
-    );
+    msw.use(withError(makeInstrumentEndpoint(args.instrument), new UnknownError()));
   }
-});
+};
+
+export const Loading: StoryObj<InstrumentPageArgs> = {
+  beforeEach({ msw, args }) {
+    msw.use(withLoading(makeInstrumentEndpoint(args.instrument)));
+  }
+};
