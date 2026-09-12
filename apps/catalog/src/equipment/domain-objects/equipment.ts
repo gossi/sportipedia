@@ -33,13 +33,7 @@ export function getType(equipment: Equipment & { $type?: string }): string | und
   }
 }
 
-/**
- * @group Equipment
- * @category Equipment
- */
+/** @internal */
 export const asReactiveApparatusResource = asReactiveResource<Apparatus>;
-/**
- * @group Equipment
- * @category Equipment
- */
+/** @internal */
 export const asReactiveInstrumentResource = asReactiveResource<Instrument>;

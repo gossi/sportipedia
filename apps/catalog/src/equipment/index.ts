@@ -1,6 +1,6 @@
 /**
- * @module Manifest
- * @category Public API
+ * @module Public API
+ * @mergeModuleWith equipment
  */
 import { buildRegistry } from 'ember-strict-application-resolver/build-registry';
 
@@ -13,8 +13,21 @@ import { EditInstrumentRoute, EditInstrumentTemplate } from './pages/edit-instru
 import { InstrumentRoute, InstrumentTemplate } from './pages/instrument.gts';
 import { OverviewRoute, OverviewTemplate } from './pages/overview.gts';
 
+/**
+ * @category Public API
+ */
 export type { Apparatus } from './domain-objects/apparatus/apparatus.ts';
+
+/**
+ * @category Public API
+ */
+export type { Equipment } from './domain-objects/equipment';
+
+/**
+ * @category Public API
+ */
 export type { Instrument } from './domain-objects/instrument/instrument.ts';
+
 import { CatalogInstrumentTemplate } from './pages/catalog-instrument.gts';
 import { IndexTemplate } from './pages/index.gts';
 import { apparatusSchema } from './schemas/apparatus';
@@ -24,6 +37,9 @@ import type { SchemaService } from '@warp-drive/core/reactive';
 
 // Modules
 
+/**
+ * @internal
+ */
 export const equipmentRegistry = buildRegistry({
   './routes/equipment/instrument': InstrumentRoute,
   './routes/equipment/instrument/edit': EditInstrumentRoute,
@@ -42,6 +58,9 @@ export const equipmentRegistry = buildRegistry({
 
 // Routes
 
+/**
+ * @internal
+ */
 export const equipmentRoutes = buildRoutes(function () {
   /* eslint-disable @typescript-eslint/no-invalid-this, unicorn/no-this-outside-of-class */
   this.route('equipment', function () {
@@ -61,6 +80,9 @@ export const equipmentRoutes = buildRoutes(function () {
 
 // Data
 
+/**
+ * @internal
+ */
 export function configureEquipmentSchema(schema: SchemaService) {
   schema.registerResources([apparatusSchema, instrumentSchema]);
 }

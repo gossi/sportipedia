@@ -5,9 +5,10 @@ export default {
   skipErrorChecking: true,
   packageOptions: {
     skipErrorChecking: true,
-    categoryOrder: ['Domain Object', 'Queries', 'Actions', 'Abilities', '*']
+    categoryOrder: ['Public API', 'Domain Object', 'Queries', 'Actions', 'Abilities', '*'],
+    excludeInternal: true
   },
-  categoryOrder: ['Domain Object', 'Queries', 'Actions', 'Abilities', '*'],
+  categoryOrder: ['Public API', 'Domain Object', 'Queries', 'Actions', 'Abilities', '*'],
   name: '@sportipedia/catalog',
   outputs: [
     {
@@ -21,7 +22,7 @@ export default {
         navigation: {
           includeCategories: true,
           includeGroups: false,
-          excludeReferences: true,
+          excludeReferences: false,
           includeFolders: false
         }
       }

@@ -15,7 +15,8 @@ const KIND_STYLE = {
   function: { letter: 'F', color: '#572be7' },
   class: { letter: 'C', color: '#1f70c2' },
   interface: { letter: 'I', color: '#108024' },
-  'type-alias': { letter: 'T', color: '#d51270' }
+  'type-alias': { letter: 'T', color: '#d51270' },
+  'entry-point': { letter: 'P', color: '#0f8b8d' }
 };
 
 export function TypedocBadge({ kind }: { kind: string }) {

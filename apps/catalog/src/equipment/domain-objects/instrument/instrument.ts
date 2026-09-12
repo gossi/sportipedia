@@ -11,6 +11,7 @@ import type { Timestamps } from '#/support/domain-objects/timestamps';
  * @category Domain Object
  */
 export interface Instrument extends Timestamps {
+  /** @internal */
   [Type]: 'instrument';
 
   id: ID;
