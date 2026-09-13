@@ -1,14 +1,18 @@
 import { defineMain } from 'ember-storybook/node';
 
 export default defineMain({
-  stories: ['../src/**/*.stories.gts', '../apidocs/markdown/*/**/*.mdx'],
+  stories: ['../src/**/*.stories.gts', '../apidocs/markdown/*/**/*.md'],
   staticDirs: ['../public'],
   addons: [
     '@storybook/addon-docs',
     '@storybook/addon-a11y',
     '@storybook/addon-vitest',
     'msw-storybook-addon',
-    'storybook-addon-test-codegen'
+    'storybook-addon-test-codegen',
+    {
+      name: './storybook-addon-typedoc/preset.mjs',
+      options: { iconScope: 'leaf', hideIndexPages: true }
+    }
   ],
   framework: {
     name: 'ember-storybook',

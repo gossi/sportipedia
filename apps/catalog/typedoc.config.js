@@ -31,16 +31,11 @@ export default {
       name: 'markdown',
       path: './apidocs/markdown',
       options: {
-        fileExtension: '.mdx',
+        fileExtension: '.md',
         hideBreadcrumbs: true,
         hidePageHeader: true
       }
     }
   ],
-  plugin: [
-    'typedoc-plugin-ember',
-    'typedoc-plugin-markdown',
-    'typedoc-plugin-inline-sources',
-    './scripts/typedoc-plugin-storybook.mjs'
-  ]
+  plugin: ['typedoc-plugin-ember', 'typedoc-plugin-markdown', 'typedoc-plugin-inline-sources']
 };

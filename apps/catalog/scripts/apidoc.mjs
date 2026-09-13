@@ -54,6 +54,8 @@ function removePackageJsonFiles() {
 try {
   writePackageJsonFiles();
 
+  rmSync(path.join(ROOT, 'apidocs'), { force: true, recursive: true });
+
   const result = spawnSync('pnpm', ['exec', 'typedoc'], {
     cwd: ROOT,
     stdio: 'inherit'

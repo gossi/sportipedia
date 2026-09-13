@@ -10,6 +10,7 @@ import { scopedCSS } from 'ember-scoped-css/vite';
 // import { FileSystemIconLoader } from 'unplugin-icons/loaders';
 import icons from 'unplugin-icons/vite';
 import { defineConfig } from 'vite';
+import { configDefaults } from 'vitest/config';
 
 const dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -52,6 +53,8 @@ export default defineConfig({
         },
         test: {
           name: 'storybook',
+          // apidocs markdown pages are docs entries, never test files
+          exclude: ['**/apidocs/**', ...configDefaults.exclude],
           browser: {
             enabled: true,
             provider: playwright({}),

@@ -14,6 +14,7 @@ import { configure } from '#/config';
 
 import { authHandlers } from './msw-handlers';
 import { StoryAuthService } from './story-auth-service';
+import addonTypedoc from './storybook-addon-typedoc';
 
 import type { SessionChoice } from './story-auth-service';
 import type Owner from '@ember/owner';
@@ -30,7 +31,8 @@ export default definePreview({
       return worker;
     }),
     addonA11y(),
-    addonCodegen()
+    addonCodegen(),
+    addonTypedoc()
   ],
   globalTypes: {
     locale: {
