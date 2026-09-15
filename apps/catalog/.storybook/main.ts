@@ -11,7 +11,12 @@ export default defineMain({
     'storybook-addon-test-codegen',
     {
       name: './storybook-addon-typedoc/preset.mjs',
-      options: { iconScope: 'leaf', hideIndexPages: true }
+      options: {
+        iconScope: 'leaf',
+        showIndexPackage: true,
+        packageIndexExportsOnly: true,
+        indexLabels: { package: 'Public API' }
+      }
     }
   ],
   framework: {
