@@ -50,7 +50,7 @@ function registerLinkGuard(): void {
  * Storybook addon for TypeDoc markdown output: reads the generated `.md` pages, turns them into
  * MDX docs pages behind the scenes, and decorates the sidebar with typedoc badges.
  *
- * Server-side options (iconScope, hideIndexPages, ...) are configured on the addon entry in
+ * Server-side options (iconScope, showIndex, ...) are configured on the addon entry in
  * `main.ts`; this preview annotation only marks typedoc pages for the preview runtime.
  */
 export default function addonTypedoc() {

@@ -14,11 +14,43 @@ export interface TypedocAddonOptions {
    */
   iconScope?: IconScope;
   /**
-   * Hide module + package readme index pages (tagged `api-index`) from the sidebar.
+   * Show all generated index pages (pages whose body is a listing of other pages).
+   * Implicitly enables `showIndexPackage` and `showIndexModule`.
    *
-   * @default true
+   * @default false
    */
-  hideIndexPages?: boolean;
+  showIndex?: boolean;
+  /**
+   * Show the package index page (`<package>/README.md`, tagged `api-index-package`).
+   *
+   * @default showIndex
+   */
+  showIndexPackage?: boolean;
+  /**
+   * Show the module index pages (`<package>/<module>/README.md`, tagged `api-index-module`).
+   *
+   * @default showIndex
+   */
+  showIndexModule?: boolean;
+  /**
+   * Render package index pages with only their public exports — the same
+   * listing TypeDoc puts in the package README (its category/grouping,
+   * entries linked to each symbol's own page) — instead of the full README.
+   *
+   * Packages without exports have their index page hidden entirely.
+   *
+   * @default false
+   */
+  packageIndexExportsOnly?: boolean;
+  /**
+   * Sidebar labels for the index pages, used as the leaf of their Storybook titles.
+   *
+   * @default { package: 'Package', module: 'Module' }
+   */
+  indexLabels?: {
+    package?: string;
+    module?: string;
+  };
   /**
    * Markdown output directory to read, relative to the Storybook config dir.
    *
@@ -36,5 +68,11 @@ export interface TypedocAddonOptions {
 /** Fully resolved addon options as used by the node and manager sides. */
 export interface ResolvedTypedocOptions {
   iconScope: IconScope;
-  hideIndexPages: boolean;
+  showIndexPackage: boolean;
+  showIndexModule: boolean;
+  packageIndexExportsOnly: boolean;
+  indexLabels: {
+    package: string;
+    module: string;
+  };
 }

@@ -7,13 +7,13 @@ const MODULE_INDEX_TAG = 'api-index-module';
 
 const KIND_STYLE: Record<string, { letter: string; color: string }> = {
   module: { letter: 'M', color: '#b111c9' },
+  package: { letter: 'P', color: '#0f8b8d' },
   enum: { letter: 'E', color: '#7e6f15' },
   variable: { letter: 'V', color: '#4760ec' },
   function: { letter: 'F', color: '#572be7' },
   class: { letter: 'C', color: '#1f70c2' },
   interface: { letter: 'I', color: '#108024' },
-  'type-alias': { letter: 'T', color: '#d51270' },
-  'entry-point': { letter: 'P', color: '#0f8b8d' }
+  'type-alias': { letter: 'T', color: '#d51270' }
 };
 
 interface SidebarEntry {

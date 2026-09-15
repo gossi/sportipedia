@@ -1,7 +1,16 @@
-import { existsSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdirSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync
+} from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { StoryIndexGenerator } from 'storybook/internal/core-server';
 import { toId } from 'storybook/internal/csf';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -10,6 +19,7 @@ const HERE = path.dirname(fileURLToPath(import.meta.url));
 const KIND = {
   Project: 1,
   Module: 2,
+  Namespace: 4,
   Enum: 8,
   Variable: 32,
   Function: 64,
@@ -42,9 +52,6 @@ const KIND_FOLDER = Object.fromEntries(
   Object.entries(MARKDOWN_FOLDER).map(([kind, folder]) => [folder, KIND_NAME[+kind]])
 );
 
-/** folder and tag of the generated pages listing a package entry point's re-exported symbols */
-const ENTRY_POINT_FOLDER = 'entry-point';
-
 /** every typedoc markdown page is indexed as a docs entry named `Docs` */
 const DOCS_NAME = 'Docs';
 
@@ -69,10 +76,6 @@ function titleCase(value) {
     .filter(Boolean)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(' ');
-}
-
-function slugOf(value) {
-  return value.toLowerCase().replaceAll(/[^a-z0-9]+/gu, '-');
 }
 
 function segment(segments, value) {
@@ -106,29 +109,32 @@ function sourceTail(filePath) {
   return tail.endsWith('.gts.ts') ? tail.slice(0, -3) : tail;
 }
 
-/** meta + output path of the markdown page rendered for a reflection, if it gets one */
-function pageOf(model) {
+/**
+ * meta + output path of the markdown page rendered for a reflection, if it gets one.
+ * `labels` name the leaf of generated index pages in the sidebar.
+ */
+function pageOf(model, labels) {
   if (model.kind === KIND.Module) {
     const pkg = model.parent;
 
     // package index page (e.g. `equipment/README.md`)
     if (!pkg || pkg.kind === KIND.Project) {
-      const name = titleCase(model.name);
-
       return {
-        title: name,
-        name,
-        tags: ['kind-module', 'api-index', 'api-index-readme'],
+        title: `${titleCase(model.name)}/${labels.package}`,
+        name: labels.package,
+        tags: ['kind-package', 'api-index', 'api-index-package'],
         relPath: `${model.name}/README.md`
       };
     }
 
     // module index page (e.g. `equipment/Apparatus/README.md`)
-    const segments = segment([titleCase(pkg.name), categoryOf(model)], model.name);
+    const segments = segment(segment([titleCase(pkg.name)], categoryOf(model)), model.name);
+
+    segment(segments, labels.module);
 
     return {
       title: segments.join('/'),
-      name: model.name,
+      name: labels.module,
       tags: ['kind-module', 'api-index', 'api-index-module'],
       relPath: `${pkg.name}/${model.name}/README.md`
     };
@@ -170,34 +176,6 @@ function pageOf(model) {
   };
 }
 
-/**
- * Re-exported symbols of a package module, grouped by the category they are listed in
- */
-function groupedReferencesOf(pkg, pagesById) {
-  const categories = new Map();
-
-  for (const child of pkg.children ?? []) {
-    if (child.kind !== KIND.Reference) {
-      continue;
-    }
-
-    const category = categoryOf(child);
-    const target = pagesById.get(child.target ?? -1);
-
-    if (!category || !target) {
-      continue;
-    }
-
-    if (!categories.has(category)) {
-      categories.set(category, []);
-    }
-
-    categories.get(category).push({ name: child.name, target });
-  }
-
-  return categories;
-}
-
 function collectRelevant(pkg) {
   const models = [pkg];
 
@@ -222,63 +200,105 @@ function linkParents(node) {
 
 /**
  * Derive everything the addon needs to know about the markdown pages of a TypeDoc project from
- * its JSON structure: page metas keyed by relative path, plus content of generated entry-point
- * index pages.
+ * its JSON structure: page metas keyed by relative path, plus synthesized bodies for package
+ * index pages when `packageIndexExportsOnly` is on.
  */
-function buildStructure(structure) {
+function buildStructure(structure, options) {
   linkParents(structure);
 
-  const pagesById = new Map();
   const pages = new Map();
-  const packageDirs = new Map();
+  const metasById = new Map();
+  const nodesById = new Map();
 
   for (const pkg of structure.children ?? []) {
-    if (pkg.kind === KIND.Module) {
-      packageDirs.set(pkg.id, pkg.name);
-    }
-
     for (const model of collectRelevant(pkg)) {
-      const meta = pageOf(model);
+      nodesById.set(model.id, model);
 
-      if (meta && !pages.has(meta.relPath)) {
-        pages.set(meta.relPath, meta);
-        pagesById.set(model.id, meta);
+      const meta = pageOf(model, options.indexLabels);
+
+      if (meta) {
+        metasById.set(model.id, meta);
+
+        if (!pages.has(meta.relPath)) {
+          pages.set(meta.relPath, meta);
+        }
       }
     }
   }
 
-  const entryPoints = new Map();
+  const packageBodies = options.packageIndexExportsOnly
+    ? packageExportsBodies(structure, nodesById, metasById)
+    : new Map();
+
+  return { pages, packageBodies };
+}
+
+/**
+ * Exports-only bodies for the package index pages: every public export of a package — all of
+ * its children but the submodules — listed under the same headings TypeDoc uses in the package
+ * README (`@category`, falling back to the symbol kind), each entry linking to the page of the
+ * symbol it points at. Packages without exports get no body, so their index page is not shown.
+ */
+function packageExportsBodies(structure, nodesById, metasById) {
+  const bodies = new Map();
 
   for (const pkg of structure.children ?? []) {
-    const pkgDir = packageDirs.get(pkg.id);
-
-    if (!pkgDir) {
+    if (pkg.kind !== KIND.Module || pkg.parent?.kind !== KIND.Project) {
       continue;
     }
 
-    const entryPointDir = `${pkgDir}/${ENTRY_POINT_FOLDER}`;
+    const groups = exportGroupsOf(pkg, nodesById, metasById);
 
-    for (const [category, references] of groupedReferencesOf(pkg, pagesById)) {
-      const relPath = `${entryPointDir}/${slugOf(category)}.md`;
-      const meta = {
-        title: `${titleCase(pkg.name)}/${category}`,
-        name: category,
-        tags: ['kind-entry-point'],
-        relPath
-      };
-      const links = references.map(({ name, target }) => {
-        return `- [${name}](${path.posix.relative(entryPointDir, target.relPath)})`;
+    if (groups.size > 0) {
+      const sections = Array.from(groups, ([title, bullets]) => {
+        return `## ${title}\n\n${bullets.join('\n')}\n`;
       });
 
-      entryPoints.set(relPath, `# ${category}\n\nRe-exported symbols:\n\n${links.join('\n')}\n`);
-
-      if (!pages.has(relPath)) {
-        pages.set(relPath, meta);
-      }
+      bodies.set(`${pkg.name}/README.md`, `${sections.join('\n')}\n`);
     }
   }
 
-  return { pages, entryPoints };
+  return bodies;
+}
+
+/** exports of a package module as bullets, keyed by the heading TypeDoc would list them under */
+function exportGroupsOf(pkg, nodesById, metasById) {
+  /** @type {Map<string, string[]>} */
+  const groups = new Map();
+
+  for (const child of pkg.children ?? []) {
+    if (child.kind === KIND.Module || child.kind === KIND.Namespace) {
+      continue;
+    }
+
+    const exported = resolveExported(child, nodesById);
+    const target = exported && metasById.get(exported.id);
+
+    if (!target) {
+      continue;
+    }
+
+    const title =
+      categoryOf(child) ||
+      titleCase(MARKDOWN_FOLDER[exported.kind] ?? KIND_NAME[exported.kind] ?? 'Exports');
+    const bullets = groups.get(title) ?? [];
+
+    groups.set(title, bullets);
+    bullets.push(`- [${child.name}](${path.posix.relative(pkg.name, target.relPath)})`);
+  }
+
+  return groups;
+}
+
+/** follow a (possibly chained) re-export reference to the declaration it points at */
+function resolveExported(child, nodesById) {
+  let current = child;
+
+  while (current?.kind === KIND.Reference) {
+    current = nodesById.get(current.target);
+  }
+
+  return current;
 }
 
 /**
@@ -332,9 +352,22 @@ function getState() {
   return state;
 }
 
-/** (re)load the TypeDoc structure if it changed on disk, and materialize the generated pages */
+/** remove files that must not be picked up by the stories glob */
+function cleanStalePages(markdownDir) {
+  // the project readme is not indexed, remove it so it cannot be picked up by other globs
+  rmSync(path.join(markdownDir, 'README.md'), { force: true });
+
+  for (const entry of readdirSync(markdownDir, { withFileTypes: true })) {
+    if (entry.isDirectory()) {
+      // pages of the obsolete generated entry-point mechanism
+      rmSync(path.join(markdownDir, entry.name, 'entry-point'), { force: true, recursive: true });
+    }
+  }
+}
+
+/** (re)load the TypeDoc structure if it changed on disk */
 function getStructure() {
-  const { markdownDir, structureFile } = getState();
+  const { structureFile, options } = getState();
   let mtimeMs;
 
   try {
@@ -348,30 +381,10 @@ function getStructure() {
   if (structure?.mtimeMs !== mtimeMs) {
     const json = JSON.parse(readFileSync(structureFile, 'utf8'));
 
-    structure = { mtimeMs, model: buildStructure(json) };
-
-    writeGeneratedPages(markdownDir, structure.model);
+    structure = { mtimeMs, model: buildStructure(json, options) };
   }
 
   return structure.model;
-}
-
-function writeGeneratedPages(markdownDir, model) {
-  // the project readme is not indexed, remove it so it cannot be picked up by other globs
-  rmSync(path.join(markdownDir, 'README.md'), { force: true });
-
-  const packages = new Set(Array.from(model.pages.keys(), (rel) => rel.split('/', 1)[0]));
-
-  for (const pkg of packages) {
-    rmSync(path.join(markdownDir, pkg, ENTRY_POINT_FOLDER), { force: true, recursive: true });
-  }
-
-  for (const [rel, content] of model.entryPoints) {
-    const file = path.join(markdownDir, rel);
-
-    mkdirSync(path.dirname(file), { recursive: true });
-    writeFileSync(file, content);
-  }
 }
 
 function resolvePage(relPath) {
@@ -384,16 +397,10 @@ function resolvePage(relPath) {
 let storyTargets;
 
 /**
- * Collect, from the story index, where links to typedoc pages for components should go:
+ * Collect, from a story index, where links to typedoc pages for components should go:
  * a component's autodocs page if it has one, otherwise its first story.
  */
-async function getStoryTargets(presets) {
-  if (storyTargets) {
-    return storyTargets;
-  }
-
-  const generator = await presets.apply('storyIndexGenerator');
-  const index = generator ? await generator.getIndex() : { entries: {} };
+function storyTargetsFromIndex(index) {
   const bySource = new Map();
   const sourceByTitle = new Map();
   const storyFiles = new Set();
@@ -426,9 +433,75 @@ async function getStoryTargets(presets) {
     }
   }
 
-  storyTargets = bySource;
-
   return bySource;
+}
+
+async function getStoryTargets(presets) {
+  if (!storyTargets) {
+    const generator = await presets.apply('storyIndexGenerator');
+    const index = generator ? await generator.getIndex() : { entries: {} };
+
+    storyTargets = storyTargetsFromIndex(index);
+  }
+
+  return storyTargets;
+}
+
+/**
+ * Drop typedoc pages from the story index when their component has stories of its own: links to
+ * those pages already redirect to the component's story (same predicate, same source), so the
+ * page is redundant in the sidebar and unreachable otherwise.
+ */
+function pruneShadowedDocs(index) {
+  // no addon state loaded (e.g. an index-only tool in this process): nothing to prune
+  if (!state || !index?.entries) {
+    return index;
+  }
+
+  const model = getStructure();
+
+  if (!model) {
+    return index;
+  }
+
+  const targets = storyTargetsFromIndex(index);
+  const entries = {};
+  let pruned = false;
+
+  for (const [id, entry] of Object.entries(index.entries)) {
+    const rel =
+      entry.tags?.includes(MDX_TAG) &&
+      entry.importPath &&
+      relativeToMarkdown(path.resolve(entry.importPath));
+    const source = rel && lookupPage(model, rel)?.sourceFile;
+
+    if (source && targets.has(source)) {
+      pruned = true;
+      continue;
+    }
+
+    entries[id] = entry;
+  }
+
+  return pruned ? { ...index, entries } : index;
+}
+
+/**
+ * Typedoc pages for components that have stories of their own are redundant — links to them
+ * already redirect to the component's story (the same predicate, applied at link time). Wrap
+ * the story index generator's `getIndex` so those entries never reach Storybook at all: the
+ * generator is a publicly exported class and the preset module is evaluated before any
+ * instance exists, so patching the prototype covers dev, build, and every consumer.
+ */
+const generateIndex = StoryIndexGenerator.prototype.getIndex;
+
+if (!generateIndex.shadowedDocsPruned) {
+  StoryIndexGenerator.prototype.getIndex = async function () {
+    // eslint-disable-next-line unicorn/no-this-outside-of-class
+    return pruneShadowedDocs(await generateIndex.call(this));
+  };
+
+  StoryIndexGenerator.prototype.getIndex.shadowedDocsPruned = true;
 }
 
 function relativeToMarkdown(fileName) {
@@ -449,13 +522,21 @@ function ensure(options) {
     return state;
   }
 
+  const showIndex = options.showIndex ?? false;
+
   state = {
     configDir,
     markdownDir: path.resolve(configDir, options.markdownDir ?? '../apidocs/markdown'),
     structureFile: path.resolve(configDir, options.structureFile ?? '../apidocs/structure.json'),
     options: {
       iconScope: options.iconScope ?? 'leaf',
-      hideIndexPages: options.hideIndexPages ?? true
+      showIndexPackage: options.showIndexPackage ?? showIndex,
+      showIndexModule: options.showIndexModule ?? showIndex,
+      packageIndexExportsOnly: options.packageIndexExportsOnly ?? false,
+      indexLabels: {
+        package: options.indexLabels?.package ?? 'Package',
+        module: options.indexLabels?.module ?? 'Module'
+      }
     }
   };
   structure = undefined;
@@ -466,15 +547,16 @@ function ensure(options) {
 /**
  * Index typedoc markdown files as standalone MDX docs pages (like a plain `.mdx` file): the
  * `unattached-mdx` tag makes the preview render the compiled MDX itself. Each file yields a
- * single `Docs` export entry, which Storybook pairs with a generated docs page entry on the
- * same id, keeping only the latter. All typedoc-specific tags ride along on the entry.
+ * single `Docs` export entry — except package index pages without exports under
+ * `packageIndexExportsOnly`, which are skipped — which Storybook pairs with a generated docs
+ * page entry on the same id, keeping only the latter. All typedoc-specific tags ride along on
+ * the entry.
  */
 export const experimental_indexers = (existingIndexers = [], options) => {
-  ensure(options);
+  const { markdownDir } = ensure(options);
 
-  // materialize the generated entry-point pages *before* the stories glob runs, so that
-  // single-pass builds see them
-  getStructure();
+  // prune stale files *before* the stories glob runs, so that single-pass builds don't see them
+  cleanStalePages(markdownDir);
 
   return [
     ...existingIndexers,
@@ -488,6 +570,15 @@ export const experimental_indexers = (existingIndexers = [], options) => {
         }
 
         const meta = resolvePage(rel);
+
+        // exports-only: a package with no exports has no body and is not shown at all
+        if (
+          getState().options.packageIndexExportsOnly &&
+          meta.tags.includes('api-index-package') &&
+          !getStructure()?.packageBodies.get(rel)
+        ) {
+          return [];
+        }
 
         return [
           {
@@ -641,11 +732,9 @@ export const viteFinal = async (viteConfig, options) => {
 
       const rel = relativeToMarkdown(mdPath);
       const targets = await getStoryTargets(options.presets);
+      const source = getStructure()?.packageBodies.get(rel) ?? readFileSync(mdPath, 'utf8');
 
-      return [
-        metaHeaderOf(resolvePage(rel)),
-        rewriteTypedocLinks(readFileSync(mdPath, 'utf8'), rel, targets)
-      ].join('\n');
+      return [metaHeaderOf(resolvePage(rel)), rewriteTypedocLinks(source, rel, targets)].join('\n');
     }
   };
 
