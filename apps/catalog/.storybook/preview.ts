@@ -26,7 +26,9 @@ export default definePreview({
     addonMsw(async () => {
       const worker = setupWorker(...authHandlers);
 
-      await worker.start();
+      await worker.start({
+        quiet: true
+      });
 
       return worker;
     }),
@@ -67,9 +69,9 @@ export default definePreview({
     locale: 'en',
     session: 'guest'
   },
-  // beforeEach: ({ msw }) => {
-  //   msw.use(...authHandlers);
-  // },
+  beforeEach: ({ msw }) => {
+    msw.use(...authHandlers);
+  },
   parameters: {
     docs: {
       codePanel: true,
@@ -99,6 +101,15 @@ export default definePreview({
             'UI',
             '*'
           ],
+          'User',
+          [
+            'Public API',
+            'Domain Objects',
+            ['*', ['Domain Object', 'Queries', 'Actions', 'Abilities']],
+            'UI',
+            '*'
+          ],
+          'Support',
           '*'
         ]
       }

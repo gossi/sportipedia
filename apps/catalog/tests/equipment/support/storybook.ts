@@ -84,7 +84,7 @@ export function makeEquipmentArgTypes(
 }
 
 export interface EquipmentArgs {
-  preset: boolean;
+  // preset: boolean;
   equipment: string;
   title: string;
   slug: string;

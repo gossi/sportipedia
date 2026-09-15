@@ -1,4 +1,4 @@
-import { expect, userEvent } from 'storybook/test';
+import { expect, fn, userEvent } from 'storybook/test';
 
 import { EQUIPMENTS, makeEquipmenDecorator, UNICYCLE } from '#equipment-test-support';
 
@@ -24,8 +24,17 @@ export default {
 } satisfies Meta;
 
 export const Default: StoryObj = {
-  play: async ({ canvas }) => {
+  args: {
+    submit: fn()
+  },
+  play: async ({ canvas, args }) => {
     await userEvent.type(canvas.getByRole('textbox', { name: 'Title' }), 'abc');
     await expect(canvas.getByRole('textbox', { name: 'Slug' })).toHaveValue('abc');
+
+    await userEvent.type(canvas.getByRole('textbox', { name: 'Title' }), 'def');
+    await expect(canvas.getByRole('textbox', { name: 'Slug' })).toHaveValue('abcdef');
+
+    await userEvent.click(canvas.getByRole('button', { name: 'Catalog' }));
+    await expect(args.submit).toBeCalled();
   }
 };
