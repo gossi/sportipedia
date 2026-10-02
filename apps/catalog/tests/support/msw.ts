@@ -1,12 +1,7 @@
-import {
-  delay,
-  HttpHandler,
-  type HttpHandlerInfo,
-  HttpResponse,
-  passthrough,
-  type RequestHandler,
-  type ResponseResolver
-} from 'msw';
+import { type RequestHandler, type ResponseResolver } from 'msw';
+import { HttpHandler, type HttpHandlerInfo, HttpResponse } from 'msw/http';
+import { delay } from 'msw/utils/delay';
+import { passthrough } from 'msw/utils/passthrough';
 
 import { toJsonApiErrorDocument } from './data/jsonapi.ts';
 

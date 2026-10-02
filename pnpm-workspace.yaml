@@ -72,8 +72,8 @@ catalogs:
     "@vitest/ui": "4.1.9"
     "@vitest/browser-playwright": "4.1.9"
     "@vitest/coverage-v8": "4.1.9"
-    "msw": "^2.15.0"
-    "msw-storybook-addon": "^3.0.0"
+    "msw": "^3.0.0"
+    "msw-storybook-addon": "^3.0.3"
     vitest: 4.1.9
   workshop:
     "@storybook/addon-a11y": "^10.6.0"

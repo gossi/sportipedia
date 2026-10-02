@@ -2,7 +2,6 @@ import { defineMain } from 'ember-storybook/node';
 
 export default defineMain({
   stories: ['../src/**/*.stories.gts', '../apidocs/markdown/**/*.md'],
-  staticDirs: ['../public'],
   addons: [
     '@storybook/addon-docs',
     '@storybook/addon-a11y',

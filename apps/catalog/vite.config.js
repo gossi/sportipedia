@@ -7,6 +7,7 @@ import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
 import { playwright } from '@vitest/browser-playwright';
 import { intl } from 'ember-intl/vite';
 import { scopedCSS } from 'ember-scoped-css/vite';
+import { msw } from 'msw/vite';
 // import { FileSystemIconLoader } from 'unplugin-icons/loaders';
 import icons from 'unplugin-icons/vite';
 import { defineConfig } from 'vite';
@@ -67,6 +68,7 @@ export default defineConfig({
     ]
   },
   plugins: [
+    msw({ mode: 'worker-only' }),
     ember(),
     scopedCSS({ layerName: 'app' }),
     babel({
