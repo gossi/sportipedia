@@ -39,3 +39,37 @@ export class UnknownError extends PlainApiError {
     super(500, payload ?? { id: 'unknown' });
   }
 }
+
+/**
+ * Field-level validation errors, as accepted by the backend
+ * `ValidationErrorFormatter` (flat or nested maps).
+ *
+ * @example
+ * { name: 'is required' }
+ * { name: ['is required', 'must be unique'] }
+ * { address: { street: 'is required' } }        // → /data/attributes/address.street
+ */
+export type FieldErrors = {
+  [field: string]: string | string[] | FieldErrors;
+};
+
+function toValidationError(field: string, detail: string): JsonApiError {
+  return {
+    title: field,
+    detail,
+    source: { pointer: `/data/attributes/${field}` },
+    status: '422'
+  };
+}
+
+export function toValidationErrors(fieldErrors: FieldErrors, prefix = ''): JsonApiError[] {
+  return Object.entries(fieldErrors).flatMap(([field, value]) => {
+    const path = prefix ? `${prefix}.${field}` : field;
+
+    if (Array.isArray(value)) return value.map((detail) => toValidationError(path, detail));
+
+    return typeof value === 'string'
+      ? toValidationError(path, value)
+      : toValidationErrors(value, path);
+  });
+}

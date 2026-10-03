@@ -2,7 +2,7 @@ import Component from '@glimmer/component';
 import Route from '@ember/routing/route';
 import { service } from '@ember/service';
 
-import { ApiError } from '@sportipedia/ui';
+import { ApiError, Loading } from '@sportipedia/ui';
 import {
   checkout,
   type ReactiveDataDocument,
@@ -73,7 +73,7 @@ class EditInstrumentTemplate extends Component<{
     >
       <Request @request={{this.request}}>
         <:loading>
-          Loading...
+          <Loading />
         </:loading>
 
         <:error as |error|>

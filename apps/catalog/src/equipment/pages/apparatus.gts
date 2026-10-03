@@ -2,6 +2,7 @@ import Component from '@glimmer/component';
 import Route from '@ember/routing/route';
 import { service } from '@ember/service';
 
+import { ApiError, Loading } from '@sportipedia/ui';
 import { Request } from '@warp-drive/ember';
 import { ability } from 'ember-ability';
 
@@ -16,8 +17,7 @@ import { EquipmentDetail } from '../ui/equipment-detail.gts';
 
 import type { Apparatus } from '../domain-objects/apparatus/apparatus';
 import type RouterService from '@ember/routing/router-service';
-import type { ReactiveDataDocument, ReactiveResource } from '@warp-drive/core/reactive';
-import type { Future } from '@warp-drive/core/request';
+import type { ReactiveResource } from '@warp-drive/core/reactive';
 import type { Store } from '#support/data';
 
 const canEditApparatus = ability(
@@ -37,16 +37,20 @@ class ApparatusRoute extends Route {
 
   model({ apparatus }: { apparatus: string }) {
     return {
-      request: this.store.request(readApparatus(apparatus))
+      apparatus
     };
   }
 }
 
 class ApparatusTemplate extends Component<{
-  Args: { model: { request: Future<ReactiveDataDocument<Apparatus>> } };
+  Args: { model: { apparatus: string } };
 }> {
   @service declare store: Store;
   @service declare router: RouterService;
+
+  get request() {
+    return this.store.request(readApparatus(this.args.model.apparatus));
+  }
 
   archive = async (record: Apparatus & ReactiveResource) => {
     try {
@@ -59,7 +63,15 @@ class ApparatusTemplate extends Component<{
   };
 
   <template>
-    <Request @request={{@model.request}}>
+    <Request @request={{this.request}}>
+      <:loading>
+        <Loading />
+      </:loading>
+
+      <:error as |error|>
+        <ApiError @error={{error}} />
+      </:error>
+
       <:content as |result|>
         <EquipmentDetail
           @equipment={{result.data}}

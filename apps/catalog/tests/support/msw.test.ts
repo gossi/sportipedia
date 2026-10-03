@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import { NotFoundError } from '#tests/support/data/errors.ts';
 
-import { makeErrorResponse, mock, withDelay, withError } from './msw.ts';
+import { makeErrorResponder, mock, withDelay, withError } from './msw.ts';
 
 const url = 'http://localhost:3000/catalog/equipment/instruments/unicycle';
 
@@ -15,7 +15,7 @@ function okHandler() {
 
 describe('mock()', () => {
   it('re-mocks a native msw handler, preserving its matching', async () => {
-    const remocked = mock(okHandler(), makeErrorResponse(new NotFoundError()));
+    const remocked = mock(okHandler(), makeErrorResponder(new NotFoundError()));
 
     const result = await remocked.run({ request: new Request(url), requestId: 'test' });
 

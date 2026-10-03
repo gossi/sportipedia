@@ -1,7 +1,7 @@
 import {
   findInstrumentBySlug,
   INSTRUMENTS,
-  makeInstrumentEndpoint,
+  makeReadInstrumentEndpoint,
   mockReadInstrument,
   UNICYCLE
 } from '#equipment-test-support';
@@ -53,19 +53,19 @@ export const Default: StoryObj<InstrumentPageArgs> = {
     msw.use(
       instrument
         ? mockReadInstrument(instrument)
-        : withError(makeInstrumentEndpoint(args.instrument), new NotFoundError())
+        : withError(makeReadInstrumentEndpoint(args.instrument), new NotFoundError())
     );
   }
 };
 
 export const Error: StoryObj<InstrumentPageArgs> = {
   beforeEach({ msw, args }) {
-    msw.use(withError(makeInstrumentEndpoint(args.instrument), new UnknownError()));
+    msw.use(withError(makeReadInstrumentEndpoint(args.instrument), new UnknownError()));
   }
 };
 
 export const Loading: StoryObj<InstrumentPageArgs> = {
   beforeEach({ msw, args }) {
-    msw.use(withLoading(makeInstrumentEndpoint(args.instrument)));
+    msw.use(withLoading(makeReadInstrumentEndpoint(args.instrument)));
   }
 };
