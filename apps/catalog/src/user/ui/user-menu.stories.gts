@@ -14,6 +14,7 @@ export default {
     <AppHeader>
       <:brand>Sportipedia</:brand>
       <:aux as |nav|>
+        {{! @glint-expect-error }}
         <UserMenu @nav={{nav}} />
       </:aux>
     </AppHeader>

@@ -1,6 +1,7 @@
 {
   "extends": "@ember/app-tsconfig",
   "include": ["src", "tests", "types", ".storybook/**/*"],
+  "exclude": ["**/*.tsx"],
   "compilerOptions": {
     "allowJs": true,
     "target": "esnext",
