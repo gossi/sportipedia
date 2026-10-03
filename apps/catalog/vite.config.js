@@ -29,12 +29,20 @@ export default defineConfig({
     transformer: 'lightningcss'
   },
   test: {
+    setupFiles: ['./tests/test-setup.ts'],
     projects: [
       {
         extends: true,
         test: {
-          name: 'Business Logic',
-          setupFiles: ['./tests/test-setup.ts']
+          name: 'Equipment',
+          include: ['tests/equipment/**/*.test.ts']
+        }
+      },
+      {
+        extends: true,
+        test: {
+          name: 'Support',
+          include: ['tests/support/**/*.test.ts']
         }
       },
       {
@@ -62,7 +70,6 @@ export default defineConfig({
             headless: true,
             instances: [{ browser: 'chromium' }]
           }
-          // setupFiles: ['./.storybook/vitest.setup.ts']
         }
       }
     ]
