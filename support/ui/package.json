@@ -74,7 +74,7 @@
     "@iconify-json/ph": "^1.2.2",
     "@rollup/plugin-babel": "catalog:build",
     "@tsdown/css": "catalog:build",
-    "@warp-drive/ember": "catalog:ember",
+    "@warp-drive/ember": "catalog:lib",
     "babel-plugin-ember-template-compilation": "catalog:build",
     "ember-resolver": "catalog:ember",
     "ember-scoped-css": "catalog:ember",
