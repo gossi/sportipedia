@@ -39,10 +39,6 @@ catalogs:
     "@glint/ember-tsc": 1.11.6
     "@glint/template": 1.9.0
     "@glint/tsserver-plugin": 2.7.9
-    "@warp-drive/core": ^5.8.2
-    "@warp-drive/ember": ^5.8.2
-    "@warp-drive/json-api": ^5.8.2
-    "@warp-drive/utilities": ^5.8.2
     "ember-ability": ^1.0.0
     "ember-better-auth": ^0.1.0
     "ember-command": ^2.0.8
@@ -99,6 +95,10 @@ catalogs:
     "@theemo/ember": ^1.0.1
     "@theemo/vite": ^1.0.1
     "@better-auth/cli": "^1.4.22"
+    "@warp-drive/core": 5.9.1
+    "@warp-drive/ember": 5.9.1
+    "@warp-drive/json-api": 5.9.1
+    "@warp-drive/utilities": 5.9.1
     "better-auth": ^1.6.5
     "temporal-polyfill": ^0.3.0
   ai:

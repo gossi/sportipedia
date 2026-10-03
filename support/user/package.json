@@ -82,7 +82,7 @@
     "@gossi/config-template-lint": "catalog:lint",
     "@rollup/plugin-babel": "catalog:build",
     "@tsdown/css": "catalog:build",
-    "@warp-drive/ember": "catalog:ember",
+    "@warp-drive/ember": "catalog:lib",
     "babel-plugin-ember-template-compilation": "catalog:build",
     "better-auth": "catalog:lib",
     "ember-resolver": "catalog:ember",
