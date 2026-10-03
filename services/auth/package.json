@@ -12,12 +12,12 @@
     "lint:types": "tsc --noEmit"
   },
   "devDependencies": {
-    "@better-auth/cli": "catalog:lib",
     "@gossi/config-eslint": "catalog:lint",
     "@gossi/config-prettier": "catalog:lint",
     "@hono/node-server": "^1.19.0",
     "@types/node": "^25.0.3",
     "@types/pg": "^8.15.5",
+    "auth": "catalog:lib",
     "better-auth": "catalog:lib",
     "eslint": "catalog:lint",
     "pg": "^8.16.3",

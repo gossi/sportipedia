@@ -47,9 +47,11 @@ export class AccountsResource {
   };
 
   unlinkSocial = async (provider: string) => {
-    await auth.unlinkAccount({
-      providerId: provider
-    });
+    const account = this.accounts.find((a) => a.providerId === provider);
+
+    if (!account) return;
+
+    await auth.unlinkAccount({ accountId: account.id });
 
     this.#accounts.set(this.accounts.filter((a) => a.providerId !== provider));
   };
