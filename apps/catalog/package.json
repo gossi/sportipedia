@@ -99,6 +99,7 @@
     "eslint-plugin-ember": "catalog:lint",
     "msw": "catalog:test",
     "msw-storybook-addon": "catalog:test",
+    "playwright": "catalog:test",
     "prettier": "catalog:lint",
     "storybook": "catalog:workshop",
     "storybook-addon-test-codegen": "^3.0.4",
