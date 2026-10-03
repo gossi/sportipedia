@@ -1,3 +1,7 @@
+/**
+ * @module Public API
+ * @mergeModuleWith user
+ */
 import { buildRegistry } from 'ember-strict-application-resolver/build-registry';
 
 import { buildRoutes } from '#/support/routing';
@@ -15,6 +19,9 @@ import { SessionsTemplate } from './pages/user/sessions.gts';
 
 // Modules
 
+/**
+ * @internal
+ */
 export const userRegistry = buildRegistry({
   './routes/logout': LogoutRoute,
   './routes/user': UserRoute,
@@ -32,6 +39,9 @@ export const userRegistry = buildRegistry({
 
 // Routes
 
+/**
+ * @internal
+ */
 export const userRoutes = buildRoutes(function () {
   /* eslint-disable @typescript-eslint/no-invalid-this, unicorn/no-this-outside-of-class */
   this.route('login');
@@ -54,4 +64,7 @@ export { UserMenu } from './ui/user-menu.gts';
 
 // Settings
 
+/**
+ * @category Public API
+ */
 export { changeLocale, persistLanguage, renderLocale } from './domain-objects/language';

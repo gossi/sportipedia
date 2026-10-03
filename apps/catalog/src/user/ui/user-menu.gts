@@ -17,6 +17,9 @@ interface UserMenuSignature {
   };
 }
 
+/**
+ * @category Public API
+ */
 const UserMenu: TOC<UserMenuSignature> = <template>
   {{#if (isAuthenticated)}}
     {{#let (getUser) as |user|}}

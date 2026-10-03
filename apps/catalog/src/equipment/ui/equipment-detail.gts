@@ -24,6 +24,7 @@ const EquipmentDetail: TOC<{
     .detail-layout {
       display: grid;
       grid-template-columns: auto max-content;
+      gap: var(--spacing-container0);
     }
 
     .slug {
@@ -42,7 +43,6 @@ const EquipmentDetail: TOC<{
   </style>
   <div class="detail-layout">
     <div class="flow">
-
       <h1>{{@equipment.title}}</h1>
 
       <pre class="slug">/{{@equipment.slug}}</pre>

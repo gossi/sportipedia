@@ -1,11 +1,19 @@
 import { ember, extensions } from '@embroider/vite';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { babel } from '@rollup/plugin-babel';
+import { storybookTest } from '@storybook/addon-vitest/vitest-plugin';
+import { playwright } from '@vitest/browser-playwright';
 import { intl } from 'ember-intl/vite';
 import { scopedCSS } from 'ember-scoped-css/vite';
+import { msw } from 'msw/vite';
 // import { FileSystemIconLoader } from 'unplugin-icons/loaders';
 import icons from 'unplugin-icons/vite';
 import { defineConfig } from 'vite';
+import { configDefaults } from 'vitest/config';
+
+const dirname = path.dirname(fileURLToPath(import.meta.url));
 
 import { theemo } from '@theemo/vite';
 
@@ -21,9 +29,53 @@ export default defineConfig({
     transformer: 'lightningcss'
   },
   test: {
-    setupFiles: ['./tests/test-setup.ts']
+    setupFiles: ['./tests/test-setup.ts'],
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'Equipment',
+          include: ['tests/equipment/**/*.test.ts']
+        }
+      },
+      {
+        extends: true,
+        test: {
+          name: 'Support',
+          include: ['tests/support/**/*.test.ts']
+        }
+      },
+      {
+        extends: true,
+        plugins: [
+          storybookTest({
+            configDir: path.join(dirname, '.storybook'),
+            // This should match your package.json script to run Storybook
+            // The --no-open flag will skip the automatic opening of a browser
+            storybookScript: 'pnpm sb --no-open'
+          })
+        ],
+        // pre-bundle the runtime template compiler: lazy discovery would trigger
+        // a full reload mid-run and break the browser test runner
+        optimizeDeps: {
+          include: ['ember-source/@ember/template-compiler/index.js']
+        },
+        test: {
+          name: 'storybook',
+          // apidocs markdown pages are docs entries, never test files
+          exclude: ['**/apidocs/**', ...configDefaults.exclude],
+          browser: {
+            enabled: true,
+            provider: playwright({}),
+            headless: true,
+            instances: [{ browser: 'chromium' }]
+          }
+        }
+      }
+    ]
   },
   plugins: [
+    msw({ mode: 'worker-only' }),
     ember(),
     scopedCSS({ layerName: 'app' }),
     babel({

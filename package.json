@@ -16,7 +16,14 @@
   },
   "devDependencies": {
     "@glint/ember-tsc": "catalog:ember",
+    "@playwright/mcp": "catalog:ai",
+    "playwright": "catalog:test",
     "turbo": "^2.5.5"
+  },
+  "pnpm": {
+    "overrides": {
+      "playwright": "catalog:test"
+    }
   },
   "engines": {
     "node": ">=24"

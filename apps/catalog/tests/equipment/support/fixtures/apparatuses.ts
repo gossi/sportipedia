@@ -34,3 +34,19 @@ export const RINGS: Apparatus = Object.freeze({
   createdAt: Temporal.Now.plainDateTimeISO(),
   updatedAt: Temporal.Now.plainDateTimeISO()
 });
+
+export const APPARATUSES = [PARALLEL_BARS, BALANCE_BEAM, RINGS];
+
+export function findApparatusById(
+  id: string,
+  apparatuses: Apparatus[] = APPARATUSES
+): Apparatus | undefined {
+  return apparatuses.find((i) => i.id === id);
+}
+
+export function findApparatusBySlug(
+  slug: string,
+  apparatuses: Apparatus[] = APPARATUSES
+): Apparatus | undefined {
+  return apparatuses.find((i) => i.slug === slug);
+}

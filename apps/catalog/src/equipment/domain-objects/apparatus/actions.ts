@@ -1,3 +1,7 @@
+/**
+ * @module Apparatus Actions
+ * @mergeModuleWith Apparatus
+ */
 import { cacheKeyFor } from '@warp-drive/core';
 import { buildBaseURL } from '@warp-drive/utilities';
 import {
@@ -19,6 +23,10 @@ import type { Store } from '#support/data';
 
 type CatalogApparatusData = Omit<Apparatus, 'ID'>;
 
+/**
+ * @group Apparatus
+ * @category Actions
+ */
 export function catalogApparatus(
   data: CatalogApparatusData,
   { store }: { store: Store }
@@ -37,6 +45,10 @@ export function catalogApparatus(
   return options;
 }
 
+/**
+ * @group Apparatus
+ * @category Actions
+ */
 export function editApparatus(
   record: ReactiveResource,
   changes: Apparatus,
@@ -61,6 +73,10 @@ export function editApparatus(
   return requestOptions;
 }
 
+/**
+ * @group Apparatus
+ * @category Actions
+ */
 export function archiveApparatus(
   record: ReactiveResource,
   { store }: { store: Store }

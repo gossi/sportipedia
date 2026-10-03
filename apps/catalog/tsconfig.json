@@ -1,32 +1,20 @@
 {
   "extends": "@ember/app-tsconfig",
-  "include": [
-    "src",
-    "tests",
-    "types"
-  ],
+  "include": ["src", "tests", "types", ".storybook/**/*"],
+  "exclude": ["**/*.tsx"],
   "compilerOptions": {
     "allowJs": true,
     "target": "esnext",
     "paths": {
-      "#/*": [
-        "./src/*"
-      ],
-      "#auth/*": [
-        "./src/support/auth/*"
-      ],
-      "#support/*": [
-        "./src/support/*"
-      ],
-      "#equipment": [
-        "./src/equipment/index.ts"
-      ],
-      "#user": [
-        "./src/user/index.ts"
-      ],
-      "#tests/*": [
-        "./tests/*"
-      ]
+      "#/*": ["./src/*"],
+      "#auth/*": ["./src/support/auth/*"],
+      "#support/*": ["./src/support/*"],
+      "#equipment": ["./src/equipment/index.ts"],
+      "#equipment-test-support": ["./tests/equipment/support/index.ts"],
+      "#user": ["./src/user/index.ts"],
+      "#storybook/*": ["./.storybook/*"],
+      "#test-support/*": ["./tests/support/*"],
+      "#tests/*": ["./tests/*"]
     },
     "types": [
       "ember-source/types",

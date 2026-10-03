@@ -1,3 +1,7 @@
+/**
+ * @module Sessions
+ * @category Domain Objects
+ */
 import { cached } from '@glimmer/tracking';
 
 import { cell } from 'ember-resources';
@@ -6,6 +10,10 @@ import { auth } from '#auth/client';
 
 import type { Session } from 'ember-better-auth';
 
+/**
+ * @group Sessions
+ * @category Sessions
+ */
 export class SessionsResource {
   #sessions = cell<Session[]>();
 
@@ -33,11 +41,19 @@ export class SessionsResource {
   };
 }
 
+/**
+ * @group Sessions
+ * @category Sessions
+ */
 export async function revokeSessions() {
   await auth.revokeSessions();
   await auth.signOut();
 }
 
+/**
+ * @group Sessions
+ * @category Sessions
+ */
 export async function revokeSession(token: string) {
   await auth.revokeSession({ token });
 }

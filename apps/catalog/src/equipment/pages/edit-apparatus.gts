@@ -2,6 +2,7 @@ import Component from '@glimmer/component';
 import Route from '@ember/routing/route';
 import { service } from '@ember/service';
 
+import { ApiError, Loading } from '@sportipedia/ui';
 import {
   checkout,
   type ReactiveDataDocument,
@@ -15,12 +16,12 @@ import { withValidation } from '#support/data/validation.ts';
 import { Page } from '@hokulea/ember';
 
 import { editApparatus } from '../domain-objects/apparatus/actions';
+import { readApparatus } from '../domain-objects/apparatus/queries';
 import { asReactiveApparatusResource, type Equipment } from '../domain-objects/equipment';
 import { EquipmentForm } from '../ui/equipment-form.gts';
 
 import type { Apparatus } from '../domain-objects/apparatus/apparatus';
 import type RouterService from '@ember/routing/router-service';
-import type { Future } from '@warp-drive/core/request';
 import type { Store } from '#support/data';
 
 class EditApparatusRoute extends Route {
@@ -32,11 +33,15 @@ class EditApparatusRoute extends Route {
 }
 
 class EditApparatusTemplate extends Component<{
-  Args: { model: { request: Future<ReactiveDataDocument<Apparatus>> } };
+  Args: { model: { apparatus: string } };
 }> {
   @service declare store: Store;
   @service declare router: RouterService;
   @service declare intl: IntlService;
+
+  get request() {
+    return this.store.request(readApparatus(this.args.model.apparatus));
+  }
 
   submit = async (record: Apparatus & ReactiveResource, changes: Equipment) => {
     return withValidation(
@@ -62,7 +67,15 @@ class EditApparatusTemplate extends Component<{
       @title={{t "equipment.pages.edit-apparatus.title"}}
       @description={{t "equipment.basic.apparatus.explanation"}}
     >
-      <Request @request={{@model.request}}>
+      <Request @request={{this.request}}>
+        <:loading>
+          <Loading />
+        </:loading>
+
+        <:error as |error|>
+          <ApiError @error={{error}} />
+        </:error>
+
         <:content as |result|>
           <EquipmentForm
             @equipment={{result.data}}

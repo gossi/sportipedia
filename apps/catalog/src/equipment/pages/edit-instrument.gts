@@ -2,6 +2,7 @@ import Component from '@glimmer/component';
 import Route from '@ember/routing/route';
 import { service } from '@ember/service';
 
+import { ApiError, Loading } from '@sportipedia/ui';
 import {
   checkout,
   type ReactiveDataDocument,
@@ -15,12 +16,12 @@ import { withValidation } from '#support/data/validation.ts';
 import { Page } from '@hokulea/ember';
 
 import { editInstrument } from '../domain-objects/instrument/actions';
+import { readInstrument } from '../domain-objects/instrument/queries';
 import { EquipmentForm } from '../ui/equipment-form.gts';
 
 import type { Equipment } from '../domain-objects/equipment';
 import type { Instrument } from '../domain-objects/instrument/instrument';
 import type RouterService from '@ember/routing/router-service';
-import type { Future } from '@warp-drive/core/request';
 import type { Store } from '#support/data';
 
 function asReactiveResource(record: Instrument): ReactiveResource & Instrument {
@@ -36,11 +37,15 @@ class EditInstrumentRoute extends Route {
 }
 
 class EditInstrumentTemplate extends Component<{
-  Args: { model: { request: Future<ReactiveDataDocument<Instrument>> } };
+  Args: { model: { instrument: string } };
 }> {
   @service declare store: Store;
   @service declare router: RouterService;
   @service declare intl: IntlService;
+
+  get request() {
+    return this.store.request(readInstrument(this.args.model.instrument));
+  }
 
   submit = async (record: Instrument & ReactiveResource, changes: Equipment) => {
     return withValidation(
@@ -66,7 +71,15 @@ class EditInstrumentTemplate extends Component<{
       @title={{t "equipment.pages.edit-instrument.title"}}
       @description={{t "equipment.basic.instrument.explanation"}}
     >
-      <Request @request={{@model.request}}>
+      <Request @request={{this.request}}>
+        <:loading>
+          <Loading />
+        </:loading>
+
+        <:error as |error|>
+          <ApiError @error={{error}} />
+        </:error>
+
         <:content as |result|>
           <EquipmentForm
             @equipment={{result.data}}

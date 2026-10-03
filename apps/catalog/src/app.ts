@@ -1,6 +1,7 @@
 import '@warp-drive/ember/install';
 import 'temporal-polyfill/global';
 
+import { ENV } from '@ember/-internals/environment';
 import EmberRouter from '@ember/routing/router';
 
 import { userRegistry as sharedUserRegistry } from '@sportipedia/user/registry';
@@ -20,6 +21,10 @@ import { IndexTemplate } from './ui/index.gts';
 import { PingTemplate } from './ui/ping.gts';
 
 import type ApplicationInstance from '@ember/application/instance';
+
+if (import.meta.env.MODE === 'test') {
+  ENV.LOG_VERSION = false;
+}
 
 class Router extends EmberRouter {
   location = 'history';
