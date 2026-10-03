@@ -87,6 +87,7 @@ interface NotificationPageSignature {
     title?: string;
   };
   Blocks: {
+    default?: [];
     title?: [];
     content?: [];
     actions?: [];
