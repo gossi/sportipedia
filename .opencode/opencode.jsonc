@@ -9,14 +9,14 @@
     },
   },
   "mcp": {
-    "elixir-ls": {
-      "type": "local",
-      "command": [
-        "bash",
-        "scripts/start-elixir-ls-mcp.sh"
-      ],
-      "enabled": true
-    },
+    // "elixir-ls": {
+    //   "type": "local",
+    //   "command": [
+    //     "bash",
+    //     "scripts/start-elixir-ls-mcp.sh"
+    //   ],
+    //   "enabled": true
+    // },
     "playwright": {
       "type": "local",
       "command": ["node_modules/.bin/playwright-mcp"],
@@ -25,6 +25,11 @@
         "PLAYWRIGHT_MCP_BROWSER": "chromium",
         "PLAYWRIGHT_MCP_HEADLESS": "true"
       }
+    },
+    "better-auth": {
+      "type": "remote",
+      "url": "https://mcp.better-auth.com/mcp",
+      "enabled": true
     }
   },
   "agent": {
