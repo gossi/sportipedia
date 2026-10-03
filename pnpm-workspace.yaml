@@ -8,6 +8,9 @@ packages:
 publicHoistPattern:
   - "stylelint-*"
 
+# minimum age: one week
+minimumReleaseAge: 10080
+
 catalogs:
   build:
     "@babel/core": ^7.29.0
