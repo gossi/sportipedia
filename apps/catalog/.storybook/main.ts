@@ -34,5 +34,14 @@ export default defineMain({
   },
   core: {
     disableWhatsNewNotifications: true
+  },
+  viteFinal: (config) => {
+    if (config.optimizeDeps?.include?.includes('react-dom/client')) {
+      const index = config.optimizeDeps.include.indexOf('react-dom/client');
+
+      config.optimizeDeps.include.splice(index, 1);
+    }
+
+    return config;
   }
 });
