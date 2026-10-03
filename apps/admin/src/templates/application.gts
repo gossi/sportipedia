@@ -17,9 +17,11 @@ import { AppHeader, Avatar } from '@hokulea/ember';
           </:nav>
           <:aux as |n|>
             <n.Item>
+              {{! @glint-expect-error }}
               <:label>
                 <Avatar @src={{user.image}} @name={{user.name}} class="avatar" />
               </:label>
+              {{! @glint-expect-error }}
               <:menu as |um|>
                 <um.Item @href="/logout">Logout</um.Item>
               </:menu>

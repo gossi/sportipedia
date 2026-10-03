@@ -33,6 +33,7 @@ import Tv from '~icons/material-symbols/tv-outline';
 import { Icon } from '@hokulea/ember';
 
 import type { TOC } from '@ember/component/template-only';
+import type { WithBoundArgs } from '@glint/template';
 import type { Logo } from '#/icons/logos.gts';
 import type { IBrowser, IDevice, IOS } from 'ua-parser-js';
 
@@ -151,14 +152,27 @@ const OS: TOC<{ Args: { os: IOS } }> = <template>
   </div>
 </template>;
 
-const UserAgent: TOC<{ Args: { userAgent: string } }> = <template>
+const UserAgent: TOC<{
+  Args: { userAgent: string };
+  Blocks: {
+    default: [
+      {
+        Device: WithBoundArgs<typeof Device, 'device'>;
+        DeviceIcon: WithBoundArgs<typeof DeviceIcon, 'device'>;
+        Browser: WithBoundArgs<typeof Browser, 'browser'>;
+        BrowserIcon: WithBoundArgs<typeof BrowserIcon, 'name'>;
+        OS: WithBoundArgs<typeof OS, 'os'>;
+      }
+    ];
+  };
+}> = <template>
   {{#let (UAParser @userAgent) as |ua|}}
     {{yield
       (hash
         Device=(component Device device=ua.device)
-        DeviceIcon=(component DeviceIcon ua=ua)
+        DeviceIcon=(component DeviceIcon device=ua.device)
         Browser=(component Browser browser=ua.browser)
-        BrowserIcon=(component BrowserIcon browser=ua.browser)
+        BrowserIcon=(component BrowserIcon name=ua.browser.name)
         OS=(component OS os=ua.os)
       )
     }}

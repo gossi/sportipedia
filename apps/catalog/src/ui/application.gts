@@ -19,7 +19,9 @@ const ApplicationTemplate = <template>
     </:nav>
     <:aux as |n|>
       <n.Item>
+        {{! @glint-expect-error }}
         <:label>{{t "app.header.nav.manage.label"}}</:label>
+        {{! @glint-expect-error }}
         <:menu as |m|>
           <m.Item @href="/equipment">{{t "app.header.nav.manage.equipment"}}</m.Item>
         </:menu>
