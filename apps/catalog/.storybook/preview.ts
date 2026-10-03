@@ -27,6 +27,7 @@ export default definePreview({
       const worker = setupWorker(...authHandlers);
 
       await worker.start({
+        quiet: import.meta.env.MODE === 'test',
         onUnhandledFrame: 'bypass'
       });
 
