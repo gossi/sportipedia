@@ -94,12 +94,12 @@ catalogs:
     "@hokulea/theme-moana": ^0.4.0
     "@theemo/ember": ^1.0.1
     "@theemo/vite": ^1.0.1
-    "@better-auth/cli": "^1.4.22"
     "@warp-drive/core": 5.9.1
     "@warp-drive/ember": 5.9.1
     "@warp-drive/json-api": 5.9.1
     "@warp-drive/utilities": 5.9.1
-    "better-auth": ^1.6.5
+    "auth": "^1.7.7"
+    "better-auth": 1.7.7
     "temporal-polyfill": ^0.3.0
   ai:
     "@playwright/mcp": "0.0.83"
