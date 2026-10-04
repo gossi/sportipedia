@@ -767,8 +767,8 @@ importers:
         specifier: catalog:lib
         version: 0.3.0
       temporal-spec:
-        specifier: ^0.3.0
-        version: 0.3.0
+        specifier: ^0.3.1
+        version: 0.3.1
       tsdown:
         specifier: catalog:build
         version: 0.22.3(@tsdown/css@0.22.3)(oxc-resolver@11.21.2)(tsx@4.22.4)(typescript@6.0.3)(unrun@0.2.32(@emnapi/core@1.11.1)(@emnapi/runtime@1.11.1)(synckit@0.11.11))
@@ -7829,6 +7829,9 @@ packages:
 
   temporal-spec@0.3.0:
     resolution: {integrity: sha512-n+noVpIqz4hYgFSMOSiINNOUOMFtV5cZQNCmmszA6GiVFVRt3G7AqVyhXjhCSmowvQn+NsGn+jMDMKJYHd3bSQ==}
+
+  temporal-spec@0.3.1:
+    resolution: {integrity: sha512-B4TUhezh9knfSIMwt7RVggApDRJZo73uZdj8AacL2mZ8RP5KtLianh2MXxL06GN9ESYiIsiuoLQhgVfwe55Yhw==}
 
   terser-webpack-plugin@5.3.14:
     resolution: {integrity: sha512-vkZjpUjb6OMS7dhV+tILUW6BhpDR7P2L/aQSAv+Uwk+m8KATX9EccViHTJR2qDtACKPIYndLGCyl3FMo+r2LMw==}
@@ -16345,6 +16348,8 @@ snapshots:
       temporal-spec: 0.3.0
 
   temporal-spec@0.3.0: {}
+
+  temporal-spec@0.3.1: {}
 
   terser-webpack-plugin@5.3.14(esbuild@0.28.1)(webpack@5.101.0(esbuild@0.28.1)):
     dependencies:
