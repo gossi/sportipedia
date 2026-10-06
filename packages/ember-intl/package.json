@@ -72,7 +72,7 @@
     "eslint-plugin-ember": "catalog:lint",
     "prettier": "catalog:lint",
     "temporal-polyfill": "catalog:lib",
-    "temporal-spec": "^0.3.0",
+    "temporal-spec": "^0.3.1",
     "tsdown": "catalog:build",
     "typescript": "catalog:build",
     "vite": "catalog:build"
