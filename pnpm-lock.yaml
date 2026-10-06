@@ -915,8 +915,8 @@ importers:
         specifier: catalog:lint
         version: 1.2.3(ember-template-lint@7.9.3)(prettier@3.9.4)
       '@iconify-json/logos':
-        specifier: ^1.2.4
-        version: 1.2.4
+        specifier: ^1.2.15
+        version: 1.2.15
       '@iconify-json/material-symbols':
         specifier: catalog:icons
         version: 1.2.50
@@ -2451,8 +2451,8 @@ packages:
   '@iconify-json/cib@1.2.2':
     resolution: {integrity: sha512-WevYDdIm0x3I3YZyoIgdSu4uurbzs2b2gsMLUj8/EMKMoPIx6GF+t0VcaCgFY4a0rIdUY18MYP6m9XgcOhOtFg==}
 
-  '@iconify-json/logos@1.2.4':
-    resolution: {integrity: sha512-XC4If5D/hbaZvUkTV8iaZuGlQCyG6CNOlaAaJaGa13V5QMYwYjgtKk3vPP8wz3wtTVNVEVk3LRx1fOJz+YnSMw==}
+  '@iconify-json/logos@1.2.15':
+    resolution: {integrity: sha512-87zwqEFatvpcK7lIIp0RnCbDAPWcG8bTK5hZI5SuD71za+opSuqtGvFUiSNt6wiyuY+nolrW/JW1K4/mBczWhQ==}
 
   '@iconify-json/material-symbols@1.2.50':
     resolution: {integrity: sha512-71tjHR70h46LHtBFab3fAd2V/wPTO7JMV5lKnRn3IcF303LaFgAlO0BZeTJDcmCv9d0snRZmnoLZAJVD7/eisw==}
@@ -10308,7 +10308,7 @@ snapshots:
     dependencies:
       '@iconify/types': 2.0.0
 
-  '@iconify-json/logos@1.2.4':
+  '@iconify-json/logos@1.2.15':
     dependencies:
       '@iconify/types': 2.0.0
 

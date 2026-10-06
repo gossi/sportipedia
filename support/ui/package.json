@@ -69,7 +69,7 @@
     "@gossi/config-prettier": "catalog:lint",
     "@gossi/config-stylelint": "catalog:lint",
     "@gossi/config-template-lint": "catalog:lint",
-    "@iconify-json/logos": "^1.2.4",
+    "@iconify-json/logos": "^1.2.15",
     "@iconify-json/material-symbols": "catalog:icons",
     "@iconify-json/ph": "^1.2.2",
     "@rollup/plugin-babel": "catalog:build",
