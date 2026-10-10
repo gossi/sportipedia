@@ -20,7 +20,7 @@ catalogs:
     "@babel/preset-typescript": ^7.28.5
     "@babel/runtime": ^7.29.2
     "@rollup/plugin-babel": ^7.0.0
-    "@tsdown/css": ^0.22.3
+    "@tsdown/css": ^0.23.0
     "babel-plugin-debug-macros": ^2.0.0
     "babel-plugin-ember-template-compilation": ^4.0.0
     "decorator-transforms": ^2.4.0
