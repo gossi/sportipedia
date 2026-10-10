@@ -43,7 +43,7 @@
     "@babel/plugin-transform-typescript": "catalog:build",
     "@babel/runtime": "catalog:build",
     "@ember/app-tsconfig": "catalog:ember",
-    "@ember/test-helpers": "^5.0.0",
+    "@ember/test-helpers": "^5.7.0",
     "@embroider/core": "catalog:ember",
     "@embroider/macros": "catalog:ember",
     "@embroider/router": "catalog:ember",
