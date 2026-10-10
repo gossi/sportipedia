@@ -66,7 +66,7 @@
     "@babel/runtime": "catalog:build",
     "@ember/app-tsconfig": "catalog:ember",
     "@ember/library-tsconfig": "catalog:ember",
-    "@ember/test-helpers": "^5.2.2",
+    "@ember/test-helpers": "^5.7.0",
     "@embroider/addon-dev": "catalog:ember",
     "@embroider/compat": "catalog:ember",
     "@embroider/core": "catalog:ember",
