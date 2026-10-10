@@ -20,7 +20,7 @@
     "auth": "catalog:lib",
     "better-auth": "catalog:lib",
     "eslint": "catalog:lint",
-    "pg": "^8.16.3",
+    "pg": "^8.23.1",
     "prettier": "catalog:lint",
     "hono": "^4.9.4",
     "tsdown": "catalog:build",
