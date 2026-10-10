@@ -46,7 +46,7 @@
     "@hokulea/core": "catalog:lib",
     "@hokulea/ember": "catalog:lib",
     "@hokulea/theme-moana": "catalog:lib",
-    "@iconify-json/cib": "^1.2.2",
+    "@iconify-json/cib": "^1.2.3",
     "@iconify-json/ph": "catalog:icons",
     "@rollup/plugin-babel": "catalog:build",
     "@theemo/ember": "catalog:lib",
