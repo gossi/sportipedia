@@ -22,7 +22,7 @@
     "eslint": "catalog:lint",
     "pg": "^8.16.3",
     "prettier": "catalog:lint",
-    "hono": "^4.9.4",
+    "hono": "^4.13.12",
     "tsdown": "catalog:build",
     "tsx": "catalog:script",
     "typescript": "catalog:build"
