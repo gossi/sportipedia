@@ -1,5 +1,9 @@
 # Operation Test
 
+> **Implemented as a shared executable mechanism:** `Sportipedia.Codegen.Blueprints.OperationTestFile`
+> — each implemented blueprint (command, event, command-handler) contributes
+> its own `describe` block and aliases to this file when its generator runs.
+
 Blueprint for a test file for one operation in the [Sportipedia Domain](../../../../domain-model/README.md).
 
 | Attribute | Value |

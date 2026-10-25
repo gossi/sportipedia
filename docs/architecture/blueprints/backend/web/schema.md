@@ -1,5 +1,9 @@
 # Schema
 
+> **Implemented as an executable blueprint:** `Sportipedia.Codegen.Blueprints.Schema` — run `mix sp.gen.schema <element>` (Response/CollectionResponse from read models, Request from commands, QueryParams from collection queries).
+> This markdown stays the design document; the generator owns the file layout and
+> merges idempotently into existing code.
+
 | Schema Type | File Path | Module Name |
 |-------------|-----------|-------------|
 | Response | `/services/api/lib/sportipedia_web/<_subdomain>/<_composite>/<domain_object>/schemas/<operation>_response.ex` | `SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.Schemas.<Operation>Response` |

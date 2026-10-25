@@ -1,5 +1,9 @@
 # Endpoint Test
 
+> **Implemented as an executable blueprint:** `Sportipedia.Codegen.Blueprints.Controller` — run contributed by `mix sp.gen.controller <operation>` (the endpoint test is the controller blueprint's paired test).
+> This markdown stays the design document; the generator owns the file layout and
+> merges idempotently into existing code.
+
 Blueprint for testing an endpoint (CQRS/ES operation) in the Sportipedia domain.
 
 | Attribute   | Value                                                                                                     |

@@ -135,5 +135,5 @@ All samples use these domain model values:
 
 | Template | Resolved |
 |---|---|
-| `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Operation.<_Command>Test` | `Sportipedia.Catalog.Equipment.Apparatus.Operation.CatalogApparatusTest` |
-| `SportipediaWeb.<Subdomain>.<Composite>.<_Command>RequestTest` | `SportipediaWeb.Catalog.Equipment.CatalogApparatusRequestTest` |
+| `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Operation.<Command>Test` | `Sportipedia.Catalog.Equipment.Apparatus.Operation.CatalogApparatusTest` |
+| `SportipediaWeb.<Subdomain>.<Composite>.<Command>RequestTest` | `SportipediaWeb.Catalog.Equipment.CatalogApparatusRequestTest` |

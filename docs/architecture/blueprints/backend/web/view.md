@@ -1,5 +1,9 @@
 # View
 
+> **Implemented as an executable blueprint:** `Sportipedia.Codegen.Blueprints.View` — run `mix sp.gen.view <read-model>` (fixed shape — type, path, fields from the read model).
+> This markdown stays the design document; the generator owns the file layout and
+> merges idempotently into existing code.
+
 | Attribute        | Value                                                                                          |
 | ---------------- | ---------------------------------------------------------------------------------------------- |
 | File Path        | `/services/api/lib/sportipedia_web/<_subdomain>/<_composite>/<domain_object>/<domain_object>_view.ex`          |

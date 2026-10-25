@@ -1,5 +1,9 @@
 # Internal API
 
+> **Implemented as an executable blueprint:** `Sportipedia.Codegen.Blueprints.InternalAPI` — run `mix sp.gen.internal_api <element>` (fixed shape — `x_by_id/1` plus one accessor per unique invariant).
+> This markdown stays the design document; the generator owns the file layout and
+> merges idempotently into existing code.
+
 | Attribute   | Value                                                                                  |
 | ----------- | -------------------------------------------------------------------------------------- |
 | File Path   | `/services/api/lib/sportipedia/<_subdomain>/<_composite>/<domain_object>/internal_api` |

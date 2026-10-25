@@ -52,6 +52,50 @@ test-driven-development (tdd).
   1. All commands
   2. All queries
 
+## Executable Blueprints (Code Generators)
+
+Blueprints are progressively transferred to executable Elixir templates in
+`services/api` (`Sportipedia.Codegen.Blueprints.*`), run as mix tasks:
+
+```sh
+mix sp.gen               # list all available generators
+mix sp.gen.command <element> --template create
+```
+
+- The markdown here stays the design documentation; the executable transfer
+  adds one pointer line per implemented blueprint.
+- Blueprints define the file _contents_; the generators know the _layout_
+  (canonical paths live with the generator, see `Sportipedia.Codegen`).
+- Generators resolve an ESDM element (`esdm:` reference, model file,
+  `kind.name`, or bare name), fill the placeholders per
+  [naming substitution](../naming-substitution.md), and merge idempotently:
+  existing files only receive missing units (module, `use`/`alias`, function
+  clauses, `field`/`validates`/`dispatch`/`project` entries, `describe`
+  blocks). `--check` reports drift without writing.
+- `--template` selects the body template by what the operation does
+  (`create | update | delete | read | collection`); fixed-shape blueprints
+  (e.g. command-handler) take none.
+
+Implemented: [Command](backend/domain/command.md),
+[Event](backend/domain/event.md),
+[Command Handler](backend/domain/command-handler.md),
+[Aggregate](backend/domain/aggregate.md),
+[Read Model](backend/domain/read-model.md),
+[Projector](backend/domain/projector.md),
+[Policy](backend/domain/policy.md),
+[Public API](backend/domain/public-api.md),
+[Internal API](backend/domain/internal-api.md),
+[Validator](backend/domain/validator.md),
+[Query](backend/domain/query.md),
+[View](backend/domain/view.md),
+[Schema](backend/domain/schema.md),
+[Controller](backend/domain/controller.md),
+[Endpoint Test](backend/web/endpoint-test.md),
+[Bruno](backend/web/bruno.md),
+[Operation Test](backend/domain/operation-test.md) (shared describe mechanism).
+
+Not executable: Migration — deliberately stays with `mix ecto.gen.migration`.
+
 ## Available Blueprints
 
 Here: [/docs/architecture/blueprints/](../../../docs/architecture/blueprints/)

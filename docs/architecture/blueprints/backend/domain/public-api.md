@@ -1,5 +1,9 @@
 # Public API
 
+> **Implemented as an executable blueprint:** `Sportipedia.Codegen.Blueprints.PublicAPI` — run `mix sp.gen.public_api <operation> [--template create|update|delete|read|collection]`.
+> This markdown stays the design document; the generator owns the file layout and
+> merges idempotently into existing code.
+
 | Attribute | Value |
 | --- | --- |
 | File Path | `/services/api/lib/sportipedia/<_subdomain>/<_composite>/<domain_object>/public_api.ex` |

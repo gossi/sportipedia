@@ -1,5 +1,9 @@
 # Aggregate
 
+> **Implemented as an executable blueprint:** `Sportipedia.Codegen.Blueprints.Aggregate` — run `mix sp.gen.aggregate <element>` (fixed shape — the events drive the `apply/2` clauses).
+> This markdown stays the design document; the generator owns the file layout and
+> merges idempotently into existing code.
+
 | Attribute | Value |
 | --- | --- |
 | Schema | [Core](../../../../schemas/core/v1.yaml) |

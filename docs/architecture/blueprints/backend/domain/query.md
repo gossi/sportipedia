@@ -1,5 +1,9 @@
 # Query
 
+> **Implemented as an executable blueprint:** `Sportipedia.Codegen.Blueprints.Query` — run `mix sp.gen.query <query>` (the concrete Ecto query is the spec's 1%; marked TODO).
+> This markdown stays the design document; the generator owns the file layout and
+> merges idempotently into existing code.
+
 | Attribute | Value |
 | --- | --- |
 | Schema | [Core](../../../../schemas/core/v1.yaml) |
