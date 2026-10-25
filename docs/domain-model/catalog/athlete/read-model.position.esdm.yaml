@@ -17,4 +17,35 @@ projections:
     aggregate: position
     event: position-archived
     rule: "Mark position as archived"
-schema: {}
+schema:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier"
+    title:
+      type: string
+      description: "Name of the position"
+    slug:
+      type: string
+      description: "URL-friendly unique identifier"
+    description:
+      type: string
+      description: "Optional description"
+    apparatusId:
+      type: string
+      format: uuid
+      description: "Reference to apparatus (optional)"
+    instrumentId:
+      type: string
+      format: uuid
+      description: "Reference to instrument (optional)"
+    archivedAt:
+      type: string
+      format: date-time
+      description: "Timestamp when archived (null if active)"
+  required:
+    - id
+    - title
+    - slug

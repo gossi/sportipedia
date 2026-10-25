@@ -12,7 +12,7 @@ Write comprehensive product specification documents that clearly communicate wha
 
 Assume the reader is a skilled product person or engineer, but knows nothing about this specific feature or the problem domain. Assume they need clear context to understand the "why" behind the work.
 
-Make yourself familiar with the given [Architecture](../../../ARCHITECTURE.md) and [Domain Model](../../../docs/domain-model/README.md)
+Make yourself familiar with the given [Architecture](../../ARCHITECTURE.md) and [Domain Model](../../docs/domain-model/README.md)
 
 Connect the product specification document with [ESDM](https://www.esdm.io). Link the spec to the esdm yaml files.
 

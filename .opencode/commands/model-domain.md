@@ -17,4 +17,4 @@ domain. Ask one question at a time and phrase the questions in the vocabulary fr
 
 When you have enough context, propose the model following the conventions
 from the schemas and file conventions for this project. After the files are
-written, ask me to run `esdm lint`  and we will work through any findings together.
+written, ask me to run `esdm lint` and we will work through any findings together.

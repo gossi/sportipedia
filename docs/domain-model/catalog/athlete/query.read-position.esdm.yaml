@@ -1,0 +1,57 @@
+apiVersion: schema.esdm.io/core/v1
+kind: query
+name: read-position
+description: "Retrieve a single position by its id or slug"
+scope:
+  domain: sport
+  boundedContext: sport
+readModel: position
+result:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier"
+    title:
+      type: string
+      description: "Name of the position"
+    slug:
+      type: string
+      description: "URL-friendly unique identifier"
+    description:
+      type: string
+      description: "Optional description"
+    apparatusId:
+      type: string
+      format: uuid
+      description: "Reference to apparatus (optional)"
+    instrumentId:
+      type: string
+      format: uuid
+      description: "Reference to instrument (optional)"
+  required:
+    - id
+    - title
+    - slug
+parameters:
+  oneOf:
+    - type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: "Unique identifier of the position"
+      required:
+        - id
+    - type: object
+      properties:
+        slug:
+          type: string
+          description: "URL-friendly slug of the position"
+      required:
+        - slug
+actors:
+  - guest
+  - user
+  - admin
