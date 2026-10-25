@@ -59,7 +59,7 @@ defmodule Sportipedia.MixProject do
       {:vex, "~> 0.9"},
 
       # API
-      {:jsonapi, "~> 1.10.0"},
+      {:jsonapi, "~> 1.14.0"},
       {:open_api_spex, "~> 3.22"},
 
       # Security
