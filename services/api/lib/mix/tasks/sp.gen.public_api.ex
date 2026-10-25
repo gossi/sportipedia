@@ -6,7 +6,7 @@ defmodule Mix.Tasks.Sp.Gen.PublicApi do
   constituent port — exactly one function per operation).
 
   Executes `docs/architecture/blueprints/backend/domain/public-api.md`
-  (`Sportipedia.Codegen.Blueprints.PublicAPI`): `@doc`, `@spec`
+  (`Sportipedia.Codegen.Blueprint.PublicAPI`): `@doc`, `@spec`
   (`Architecture.public_api/...`) and the function body per operation —
   commands dispatch with `consistency: :strong` (create generates the id) and
   classify validation failures; queries read through the internal API /
@@ -22,11 +22,11 @@ defmodule Mix.Tasks.Sp.Gen.PublicApi do
 
   use Mix.Task
 
-  alias Sportipedia.Codegen.{CLI, Blueprints}
+  alias Sportipedia.Codegen.CLI
 
   @impl Mix.Task
   def run(argv) do
-    case CLI.run(Blueprints.PublicAPI, argv) do
+    case CLI.run(:public_api, argv) do
       :ok -> :ok
       {:error, message} -> Mix.raise(message)
     end

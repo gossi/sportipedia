@@ -14,7 +14,6 @@ defmodule Sportipedia.CodegenTest do
   use ExUnit.Case, async: false
 
   alias Sportipedia.Codegen
-  alias Sportipedia.Codegen.Blueprints.{Bruno, Command, CommandHandler, Event}
 
   # test files run from services/api; __DIR__ = services/api/test/sportipedia/codegen
   @repo_root Path.expand("../../../../..", __DIR__)
@@ -29,7 +28,7 @@ defmodule Sportipedia.CodegenTest do
             {"archive-apparatus", "delete"}
           ] do
         assert {:ok, results} =
-                 Codegen.run(Command, [name, "--template", template, "--check"])
+                 Codegen.run(:command, [name, "--template", template, "--check"])
 
         assert Enum.all?(results, &match?({:unchanged, _}, &1)),
                "#{name} wanted changes: #{inspect(results)}"
@@ -40,7 +39,7 @@ defmodule Sportipedia.CodegenTest do
 
     test "command handlers are fully represented already" do
       for name <- ["catalog-apparatus", "edit-apparatus"] do
-        assert {:ok, results} = Codegen.run(CommandHandler, [name, "--check"])
+        assert {:ok, results} = Codegen.run(:command_handler, [name, "--check"])
         assert Enum.all?(results, &match?({:unchanged, _}, &1))
       end
     end
@@ -53,7 +52,7 @@ defmodule Sportipedia.CodegenTest do
             "read-apparatus",
             "list-apparatuses"
           ] do
-        assert {:ok, results} = Codegen.run(Bruno, [name, "--check"])
+        assert {:ok, results} = Codegen.run(:bruno, [name, "--check"])
 
         assert Enum.all?(results, &match?({:unchanged, _}, &1)),
                "#{name} wanted changes: #{inspect(results)}"
@@ -66,7 +65,7 @@ defmodule Sportipedia.CodegenTest do
             {"apparatus-edited", "update"},
             {"apparatus-archived", "delete"}
           ] do
-        assert {:ok, results} = Codegen.run(Event, [name, "--template", template, "--check"])
+        assert {:ok, results} = Codegen.run(:event, [name, "--template", template, "--check"])
         assert Enum.all?(results, &match?({:unchanged, _}, &1))
       end
     end
@@ -348,20 +347,20 @@ defmodule Sportipedia.CodegenTest do
       %{root: root}
     end
 
-    defp run(blueprint, args, root) do
-      Codegen.run(blueprint, args ++ ["--root", root])
+    defp run(family, args, root) do
+      Codegen.run(family, args ++ ["--root", root])
     end
 
     test "creates a complete citizen and is then a no-op", %{root: root} do
       # event first (its tests live in the publishing command's test file)
-      assert {:ok, results} = run(Event, ["widget-created", "--template", "create"], root)
+      assert {:ok, results} = run(:event, ["widget-created", "--template", "create"], root)
       assert Enum.count(results, &match?({:created, _}, &1)) == 2
 
-      assert {:ok, results} = run(CommandHandler, ["create-widget"], root)
+      assert {:ok, results} = run(:command_handler, ["create-widget"], root)
       assert [{:created, handler} | _] = Enum.filter(results, &match?({:created, _}, &1))
       assert handler =~ "handler.ex"
 
-      assert {:ok, results} = run(Command, ["create-widget", "--template", "create"], root)
+      assert {:ok, results} = run(:command, ["create-widget", "--template", "create"], root)
       assert Enum.any?(results, &match?({:created, _}, &1))
       assert Enum.any?(results, &(match?({:merged, _, _ids}, &1) and elem(&1, 2) != []))
 
@@ -373,18 +372,18 @@ defmodule Sportipedia.CodegenTest do
       end
 
       # second run: complete no-op
-      assert {:ok, results} = run(Event, ["widget-created", "--template", "create"], root)
+      assert {:ok, results} = run(:event, ["widget-created", "--template", "create"], root)
       assert Enum.all?(results, &match?({:unchanged, _}, &1))
-      assert {:ok, results} = run(CommandHandler, ["create-widget"], root)
+      assert {:ok, results} = run(:command_handler, ["create-widget"], root)
       assert Enum.all?(results, &match?({:unchanged, _}, &1))
-      assert {:ok, results} = run(Command, ["create-widget", "--template", "create"], root)
+      assert {:ok, results} = run(:command, ["create-widget", "--template", "create"], root)
       assert Enum.all?(results, &match?({:unchanged, _}, &1))
     end
 
     test "generated command matches the blueprint shape", %{root: root} do
-      {:ok, _} = run(Event, ["widget-created", "--template", "create"], root)
-      {:ok, _} = run(CommandHandler, ["create-widget"], root)
-      {:ok, _} = run(Command, ["create-widget", "--template", "create"], root)
+      {:ok, _} = run(:event, ["widget-created", "--template", "create"], root)
+      {:ok, _} = run(:command_handler, ["create-widget"], root)
+      {:ok, _} = run(:command, ["create-widget", "--template", "create"], root)
 
       command =
         read(root, "lib/sportipedia/catalog/equipment/widget/operation/create_widget/command.ex")
@@ -436,7 +435,7 @@ defmodule Sportipedia.CodegenTest do
       results_per_form =
         for form <- forms do
           {:ok, results} =
-            Codegen.run(Command, [form, "--template", "create", "--check", "--root", root])
+            Codegen.run(:command, [form, "--template", "create", "--check", "--root", root])
 
           results
         end
@@ -476,8 +475,7 @@ defmodule Sportipedia.CodegenTest do
 
     test "the whole citizen chain: creates, then is a no-op", %{root: root} do
       for {name, args} <- @chain do
-        blueprint = Codegen.blueprints()[String.to_atom(name)]
-        assert {:ok, _} = Codegen.run(blueprint, args ++ ["--root", root])
+        assert {:ok, _} = Codegen.run(String.to_atom(name), args ++ ["--root", root])
       end
 
       # every generated file parses and ends with a newline
@@ -498,7 +496,8 @@ defmodule Sportipedia.CodegenTest do
       supervisor =
         File.read!(Path.join(root, "services/api/lib/sportipedia/catalog/supervisor.ex"))
 
-      assert supervisor =~ "Sportipedia.Catalog.Equipment.Widget.WidgetProjector,"
+      assert supervisor =~
+               "children = [Sportipedia.Catalog, Sportipedia.Catalog.Equipment.Widget.WidgetProjector]"
 
       bruno_dir = Path.join(root, "bruno/Catalog/Equipment/Widget")
       create_doc = File.read!(Path.join(bruno_dir, "Create Widget.yml"))
@@ -512,8 +511,8 @@ defmodule Sportipedia.CodegenTest do
 
       # second run of the full chain: absolutely nothing changes
       for {name, args} <- @chain do
-        blueprint = Codegen.blueprints()[String.to_atom(name)]
-        assert {:ok, results} = Codegen.run(blueprint, args ++ ["--check", "--root", root])
+        assert {:ok, results} =
+                 Codegen.run(String.to_atom(name), args ++ ["--check", "--root", root])
 
         assert Enum.all?(results, &match?({:unchanged, _}, &1)),
                "#{name} #{inspect(args)} wanted changes: #{inspect(results)}"
@@ -522,7 +521,7 @@ defmodule Sportipedia.CodegenTest do
 
     test "args override inference", %{root: root} do
       {:ok, results} =
-        Codegen.run(Command, [
+        Codegen.run(:command, [
           "create-widget",
           "--template",
           "create",
@@ -544,7 +543,7 @@ defmodule Sportipedia.CodegenTest do
   describe "argument contract" do
     test "without --template the operation derives from the domain model" do
       # catalog-apparatus publishes apparatus-cataloged, whose projection creates a row
-      assert {:ok, results} = Codegen.run(Command, ["catalog-apparatus", "--check"])
+      assert {:ok, results} = Codegen.run(:command, ["catalog-apparatus", "--check"])
       assert Enum.all?(results, &match?({:unchanged, _}, &1))
       assert length(results) == 3
     end
@@ -552,7 +551,7 @@ defmodule Sportipedia.CodegenTest do
     test "template does not fit the element kind" do
       # controller spans both kinds, so the kind guard is what rejects this
       assert {:error, message} =
-               Codegen.run(Sportipedia.Codegen.Blueprints.Controller, [
+               Codegen.run(:controller, [
                  "read-apparatus",
                  "--template",
                  "create"
@@ -562,49 +561,51 @@ defmodule Sportipedia.CodegenTest do
     end
 
     test "template is validated against the blueprint's set" do
-      assert {:error, message} = Codegen.run(Command, ["catalog-apparatus", "--template", "read"])
+      assert {:error, message} =
+               Codegen.run(:command, ["catalog-apparatus", "--template", "read"])
+
       assert message =~ "not supported"
 
       assert {:error, message} =
-               Codegen.run(Event, ["apparatus-cataloged", "--template", "collection"])
+               Codegen.run(:event, ["apparatus-cataloged", "--template", "collection"])
 
       assert message =~ "not supported"
     end
 
     test "fixed blueprints reject --template" do
       assert {:error, message} =
-               Codegen.run(CommandHandler, ["catalog-apparatus", "--template", "create"])
+               Codegen.run(:command_handler, ["catalog-apparatus", "--template", "create"])
 
       assert message =~ "fixed"
     end
 
     test "wrong element kind is refused" do
       assert {:error, message} =
-               Codegen.run(Command, ["apparatus-cataloged", "--template", "create"])
+               Codegen.run(:command, ["apparatus-cataloged", "--template", "create"])
 
       assert message =~ "command"
       assert message =~ "event"
     end
 
     test "ambiguous names list their esdm references" do
-      assert {:error, message} = Codegen.run(Command, ["apparatus", "--template", "create"])
+      assert {:error, message} = Codegen.run(:command, ["apparatus", "--template", "create"])
       assert message =~ "esdm:"
       assert message =~ "aggregate=apparatus"
     end
 
     test "multi element file is refused" do
       path = Path.join(@repo_root, "docs/domain-model/actors.esdm.yaml")
-      assert {:error, message} = Codegen.run(Command, [path, "--template", "create"])
+      assert {:error, message} = Codegen.run(:command, [path, "--template", "create"])
       assert message =~ "more than one element"
     end
 
     test "missing argument prints usage" do
-      assert {:error, message} = Codegen.run(Command, [])
+      assert {:error, message} = Codegen.run(:command, [])
       assert message =~ "usage: mix sp.gen.command"
     end
 
     test "unknown option is reported" do
-      assert {:error, message} = Codegen.run(Command, ["--wat"])
+      assert {:error, message} = Codegen.run(:command, ["--wat"])
       assert message =~ "unknown option"
     end
   end

@@ -1,4 +1,4 @@
-defmodule Sportipedia.Codegen.Blueprints.Validator do
+defmodule Sportipedia.Codegen.Blueprint.Validator do
   @moduledoc """
   Executable transfer of `docs/architecture/blueprints/backend/domain/validator.md`
   plus the example blueprints `examples/unique-slug.md` and
@@ -17,7 +17,7 @@ defmodule Sportipedia.Codegen.Blueprints.Validator do
 
   use Sportipedia.Codegen.Blueprint
 
-  alias Sportipedia.Codegen.{Context, FilePlan, Source, Templates, Unit}
+  alias Sportipedia.Codegen.Templates
 
   @path "services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/validators/<_validator>.ex"
   @module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Validators.<Validator>"
@@ -28,14 +28,11 @@ defmodule Sportipedia.Codegen.Blueprints.Validator do
 
   def plans(%Context{} = ctx) do
     Enum.map(ctx.validators, fn validator ->
-      units = units(validator, ctx)
-
       %FilePlan{
         path: Context.render(@path, ctx, %{"validator" => validator.snake}),
-        role: :module,
         module: Context.render(@module, ctx, %{"validator" => validator.module}),
         scaffold: fn c -> scaffold(c, validator) end,
-        units: units
+        units: units(validator, ctx)
       }
     end)
   end
@@ -125,26 +122,25 @@ defmodule Sportipedia.Codegen.Blueprints.Validator do
         id: :moduledoc,
         check: &Source.has_moduledoc?/1,
         render: fn c -> "@moduledoc \"\"\"\n#{doc(validator, c)}\n\"\"\"" end,
-        anchor: fn src, _ctx -> {:after_line, Source.module_start_line(src)} end
+        place: Merge.head(:moduledoc)
       },
       %Unit{
         id: {:use, "Vex.Validator"},
         check: fn src -> Source.has_use?(src, "Vex.Validator") end,
         render: fn _ctx -> "use Vex.Validator" end,
-        anchor: fn src, _ctx -> {:after_line, Source.module_start_line(src)} end
+        place: Merge.head(:use)
       },
       %Unit{
         id: {:alias, internal},
         check: fn src -> Source.has_alias?(src, internal) end,
         render: fn c -> "alias #{Context.render(@internal_module, c)}" end,
-        anchor: fn src, _ctx -> Source.alias_anchor(src, internal) end,
-        gap: :tight
+        place: Merge.alias_of(internal)
       },
       %Unit{
         id: {:def, :validate, 2},
         check: fn src -> Source.has_def?(src, :validate, 2) end,
-        render: fn c -> def_block(validator, c) |> Templates.indent(2) end,
-        anchor: fn src, _ctx -> Source.before_helpers_anchor(src) end
+        render: fn c -> def_block(validator, c) end,
+        place: Merge.before_helpers()
       }
     ]
   end

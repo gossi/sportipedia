@@ -6,7 +6,7 @@ defmodule Mix.Tasks.Sp.Gen.Schema do
   document an endpoint, driven by the element kind.
 
   Executes `docs/architecture/blueprints/backend/web/schema.md`
-  (`Sportipedia.Codegen.Blueprints.Schema`):
+  (`Sportipedia.Codegen.Blueprint.Schema`):
 
   * read model → `<DomainObject>Response` + `<DomainObject>CollectionResponse`
   * command (`create`/`update`) → `<Command>Request` (`delete` carries none)
@@ -19,11 +19,11 @@ defmodule Mix.Tasks.Sp.Gen.Schema do
 
   use Mix.Task
 
-  alias Sportipedia.Codegen.{CLI, Blueprints}
+  alias Sportipedia.Codegen.CLI
 
   @impl Mix.Task
   def run(argv) do
-    case CLI.run(Blueprints.Schema, argv) do
+    case CLI.run(:schema, argv) do
       :ok -> :ok
       {:error, message} -> Mix.raise(message)
     end

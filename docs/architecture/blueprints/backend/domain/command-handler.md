@@ -1,6 +1,6 @@
 # Command Handler
 
-> **Implemented as an executable blueprint:** `Sportipedia.Codegen.Blueprints.CommandHandler`
+> **Implemented as an executable blueprint:** `Sportipedia.Codegen.Blueprint.CommandHandler`
 > — run `mix sp.gen.command_handler <element>` (fixed shape, no `--template`).
 > This markdown stays the design document; the generator owns the file layout
 > and merges idempotently into existing code.

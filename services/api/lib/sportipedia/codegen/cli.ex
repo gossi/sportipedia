@@ -3,16 +3,18 @@ defmodule Sportipedia.Codegen.CLI do
   Report formatting and exit semantics for the `mix sp.gen.*` tasks.
 
   Prints one line per file the generator touched, and turns problems (usage
-  errors, un-anchorable units, missing registration files) into
-  `{:error, message}` so the task can `Mix.raise/1`.
+  errors, units with no place in an existing file, missing registration
+  files) into `{:error, message}` so the task can `Mix.raise/1`.
   """
 
   alias Sportipedia.Codegen
 
-  @doc "Runs `blueprint` against `argv`, reports, returns `:ok | {:error, msg}`."
-  @spec run(module(), [String.t()]) :: :ok | {:error, String.t()}
-  def run(blueprint, argv) do
-    case Codegen.run(blueprint, argv) do
+  @doc "Runs family `family` against `argv`, reports, returns `:ok | {:error, msg}`."
+  @spec run(atom(), [String.t()]) :: :ok | {:error, String.t()}
+  def run(family, argv) do
+    task = "sp.gen.#{family}"
+
+    case Codegen.run(family, argv) do
       {:error, message} ->
         {:error, message}
 
@@ -24,14 +26,14 @@ defmodule Sportipedia.Codegen.CLI do
         cond do
           failures != [] ->
             {:error,
-             "#{blueprint.task()} could not complete — " <>
+             "#{task} could not complete — " <>
                Enum.map_join(failures, "; ", fn {:error, path, reason} ->
                  "#{path}: #{inspect(reason)}"
                end)}
 
           blocked != [] ->
             {:error,
-             "#{blueprint.task()} found units it cannot anchor — " <>
+             "#{task} found units it cannot place — " <>
                Enum.map_join(blocked, "; ", fn {:blocked, path, ids} ->
                  "#{path}: #{inspect(ids)}"
                end)}
@@ -64,7 +66,7 @@ defmodule Sportipedia.Codegen.CLI do
   end
 
   def format({:blocked, path, ids}) do
-    "BLOCKED   #{path} — no anchor for #{Enum.map_join(ids, ", ", &inspect/1)}"
+    "BLOCKED   #{path} — no place for #{Enum.map_join(ids, ", ", &inspect/1)}"
   end
 
   def format({:error, path, reason}), do: "ERROR     #{path} — #{inspect(reason)}"

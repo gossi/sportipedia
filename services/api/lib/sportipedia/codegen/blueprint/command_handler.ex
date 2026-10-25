@@ -1,50 +1,49 @@
-defmodule Sportipedia.Codegen.Blueprints.CommandHandler do
+defmodule Sportipedia.Codegen.Blueprint.CommandHandler do
   @moduledoc """
   Executable transfer of
-  `docs/architecture/blueprints/backend/domain/command-handler.md`.
+  `docs/architecture/blueprints/backend/domain/command-handler.md` — the
+  handler file itself.
 
-  Generates the `commanded` command handler (one `handle/2` per command), its
-  `@behaviour`, aliases, `@doc`/`@spec`, and contributes its `describe` block
-  to the operation test file.
+  Generates the `commanded` command handler (one `handle/2` per command) with
+  its `@behaviour`, aliases, `@doc`/`@spec`.
 
   The handler *shape* is identical for every operation (input command, output
   events) — only the event names differ, so this blueprint is **fixed**: no
   `--template`.
 
   The command registration in the commanded router (`dispatch … to: …
-  Handler`) is contributed by the command blueprint, not here.
+  Handler`) is contributed by the command router blueprint, not here.
   """
 
   use Sportipedia.Codegen.Blueprint
-
-  alias Sportipedia.Codegen.{Context, FilePlan, Source, Templates, Unit}
-  alias Sportipedia.Codegen.Blueprints.OperationTestFile
 
   @path "services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/operation/<_operation>/handler.ex"
   @module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<Command>Handler"
   @aggregate_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Aggregate"
   @command_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<Command>"
   @event_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Event.<Event>"
-  @test_path "services/api/test/sportipedia/<_subdomain>/<composite>/<domain_object>/operation/<_operation>_test.exs"
-  @test_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Operation.<Command>Test"
 
   def name, do: :command_handler
   def source_kinds, do: [:command]
 
+  @doc false
+  def module_template, do: @module
+  @doc false
+  def command_template, do: @command_module
+  @doc false
+  def aggregate_template, do: @aggregate_module
+  @doc false
+  def event_template, do: @event_module
+
   def plans(%Context{} = ctx) do
-    [handler_file(ctx), operation_test(ctx)]
-  end
-
-  # ------------------------------------------------------------------ module
-
-  defp handler_file(ctx) do
-    %FilePlan{
-      path: Context.render(@path, ctx),
-      role: :module,
-      module: Context.render(@module, ctx),
-      scaffold: &scaffold/1,
-      units: units(ctx)
-    }
+    [
+      %FilePlan{
+        path: Context.render(@path, ctx),
+        module: Context.render(@module, ctx),
+        scaffold: &scaffold/1,
+        units: units(ctx)
+      }
+    ]
   end
 
   @doc false
@@ -72,7 +71,8 @@ defmodule Sportipedia.Codegen.Blueprints.CommandHandler do
     """
   end
 
-  defp event_render(ctx) do
+  @doc "Pascal-cased first event name of the command, e.g. `ApparatusCataloged`."
+  def event_render(ctx) do
     case ctx.events do
       [%{name: name} | _] ->
         name |> String.split("-") |> Enum.map(&String.capitalize/1) |> Enum.join()
@@ -87,7 +87,8 @@ defmodule Sportipedia.Codegen.Blueprints.CommandHandler do
     "\n" <> Enum.map_join(modules, "\n", fn m -> "  alias #{m}" end) <> "\n"
   end
 
-  defp alias_modules(ctx) do
+  @doc false
+  def alias_modules(ctx) do
     aggregate = Context.render(@aggregate_module, ctx)
     command = Context.render(@command_module, ctx)
 
@@ -117,20 +118,13 @@ defmodule Sportipedia.Codegen.Blueprints.CommandHandler do
           \"\"\"
           """
         end,
-        anchor: fn src, _ctx -> {:after_line, Source.module_start_line(src)} end
+        place: Merge.head(:moduledoc)
       },
       %Unit{
         id: {:behaviour, "Commanded.Commands.Handler"},
         check: fn src -> Source.has_behaviour?(src, "Commanded.Commands.Handler") end,
         render: fn _ctx -> "@behaviour Commanded.Commands.Handler" end,
-        anchor: fn src, _ctx ->
-          Source.after_entry(
-            src,
-            :use,
-            fn _ -> true end,
-            {:after_line, Source.module_start_line(src)}
-          )
-        end
+        place: Merge.head(:attribute)
       }
     ]
   end
@@ -143,8 +137,7 @@ defmodule Sportipedia.Codegen.Blueprints.CommandHandler do
         id: {:router_alias, full},
         check: fn src -> Source.has_alias?(src, full) end,
         render: fn _ctx -> "alias #{full}" end,
-        anchor: fn src, _ctx -> Source.alias_anchor(src, full) end,
-        gap: :tight
+        place: Merge.alias_of(full)
       }
     end)
   end
@@ -170,44 +163,8 @@ defmodule Sportipedia.Codegen.Blueprints.CommandHandler do
           end
           """
         end,
-        anchor: fn src, _ctx -> Source.module_end_anchor(src) end
+        place: Merge.body_end()
       }
     ]
-  end
-
-  # -------------------------------------------------------------------- test
-
-  defp operation_test(ctx) do
-    OperationTestFile.plan(ctx,
-      path: @test_path,
-      module: @test_module,
-      alias_templates: [@command_module, @module, @event_module, @aggregate_module],
-      describes: [{"<Command>Handler", &describe_body/2}]
-    )
-  end
-
-  @doc false
-  def describe_body(ctx, subject) do
-    command = Context.render("<Command>", ctx)
-    handler = command <> "Handler"
-    event = event_render(ctx)
-    aggregate = Context.render("<DomainObject>Aggregate", ctx)
-
-    body =
-      ctx.fields
-      |> Enum.map(fn f -> "#{f.name}: #{Templates.sample_value(ctx, f)}" end)
-      |> Enum.join(", ")
-
-    """
-    describe "#{subject}" do
-      test "handles #{command} command and returns #{event} event" do
-        cmd = %#{command}{#{body}}
-
-        events = #{handler}.handle(%#{aggregate}{}, cmd)
-
-        assert %#{event}{} = events
-      end
-    end
-    """
   end
 end

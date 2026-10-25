@@ -5,16 +5,12 @@ defmodule Sportipedia.Codegen.Source do
 
   * which units are already present — module, directives (`use`/`alias`/
     `import`/`require`), attributes (`@moduledoc`/`@behaviour`/`@derive`),
-    function clauses by name/arity (optionally by head pattern) with their
-    `@doc`/`@spec`, and DSL entries (`field`, `validates`, `dispatch`,
-    `identify`, `project`, `operation`, `plug`, `describe`, …)
-  * where new units can be anchored — line positions consumed by
-    `Sportipedia.Codegen.Patch`
+    function clauses by name/arity (optionally by head pattern), and DSL
+    entries (`field`, `validates`, `dispatch`, `identify`, `project`,
+    `operation`, `plug`, `describe`, …)
 
-  Parsing uses Sourceror so nodes carry `:do`/`:end`/`:end_of_expression`
-  metadata. Files are never reprinted from the AST — the patcher splices text
-  at line anchors, leaving present content (human edits, comments, function
-  bodies) untouched.
+  Editing is the job of `Sportipedia.Codegen.Merge`, which appends missing
+  units to the parsed tree. `Source` itself never rewrites anything.
 
   Entry keys are rendered strings (`render_arg/1`): module aliases dotted
   (`CatalogApparatus`), atom arguments with colon (`:title`), `%Event{}`
@@ -97,28 +93,6 @@ defmodule Sportipedia.Codegen.Source do
 
   def module_name(%__MODULE__{}), do: nil
 
-  @doc "Line of the module's closing `end` (insertion point for body-level units)."
-  @spec module_end_line(t()) :: pos_integer()
-  def module_end_line(%__MODULE__{} = src) do
-    case src.ast do
-      {:defmodule, meta, _} -> get_in(meta, [:end, :line]) || last_line(src)
-      _ -> last_line(src)
-    end
-  end
-
-  defp last_line(%__MODULE__{lines: lines}), do: max(length(lines) - 1, 1)
-
-  @doc "First line of the module body (after `defmodule X do`)."
-  @spec module_start_line(t()) :: pos_integer()
-  def module_start_line(%__MODULE__{ast: {:defmodule, meta, _}}) do
-    case get_in(meta, [:do, :line]) do
-      line when is_integer(line) -> line + 1
-      _ -> 2
-    end
-  end
-
-  def module_start_line(%__MODULE__{}), do: 1
-
   # ------------------------------------------------------------- directives
 
   def has_moduledoc?(src), do: body(src) |> Enum.any?(&attr?(&1, :moduledoc))
@@ -158,40 +132,6 @@ defmodule Sportipedia.Codegen.Source do
   @doc "True when any clause of `name/arity` is defined."
   def has_def?(src, name, arity) do
     src |> def_clauses() |> Enum.any?(fn c -> c.name == name and c.arity == arity end)
-  end
-
-  @doc """
-  True when a `name/arity` clause head satisfies `matcher` (receives the raw
-  head-arg AST list) — e.g. locate `apply/2` clauses per event, `handle/2`
-  per command, `authorize/3` per action+guard.
-  """
-  def has_def_matching?(src, name, arity, matcher) do
-    src
-    |> def_clauses()
-    |> Enum.any?(fn c -> c.name == name and c.arity == arity and matcher.(c.head_args) end)
-  end
-
-  @doc "Start/end lines of the clause group of `name/arity`, or nil."
-  @spec def_range(t(), atom(), arity()) :: {pos_integer(), pos_integer()} | nil
-  def def_range(src, name, arity) do
-    case src |> def_clauses() |> Enum.filter(&(&1.name == name and &1.arity == arity)) do
-      [] -> nil
-      [first | _] = clauses -> {first.line, clauses |> List.last() |> Map.fetch!(:end_line)}
-    end
-  end
-
-  @doc "True when a `@doc` precedes the first clause of `name/arity`."
-  def has_doc_for?(src, name, arity) do
-    src
-    |> def_clauses()
-    |> Enum.any?(fn c -> c.name == name and c.arity == arity and c.doc? end)
-  end
-
-  @doc "True when a `@spec` for `name/arity` exists."
-  def has_spec_for?(src, name, arity) do
-    src
-    |> def_clauses()
-    |> Enum.any?(fn c -> c.name == name and c.arity == arity and c.spec? end)
   end
 
   # clause summaries from the module body, with attribute pairing
@@ -329,7 +269,7 @@ defmodule Sportipedia.Codegen.Source do
   # (`Ecto.Changeset.field(...)`) carry :alias metadata and are skipped
   defp local_call?(meta, args), do: is_list(args) and not Keyword.has_key?(meta, :alias)
 
-  # ---------------------------------------------------------------- anchors
+  # ---------------------------------------------------------------- routes
 
   @doc """
   True when a route (`verb` macro + action atom, e.g. `":catalog_apparatus"`)
@@ -349,32 +289,6 @@ defmodule Sportipedia.Codegen.Source do
 
       :none ->
         false
-    end
-  end
-
-  @doc """
-  Anchor for a route (or new scope block) inside the scope chain:
-
-  * `{:before_line, end_line}` — the innermost scope of the chain exists:
-    splice the route above its `end`
-  * `{:before_line, end_line, depth}` — only `depth` levels exist; the caller
-    renders the missing levels as nested `scope` blocks at this line
-  * `:no_scope_chain` — not even the subdomain scope exists
-  """
-  @spec route_anchor(t(), [String.t()]) ::
-          {:before_line, pos_integer()}
-          | {:before_line, pos_integer(), pos_integer()}
-          | :no_scope_chain
-  def route_anchor(src, scope_paths) do
-    case deepest_scope(src, scope_paths) do
-      {:ok, scope, depth} when depth == length(scope_paths) ->
-        {:before_line, scope.end_line}
-
-      {:ok, scope, depth} ->
-        {:before_line, scope.end_line, depth}
-
-      :none ->
-        :no_scope_chain
     end
   end
 
@@ -406,58 +320,6 @@ defmodule Sportipedia.Codegen.Source do
   defp finish_scope({s, depth}), do: {:ok, s, depth}
 
   @doc """
-  Anchor for prepending an entry to a supervisor `children` list: the line of
-  the list's FIRST element (the rendered child carries a trailing comma and
-  lands above it — Elixir has no leading-comma form). `:no_children` when the
-  file has no such list.
-  """
-  @spec children_anchor(t()) :: {:before_line, pos_integer()} | :no_children
-  def children_anchor(%__MODULE__{ast: nil}), do: :no_children
-
-  def children_anchor(src) do
-    first_line =
-      src.ast
-      |> Macro.prewalk(nil, fn
-        {:=, _meta, [{:children, _, nil}, rhs]}, acc ->
-          case unwrap_list(rhs) do
-            [_ | _] = list ->
-              min =
-                Enum.reduce(list, nil, fn
-                  {_h, meta, _a}, m ->
-                    min_line(m, meta[:line])
-
-                  _, m ->
-                    m
-                end)
-
-              {rhs, min || acc}
-
-            _ ->
-              {rhs, acc}
-          end
-
-        node, acc ->
-          {node, acc}
-      end)
-      |> elem(1)
-
-    case first_line do
-      nil -> :no_children
-      line -> {:before_line, line}
-    end
-  rescue
-    _ -> :no_children
-  end
-
-  defp unwrap_list(list) when is_list(list), do: list
-  defp unwrap_list({:__block__, _, [list]}) when is_list(list), do: list
-  defp unwrap_list(_), do: nil
-
-  defp min_line(nil, b), do: b
-  defp min_line(a, nil), do: a
-  defp min_line(a, b), do: min(a, b)
-
-  @doc """
   True when a clause of `name/arity` has `key` (rendered arg) somewhere in
   its head — e.g. `authorize/3` clauses identified by their action atom.
   """
@@ -473,98 +335,6 @@ defmodule Sportipedia.Codegen.Source do
   @doc "True when an entry of `macro` exists that has keyword `key` at all."
   def entry_kw?(src, macro, key) do
     src |> calls(macro) |> Enum.any?(fn e -> not is_nil(Entry.kw(e, key)) end)
-  end
-
-  @doc """
-  Anchor for `alias <module>`: alphabetically inside the alias block (skipping
-  back over comments attached to the following line). Falls back to just
-  inside the module head when there are no aliases yet.
-  """
-  @spec alias_anchor(t(), String.t()) ::
-          {:before_line, pos_integer()} | {:after_line, pos_integer()}
-  def alias_anchor(src, module) do
-    aliases = calls(src, :alias)
-
-    case Enum.find(aliases, fn e -> first_rendered(e) > module end) do
-      %Entry{line: line} -> {:before_line, skip_comments_up(src, line)}
-      nil -> after_last(aliases, {:after_line, module_start_line(src)})
-    end
-  end
-
-  @doc "Anchor after the last entry of `macro` whose first arg satisfies `pred`; `default` when none."
-  def after_entry(src, macro, pred, default \\ nil) do
-    matches = src |> calls(macro) |> Enum.filter(fn e -> pred.(first_rendered(e)) end)
-    after_last(matches, default || module_end_anchor(src))
-  end
-
-  @doc "Anchor after the last entry of `macro` whose keyword arg `key` satisfies `pred`."
-  def after_entry_kw(src, macro, key, pred, default \\ nil) do
-    matches = src |> calls(macro) |> Enum.filter(fn e -> pred.(Entry.kw(e, key)) end)
-    after_last(matches, default || module_end_anchor(src))
-  end
-
-  defp after_last([], default), do: default
-
-  defp after_last(entries, _default),
-    do: {:after_line, entries |> List.last() |> Map.fetch!(:end_line)}
-
-  @doc """
-  Anchor inside the do-block of the first `macro` call matching `pred`:
-  `{:before_line, closing_end}` when the block has content, `{:after_line,
-  do_line}` when empty, `:no_block` otherwise.
-  """
-  def inside_block(src, macro, pred \\ fn _args -> true end) do
-    case Enum.find(calls(src, macro), fn e -> pred.(e.args) end) do
-      %Entry{} = entry ->
-        meta = elem(entry.node, 1)
-        do_line = get_in(meta, [:do, :line])
-        closing = get_in(meta, [:end, :line])
-
-        cond do
-          is_nil(do_line) -> :no_block
-          is_integer(closing) and closing > do_line -> {:before_line, closing}
-          true -> {:after_line, do_line}
-        end
-
-      nil ->
-        :no_block
-    end
-  end
-
-  @doc "Anchor for a new `describe`: after the last one; else before trailing `defp`s; else module end."
-  def describe_anchor(src) do
-    case calls(src, :describe) |> List.last() do
-      %Entry{end_line: line} ->
-        {:after_line, line}
-
-      nil ->
-        before_helpers_anchor(src)
-    end
-  end
-
-  @doc "Anchor before the module's closing `end`."
-  def module_end_anchor(src), do: {:before_line, module_end_line(src)}
-
-  @doc "Anchor after the last clause of `name/arity` (for an adjacent clause), else module end."
-  def def_anchor(src, name, arity) do
-    case def_range(src, name, arity) do
-      {_start, stop} -> {:after_line, stop}
-      nil -> module_end_anchor(src)
-    end
-  end
-
-  @doc "Anchor before the first `defp` group (public fns above private helpers), else module end."
-  def before_helpers_anchor(src) do
-    before_first_defp(src) || module_end_anchor(src)
-  end
-
-  defp before_first_defp(src) do
-    src
-    |> body()
-    |> Enum.reduce_while(nil, fn
-      {:defp, meta, _}, _ -> {:halt, {:before_line, skip_comments_up(src, meta[:line])}}
-      _other, acc -> {:cont, acc}
-    end)
   end
 
   # ------------------------------------------------------------------ bits
@@ -687,19 +457,4 @@ defmodule Sportipedia.Codegen.Source do
   defp literal_text({:<<>>, _, [binary]}) when is_binary(binary), do: binary
   defp literal_text(other) when is_binary(other), do: other
   defp literal_text(_), do: nil
-
-  # walk above `line` while the previous source line is a whole-line comment,
-  # so insertions land before a comment block belonging to the target line
-  defp skip_comments_up(%__MODULE__{lines: lines}, line) do
-    prev = line - 1
-
-    if prev >= 1 and comment?(Enum.fetch(lines, prev - 1)) do
-      skip_comments_up(%__MODULE__{lines: lines}, prev)
-    else
-      line
-    end
-  end
-
-  defp comment?({:ok, text}), do: String.starts_with?(String.trim_leading(text), "#")
-  defp comment?(:error), do: false
 end

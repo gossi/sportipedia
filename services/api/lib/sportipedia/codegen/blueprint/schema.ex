@@ -1,6 +1,7 @@
-defmodule Sportipedia.Codegen.Blueprints.Schema do
+defmodule Sportipedia.Codegen.Blueprint.Schema do
   @moduledoc """
-  Executable transfer of `docs/architecture/blueprints/backend/web/schema.md`.
+  Executable transfer of `docs/architecture/blueprints/backend/web/schema.md`
+  — the OpenAPI schema module files.
 
   OpenAPI schemas documenting the endpoints, driven by the element kind:
 
@@ -12,17 +13,16 @@ defmodule Sportipedia.Codegen.Blueprints.Schema do
   * **query** (collection) → `<Operation>QueryParams` derived from the query's
     `parameters` (filter fields, sort, standard JSON:API page/fields)
 
-  Every schema module is paired with its own ExUnit test file (structure
-  assertions only — no DB).
+  Every schema module is paired with its own ExUnit test file
+  (`Sportipedia.Codegen.Blueprint.SchemaTest`).
   """
 
   use Sportipedia.Codegen.Blueprint
 
-  alias Sportipedia.Codegen.{Context, FilePlan, Source, Templates, Unit}
-  alias Sportipedia.Codegen.Blueprints.View
+  alias Sportipedia.Codegen.Templates
+  alias Sportipedia.Codegen.Blueprint.View
 
   @dir "services/api/lib/sportipedia_web/<_subdomain>/<composite>/<domain_object>/schemas"
-  @test_dir "services/api/test/sportipedia_web/<_subdomain>/<composite>/<domain_object>/schemas"
   @ns "SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.Schemas"
   @view_module "SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>View"
   @open_api_schema "Sportipedia.Support.JSONAPI.OpenApiSchema"
@@ -33,20 +33,23 @@ defmodule Sportipedia.Codegen.Blueprints.Schema do
   def optional_template?, do: true
 
   def plans(%Context{} = ctx) do
+    Enum.map(whiches(ctx), fn which -> plan(ctx, which) end)
+  end
+
+  @doc "The schema roles this element generates files for."
+  @spec whiches(Context.t()) :: [atom()]
+  def whiches(%Context{} = ctx) do
     case {ctx.element.kind, ctx.operation} do
       {:"read-model", _} ->
-        whiches = [:response, :collection_response]
-        Enum.flat_map(whiches, fn w -> [plan(ctx, w), test_plan(ctx, w)] end)
+        [:response, :collection_response]
 
       {:command, op} when op in [:create, :update] ->
-        [plan(ctx, :request), test_plan(ctx, :request)]
+        [:request]
 
       {:query, _} ->
-        if Context.collection?(ctx) and ctx.element.doc["parameters"] do
-          [plan(ctx, :query_params), test_plan(ctx, :query_params)]
-        else
-          []
-        end
+        if Context.collection?(ctx) and ctx.element.doc["parameters"],
+          do: [:query_params],
+          else: []
 
       _ ->
         []
@@ -71,7 +74,14 @@ defmodule Sportipedia.Codegen.Blueprints.Schema do
       {"<_operation>_query_params", "<Operation>QueryParams",
        "<composite>.<Operation>QueryParams"}
 
-  defp names(ctx, which) do
+  @doc "Stem/short/full/title names for one schema role."
+  @spec names(Context.t(), atom()) :: %{
+          stem: String.t(),
+          short: String.t(),
+          full: String.t(),
+          title: String.t()
+        }
+  def names(ctx, which) do
     {stem_tpl, module_tpl, title_tpl} = spec(which)
 
     %{
@@ -89,7 +99,6 @@ defmodule Sportipedia.Codegen.Blueprints.Schema do
 
     %FilePlan{
       path: Context.render("#{@dir}/" <> n[:stem] <> ".ex", ctx),
-      role: :module,
       module: n[:full],
       scaffold: fn c -> scaffold(c, which, n) end,
       units: units(ctx, which)
@@ -254,25 +263,14 @@ defmodule Sportipedia.Codegen.Blueprints.Schema do
   # ------------------------------------------------------------------ units
 
   defp units(ctx, which) do
-    require_unit() ++ alias_units(ctx, which)
-  end
-
-  defp require_unit do
     [
       %Unit{
         id: {:require, "OpenApiSpex"},
         check: fn src -> Source.has_require?(src, "OpenApiSpex") end,
         render: fn _ctx -> "require OpenApiSpex" end,
-        anchor: fn src, _ctx ->
-          Source.after_entry(
-            src,
-            :alias,
-            fn _ -> true end,
-            {:after_line, Source.module_start_line(src)}
-          )
-        end
+        place: Merge.head(:require)
       }
-    ]
+    ] ++ alias_units(ctx, which)
   end
 
   defp alias_units(ctx, which) when which in [:response, :collection_response] do
@@ -286,70 +284,7 @@ defmodule Sportipedia.Codegen.Blueprints.Schema do
       id: {:alias, module},
       check: fn src -> Source.has_alias?(src, module) end,
       render: fn _ctx -> "alias #{module}" end,
-      anchor: fn src, _ctx -> Source.alias_anchor(src, module) end,
-      gap: :tight
+      place: Merge.alias_of(module)
     }
-  end
-
-  # ------------------------------------------------------------------- test
-
-  @doc "The paired ExUnit test plan for one schema module."
-  @spec test_plan(Context.t(), atom()) :: FilePlan.t()
-  def test_plan(ctx, which) do
-    n = names(ctx, which)
-
-    %FilePlan{
-      path: Context.render("#{@test_dir}/" <> n[:stem] <> "_test.exs", ctx),
-      role: :test,
-      module: n[:full] <> "Test",
-      scaffold: fn _c -> test_scaffold(n) end,
-      units: [
-        %Unit{
-          id: {:use, "ExUnit.Case"},
-          check: fn src -> Source.has_use?(src, "ExUnit.Case") end,
-          render: fn _ctx -> "use ExUnit.Case" end,
-          anchor: fn src, _ctx -> {:after_line, Source.module_start_line(src)} end
-        },
-        %Unit{
-          id: {:alias, n[:full]},
-          check: fn src -> Source.has_alias?(src, n[:full]) end,
-          render: fn _ctx -> "alias #{n[:full]}" end,
-          anchor: fn src, _ctx -> Source.alias_anchor(src, n[:full]) end,
-          gap: :tight
-        },
-        %Unit{
-          id: {:describe, n[:short]},
-          check: fn src -> Source.has_describe?(src, n[:short]) end,
-          render: fn _c -> test_describe(n) |> Templates.indent(2) end,
-          anchor: fn src, _ctx -> Source.describe_anchor(src) end
-        }
-      ]
-    }
-  end
-
-  defp test_scaffold(n) do
-    """
-    defmodule #{n[:full]}Test do
-      use ExUnit.Case
-
-      alias #{n[:full]}
-
-    #{test_describe(n) |> String.trim_trailing() |> Templates.indent(2)}
-    end
-    """
-  end
-
-  defp test_describe(n) do
-    """
-    describe "#{n[:short]}" do
-      test "schema/0 has the correct title" do
-        assert %{title: "#{n[:title]}"} = #{n[:short]}.schema()
-      end
-
-      test "schema is an object" do
-        assert %{type: :object} = #{n[:short]}.schema()
-      end
-    end
-    """
   end
 end

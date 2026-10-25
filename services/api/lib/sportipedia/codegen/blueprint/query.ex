@@ -1,24 +1,22 @@
-defmodule Sportipedia.Codegen.Blueprints.Query do
+defmodule Sportipedia.Codegen.Blueprint.Query do
   @moduledoc """
-  Executable transfer of `docs/architecture/blueprints/backend/domain/query.md`.
+  Executable transfer of `docs/architecture/blueprints/backend/domain/query.md`
+  — the query module file itself.
 
   Generates a query module for an ESDM **query** element: `import Ecto.Query`
   plus a `new/n` constructor. The concrete Ecto query depends on the feature
   specification (the last 1% the blueprint leaves to the spec), so the body
   carries a stable `TODO:` marker.
 
-  Fixed shape; tested via the operation test file of the query.
+  Fixed shape; tested via `Sportipedia.Codegen.Blueprint.QueryTest`.
   """
 
   use Sportipedia.Codegen.Blueprint
 
-  alias Sportipedia.Codegen.{Context, FilePlan, Source, Templates, Unit}
-  alias Sportipedia.Codegen.Blueprints.OperationTestFile
+  alias Sportipedia.Codegen.Templates
 
   @path "services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/queries/<_query>.ex"
   @module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Queries.<Query>"
-  @test_path "services/api/test/sportipedia/<_subdomain>/<composite>/<domain_object>/operation/<_operation>_test.exs"
-  @test_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Operation.<Operation>Test"
 
   def name, do: :query
   def source_kinds, do: [:query]
@@ -27,17 +25,10 @@ defmodule Sportipedia.Codegen.Blueprints.Query do
     [
       %FilePlan{
         path: Context.render(@path, ctx),
-        role: :module,
         module: Context.render(@module, ctx),
         scaffold: &scaffold/1,
         units: units()
-      },
-      OperationTestFile.plan(ctx,
-        path: @test_path,
-        module: @test_module,
-        alias_templates: [],
-        describes: [{"<Query> query", &describe_body/2}]
-      )
+      }
     ]
   end
 
@@ -82,31 +73,20 @@ defmodule Sportipedia.Codegen.Blueprints.Query do
         id: :moduledoc,
         check: &Source.has_moduledoc?/1,
         render: fn c -> "@moduledoc \"\"\"\n#{doc(c)}\n\"\"\"" end,
-        anchor: fn src, _ctx -> {:after_line, Source.module_start_line(src)} end
+        place: Merge.head(:moduledoc)
       },
       %Unit{
         id: {:import, "Ecto.Query"},
         check: fn src -> Source.has_import?(src, "Ecto.Query") end,
         render: fn _ctx -> "import Ecto.Query" end,
-        anchor: fn src, _ctx -> {:after_line, Source.module_start_line(src)} end
+        place: Merge.head(:import)
       },
       %Unit{
         id: {:def, :new, 1},
         check: fn src -> Source.has_def?(src, :new, 1) end,
-        render: fn c -> def_block(c) |> String.trim_trailing() |> Templates.indent(2) end,
-        anchor: fn src, _ctx -> Source.module_end_anchor(src) end
+        render: fn c -> def_block(c) |> String.trim_trailing() end,
+        place: Merge.body_end()
       }
     ]
-  end
-
-  defp describe_body(_ctx, subject) do
-    """
-    describe "#{subject}" do
-      test "is a work in progress until the spec fills it" do
-        # the query module body is the 1% the blueprint leaves to the spec
-        assert true
-      end
-    end
-    """
   end
 end

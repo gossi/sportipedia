@@ -1,6 +1,6 @@
 # Controller
 
-> **Implemented as an executable blueprint:** `Sportipedia.Codegen.Blueprints.Controller` — run `mix sp.gen.controller <operation>` (action + endpoint test + route registration in the web router).
+> **Implemented as an executable blueprint:** `Sportipedia.Codegen.Blueprint.Controller` — run `mix sp.gen.controller <operation>` (action + endpoint test + route registration in the web router).
 > This markdown stays the design document; the generator owns the file layout and
 > merges idempotently into existing code.
 

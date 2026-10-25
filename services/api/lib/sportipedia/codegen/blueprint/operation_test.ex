@@ -1,21 +1,21 @@
-defmodule Sportipedia.Codegen.Blueprints.OperationTestFile do
+defmodule Sportipedia.Codegen.Blueprint.OperationTest do
   @moduledoc """
   Shared machinery for the operation test file
   (`docs/architecture/blueprints/backend/domain/operation-test.md`): the test
-  file is owned by the *operation*, while each blueprint contributes its own
-  `describe` block plus the aliases it needs.
+  file is owned by the *operation*, while each blueprint's `*Test` module
+  contributes its own `describe` block plus the aliases it needs.
 
-  A blueprint therefore contributes:
+  A test blueprint therefore contributes:
 
   * the test file path and module name (rendered templates)
   * the alias modules its `describe` block references
   * its `describe` subject and body
 
-  Merging into an existing test file adds only the missing units; the
+  Merging into an existing test file appends only the missing units; the
   scaffold creates the file with everything for this blueprint at once.
   """
 
-  alias Sportipedia.Codegen.{Context, FilePlan, Source, Templates, Unit}
+  alias Sportipedia.Codegen.{Context, FilePlan, Merge, Source, Templates, Unit}
 
   @test_use "Sportipedia.<Subdomain>TestCase"
 
@@ -25,7 +25,7 @@ defmodule Sportipedia.Codegen.Blueprints.OperationTestFile do
   @doc """
   Builds the `FilePlan` for the operation test file.
 
-  * `path_template` / `module_template` — placeholder templates
+  * `path` / `module` — placeholder templates
   * `extra_vars` — overrides when the plan is driven from a related element
     (e.g. an event writing into its publishing command's test file)
   * `describes` — `[{subject_template, (ctx -> body_text)}]` this blueprint
@@ -61,13 +61,12 @@ defmodule Sportipedia.Codegen.Blueprints.OperationTestFile do
           id: {:describe, subject},
           check: fn src -> Enum.any?(accepted, &Source.has_describe?(src, &1)) end,
           render: fn c -> body_fn.(c, subject) end,
-          anchor: fn src, _ctx -> Source.describe_anchor(src) end
+          place: Merge.describe()
         }
       end)
 
     %FilePlan{
       path: path,
-      role: :test,
       module: module,
       scaffold: fn c ->
         scaffold(c, module_tpl, test_case, alias_modules, describes, extra_vars)
@@ -121,7 +120,7 @@ defmodule Sportipedia.Codegen.Blueprints.OperationTestFile do
       id: {:use, test_case},
       check: fn src -> Source.has_use?(src, test_case) end,
       render: fn _ctx -> "use #{test_case}" end,
-      anchor: fn src, _ctx -> {:after_line, Source.module_start_line(src)} end
+      place: Merge.head(:use)
     }
   end
 
@@ -130,14 +129,7 @@ defmodule Sportipedia.Codegen.Blueprints.OperationTestFile do
       id: :moduletag,
       check: fn src -> Source.has_attribute?(src, :moduletag) end,
       render: fn _ctx -> "@moduletag :integration" end,
-      anchor: fn src, _ctx ->
-        Source.after_entry(
-          src,
-          :alias,
-          fn _ -> true end,
-          {:after_line, Source.module_start_line(src)}
-        )
-      end
+      place: Merge.head(:attribute)
     }
   end
 
@@ -146,8 +138,7 @@ defmodule Sportipedia.Codegen.Blueprints.OperationTestFile do
       id: {:test_alias, module},
       check: fn src -> Source.has_alias?(src, module) end,
       render: fn _ctx -> "alias #{module}" end,
-      anchor: fn src, _ctx -> Source.alias_anchor(src, module) end,
-      gap: :tight
+      place: Merge.alias_of(module)
     }
   end
 end

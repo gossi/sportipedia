@@ -1,6 +1,7 @@
-defmodule Sportipedia.Codegen.Blueprints.PublicAPI do
+defmodule Sportipedia.Codegen.Blueprint.PublicAPI do
   @moduledoc """
-  Executable transfer of `docs/architecture/blueprints/backend/domain/public-api.md`.
+  Executable transfer of `docs/architecture/blueprints/backend/domain/public-api.md`
+  — the public API (port) file itself.
 
   The constituent's port: exactly one function per operation. The function
   body follows what the operation does:
@@ -17,8 +18,7 @@ defmodule Sportipedia.Codegen.Blueprints.PublicAPI do
 
   use Sportipedia.Codegen.Blueprint
 
-  alias Sportipedia.Codegen.{Context, FilePlan, Source, Templates, Unit}
-  alias Sportipedia.Codegen.Blueprints.OperationTestFile
+  alias Sportipedia.Codegen.Templates
 
   @path "services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/public_api.ex"
   @module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>"
@@ -26,8 +26,6 @@ defmodule Sportipedia.Codegen.Blueprints.PublicAPI do
   @internal_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Internal"
   @command_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<Command>"
   @app_module "Sportipedia.<Subdomain>"
-  @test_path "services/api/test/sportipedia/<_subdomain>/<composite>/<domain_object>/operation/<_operation>_test.exs"
-  @test_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Operation.<Operation>Test"
 
   def name, do: :public_api
   def source_kinds, do: [:command, :query]
@@ -35,17 +33,14 @@ defmodule Sportipedia.Codegen.Blueprints.PublicAPI do
   def optional_template?, do: true
 
   def plans(%Context{} = ctx) do
-    [public_api_file(ctx), test_plan(ctx)]
-  end
-
-  defp public_api_file(ctx) do
-    %FilePlan{
-      path: Context.render(@path, ctx),
-      role: :module,
-      module: Context.render(@module, ctx),
-      scaffold: &scaffold/1,
-      units: units(ctx)
-    }
+    [
+      %FilePlan{
+        path: Context.render(@path, ctx),
+        module: Context.render(@module, ctx),
+        scaffold: &scaffold/1,
+        units: units(ctx)
+      }
+    ]
   end
 
   defp scaffold(ctx) do
@@ -258,13 +253,13 @@ defmodule Sportipedia.Codegen.Blueprints.PublicAPI do
         render: fn c ->
           "@moduledoc \"\"\"\nPublic API for managing #{c.constituent}s in the #{Context.bounded_context(c)}.\n\"\"\""
         end,
-        anchor: fn src, _ctx -> {:after_line, Source.module_start_line(src)} end
+        place: Merge.head(:moduledoc)
       },
       %Unit{
         id: {:def, String.to_atom(op), 1},
         check: fn src -> Source.has_def?(src, String.to_atom(op), 1) end,
-        render: fn c -> c |> body() |> String.trim_trailing() |> Templates.indent(2) end,
-        anchor: fn src, _ctx -> Source.module_end_anchor(src) end
+        render: fn c -> c |> body() |> String.trim_trailing() end,
+        place: Merge.body_end()
       }
     ] ++
       Enum.map(aliases(ctx), fn alias_line ->
@@ -276,80 +271,8 @@ defmodule Sportipedia.Codegen.Blueprints.PublicAPI do
             Source.has_alias?(src, module) || Source.has_def?(src, String.to_atom(op), 1)
           end,
           render: fn _ctx -> alias_line end,
-          anchor: fn src, _ctx -> Source.alias_anchor(src, module) end,
-          gap: :tight
+          place: Merge.alias_of(module)
         }
       end)
-  end
-
-  # -------------------------------------------------------------------- test
-
-  defp test_plan(ctx) do
-    OperationTestFile.plan(ctx,
-      path: @test_path,
-      module: @test_module,
-      alias_templates: [],
-      describes: [{"Public API - <_operation>", &describe_body/2}]
-    )
-  end
-
-  @doc false
-  def describe_body(ctx, subject) do
-    api = Context.pascal(ctx.constituent)
-    op = Context.op_snake(ctx)
-    body = Templates.struct_body(ctx)
-
-    tests =
-      case ctx.element.kind do
-        :command ->
-          [
-            """
-            test "#{op} succeeds" do
-              assert {:ok, read_model} = #{api}.#{op}(#{param_expr(ctx, body)})
-
-              assert read_model.id != nil
-            end
-            """,
-            """
-            test "#{op} returns validation errors" do
-              assert {:error, {:validation_failure, _errors}} = #{api}.#{op}(%{})
-            end
-            """
-          ]
-
-        :query ->
-          if Context.collection?(ctx) do
-            [
-              """
-              test "#{op} lists read models" do
-                assert {:ok, data} = #{api}.#{op}(JSONAPI.Config.parse_params!(%{"filter" => %{}, "sort" => [], "page" => %{}}))
-
-                assert is_list(data)
-              end
-              """
-            ]
-          else
-            [
-              """
-              test "#{op} returns :not_found for unknown #{ctx.constituent}" do
-                assert {:error, :not_found} = #{api}.#{op}(UUID.uuid4())
-              end
-              """
-            ]
-          end
-      end
-
-    """
-    describe "#{subject}" do
-    #{tests |> Enum.join("\n\n") |> Templates.indent(2)}
-    end
-    """
-  end
-
-  defp param_expr(ctx, body) do
-    case ctx.operation do
-      :delete -> "id"
-      _ -> "%{#{body}}"
-    end
   end
 end

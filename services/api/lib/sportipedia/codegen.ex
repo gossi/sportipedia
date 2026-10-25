@@ -2,12 +2,18 @@ defmodule Sportipedia.Codegen do
   @moduledoc """
   The blueprint code generators (`mix sp.gen.*`).
 
-  Loads a blueprint's `FilePlan`s for one ESDM element and applies them to the
-  tree idempotently: a missing file gets its scaffold, an existing file only
-  receives the units it lacks (presence-checked through
-  `Sportipedia.Codegen.Source`), and every result is canonicalized with the
-  project formatter before it is written — files are only touched when bytes
-  actually change.
+  Generators are addressed by **family** (one `mix sp.gen.<family>` task).
+  A family lists its blueprint modules — one per generated file role: the
+  citizen's own module, its test output, and any registration files — and
+  runs them against one resolved `Context`.
+
+  Each module yields `FilePlan`s, applied idempotently against the tree: a
+  missing file gets its scaffold, an existing file only receives the units it
+  lacks. Merging is append-only AST editing (`Sportipedia.Codegen.Merge`):
+  presence is checked on the parsed file (`Sportipedia.Codegen.Source`),
+  missing units are inserted as new nodes in the module tree, and the whole
+  tree is printed and formatted back. Present content is never rewritten, and
+  files are only touched when units are actually missing.
 
   ## Usage
 
@@ -21,7 +27,7 @@ defmodule Sportipedia.Codegen do
   override, and unresolvable information is an error, never a guess.
   """
 
-  alias Sportipedia.Codegen.{Blueprint, Context, Esdm, FilePlan, Patch, Source, Unit}
+  alias Sportipedia.Codegen.{Blueprint, Context, Esdm, FilePlan, Formatter, Merge, Source, Unit}
   alias Sportipedia.Codegen.Esdm.Element
 
   @switches [
@@ -34,35 +40,55 @@ defmodule Sportipedia.Codegen do
     check: :boolean
   ]
 
-  @doc "Registry: blueprint name → module."
-  def blueprints do
+  @doc """
+  Registry: generator family → its blueprint modules, one per generated file
+  role. The head of the list is the family's primary module — it owns the
+  element kinds and `--template` semantics the whole family runs under.
+  """
+  def families do
+    alias Sportipedia.Codegen.Blueprint, as: B
+
     %{
-      aggregate: Sportipedia.Codegen.Blueprints.Aggregate,
-      bruno: Sportipedia.Codegen.Blueprints.Bruno,
-      command: Sportipedia.Codegen.Blueprints.Command,
-      command_handler: Sportipedia.Codegen.Blueprints.CommandHandler,
-      controller: Sportipedia.Codegen.Blueprints.Controller,
-      event: Sportipedia.Codegen.Blueprints.Event,
-      internal_api: Sportipedia.Codegen.Blueprints.InternalAPI,
-      policy: Sportipedia.Codegen.Blueprints.Policy,
-      projector: Sportipedia.Codegen.Blueprints.Projector,
-      public_api: Sportipedia.Codegen.Blueprints.PublicAPI,
-      query: Sportipedia.Codegen.Blueprints.Query,
-      read_model: Sportipedia.Codegen.Blueprints.ReadModel,
-      schema: Sportipedia.Codegen.Blueprints.Schema,
-      validator: Sportipedia.Codegen.Blueprints.Validator,
-      view: Sportipedia.Codegen.Blueprints.View
+      aggregate: [B.Aggregate, B.AggregateTest],
+      bruno: [B.Bruno, B.BrunoFolder],
+      command: [B.Command, B.CommandTest, B.CommandRouter],
+      command_handler: [B.CommandHandler, B.CommandHandlerTest],
+      controller: [B.Controller, B.ControllerTest, B.WebRouter],
+      event: [B.Event, B.EventTest],
+      internal_api: [B.InternalAPI],
+      policy: [B.Policy, B.PolicyTest],
+      projector: [B.Projector, B.ProjectorSupervisor, B.ProjectorTest],
+      public_api: [B.PublicAPI, B.PublicAPITest],
+      query: [B.Query, B.QueryTest],
+      read_model: [B.ReadModel],
+      schema: [B.Schema, B.SchemaTest],
+      validator: [B.Validator],
+      view: [B.View, B.ViewTest]
     }
   end
 
+  @doc "The primary module of a family (head of its module list)."
+  def primary(family) when is_atom(family), do: families()[family] |> List.first()
+
   @doc """
-  Runs one blueprint's generator against `argv`.
+  Runs one generator family against `argv`.
 
   Returns `{:ok, results}` or `{:error, message}`; printing and exit codes are
   the task's business.
   """
-  @spec run(module(), [String.t()]) :: {:ok, [term()]} | {:error, String.t()}
-  def run(blueprint, argv) do
+  @spec run(atom(), [String.t()]) :: {:ok, [term()]} | {:error, String.t()}
+  def run(family, argv) when is_atom(family) do
+    case families()[family] do
+      nil ->
+        {:error, "unknown generator family: #{inspect(family)}"}
+
+      modules ->
+        primary = hd(modules)
+        do_run(family, modules, primary, argv)
+    end
+  end
+
+  defp do_run(family, modules, blueprint, argv) do
     {opts, args, invalid} = OptionParser.parse(argv, strict: @switches)
 
     cond do
@@ -70,17 +96,17 @@ defmodule Sportipedia.Codegen do
         {:error, "unknown option(s): " <> Enum.map_join(invalid, ", ", fn {k, _} -> k end)}
 
       args == [] ->
-        {:error, "usage: mix #{blueprint.task()} <element> [options]\n\n#{help()}"}
+        {:error, "usage: mix sp.gen.#{family} <element> [options]\n\n#{help()}"}
 
       length(args) > 1 ->
         {:error, "expected exactly one element, got: #{Enum.join(args, " ")}"}
 
       true ->
-        do_run(blueprint, hd(args), opts)
+        apply_family(modules, blueprint, family, hd(args), opts)
     end
   end
 
-  defp do_run(blueprint, address, opts) do
+  defp apply_family(modules, blueprint, _family, address, opts) do
     repo_root = Keyword.get(opts, :root, default_root())
     model_root = Path.join(repo_root, Keyword.get(opts, :model, "docs/domain-model"))
     formatter_cwd = Path.join(repo_root, "services/api")
@@ -95,10 +121,11 @@ defmodule Sportipedia.Codegen do
              element,
              Keyword.put(context_opts(operation, opts), :repo_root, repo_root)
            ) do
-      plans = blueprint.plans(ctx)
+      plans = modules |> Enum.flat_map(& &1.plans(ctx))
       check? = Keyword.get(opts, :check, false)
+      formatter_opts = Formatter.opts(formatter_cwd)
 
-      {:ok, apply_all(plans, ctx, repo_root, formatter_cwd, check?)}
+      {:ok, apply_all(plans, ctx, repo_root, formatter_opts, check?)}
     else
       {:error, {:unknown_location, var}} ->
         {:error,
@@ -179,39 +206,41 @@ defmodule Sportipedia.Codegen do
   # -- planning & applying ------------------------------------------------------
 
   @doc """
-  Applies plans, returning per-file results:
+  Applies file plans, returning per-file results:
 
   * `{:created, path}` — new file written
-  * `{:merged, path, [unit_id]}` — missing units spliced into an existing file
+  * `{:merged, path, [unit_id]}` — missing units appended into an existing file
   * `{:unchanged, path}` — everything the plan wants is already there
-  * `{:checked, path, [unit_id | {:unanchorable, unit_id}]}` — in `--check`
+    (nothing was written)
+  * `{:checked, path, [unit_id | {:unplaceable, unit_id}]}` — in `--check`
     mode, what *would* change
-  * `{:blocked, path, [unit_id]}` — a unit is missing but has no anchor in
+  * `{:blocked, path, [unit_id]}` — a unit is missing but has no home in
     this file (reported, nothing written)
-  * `{:error, path, reason}` — e.g. the file exists but holds a foreign module
+  * `{:error, path, reason}` — unparsable file, foreign module, or a missing
+    registration file
   """
-  def apply_all(plans, ctx, repo_root, formatter_cwd, check?) do
-    Enum.map(plans, &apply_plan(&1, ctx, repo_root, formatter_cwd, check?))
+  def apply_all(plans, ctx, repo_root, formatter_opts, check?) do
+    Enum.map(plans, &apply_plan(&1, ctx, repo_root, formatter_opts, check?))
   end
 
   @doc false
-  def apply_plan(%FilePlan{path: rel_path} = plan, ctx, repo_root, formatter_cwd, check?) do
+  def apply_plan(%FilePlan{path: rel_path} = plan, ctx, repo_root, formatter_opts, check?) do
     abs_path = Path.join(repo_root, rel_path)
 
     case File.read(abs_path) do
-      {:error, :enoent} -> create(plan, ctx, abs_path, rel_path, formatter_cwd, check?)
-      {:ok, text} -> merge(plan, ctx, text, abs_path, rel_path, formatter_cwd, check?)
+      {:error, :enoent} -> create(plan, ctx, abs_path, rel_path, formatter_opts, check?)
+      {:ok, text} -> merge(plan, ctx, text, abs_path, rel_path, formatter_opts, check?)
     end
   end
 
-  defp create(%FilePlan{scaffold: nil}, _ctx, _abs, rel_path, _cwd, _check?) do
+  defp create(%FilePlan{scaffold: nil}, _ctx, _abs, rel_path, _formatter_opts, _check?) do
     {:error, rel_path, :registration_file_missing}
   end
 
-  defp create(%FilePlan{scaffold: scaffold} = plan, ctx, abs, rel_path, cwd, check?) do
+  defp create(%FilePlan{scaffold: scaffold} = plan, ctx, abs, rel_path, formatter_opts, check?) do
     content =
       if plan.format do
-        Patch.render_new(scaffold.(ctx), cwd: cwd)
+        Merge.render_new(scaffold.(ctx), formatter_opts)
       else
         # non-Elixir artifacts (YAML): verbatim, single trailing newline
         scaffold.(ctx) |> String.trim_trailing("\n") |> Kernel.<>("\n")
@@ -226,32 +255,51 @@ defmodule Sportipedia.Codegen do
     end
   end
 
-  defp merge(%FilePlan{} = plan, ctx, text, abs, rel_path, cwd, check?) do
-    source = Source.parse(text)
+  defp merge(%FilePlan{} = plan, ctx, text, abs, rel_path, formatter_opts, check?) do
+    unless plan.format do
+      # text artifacts are create-only: existing docs are never rewritten
+      {:unchanged, rel_path}
+    else
+      source = Source.parse(text)
 
-    cond do
-      foreign_module?(plan, source) ->
-        {:error, rel_path, {:unexpected_module, Source.module_name(source)}}
+      cond do
+        is_nil(source.ast) ->
+          {:error, rel_path, :unparsable}
 
-      true ->
-        {insertions, unanchorable} = collect_units(plan, source, ctx)
+        foreign_module?(plan, source) ->
+          {:error, rel_path, {:unexpected_module, Source.module_name(source)}}
 
-        cond do
-          insertions == [] and unanchorable == [] ->
-            {:unchanged, rel_path}
+        true ->
+          merge_units(plan, ctx, source, abs, rel_path, formatter_opts, check?)
+      end
+    end
+  end
 
-          insertions == [] ->
-            {:blocked, rel_path, Enum.map(unanchorable, & &1.id)}
+  defp merge_units(%FilePlan{units: units}, ctx, source, abs, rel_path, formatter_opts, check?) do
+    missing = Enum.reject(units, &Unit.present?(&1, source))
 
-          check? ->
-            {:checked, rel_path,
-             Enum.map(insertions, & &1.id) ++ Enum.map(unanchorable, &{:unanchorable, &1.id})}
+    if missing == [] do
+      {:unchanged, rel_path}
+    else
+      {ast, placed, blocked} =
+        Enum.reduce(missing, {source.ast, [], []}, fn unit, {acc, placed, blocked} ->
+          case unit.place.(acc, unit, ctx) do
+            {:ok, new_ast} -> {new_ast, placed ++ [unit.id], blocked}
+            :blocked -> {acc, placed, blocked ++ [unit.id]}
+          end
+        end)
 
-          true ->
-            new_text = Patch.apply(text, insertions, cwd: cwd)
-            File.write!(abs, new_text)
-            {:merged, rel_path, Enum.map(insertions, & &1.id)}
-        end
+      cond do
+        placed == [] ->
+          {:blocked, rel_path, blocked}
+
+        check? ->
+          {:checked, rel_path, placed ++ Enum.map(blocked, &{:unplaceable, &1})}
+
+        true ->
+          File.write!(abs, Merge.render(ast, formatter_opts))
+          {:merged, rel_path, placed}
+      end
     end
   end
 
@@ -263,18 +311,5 @@ defmodule Sportipedia.Codegen do
       ^module -> false
       _other -> true
     end
-  end
-
-  defp collect_units(%FilePlan{units: units}, source, ctx) do
-    Enum.reduce(units, {[], []}, fn unit, {ins, blocked} ->
-      insertion = Unit.insertion(unit, source, ctx)
-
-      cond do
-        insertion != nil -> {[insertion | ins], blocked}
-        Unit.present?(unit, source) -> {ins, blocked}
-        true -> {ins, [unit | blocked]}
-      end
-    end)
-    |> then(fn {ins, blocked} -> {Enum.reverse(ins), Enum.reverse(blocked)} end)
   end
 end

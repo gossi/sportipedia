@@ -1,6 +1,6 @@
 # Event
 
-> **Implemented as an executable blueprint:** `Sportipedia.Codegen.Blueprints.Event`
+> **Implemented as an executable blueprint:** `Sportipedia.Codegen.Blueprint.Event`
 > — run `mix sp.gen.event <element> --template create|update|delete`.
 > This markdown stays the design document; the generator writes events to
 > `…/<domain_object>/events/<_event>.ex` and merges idempotently.

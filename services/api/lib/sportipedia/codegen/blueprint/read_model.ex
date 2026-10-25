@@ -1,4 +1,4 @@
-defmodule Sportipedia.Codegen.Blueprints.ReadModel do
+defmodule Sportipedia.Codegen.Blueprint.ReadModel do
   @moduledoc """
   Executable transfer of `docs/architecture/blueprints/backend/domain/read-model.md`.
 
@@ -10,7 +10,7 @@ defmodule Sportipedia.Codegen.Blueprints.ReadModel do
 
   use Sportipedia.Codegen.Blueprint
 
-  alias Sportipedia.Codegen.{Context, Esdm, FilePlan, Source, Unit}
+  alias Sportipedia.Codegen.Esdm
 
   @path "services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/read_model.ex"
   @module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>ReadModel"
@@ -22,7 +22,6 @@ defmodule Sportipedia.Codegen.Blueprints.ReadModel do
     [
       %FilePlan{
         path: Context.render(@path, ctx),
-        role: :module,
         module: Context.render(@module, ctx),
         scaffold: &scaffold/1,
         units: units(ctx)
@@ -100,26 +99,19 @@ defmodule Sportipedia.Codegen.Blueprints.ReadModel do
         id: :moduledoc,
         check: &Source.has_moduledoc?/1,
         render: fn c -> "@moduledoc \"\"\"\n#{moduledoc_text(c)}\n\"\"\"" end,
-        anchor: fn src, _ctx -> {:after_line, Source.module_start_line(src)} end
+        place: Merge.head(:moduledoc)
       },
       %Unit{
         id: {:use, "TypedEctoSchema"},
         check: fn src -> Source.has_use?(src, "TypedEctoSchema") end,
         render: fn _ctx -> "use TypedEctoSchema" end,
-        anchor: fn src, _ctx -> {:after_line, Source.module_start_line(src)} end
+        place: Merge.head(:use)
       },
       %Unit{
         id: {:import, "Ecto.Changeset"},
         check: fn src -> Source.has_import?(src, "Ecto.Changeset") end,
         render: fn _ctx -> "import Ecto.Changeset" end,
-        anchor: fn src, _ctx ->
-          Source.after_entry(
-            src,
-            :use,
-            fn _ -> true end,
-            {:after_line, Source.module_start_line(src)}
-          )
-        end
+        place: Merge.head(:import)
       }
     ]
 
@@ -138,14 +130,7 @@ defmodule Sportipedia.Codegen.Blueprints.ReadModel do
         id: {:attribute, attr},
         check: fn src -> Source.has_attribute?(src, attr) end,
         render: fn c -> String.replace(text, "TODO-subdomain", c.subdomain) end,
-        anchor: fn src, _ctx ->
-          Source.after_entry(
-            src,
-            :import,
-            fn _ -> true end,
-            {:after_line, Source.module_start_line(src)}
-          )
-        end
+        place: Merge.head(:attribute)
       }
     end)
   end
@@ -158,8 +143,7 @@ defmodule Sportipedia.Codegen.Blueprints.ReadModel do
         id: {:field, f.name},
         check: fn src -> Source.entry?(src, :field, key) end,
         render: fn _ctx -> "field :#{f.name}, #{Context.ecto_type(f)}" end,
-        anchor: fn src, _ctx -> Source.inside_block(src, :typed_schema) end,
-        gap: :tight
+        place: Merge.inside(:typed_schema)
       }
     end)
   end
@@ -186,7 +170,7 @@ defmodule Sportipedia.Codegen.Blueprints.ReadModel do
           end
           """
         end,
-        anchor: fn src, _ctx -> Source.module_end_anchor(src) end
+        place: Merge.body_end()
       }
     end
   end

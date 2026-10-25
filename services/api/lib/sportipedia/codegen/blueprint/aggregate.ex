@@ -1,8 +1,9 @@
-defmodule Sportipedia.Codegen.Blueprints.Aggregate do
+defmodule Sportipedia.Codegen.Blueprint.Aggregate do
   @moduledoc """
-  Executable transfer of `docs/architecture/blueprints/backend/domain/aggregate.md`.
+  Executable transfer of `docs/architecture/blueprints/backend/domain/aggregate.md`
+  — the aggregate module file itself.
 
-  Generates the aggregate module (or merges into an existing one): state
+  Generates the aggregate module (or appends to an existing one): state
   fields and one `apply/2` clause per event of the aggregate — body chosen by
   what the event's projection does to the read model (`create` sets state,
   `update` merges changes, `delete` terminates the aggregate with `nil`).
@@ -12,30 +13,27 @@ defmodule Sportipedia.Codegen.Blueprints.Aggregate do
 
   use Sportipedia.Codegen.Blueprint
 
-  alias Sportipedia.Codegen.{Context, Esdm, FilePlan, Source, Templates, Unit}
-  alias Sportipedia.Codegen.Blueprints.OperationTestFile
+  alias Sportipedia.Codegen.Esdm
 
   @path "services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/aggregate.ex"
   @module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Aggregate"
   @event_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Event.<Event>"
-  @test_path "services/api/test/sportipedia/<_subdomain>/<composite>/<domain_object>/operation/<_operation>_test.exs"
-  @test_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Operation.<Command>Test"
 
   def name, do: :aggregate
   def source_kinds, do: [:aggregate, :command, :event]
 
-  def plans(%Context{} = ctx) do
-    [aggregate_file(ctx)] ++ test_plans(ctx)
-  end
+  @doc "The aggregate's module-name template (referenced by `AggregateTest`)."
+  def module_template, do: @module
 
-  defp aggregate_file(ctx) do
-    %FilePlan{
-      path: Context.render(@path, ctx),
-      role: :module,
-      module: Context.render(@module, ctx),
-      scaffold: &scaffold/1,
-      units: units(ctx)
-    }
+  def plans(%Context{} = ctx) do
+    [
+      %FilePlan{
+        path: Context.render(@path, ctx),
+        module: Context.render(@module, ctx),
+        scaffold: &scaffold/1,
+        units: units(ctx)
+      }
+    ]
   end
 
   @doc false
@@ -110,13 +108,13 @@ defmodule Sportipedia.Codegen.Blueprints.Aggregate do
           \"\"\"
           """
         end,
-        anchor: fn src, _ctx -> {:after_line, Source.module_start_line(src)} end
+        place: Merge.head(:moduledoc)
       },
       %Unit{
         id: {:use, "TypedStruct"},
         check: fn src -> Source.has_use?(src, "TypedStruct") end,
         render: fn _ctx -> "use TypedStruct" end,
-        anchor: fn src, _ctx -> {:after_line, Source.module_start_line(src)} end
+        place: Merge.head(:use)
       }
     ] ++
       Enum.map(events, fn e ->
@@ -126,8 +124,7 @@ defmodule Sportipedia.Codegen.Blueprints.Aggregate do
           id: {:alias, full},
           check: fn src -> Source.has_alias?(src, full) end,
           render: fn _ctx -> "alias #{full}" end,
-          anchor: fn src, _ctx -> Source.alias_anchor(src, full) end,
-          gap: :tight
+          place: Merge.alias_of(full)
         }
       end) ++
       field_units(ctx) ++
@@ -139,9 +136,8 @@ defmodule Sportipedia.Codegen.Blueprints.Aggregate do
           check: fn src -> Source.def_head_has?(src, :apply, 2, key) end,
           render: fn c ->
             apply_clause(c, e, Esdm.projection_effect(projection_for(c, e)))
-            |> Templates.indent(2)
           end,
-          anchor: fn src, _ctx -> Source.def_anchor(src, :apply, 2) end
+          place: Merge.after_def(:apply, 2)
         }
       end)
   end
@@ -154,8 +150,7 @@ defmodule Sportipedia.Codegen.Blueprints.Aggregate do
         id: {:field, f.name},
         check: fn src -> Source.entry?(src, :field, key) end,
         render: fn _ctx -> "field :#{f.name}, #{Context.elixir_type(f)}" end,
-        anchor: fn src, _ctx -> Source.inside_block(src, :typedstruct) end,
-        gap: :tight
+        place: Merge.inside(:typedstruct)
       }
     end)
   end
@@ -202,59 +197,5 @@ defmodule Sportipedia.Codegen.Blueprints.Aggregate do
         end
         """
     end
-  end
-
-  # -------------------------------------------------------------------- test
-
-  # the aggregate's tests live in every publishing command's operation test
-  defp test_plans(ctx) do
-    events = Esdm.events_of(ctx.model, ctx.constituent)
-
-    events
-    |> Enum.flat_map(fn e -> publishers(ctx, e.name) end)
-    |> Enum.uniq()
-    |> Enum.map(fn command_name ->
-      OperationTestFile.plan(ctx,
-        path: @test_path,
-        module: @test_module,
-        extra_vars: %{"operation" => command_name, "command" => command_name},
-        alias_templates: [@module],
-        describes: [{"<DomainObject>Aggregate", &describe_body/2}]
-      )
-    end)
-  end
-
-  defp publishers(ctx, event_name) do
-    ctx.model.elements
-    |> Enum.filter(fn el -> el.kind == :command and event_name in Esdm.publishes(el) end)
-    |> Enum.map(& &1.name)
-  end
-
-  @doc false
-  def describe_body(ctx, subject) do
-    aggregate = Context.render("<DomainObject>Aggregate", ctx)
-    events = Esdm.events_of(ctx.model, ctx.constituent)
-
-    tests =
-      Enum.map(events, fn e ->
-        event_pascal =
-          e.name |> String.split("-") |> Enum.map(&String.capitalize/1) |> Enum.join()
-
-        """
-        test "applies #{e.name} to aggregate state" do
-          event = %#{event_pascal}{#{Templates.struct_body(%{ctx | element: e})}}
-
-          result = #{aggregate}.apply(%#{aggregate}{}, event)
-
-          assert result.id == event.id
-        end
-        """
-      end)
-
-    """
-    describe "#{subject}" do
-    #{tests |> Enum.join("\n\n") |> Templates.indent(2)}
-    end
-    """
   end
 end

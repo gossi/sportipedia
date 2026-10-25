@@ -6,7 +6,7 @@ defmodule Mix.Tasks.Sp.Gen.InternalApi do
   per unique-field invariant (`x_by_slug/1`).
 
   Executes `docs/architecture/blueprints/backend/domain/internal-api.md` and
-  the `unique-slug` example (`Sportipedia.Codegen.Blueprints.InternalAPI`).
+  the `unique-slug` example (`Sportipedia.Codegen.Blueprint.InternalAPI`).
   Internal API is used within the constituent (including tests) only —
   technical query implementations live in queries and validators, which call
   these accessors.
@@ -18,11 +18,11 @@ defmodule Mix.Tasks.Sp.Gen.InternalApi do
 
   use Mix.Task
 
-  alias Sportipedia.Codegen.{CLI, Blueprints}
+  alias Sportipedia.Codegen.CLI
 
   @impl Mix.Task
   def run(argv) do
-    case CLI.run(Blueprints.InternalAPI, argv) do
+    case CLI.run(:internal_api, argv) do
       :ok -> :ok
       {:error, message} -> Mix.raise(message)
     end

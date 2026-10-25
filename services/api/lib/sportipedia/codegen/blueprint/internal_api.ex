@@ -1,4 +1,4 @@
-defmodule Sportipedia.Codegen.Blueprints.InternalAPI do
+defmodule Sportipedia.Codegen.Blueprint.InternalAPI do
   @moduledoc """
   Executable transfer of `docs/architecture/blueprints/backend/domain/internal-api.md`.
 
@@ -9,7 +9,7 @@ defmodule Sportipedia.Codegen.Blueprints.InternalAPI do
 
   use Sportipedia.Codegen.Blueprint
 
-  alias Sportipedia.Codegen.{Context, FilePlan, Source, Templates, Unit}
+  alias Sportipedia.Codegen.Templates
 
   @path "services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/internal.ex"
   @module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Internal"
@@ -23,7 +23,6 @@ defmodule Sportipedia.Codegen.Blueprints.InternalAPI do
     [
       %FilePlan{
         path: Context.render(@path, ctx),
-        role: :module,
         module: Context.render(@module, ctx),
         scaffold: &scaffold/1,
         units: units(ctx)
@@ -122,13 +121,13 @@ defmodule Sportipedia.Codegen.Blueprints.InternalAPI do
         render: fn c ->
           "@moduledoc \"\"\"\nInternal API for querying #{c.constituent} read models within the bounded context.\n\"\"\""
         end,
-        anchor: fn src, _ctx -> {:after_line, Source.module_start_line(src)} end
+        place: Merge.head(:moduledoc)
       },
       %Unit{
         id: {:def, :"#{do_}_by_id", 1},
         check: fn src -> Source.has_def?(src, :"#{do_}_by_id", 1) end,
-        render: fn c -> c |> by_id_clause() |> Templates.indent(2) end,
-        anchor: &accessor_anchor/2
+        render: fn c -> c |> by_id_clause() end,
+        place: Merge.before_helpers()
       },
       alias_unit(Context.render(@read_model_module, ctx), :"#{do_}_by_id"),
       alias_unit(Context.render(@repo_module, ctx), :"#{do_}_by_id")
@@ -142,8 +141,8 @@ defmodule Sportipedia.Codegen.Blueprints.InternalAPI do
           %Unit{
             id: {:def, accessor, 1},
             check: fn src -> Source.has_def?(src, accessor, 1) end,
-            render: fn c -> c |> accessor_clause(f) |> Templates.indent(2) end,
-            anchor: &accessor_anchor/2
+            render: fn c -> c |> accessor_clause(f) end,
+            place: Merge.before_helpers()
           },
           alias_unit(query_module_for(ctx, f), accessor)
         ]
@@ -153,18 +152,12 @@ defmodule Sportipedia.Codegen.Blueprints.InternalAPI do
     base ++ accessor_units
   end
 
-  # accessor clauses sit after the last public def, before private helpers
-  defp accessor_anchor(src, _ctx) do
-    Source.before_helpers_anchor(src)
-  end
-
   defp alias_unit(module, owner_def) do
     %Unit{
       id: {:alias, module},
       check: fn src -> Source.has_alias?(src, module) || Source.has_def?(src, owner_def, 1) end,
       render: fn _ctx -> "alias #{module}" end,
-      anchor: fn src, _ctx -> Source.alias_anchor(src, module) end,
-      gap: :tight
+      place: Merge.alias_of(module)
     }
   end
 end

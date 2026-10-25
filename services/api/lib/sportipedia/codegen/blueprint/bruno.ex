@@ -1,12 +1,12 @@
-defmodule Sportipedia.Codegen.Blueprints.Bruno do
+defmodule Sportipedia.Codegen.Blueprint.Bruno do
   @moduledoc """
-  Executable transfer of `docs/architecture/blueprints/backend/web/bruno.md`.
+  Executable transfer of `docs/architecture/blueprints/backend/web/bruno.md`
+  — the request documentation file for one endpoint.
 
   Documents one endpoint (ESDM command or query) for direct usage in the
   Bruno collection at the repo root:
 
   * `bruno/<Subdomain>/<Composite>/<Constituent>/<Operation Title>.yml`
-  * the constituent's `folder.yml`, created alongside the first request
 
   Content follows the blueprint: the verb rule (POST commands, GET queries),
   `{{apiUrl}}`-templated URLs (collection variables live in
@@ -22,8 +22,7 @@ defmodule Sportipedia.Codegen.Blueprints.Bruno do
 
   use Sportipedia.Codegen.Blueprint
 
-  alias Sportipedia.Codegen.{Context, FilePlan}
-  alias Sportipedia.Codegen.Blueprints.Controller
+  alias Sportipedia.Codegen.Blueprint.Controller
 
   @dir "bruno/<Subdomain>/<Composite>/<Constituent>"
   @sample_id "d290f1ee-6c54-4b01-90e6-d701748f0851"
@@ -32,7 +31,7 @@ defmodule Sportipedia.Codegen.Blueprints.Bruno do
   def source_kinds, do: [:command, :query]
 
   def plans(%Context{} = ctx) do
-    [request_plan(ctx), folder_plan(ctx)]
+    [request_plan(ctx)]
   end
 
   # ------------------------------------------------------------ request file
@@ -45,7 +44,6 @@ defmodule Sportipedia.Codegen.Blueprints.Bruno do
 
     %FilePlan{
       path: path,
-      role: :doc,
       module: nil,
       scaffold: fn c -> request_scaffold(c, path) end,
       units: [],
@@ -79,13 +77,10 @@ defmodule Sportipedia.Codegen.Blueprints.Bruno do
   defp http_block(ctx, route) do
     method = if ctx.element.kind == :command, do: "POST", else: "GET"
 
-    inner =
-      "  method: #{method}\n" <>
-        "  url: \"{{apiUrl}}#{route}\"\n" <>
-        request_block(ctx) <>
-        "  auth: inherit"
-
-    inner
+    "  method: #{method}\n" <>
+      "  url: \"{{apiUrl}}#{route}\"\n" <>
+      request_block(ctx) <>
+      "  auth: inherit"
   end
 
   defp request_block(ctx) do
@@ -232,47 +227,6 @@ defmodule Sportipedia.Codegen.Blueprints.Bruno do
       end
 
     length(existing) + 1
-  end
-
-  # ------------------------------------------------------------------ folder
-
-  defp folder_plan(ctx) do
-    path = Context.render("#{@dir}/folder.yml", ctx)
-
-    %FilePlan{
-      path: path,
-      role: :doc,
-      module: nil,
-      scaffold: fn c -> folder_scaffold(c, path) end,
-      units: [],
-      format: false
-    }
-  end
-
-  defp folder_scaffold(ctx, path) do
-    """
-    info:
-      name: #{Context.pascal(ctx.constituent)}
-      type: folder
-      seq: #{folder_seq(ctx, path)}
-
-    request:
-      auth: inherit
-    """
-  end
-
-  # seq = number of constituent folders present (this one included)
-  defp folder_seq(ctx, path) do
-    composite = ctx.repo_root && Path.join(ctx.repo_root, Path.dirname(Path.dirname(path)))
-
-    with true <- composite && File.dir?(composite),
-         {:ok, entries} <- File.ls(composite) do
-      entries
-      |> Enum.count(fn e -> File.dir?(Path.join(composite, e)) end)
-      |> max(1)
-    else
-      _ -> 1
-    end
   end
 
   # -------------------------------------------------------------------- text

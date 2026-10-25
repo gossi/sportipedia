@@ -7,7 +7,7 @@ defmodule Mix.Tasks.Sp.Gen.Validator do
 
   Executes `docs/architecture/blueprints/backend/domain/validator.md` plus the
   `unique-slug` and `domain-object-exists` example blueprints
-  (`Sportipedia.Codegen.Blueprints.Validator`):
+  (`Sportipedia.Codegen.Blueprint.Validator`):
 
   * `unique-<field>` aggregate invariants → uniqueness via the internal API,
     tolerating the object that already owns the value (edit)
@@ -22,11 +22,11 @@ defmodule Mix.Tasks.Sp.Gen.Validator do
 
   use Mix.Task
 
-  alias Sportipedia.Codegen.{CLI, Blueprints}
+  alias Sportipedia.Codegen.CLI
 
   @impl Mix.Task
   def run(argv) do
-    case CLI.run(Blueprints.Validator, argv) do
+    case CLI.run(:validator, argv) do
       :ok -> :ok
       {:error, message} -> Mix.raise(message)
     end

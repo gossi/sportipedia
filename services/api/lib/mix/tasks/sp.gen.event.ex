@@ -5,7 +5,7 @@ defmodule Mix.Tasks.Sp.Gen.Event do
   Generates the event citizen from an ESDM event element.
 
   Executes the blueprint `docs/architecture/blueprints/backend/domain/event.md`
-  (transferred to `Sportipedia.Codegen.Blueprints.Event`):
+  (transferred to `Sportipedia.Codegen.Blueprint.Event`):
 
   * `services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/events/<_event>.ex`
   * the `<Event> event` `describe` block in the operation test file(s) of the
@@ -22,11 +22,11 @@ defmodule Mix.Tasks.Sp.Gen.Event do
 
   use Mix.Task
 
-  alias Sportipedia.Codegen.{CLI, Blueprints}
+  alias Sportipedia.Codegen.CLI
 
   @impl Mix.Task
   def run(argv) do
-    case CLI.run(Blueprints.Event, argv) do
+    case CLI.run(:event, argv) do
       :ok ->
         :ok
 

@@ -1,8 +1,11 @@
 defmodule Sportipedia.Codegen.SourceTest do
   @moduledoc """
-  Exercises presence detection and anchors against the real, hand-written
-  apparatus files of this codebase — the strongest guarantee that generated
-  code merges into them instead of duplicating what is already there.
+  Exercises presence detection against the real, hand-written apparatus
+  files of this codebase — the strongest guarantee that generated code
+  merges into them instead of duplicating what is already there.
+
+  Placement (where a missing unit lands) is `Sportipedia.Codegen.MergeTest`'s
+  business.
   """
   use ExUnit.Case, async: true
 
@@ -59,29 +62,8 @@ defmodule Sportipedia.Codegen.SourceTest do
       refute Source.entry?(src, :validates, ":description")
     end
 
-    test "typedstruct block anchor lands inside the block", %{src: src} do
-      {:before_line, line} = Source.inside_block(src, :typedstruct)
-      # block body lines are between `typedstruct do` and the closing `end`
-      assert line > 16 and line <= 22, "expected inside typedstruct block, got line #{line}"
-      assert Enum.at(src.lines, line - 1) =~ ~r/^\s*end$/
-    end
-
-    test "alias anchor inserts alphabetically", %{src: src} do
-      later = "Sportipedia.Catalog.Equipment.Apparatus.Validators.Zzz"
-      earlier = "Sportipedia.Accounts.Mail"
-
-      # existing: alias ...Validators.UniqueSlug (line 9)
-      assert {:after_line, line} = Source.alias_anchor(src, later)
-      assert Enum.at(src.lines, line - 1) =~ "alias"
-
-      assert {:before_line, line} = Source.alias_anchor(src, earlier)
-      assert Enum.at(src.lines, line - 1) =~ "alias"
-    end
-
-    test "module body anchors", %{src: src} do
-      assert Source.module_start_line(src) == 2
-      assert {:before_line, stop} = Source.module_end_anchor(src)
-      assert Enum.at(src.lines, stop - 1) == "end"
+    test "moduledoc attribute is seen", %{src: src} do
+      assert Source.has_attribute?(src, :moduledoc)
     end
   end
 
@@ -90,31 +72,15 @@ defmodule Sportipedia.Codegen.SourceTest do
       %{src: source!("catalog/equipment/apparatus/operation/catalog_apparatus/handler.ex")}
     end
 
-    test "behaviour, doc and spec pairing", %{src: src} do
+    test "behaviour and clauses", %{src: src} do
       assert Source.has_behaviour?(src, "Commanded.Commands.Handler")
       assert Source.has_def?(src, :handle, 2)
-      assert Source.has_doc_for?(src, :handle, 2)
-      assert Source.has_spec_for?(src, :handle, 2)
       refute Source.has_def?(src, :handle, 1)
-      refute Source.has_doc_for?(src, :dispatch, 2)
     end
 
     test "clause matching by head pattern", %{src: src} do
-      matches_event = fn args ->
-        Enum.any?(args, fn a -> Source.render_arg(a) == "CatalogApparatus{}" end)
-      end
-
-      assert Source.has_def_matching?(src, :handle, 2, matches_event)
-
-      refute Source.has_def_matching?(src, :handle, 2, fn args ->
-               Enum.any?(args, fn a -> Source.render_arg(a) == "EditApparatus{}" end)
-             end)
-    end
-
-    test "def_range and anchor", %{src: src} do
-      assert {start, stop} = Source.def_range(src, :handle, 2)
-      assert start < stop
-      assert {:after_line, ^stop} = Source.def_anchor(src, :handle, 2)
+      assert Source.def_head_has?(src, :handle, 2, "CatalogApparatus{}")
+      refute Source.def_head_has?(src, :handle, 2, "EditApparatus{}")
     end
   end
 
@@ -134,14 +100,11 @@ defmodule Sportipedia.Codegen.SourceTest do
       assert Source.has_use?(src, "Commanded.Projections.Ecto")
     end
 
-    test "project anchors span through the fn end", %{src: src} do
+    test "project calls found with line ranges", %{src: src} do
       entries = Source.calls(src, :project)
       assert length(entries) == 3
       [%Source.Entry{line: line, end_line: end_line} | _] = entries
-      # first project starts at the `project %ApparatusCataloged{}...` header
       assert line < end_line
-      # and its end line is the block's closing `end`
-      assert String.trim(Enum.at(src.lines, end_line - 1)) == "end"
     end
   end
 
@@ -174,17 +137,15 @@ defmodule Sportipedia.Codegen.SourceTest do
       assert Source.entry?(src, :identify, "ApparatusAggregate")
     end
 
-    test "anchor: after the last dispatch of an aggregate", %{src: src} do
-      {:after_line, line} =
-        Source.after_entry_kw(src, :dispatch, :aggregate, fn v -> v == "ApparatusAggregate" end)
+    test "dispatch clustering by aggregate via Entry.kw", %{src: src} do
+      apparatus =
+        src
+        |> Source.calls(:dispatch)
+        |> Enum.count(
+          &(Sportipedia.Codegen.Source.Entry.kw(&1, :aggregate) == "ApparatusAggregate")
+        )
 
-      # the third apparatus dispatch
-      assert src.lines |> Enum.at(line - 1) =~ "dispatch ArchiveApparatus"
-
-      {:after_line, instrument_line} =
-        Source.after_entry_kw(src, :dispatch, :aggregate, fn v -> v == "InstrumentAggregate" end)
-
-      assert src.lines |> Enum.at(instrument_line - 1) =~ "dispatch ArchiveInstrument"
+      assert apparatus == 3
     end
   end
 
@@ -222,10 +183,11 @@ defmodule Sportipedia.Codegen.SourceTest do
              )
     end
 
-    test "describe anchor: after last describe block", %{src: src} do
-      {:after_line, line} = Source.describe_anchor(src)
-      assert line > 100
-      assert String.trim(Enum.at(src.lines, line)) in ["", "#", "end", ""]
+    test "route presence in the web router scope chain" do
+      src = source_at_root!("lib/sportipedia_web/router.ex")
+      chain = ["/catalog", "/equipment", "/apparatuses"]
+      assert Source.route_present?(src, :post, ":catalog_apparatus", chain)
+      refute Source.route_present?(src, :post, ":make_tea", chain)
     end
   end
 

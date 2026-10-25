@@ -1,6 +1,6 @@
 # Schema
 
-> **Implemented as an executable blueprint:** `Sportipedia.Codegen.Blueprints.Schema` — run `mix sp.gen.schema <element>` (Response/CollectionResponse from read models, Request from commands, QueryParams from collection queries).
+> **Implemented as an executable blueprint:** `Sportipedia.Codegen.Blueprint.Schema` — run `mix sp.gen.schema <element>` (Response/CollectionResponse from read models, Request from commands, QueryParams from collection queries).
 > This markdown stays the design document; the generator owns the file layout and
 > merges idempotently into existing code.
 

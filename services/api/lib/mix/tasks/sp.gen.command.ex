@@ -5,7 +5,7 @@ defmodule Mix.Tasks.Sp.Gen.Command do
   Generates the command citizen from an ESDM command element.
 
   Executes the blueprint `docs/architecture/blueprints/backend/domain/command.md`
-  (transferred to `Sportipedia.Codegen.Blueprints.Command`):
+  (transferred to `Sportipedia.Codegen.Blueprint.Command`):
 
   * `services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/operation/<_operation>/command.ex`
   * the `<Command> command` `describe` block in the operation test file
@@ -27,11 +27,11 @@ defmodule Mix.Tasks.Sp.Gen.Command do
 
   use Mix.Task
 
-  alias Sportipedia.Codegen.{CLI, Blueprints}
+  alias Sportipedia.Codegen.CLI
 
   @impl Mix.Task
   def run(argv) do
-    case CLI.run(Blueprints.Command, argv) do
+    case CLI.run(:command, argv) do
       :ok ->
         :ok
 

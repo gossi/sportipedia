@@ -1,6 +1,6 @@
 # Command
 
-> **Implemented as an executable blueprint:** `Sportipedia.Codegen.Blueprints.Command`
+> **Implemented as an executable blueprint:** `Sportipedia.Codegen.Blueprint.Command`
 > — run `mix sp.gen.command <element> --template create|update|delete`.
 > This markdown stays the design document; the generator owns the file layout
 > and merges idempotently into existing code.

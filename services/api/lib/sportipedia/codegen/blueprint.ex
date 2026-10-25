@@ -1,55 +1,52 @@
 defmodule Sportipedia.Codegen.FilePlan do
   @moduledoc """
   The plan for one generated file: where it lives, what module owns it, and
-  how to produce it — either whole (`scaffold`) when missing, or unit by unit
+  how to produce it — whole (`scaffold`) when missing, or unit by unit
   (`units`) when it exists.
 
-  `role` disambiguates output reports:
-
-  * `:module` — the citizen's own file (command.ex, projector.ex, …)
-  * `:test` — a test file (own file or shared operation test the units merge into)
-  * `:registration` — a shared file the unit is registered into (commanded
-    router, web router, supervisor)
-
   `module` is the expected dotted module name. When a file exists but declares
-  a different module, merging aborts — the generator refuses to splice into an
+  a different module, merging aborts — the generator refuses to edit an
   unexpected file.
+
+  `format: false` marks non-Elixir artifacts (YAML): created verbatim,
+  never merged into, never formatted.
   """
 
-  @enforce_keys [:path, :role]
-  defstruct [:path, :role, :module, :scaffold, units: [], note: nil, format: true]
-
-  @type role :: :module | :test | :registration | :doc
+  @enforce_keys [:path]
+  defstruct [:path, :module, :scaffold, units: [], note: nil, format: true]
 
   @type t :: %__MODULE__{
           path: String.t(),
-          role: role(),
           module: String.t() | nil,
           # (ctx -> source_text)
           scaffold: (Sportipedia.Codegen.Context.t() -> String.t()) | nil,
           # [Sportipedia.Codegen.Unit.t()]
           units: [Sportipedia.Codegen.Unit.t()],
           note: String.t() | nil,
-          # false for non-Elixir artifacts (YAML): written verbatim, not formatted
           format: boolean()
         }
 end
 
 defmodule Sportipedia.Codegen.Blueprint do
   @moduledoc """
-  Contract of a code generator blueprint — the executable transfer of a
-  markdown blueprint from `docs/architecture/blueprints/`.
+  Contract of a code generator blueprint module — one module per generated
+  file (or per file *role*, when a role produces several files of one shape:
+  the operation test files of every publishing command, the OpenAPI schemas
+  of an element).
 
-  A blueprint knows
+  The executable transfer of a markdown blueprint from
+  `docs/architecture/blueprints/`:
 
-  * `name/0` — its id, and `task/0` — the `mix sp.gen.<name>` invocation
-  * `operations/0` — the `--template` values it renders, or `:fixed` when the
-    citizen's shape does not depend on what the operation does
-  * `optional_template?/0` — template-driven but derivable from the domain
-    model when `--template` is absent (the `Context` default)
-  * `plans/1` — the `FilePlan`s to produce for a resolved `Context`: the
-    module file, its test output, and any registration files
-  * `accepts?/1` — which ESDM element kinds it can generate from
+  * `plans/1` — the `FilePlan`s this module produces for a resolved `Context`
+  * `name/0` — the module's id (snake-cased from the alias by default)
+
+  Generators are addressed by **family** (`mix sp.gen.<family>`): the family
+  registry in `Sportipedia.Codegen.families/0` lists the blueprint modules it
+  runs, with the primary module (the head of the list) defining the element
+  kinds it consumes (`source_kinds/0`) and the `--template` operations it
+  renders (`operations/0`, `optional_template?/0`). Test-file and
+  registration modules inherit sane defaults and are not consulted for
+  validation.
 
   Templates keep the placeholder notation of
   `docs/architecture/naming-substitution.md` and the prose slots of the
@@ -62,7 +59,6 @@ defmodule Sportipedia.Codegen.Blueprint do
   alias Sportipedia.Codegen.Esdm.Element
 
   @callback name() :: atom()
-  @callback task() :: String.t()
   @callback operations() :: [Context.operation()] | :fixed
   @callback optional_template?() :: boolean()
   @callback source_kinds() :: [Element.kind()]
@@ -73,10 +69,11 @@ defmodule Sportipedia.Codegen.Blueprint do
     quote do
       @behaviour Sportipedia.Codegen.Blueprint
 
-      alias Sportipedia.Codegen.{Context, FilePlan, Source, Unit}
+      alias Sportipedia.Codegen.{Context, FilePlan, Merge, Source, Unit}
       alias Sportipedia.Codegen.Esdm.Element
 
-      def task, do: "sp.gen." <> Atom.to_string(name())
+      def name,
+        do: __MODULE__ |> Module.split() |> List.last() |> Macro.underscore() |> String.to_atom()
 
       def source_kinds, do: []
 
@@ -86,7 +83,7 @@ defmodule Sportipedia.Codegen.Blueprint do
 
       def optional_template?, do: false
 
-      defoverridable task: 0, accepts?: 1, operations: 0, source_kinds: 0, optional_template?: 0
+      defoverridable name: 0, accepts?: 1, operations: 0, source_kinds: 0, optional_template?: 0
     end
   end
 

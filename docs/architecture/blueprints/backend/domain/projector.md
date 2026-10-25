@@ -1,6 +1,6 @@
 # Projector
 
-> **Implemented as an executable blueprint:** `Sportipedia.Codegen.Blueprints.Projector` — run `mix sp.gen.projector <event>` (the read model's projection rule picks the clause body; registers the supervisor child).
+> **Implemented as an executable blueprint:** `Sportipedia.Codegen.Blueprint.Projector` — run `mix sp.gen.projector <event>` (the read model's projection rule picks the clause body; registers the supervisor child).
 > This markdown stays the design document; the generator owns the file layout and
 > merges idempotently into existing code.
 
