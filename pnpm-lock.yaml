@@ -788,8 +788,8 @@ importers:
         specifier: catalog:lint
         version: 1.2.2(prettier@3.9.4)
       '@hono/node-server':
-        specifier: ^1.19.0
-        version: 1.19.1(hono@4.9.5)
+        specifier: ^1.19.17
+        version: 1.19.17(hono@4.9.5)
       '@types/node':
         specifier: ^25.0.3
         version: 25.0.3
@@ -2422,8 +2422,8 @@ packages:
     resolution: {integrity: sha512-5knF1JeCmS15WsKw4dlwWD/2dMo/UssTZL94/pLW3mxyEAOaqN9bobHAKm8Uxmbt2AIkBhtRwlE28L8QJQ6Kow==}
     engines: {node: ^20.11.0 || >=22}
 
-  '@hono/node-server@1.19.1':
-    resolution: {integrity: sha512-h44e5s+ByUriaRIbeS/C74O8v90m0A95luyYQGMF7KEn96KkYMXO7bZAwombzTpjQTU4e0TkU8U1WBIXlwuwtA==}
+  '@hono/node-server@1.19.17':
+    resolution: {integrity: sha512-dSneS5qhiauZWGDCeK4o695Xd9nUNjviSZCMQrj10eetr8Uln1ucn6bbphOM6UynAMMtNIzZNSpL9vnASJwrPQ==}
     engines: {node: '>=18.14.1'}
     peerDependencies:
       hono: ^4
@@ -10406,7 +10406,7 @@ snapshots:
     dependencies:
       '@theemo/tokens': 1.0.1
 
-  '@hono/node-server@1.19.1(hono@4.9.5)':
+  '@hono/node-server@1.19.17(hono@4.9.5)':
     dependencies:
       hono: 4.9.5
 
