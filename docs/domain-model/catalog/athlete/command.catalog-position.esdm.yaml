@@ -5,7 +5,32 @@ scope:
   domain: sport
   boundedContext: sport
   aggregate: position
-data: {}
+data:
+  type: object
+  properties:
+    title:
+      type: string
+      description: "Name of the position"
+    slug:
+      type: string
+      description: "URL-friendly unique identifier"
+    description:
+      type: string
+      description: "Optional description"
+    apparatusId:
+      type: string
+      format: uuid
+      description: "Reference to apparatus (optional, mutually exclusive with instrumentId)"
+    instrumentId:
+      type: string
+      format: uuid
+      description: "Reference to instrument (optional, mutually exclusive with apparatusId)"
+  required:
+    - title
+    - slug
+constraints:
+  - name: equipment-exists
+    rule: If apparatusId or instrumentId is provided, the referenced equipment must exist
 publishes:
   - position-cataloged
 actors:

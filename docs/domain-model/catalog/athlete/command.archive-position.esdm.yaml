@@ -5,8 +5,19 @@ scope:
   domain: sport
   boundedContext: sport
   aggregate: position
-data: {}
+data:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier of the position to archive"
+  required:
+    - id
+constraints:
+  - name: position-exists
+    rule: A position needs to exist (check by id)
 publishes:
   - position-archived
 actors:
-  - user
+  - admin

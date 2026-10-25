@@ -1,11 +1,43 @@
 apiVersion: schema.esdm.io/core/v1
 kind: aggregate
 name: position
-description: "Certain body position or stance an athlete holds."
+description: "A body position or stance, optionally bound to a specific piece of equipment (apparatus or instrument)"
 scope:
   domain: sport
   boundedContext: sport
 identifiedBy:
   source: generated
   generator: uuid
-state: {}
+invariants:
+  - name: unique-slug
+    rule: The slug for the position must be unique within the domain
+  - name: at-most-one-equipment
+    rule: A position can reference at most one piece of equipment (either apparatusId or instrumentId, not both)
+state:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier"
+    title:
+      type: string
+      description: "Name of the position"
+    slug:
+      type: string
+      description: "URL-friendly unique identifier"
+    description:
+      type: string
+      description: "Optional description"
+    apparatusId:
+      type: string
+      format: uuid
+      description: "Reference to apparatus (mutually exclusive with instrumentId)"
+    instrumentId:
+      type: string
+      format: uuid
+      description: "Reference to instrument (mutually exclusive with apparatusId)"
+  required:
+    - id
+    - title
+    - slug

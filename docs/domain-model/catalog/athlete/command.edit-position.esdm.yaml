@@ -5,7 +5,29 @@ scope:
   domain: sport
   boundedContext: sport
   aggregate: position
-data: {}
+data:
+  type: object
+  properties:
+    title:
+      type: string
+      description: "Name of the position"
+    slug:
+      type: string
+      description: "URL-friendly unique identifier"
+    description:
+      type: string
+      description: "Optional description"
+    apparatusId:
+      type: string
+      format: uuid
+      description: "Reference to apparatus (optional, mutually exclusive with instrumentId)"
+    instrumentId:
+      type: string
+      format: uuid
+      description: "Reference to instrument (optional, mutually exclusive with apparatusId)"
+constraints:
+  - name: position-exists
+    rule: A position needs to exist (check by id)
 publishes:
   - position-edited
 actors:

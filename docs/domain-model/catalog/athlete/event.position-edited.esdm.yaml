@@ -5,4 +5,29 @@ scope:
   domain: sport
   boundedContext: sport
   aggregate: position
-data: {}
+data:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier"
+    title:
+      type: string
+      description: "Name of the position"
+    slug:
+      type: string
+      description: "URL-friendly unique identifier"
+    description:
+      type: string
+      description: "Optional description"
+    apparatusId:
+      type: string
+      format: uuid
+      description: "Reference to apparatus (optional)"
+    instrumentId:
+      type: string
+      format: uuid
+      description: "Reference to instrument (optional)"
+  required:
+    - id
