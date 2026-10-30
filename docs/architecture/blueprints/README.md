@@ -80,9 +80,22 @@ mix sp.gen.command <element> --template create
   entries, supervisor children, routes, `describe` blocks) are inserted as
   new nodes in the parsed file and the tree is printed back — existing code
   is never rewritten. `--check` reports drift without writing.
+- **References defer, order never matters.** A unit that mentions another
+  citizen (an event struct, a validator, the controller behind a route)
+  only materializes while that citizen's file exists; otherwise it reports
+  as `deferred` (exit 0) and the tree stays compilable. When a run creates
+  a citizen, a merge-only closure pass re-applies the gated units of its
+  constituent's neighborhood, so the referencing code back-fills itself —
+  generating the event after the aggregate adds the aggregate's `apply/2`
+  clause. Generation order is irrelevant: any sequence converges to the
+  same code (proven by the reversed-chain test).
 - `--template` selects the body template by what the operation does
-  (`create | update | delete | read | collection`); fixed-shape blueprints
-  (e.g. command-handler) take none.
+  (`create | update | delete | read | collection`); default: derived from
+  the domain model (the published event's projection effect, or the query
+  result shape). Fixed-shape blueprints (e.g. command-handler) take none.
+- The tool is an escript built on demand by the mix tasks
+  (`SPGEN_NO_AUTOBUILD=1` opts out); recovery if the project tree itself is
+  broken: run `tools/spgen/spgen <family> <element> [options]` directly.
 
 Implemented: [Command](backend/domain/command.md),
 [Event](backend/domain/event.md),
