@@ -1,6 +1,6 @@
 # View
 
-> **Implemented as an executable blueprint:** `Sportipedia.Codegen.Blueprint.View` — run `mix sp.gen.view <read-model>` (fixed shape — type, path, fields from the read model).
+> **Implemented as an executable blueprint:** `SpGen.Blueprint.View` — run `mix sp.gen.view <read-model>` (fixed shape — type, path, fields from the read model).
 > This markdown stays the design document; the generator owns the file layout and
 > merges idempotently into existing code.
 

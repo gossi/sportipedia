@@ -6,7 +6,7 @@ defmodule Mix.Tasks.Sp.Gen.CommandHandler do
 
   Executes the blueprint
   `docs/architecture/blueprints/backend/domain/command-handler.md`
-  (transferred to `Sportipedia.Codegen.Blueprint.CommandHandler`):
+  (transferred to `SpGen.Blueprint.CommandHandler`):
 
   * `services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/operation/<_operation>/handler.ex`
   * the `<Command>Handler` `describe` block in the operation test file
@@ -24,16 +24,6 @@ defmodule Mix.Tasks.Sp.Gen.CommandHandler do
 
   use Mix.Task
 
-  alias Sportipedia.Codegen.CLI
-
   @impl Mix.Task
-  def run(argv) do
-    case CLI.run(:command_handler, argv) do
-      :ok ->
-        :ok
-
-      {:error, message} ->
-        Mix.raise(message)
-    end
-  end
+  def run(argv), do: Mix.Tasks.Sp.Gen.delegate(:command_handler, argv)
 end

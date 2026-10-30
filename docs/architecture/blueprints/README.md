@@ -55,7 +55,8 @@ test-driven-development (tdd).
 ## Executable Blueprints (Code Generators)
 
 Blueprints are progressively transferred to executable Elixir templates in
-`services/api` (`Sportipedia.Codegen.Blueprint.*`), run as mix tasks:
+`tools/spgen` (`SpGen.Blueprint.*`), run through delegating mix tasks in
+`services/api`:
 
 ```sh
 mix sp.gen               # list all available generators
@@ -65,7 +66,7 @@ mix sp.gen.command <element> --template create
 - The markdown here stays the design documentation; the executable transfer
   adds one pointer line per implemented blueprint.
 - Blueprints define the file _contents_; the generators know the _layout_
-  (canonical paths live with the generator, see `Sportipedia.Codegen`).
+  (canonical paths live with the generator, see `SpGen`).
 - A generator family (`mix sp.gen.<family>`) runs one blueprint module per
   generated file: the citizen's module (e.g. `Blueprint.Aggregate`), its
   test file (`Blueprint.AggregateTest`) and any registration file
@@ -74,7 +75,7 @@ mix sp.gen.command <element> --template create
 - Generators resolve an ESDM element (`esdm:` reference, model file,
   `kind.name`, or bare name), fill the placeholders per
   [naming substitution](../naming-substitution.md), and merge idempotently
-  by append-only AST editing (`Sportipedia.Codegen.Merge`): missing units
+  by append-only AST editing (`SpGen.Merge`): missing units
   (`use`/`alias`, function clauses, `field`/`validates`/`dispatch`/`project`
   entries, supervisor children, routes, `describe` blocks) are inserted as
   new nodes in the parsed file and the tree is printed back — existing code

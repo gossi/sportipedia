@@ -1,0 +1,433 @@
+defmodule SpGen.Esdm.Element do
+  @moduledoc """
+  A single ESDM model element: `kind` + `name` living within a `scope`, as
+  loaded from one `*.esdm.yaml` document.
+
+  * `source` — repo-relative file the element was read from
+  * `address` — its stable `esdm:` reference
+    (`esdm:domain=sport/bounded-context=sport/aggregate=apparatus/command=x`),
+    the document head serialized, per the ESDM reference notation
+  """
+
+  @enforce_keys [:kind, :name, :scope, :doc, :source, :address]
+  defstruct [:kind, :name, :scope, :doc, :source, :address]
+
+  @type kind ::
+          :domain
+          | :subdomain
+          | :"bounded-context"
+          | :aggregate
+          | :command
+          | :event
+          | :query
+          | :"read-model"
+          | :entity
+          | :"value-object"
+          | :policy
+          | :"event-handler"
+          | :"process-manager"
+          | :"domain-service"
+          | :actor
+          | :"external-system"
+          | :"context-mapping"
+          | :"dynamic-consistency-boundary"
+          | :feature
+
+  @type t :: %__MODULE__{
+          kind: kind(),
+          name: String.t(),
+          scope: [{String.t(), String.t()}],
+          doc: map(),
+          source: String.t(),
+          address: String.t()
+        }
+
+  @doc "The name of the enclosing aggregate, if any."
+  def aggregate_name(%__MODULE__{scope: scope}) do
+    case List.keyfind(scope, "aggregate", 0) do
+      {_kind, name} -> name
+      nil -> nil
+    end
+  end
+
+  @doc "The name of the read model this element refers to, if any."
+  def read_model_name(%__MODULE__{doc: doc}), do: doc["readModel"]
+
+  @doc "The `kind=name` segment for this element."
+  def segment(%__MODULE__{kind: kind, name: name}), do: "#{kind}=#{name}"
+end
+
+defmodule SpGen.Esdm do
+  @moduledoc """
+  Loader and index for the ESDM model at `docs/domain-model/`.
+
+  Answers the generator's data needs from the domain model so blueprint
+  variables can be filled without hand-passed args:
+
+  * `load/1` indexes every `*.esdm.yaml` document (multi-document files too).
+  * `resolve/2` turns an address into exactly one element — an `esdm:`
+    reference, a model file path, a `kind.name`, or a bare name. Ambiguity is
+  an error listing the full `esdm:` references that disambiguate.
+  * Neighborhood helpers: `aggregate_of/2`, `read_model_for/2`, `publishes/1`,
+    `actors/1`, `fields/1`, `invariants/1`, `constraints/1`, `projections/1`,
+    `projection_effect/1`, `scenarios/2`.
+
+  YAML mappings lose key order, so `fields/1` canonicalizes deterministically:
+  `id` first when present, then required fields in `required`-list order, then
+  optional fields alphabetically.
+  """
+
+  alias SpGen.Esdm.Element
+
+  defstruct [:root, :elements]
+
+  @type t :: %__MODULE__{root: String.t(), elements: [Element.t()]}
+
+  @doc "Loads all `.esdm.yaml` documents under `root` (a repo-relative path)."
+  @spec load(Path.t()) :: {:ok, t()}
+  def load(root) do
+    elements =
+      root
+      |> Path.join("**/*.esdm.yaml")
+      |> Path.wildcard()
+      |> Enum.flat_map(&load_file/1)
+
+    {:ok, %__MODULE__{root: root, elements: elements}}
+  end
+
+  @doc "Like `load/1` but raises on failure."
+  def load!(root) do
+    {:ok, model} = load(root)
+    model
+  end
+
+  defp load_file(path) do
+    case YamlElixir.read_all_from_file(path) do
+      {:ok, docs} ->
+        docs
+        |> List.wrap()
+        |> Enum.filter(&match?(%{}, &1))
+        |> Enum.map(&to_element(&1, path))
+
+      {:error, _} ->
+        []
+    end
+  end
+
+  defp to_element(doc, path) do
+    scope = scope_chain(doc)
+    kind = String.to_atom(doc["kind"])
+
+    %Element{
+      kind: kind,
+      name: doc["name"],
+      scope: scope,
+      doc: doc,
+      source: path,
+      address: build_address(scope, doc["kind"], doc["name"])
+    }
+  end
+
+  # A reference is the document head serialized: scope fields written as the
+  # kinds they name, then the element's own kind and name. A domain carries no
+  # scope; context mappings stand alone.
+  defp scope_chain(%{"kind" => kind} = doc) do
+    s = doc["scope"] || %{}
+
+    [{"domain", s["domain"]}]
+    |> Enum.concat(
+      for {key, k} <- [
+            {"boundedContext", "bounded-context"},
+            {"aggregate", "aggregate"},
+            {"dynamicConsistencyBoundary", "dynamic-consistency-boundary"}
+          ],
+          name = s[key],
+          do: {k, name}
+    )
+    |> Enum.reject(fn {_k, name} -> is_nil(name) end)
+    |> case do
+      [] when kind in ["domain", "context-mapping"] -> []
+      [] -> [{"domain", doc["name"]}]
+      chain -> chain
+    end
+  end
+
+  @doc false
+  def build_address(scope, kind, name) do
+    segments = Enum.map(scope, fn {k, n} -> "#{k}=#{n}" end) ++ ["#{kind}=#{name}"]
+    "esdm:" <> Enum.join(segments, "/")
+  end
+
+  @doc """
+  Resolves an address into exactly one element.
+
+  Accepted forms:
+
+  * `esdm:domain=sport/bounded-context=sport/aggregate=apparatus/command=x`
+  * a file path to a `*.esdm.yaml` file holding a single element
+  * `kind.name` (e.g. `command.catalog-apparatus`)
+  * a bare element name (e.g. `catalog-apparatus`)
+  """
+  @spec resolve(t(), String.t()) :: {:ok, Element.t()} | {:error, term()}
+  def resolve(%__MODULE__{elements: elements}, address) do
+    cond do
+      String.starts_with?(address, "esdm:") -> resolve_reference(elements, address)
+      String.ends_with?(address, ".esdm.yaml") -> resolve_file(elements, address)
+      String.contains?(address, ".") -> resolve_kind_name(elements, address)
+      true -> resolve_name(elements, address)
+    end
+  end
+
+  @doc "Like `resolve/2` but raises with a formatted message."
+  def resolve!(model, address) do
+    case resolve(model, address) do
+      {:ok, element} -> element
+      {:error, reason} -> raise "cannot resolve #{inspect(address)}: #{format_error(reason)}"
+    end
+  end
+
+  defp resolve_reference(elements, address) do
+    body = String.replace_prefix(address, "esdm:", "")
+
+    with {:ok, segments} <- parse_segments(body) do
+      target = List.last(segments)
+      ancestors = Enum.slice(segments, 0..-2//1)
+
+      matches =
+        Enum.filter(elements, fn element ->
+          Element.segment(element) == format_segment(target) and element.scope == ancestors
+        end)
+
+      case matches do
+        [element] -> {:ok, element}
+        [] -> {:error, {:unknown_reference, address}}
+        many -> {:error, {:ambiguous, Enum.map(many, & &1.address)}}
+      end
+    end
+  end
+
+  defp format_segment({kind, name}), do: "#{kind}=#{name}"
+
+  defp parse_segments(body) do
+    segments =
+      body
+      |> String.split("/", trim: true)
+      |> Enum.map(&String.split(&1, "=", parts: 2))
+
+    if Enum.all?(segments, &match?([_kind, _name], &1)) do
+      {:ok, Enum.map(segments, fn [k, n] -> {k, n} end)}
+    else
+      bad = segments |> Enum.reject(&match?([_, _], &1)) |> List.first()
+      {:error, {:invalid_reference_segment, Enum.join(bad, "")}}
+    end
+  end
+
+  defp resolve_file(elements, path) do
+    wanted = split_path(path)
+
+    matches = Enum.filter(elements, fn e -> suffix_match?(split_path(e.source), wanted) end)
+
+    case matches do
+      [element] ->
+        {:ok, element}
+
+      [] ->
+        {:error, {:file_not_in_model, path}}
+
+      many ->
+        {:error,
+         {:ambiguous_file, path,
+          Enum.map(many, fn e -> "#{Element.segment(e)}  #{e.address}" end)}}
+    end
+  end
+
+  defp split_path(path) do
+    path
+    |> String.replace_prefix("./", "")
+    |> Path.split()
+  end
+
+  # Either side may carry extra prefix segments (absolute, repo-relative,
+  # cwd-relative); the model file matches when one is a segment-suffix of the
+  # other.
+  defp suffix_match?(a, b) do
+    {longer, shorter} = if length(a) >= length(b), do: {a, b}, else: {b, a}
+    Enum.slice(longer, -length(shorter)..-1) == shorter
+  end
+
+  defp resolve_kind_name(elements, kind_name) do
+    [kind, name] = String.split(kind_name, ".", parts: 2)
+
+    case Enum.filter(elements, fn e -> to_string(e.kind) == kind and e.name == name end) do
+      [element] -> {:ok, element}
+      [] -> {:error, {:unknown_element, kind_name}}
+      many -> {:error, {:ambiguous, Enum.map(many, & &1.address)}}
+    end
+  end
+
+  defp resolve_name(elements, name) do
+    case Enum.filter(elements, fn e -> e.name == name end) do
+      [element] -> {:ok, element}
+      [] -> {:error, {:unknown_element, name}}
+      many -> {:error, {:ambiguous, Enum.map(many, & &1.address)}}
+    end
+  end
+
+  @doc "Renders a resolution error for CLI output."
+  def format_error({:ambiguous, addresses}) do
+    "the name is ambiguous, use one of these esdm: references:\n" <>
+      Enum.map_join(addresses, "\n", fn a -> "  " <> a end)
+  end
+
+  def format_error({:ambiguous_file, path, elements}) do
+    "the file #{path} holds more than one element — pass an esdm: reference:\n" <>
+      Enum.map_join(elements, "\n", fn e -> "  " <> e end)
+  end
+
+  def format_error({:unknown_reference, address}), do: "no such element: #{address}"
+  def format_error({:unknown_element, name}), do: "no such element: #{name}"
+  def format_error({:file_not_in_model, path}), do: "not an element of the model: #{path}"
+  def format_error({:invalid_reference_segment, s}), do: "invalid reference segment: #{s}"
+
+  # -- neighborhood --------------------------------------------------------
+
+  @doc "Finds an element by kind and name."
+  @spec find(t(), Element.kind(), String.t()) :: {:ok, Element.t()} | {:error, :not_found}
+  def find(%__MODULE__{elements: elements}, kind, name) do
+    case Enum.find(elements, fn e -> e.kind == kind and e.name == name end) do
+      nil -> {:error, :not_found}
+      element -> {:ok, element}
+    end
+  end
+
+  @doc "All elements with kind `event` owned by the aggregate named `name`, sorted."
+  @spec events_of(t(), String.t()) :: [Element.t()]
+  def events_of(%__MODULE__{elements: elements}, name) do
+    elements
+    |> Enum.filter(fn e -> e.kind == :event and Element.aggregate_name(e) == name end)
+    |> Enum.sort_by(& &1.name)
+  end
+
+  @doc "The aggregate owning the given element (via `scope.aggregate`)."
+  def aggregate_of(%__MODULE__{} = model, %Element{} = element) do
+    case Element.aggregate_name(element) do
+      nil -> {:error, :not_found}
+      name -> find(model, :aggregate, name)
+    end
+  end
+
+  @doc """
+  The read model for an element: its `readModel` for queries, the
+  same-named read model otherwise (aggregate/read-model share the constituent
+  name, which ESDM allows on purpose).
+  """
+  def read_model_for(%__MODULE__{} = model, %Element{kind: kind, name: name} = element) do
+    case kind do
+      :query ->
+        case Element.read_model_name(element) do
+          nil -> {:error, :not_found}
+          rm -> find(model, :"read-model", rm)
+        end
+
+      _ ->
+        find(model, :"read-model", Element.aggregate_name(element) || name)
+    end
+  end
+
+  @doc "Event names published by a command."
+  def publishes(%Element{doc: doc}), do: List.wrap(doc["publishes"])
+
+  @doc "Actor names allowed to issue an element."
+  def actors(%Element{doc: doc}), do: List.wrap(doc["actors"])
+
+  @doc "The `description` of a document, if it has one."
+  def describe(%Element{doc: doc}), do: doc["description"]
+
+  @doc """
+  Data fields of a command/event, or state/schema of an aggregate/read model,
+  or result items of a query. Deterministic order (see module docs).
+  """
+  def fields(%Element{doc: doc}) do
+    schema = data_schema(doc)
+    properties = schema["properties"] || %{}
+    required = List.wrap(schema["required"])
+
+    {reqs, opts} =
+      properties
+      |> Enum.map(fn {name, spec} -> field(name, spec, name in required) end)
+      |> Enum.split_with(& &1.required)
+
+    reqs = Enum.sort_by(reqs, fn f -> Enum.find_index(required, &(&1 == f.name)) end)
+    opts = Enum.sort_by(opts, & &1.name)
+
+    id_first(reqs ++ opts)
+  end
+
+  # Commands/events carry `data`, aggregates `state`, read models `schema`,
+  # queries `result` (which may be an array of items).
+  defp data_schema(%{"data" => data}) when is_map(data), do: data
+  defp data_schema(%{"state" => state}) when is_map(state), do: state
+  defp data_schema(%{"schema" => schema}) when is_map(schema), do: schema
+
+  defp data_schema(%{"result" => %{"type" => "array", "items" => items}}) when is_map(items),
+    do: items
+
+  defp data_schema(%{"result" => result}) when is_map(result), do: result
+  defp data_schema(_doc), do: %{}
+
+  defp field(name, spec, required) do
+    %{
+      name: name,
+      type: spec["type"] || "string",
+      format: spec["format"],
+      description: spec["description"],
+      required: required
+    }
+  end
+
+  defp id_first(fields) do
+    {ids, rest} = Enum.split_with(fields, &(&1.name == "id"))
+    ids ++ rest
+  end
+
+  @doc "Aggregate invariants as `%{name:, rule:}`."
+  def invariants(%Element{doc: doc}), do: List.wrap(doc["invariants"])
+
+  @doc "Command constraints as `%{name:, rule:}`."
+  def constraints(%Element{doc: doc}), do: List.wrap(doc["constraints"])
+
+  @doc "Projection entries of a read model: `%{event:, aggregate:, rule:}`."
+  def projections(%Element{doc: doc}), do: List.wrap(doc["projections"])
+
+  @doc """
+  The operation a projection performs on the database, read from its rule
+  prose: `:create` | `:update` | `:delete` | `:unknown`.
+  """
+  def projection_effect(projection) do
+    case projection["rule"] || Map.get(projection, :rule) do
+      rule when is_binary(rule) ->
+        cond do
+          rule =~ ~r/\b(remove|delete|archive|withdraw)\b/i -> :delete
+          rule =~ ~r/\b(update|change|edit|amend)\b/i -> :update
+          rule =~ ~r/\b(add|project|insert|create|catalog)\b/i -> :create
+          true -> :unknown
+        end
+
+      _ ->
+        :unknown
+    end
+  end
+
+  @doc """
+  The feature scenarios that exercise the given operation (by its `when`
+  command/query name), in model order.
+  """
+  def scenarios(%__MODULE__{elements: elements}, %Element{name: operation_name}) do
+    for feature <- elements,
+        feature.kind == :feature,
+        scenario <- List.wrap(feature.doc["scenarios"]),
+        get_in(scenario, ["when", "command"]) == operation_name or
+          get_in(scenario, ["when", "query"]) == operation_name,
+        do: scenario
+  end
+end

@@ -77,11 +77,7 @@ defmodule Sportipedia.MixProject do
       {:commanded_ecto_projections, "~> 1.4"},
       {:commanded_eventstore_adapter, "~> 1.4"},
       {:commanded_eventsourcingdb_adapter, "0.0.1"},
-      {:eventstore, "~> 1.4"},
-
-      # Code generation (mix sp.gen.*)
-      {:yaml_elixir, "~> 2.9"},
-      {:sourceror, "~> 1.7"}
+      {:eventstore, "~> 1.4"}
     ]
   end
 

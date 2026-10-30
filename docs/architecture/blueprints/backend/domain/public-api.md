@@ -1,6 +1,6 @@
 # Public API
 
-> **Implemented as an executable blueprint:** `Sportipedia.Codegen.Blueprint.PublicAPI` — run `mix sp.gen.public_api <operation> [--template create|update|delete|read|collection]`.
+> **Implemented as an executable blueprint:** `SpGen.Blueprint.PublicAPI` — run `mix sp.gen.public_api <operation> [--template create|update|delete|read|collection]`.
 > This markdown stays the design document; the generator owns the file layout and
 > merges idempotently into existing code.
 

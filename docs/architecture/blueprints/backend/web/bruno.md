@@ -1,6 +1,6 @@
 # Bruno
 
-> **Implemented as an executable blueprint:** `Sportipedia.Codegen.Blueprint.Bruno` — run `mix sp.gen.bruno <operation>`.
+> **Implemented as an executable blueprint:** `SpGen.Blueprint.Bruno` — run `mix sp.gen.bruno <operation>`.
 > The generator owns the layout (the collection's actual title-case file names), uses
 > `folder.yml` per constituent, generates `examples:` from feature scenarios, and is
 > create-only: existing docs are never rewritten.

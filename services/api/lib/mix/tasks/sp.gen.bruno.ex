@@ -6,7 +6,7 @@ defmodule Mix.Tasks.Sp.Gen.Bruno do
   (command or query), plus the constituent's `folder.yml`.
 
   Executes `docs/architecture/blueprints/backend/web/bruno.md`
-  (`Sportipedia.Codegen.Blueprint.Bruno`):
+  (`SpGen.Blueprint.Bruno`):
 
   * `bruno/<Subdomain>/<Composite>/<Constituent>/<Operation Title>.yml`
   * JSON:API bodies mirroring the operation data (`create` carries attributes
@@ -25,13 +25,6 @@ defmodule Mix.Tasks.Sp.Gen.Bruno do
 
   use Mix.Task
 
-  alias Sportipedia.Codegen.CLI
-
   @impl Mix.Task
-  def run(argv) do
-    case CLI.run(:bruno, argv) do
-      :ok -> :ok
-      {:error, message} -> Mix.raise(message)
-    end
-  end
+  def run(argv), do: Mix.Tasks.Sp.Gen.delegate(:bruno, argv)
 end

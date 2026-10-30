@@ -6,7 +6,7 @@ defmodule Mix.Tasks.Sp.Gen.View do
   plus its own test file.
 
   Executes `docs/architecture/blueprints/backend/web/view.md`
-  (`Sportipedia.Codegen.Blueprint.View`): `use JSONAPI.View` with the
+  (`SpGen.Blueprint.View`): `use JSONAPI.View` with the
   singular type, the resource `path/0` (`<subdomain>/<composite>/<domain-object>s`)
   and `fields/0` from the read model schema (id and timestamps are not
   attributes).
@@ -18,13 +18,6 @@ defmodule Mix.Tasks.Sp.Gen.View do
 
   use Mix.Task
 
-  alias Sportipedia.Codegen.CLI
-
   @impl Mix.Task
-  def run(argv) do
-    case CLI.run(:view, argv) do
-      :ok -> :ok
-      {:error, message} -> Mix.raise(message)
-    end
-  end
+  def run(argv), do: Mix.Tasks.Sp.Gen.delegate(:view, argv)
 end

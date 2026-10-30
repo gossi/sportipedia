@@ -5,7 +5,7 @@ defmodule Mix.Tasks.Sp.Gen.ReadModel do
   Generates the read-model citizen from the domain model.
 
   Executes `docs/architecture/blueprints/backend/domain/read-model.md`
-  (`Sportipedia.Codegen.Blueprint.ReadModel`): the typed Ecto schema, the
+  (`SpGen.Blueprint.ReadModel`): the typed Ecto schema, the
   schema prefix and the `insert_changeset/2` / `update_changeset/2` pair.
 
       mix sp.gen.read_model read-model.apparatus
@@ -16,13 +16,6 @@ defmodule Mix.Tasks.Sp.Gen.ReadModel do
 
   use Mix.Task
 
-  alias Sportipedia.Codegen.CLI
-
   @impl Mix.Task
-  def run(argv) do
-    case CLI.run(:read_model, argv) do
-      :ok -> :ok
-      {:error, message} -> Mix.raise(message)
-    end
-  end
+  def run(argv), do: Mix.Tasks.Sp.Gen.delegate(:read_model, argv)
 end

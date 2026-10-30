@@ -7,7 +7,7 @@ defmodule Mix.Tasks.Sp.Gen.Controller do
   router's scope chain (`/<subdomain> → /<composite> → /<domain-object>s`).
 
   Executes `docs/architecture/blueprints/backend/web/controller.md` plus the
-  paired `endpoint-test.md` (`Sportipedia.Codegen.Blueprint.Controller`).
+  paired `endpoint-test.md` (`SpGen.Blueprint.Controller`).
   Only `GET` (queries) and `POST` (commands) — every write is a command
   endpoint. The endpoint tests follow the blueprint's status matrix (create
   200/422/403, delete 204/404/403, read 200/404, collection 200).
@@ -19,13 +19,6 @@ defmodule Mix.Tasks.Sp.Gen.Controller do
 
   use Mix.Task
 
-  alias Sportipedia.Codegen.CLI
-
   @impl Mix.Task
-  def run(argv) do
-    case CLI.run(:controller, argv) do
-      :ok -> :ok
-      {:error, message} -> Mix.raise(message)
-    end
-  end
+  def run(argv), do: Mix.Tasks.Sp.Gen.delegate(:controller, argv)
 end

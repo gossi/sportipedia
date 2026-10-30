@@ -2,53 +2,93 @@ defmodule Mix.Tasks.Sp.Gen do
   @shortdoc "Lists the Sportipedia blueprint generators"
 
   @moduledoc """
-  Lists every available `mix sp.gen.*` generator with the ESDM element kinds
-  it consumes, the `--template` operations it renders, and the blueprint
-  modules (generated files) it runs.
+  The one supported entry point to the blueprint generators.
 
-  These are the executable transfers of the blueprints in
-  `docs/architecture/blueprints/`. Run one with an element address:
+  This task (and its `mix sp.gen.<family>` siblings) delegates to the
+  `spgen` escript built from the `tools/spgen` Mix project — the executable
+  transfers of the blueprints in `docs/architecture/blueprints/`. The
+  executable is built automatically when missing or older than the tool's
+  sources (`SPGEN_NO_AUTOBUILD=1` opts out).
 
+      mix sp.gen                                            # list families
       mix sp.gen.command catalog-apparatus --template create
-      mix sp.gen.event apparatus-cataloged --template create
-      mix sp.gen.command_handler catalog-apparatus
+      mix sp.gen.aggregate widget --check
 
-  Every generator is idempotent: existing files only receive units that are
-  missing (append-only AST merging), and `--check` reports drift without
-  writing.
+  Because the generators live outside this app, running them never requires
+  the generated tree to compile — and the tree keeps compiling after every
+  run by construction (references to not-yet-generated citizens stay
+  deferred). Recovery hatch if the project itself is broken: run the binary
+  directly, `tools/spgen/spgen <family> <element> [options]`.
   """
 
   use Mix.Task
 
-  alias Sportipedia.Codegen
-
   @impl Mix.Task
-  def run(_argv) do
-    shell = Mix.shell()
-    shell.info("Sportipedia blueprint generators:\n")
+  def run(argv), do: exec(argv)
 
-    for {family, modules} <- Codegen.families() do
-      primary = hd(modules)
-      kinds = primary.source_kinds() |> Enum.map(&Atom.to_string/1) |> Enum.join(", ")
+  @doc false
+  @spec delegate(atom(), [String.t()]) :: :ok
+  def delegate(family, argv), do: exec([Atom.to_string(family) | argv])
 
-      templates =
-        case primary.operations() do
-          :fixed -> "fixed (no --template)"
-          ops -> "--template " <> Enum.join(ops, " | ")
-        end
+  defp exec(args) do
+    bin = executable()
+    {_out, status} = System.cmd(bin, args, into: IO.stream(:stdio, :line))
 
-      files = modules |> Enum.map(&short_name/1) |> Enum.join(", ")
+    if status != 0, do: Mix.raise("spgen exited with status #{status}")
 
-      shell.info("  mix sp.gen.#{family} <element>")
-      shell.info("    from: #{kinds}")
-      shell.info("    #{templates}")
-      shell.info("    blueprints: #{files}\n")
-    end
-
-    shell.info(Codegen.help())
+    :ok
   end
 
-  defp short_name(module) do
-    module |> Module.split() |> Enum.take(-2) |> Enum.join(".")
+  # <repo>/services/api/lib/mix/tasks → up five = repo root
+  defp repo_root, do: Path.expand("../../../../..", __DIR__)
+
+  defp executable do
+    root = repo_root()
+    bin = Path.join(root, "tools/spgen/spgen")
+    tool = Path.join(root, "tools/spgen")
+
+    unless File.exists?(bin) do
+      if autobuild?() do
+        build(tool)
+      else
+        Mix.raise("spgen missing at #{bin} — run `mix escript.build` in tools/spgen")
+      end
+    end
+
+    if autobuild?() && File.exists?(bin) && stale?(tool, bin), do: build(tool)
+    bin
+  end
+
+  defp autobuild?, do: System.get_env("SPGEN_NO_AUTOBUILD") in [nil, ""]
+
+  defp stale?(tool, bin) do
+    bin_mtime = File.stat!(bin).mtime
+
+    sources(tool)
+    |> Enum.any?(fn path ->
+      case File.stat(path) do
+        {:ok, %{mtime: m}} -> m > bin_mtime
+        _ -> false
+      end
+    end)
+  end
+
+  defp sources(tool) do
+    Path.wildcard(Path.join(tool, "lib/**/*.ex")) ++
+      [Path.join(tool, "mix.exs"), Path.join(tool, "mix.lock")]
+  end
+
+  defp build(tool) do
+    Mix.shell().info("(building spgen…)")
+
+    with {out, 0} <- System.cmd("mix", ["deps.get"], cd: tool, stderr_to_stdout: true),
+         _ <- out,
+         {out, 0} <- System.cmd("mix", ["escript.build"], cd: tool, stderr_to_stdout: true) do
+      _ = out
+      :ok
+    else
+      {out, status} ->
+        Mix.raise("building spgen failed (status #{status}):\n#{out}")
+    end
   end
 end

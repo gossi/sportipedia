@@ -1,0 +1,12 @@
+# The mix tasks in services/api build this on demand; run
+# `cd tools/spgen && mix escript.build` to rebuild explicitly.
+/spgen
+
+/_build
+/cover
+/deps
+/doc
+/.fetch
+erl_crash.dump
+*.ez
+*.beam
