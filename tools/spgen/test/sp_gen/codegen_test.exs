@@ -75,7 +75,14 @@ defmodule SpGenTest do
 
   describe "generation into a scratch tree" do
     setup do
-      root = Path.join(System.tmp_dir!(), "spgen-test-#{:erlang.unique_integer([:positive])}")
+      root = build_scratch("test")
+      on_exit(fn -> File.rm_rf!(root) end)
+      %{root: root}
+    end
+
+    # scratch repo fixture: registration files + the widget citizen model
+    defp build_scratch(label) do
+      root = Path.join(System.tmp_dir!(), "spgen-#{label}-#{:erlang.unique_integer([:positive])}")
       api = Path.join(root, "services/api")
       File.mkdir_p!(Path.join(api, "lib/sportipedia/catalog/equipment"))
 
@@ -343,8 +350,87 @@ defmodule SpGenTest do
                   label: "Pommel Horse"
       ''')
 
-      on_exit(fn -> File.rm_rf!(root) end)
-      %{root: root}
+      root
+    end
+
+    test "story A/B: deferral + back-fill converge with ordered creation", %{} do
+      a = build_scratch("a")
+      b = build_scratch("b")
+      agg_rel = "lib/sportipedia/catalog/equipment/widget/aggregate.ex"
+      agg_plan_path = "services/api/" <> agg_rel
+
+      try do
+        # A) aggregate first: no events exist, so the aggregate materializes
+        # as a bare shell and its handler units defer (still exit 0)
+        {:ok, results_a} = SpGen.run(:aggregate, ["aggregate.widget", "--root", a])
+        bare = read(a, agg_rel)
+        assert bare =~ "use TypedStruct"
+        assert bare =~ "field :label, String.t()"
+        refute bare =~ "WidgetCreated"
+
+        assert Enum.any?(results_a, fn
+                 {:deferred, ^agg_plan_path, _} -> true
+                 _ -> false
+               end)
+
+        # the event run creates the event and back-fills the aggregate
+        {:ok, results_ev} =
+          SpGen.run(:event, ["widget-created", "--template", "create", "--root", a])
+
+        assert Enum.any?(results_ev, fn
+                 {:backfill, ^agg_plan_path, ids} -> ids != []
+                 _ -> false
+               end)
+
+        filled = read(a, agg_rel)
+        assert filled =~ "def apply(%WidgetAggregate{} = _aggregate, %WidgetCreated{} = event)"
+
+        # B) event first: the aggregate is created complete — nothing about
+        # the aggregate itself defers (unrelated command units may still, via
+        # the closure's honest reporting)
+        {:ok, _} = SpGen.run(:event, ["widget-created", "--template", "create", "--root", b])
+        {:ok, results_b} = SpGen.run(:aggregate, ["aggregate.widget", "--root", b])
+
+        refute Enum.any?(results_b, fn
+                 {:deferred, ^agg_plan_path, _} -> true
+                 _ -> false
+               end)
+
+        assert Enum.any?(results_b, fn
+                 {:created, ^agg_plan_path} -> true
+                 _ -> false
+               end)
+
+        # convergence: the same code in either generation order (AST equality)
+        assert canon_ast(filled) == canon_ast(read(b, agg_rel))
+
+        # fixed points: re-running any of these families changes nothing
+        for root <- [a, b],
+            {family, args} <- [
+              {:aggregate, ["aggregate.widget"]},
+              {:event, ["widget-created", "--template", "create"]}
+            ] do
+          {:ok, results} = SpGen.run(family, args ++ ["--root", root])
+
+          assert Enum.all?(results, &match?({:unchanged, _}, &1)),
+                 "#{family} #{inspect(args)} on #{root}: #{inspect(results)}"
+        end
+      after
+        File.rm_rf(a)
+        File.rm_rf(b)
+      end
+    end
+
+    # structural AST comparison: generation order is a layout question,
+    # the code is the answer. Strips all node metadata (the generic clause
+    # covers remote-call nodes whose "name" is itself a tuple).
+    defp canon_ast(text) do
+      {:ok, ast} = Code.string_to_quoted(text)
+
+      Macro.prewalk(ast, fn
+        {name, meta, args} when is_list(meta) -> {name, [], args}
+        other -> other
+      end)
     end
 
     defp run(family, args, root) do
@@ -364,6 +450,10 @@ defmodule SpGenTest do
       assert Enum.any?(results, &match?({:created, _}, &1))
       assert Enum.any?(results, &(match?({:merged, _, _ids}, &1) and elem(&1, 2) != []))
 
+      # the aggregate exists now — its run back-fills the router entries the
+      # command run had to defer (aggregate alias, identify, dispatch)
+      assert {:ok, _} = run(:aggregate, ["aggregate.widget"], root)
+
       # everything parses
       for path <- generated_files(root) do
         source = File.read!(path)
@@ -378,12 +468,17 @@ defmodule SpGenTest do
       assert Enum.all?(results, &match?({:unchanged, _}, &1))
       assert {:ok, results} = run(:command, ["create-widget", "--template", "create"], root)
       assert Enum.all?(results, &match?({:unchanged, _}, &1))
+      assert {:ok, results} = run(:aggregate, ["aggregate.widget"], root)
+      assert Enum.all?(results, &match?({:unchanged, _}, &1))
     end
 
     test "generated command matches the blueprint shape", %{root: root} do
       {:ok, _} = run(:event, ["widget-created", "--template", "create"], root)
       {:ok, _} = run(:command_handler, ["create-widget"], root)
       {:ok, _} = run(:command, ["create-widget", "--template", "create"], root)
+      # aggregate last: its run back-fills the router entries the command run
+      # deferred (they reference the aggregate module)
+      {:ok, _} = run(:aggregate, ["aggregate.widget"], root)
 
       command =
         read(root, "lib/sportipedia/catalog/equipment/widget/operation/create_widget/command.ex")

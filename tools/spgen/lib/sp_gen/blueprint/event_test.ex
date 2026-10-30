@@ -24,6 +24,7 @@ defmodule SpGen.Blueprint.EventTest do
         module: @test_module,
         extra_vars: extra_vars,
         alias_templates: [Event.module_template()],
+        requires: fn c -> [{Event.module_file(c), "event not generated (spgen event)"}] end,
         describes: [{"<Event> event", &describe_body/2}]
       )
     end)

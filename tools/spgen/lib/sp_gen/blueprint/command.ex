@@ -30,6 +30,10 @@ defmodule SpGen.Blueprint.Command do
   @doc "The command's module-name template (referenced by `CommandTest` and `CommandRouter`)."
   def module_template, do: @module
 
+  @doc "The command module's file path (used as a `requires` gate)."
+  @spec module_file(Context.t()) :: String.t()
+  def module_file(%Context{} = ctx), do: Context.render(@path, ctx)
+
   def plans(%Context{} = ctx) do
     [
       %FilePlan{

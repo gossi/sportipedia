@@ -1,19 +1,26 @@
 defmodule SpGen.FilePlan do
   @moduledoc """
   The plan for one generated file: where it lives, what module owns it, and
-  how to produce it — whole (`scaffold`) when missing, or unit by unit
-  (`units`) when it exists.
+  how to produce it when missing — by applying its `units` to a fresh module
+  shell (`unit_created: true`, the reference-gated creation path), from a
+  whole-file `scaffold` (legacy), or not at all (registration plans: no
+  scaffold, no `unit_created` — the file must already exist).
+
+  An existing file is always handled unit by unit: missing, reference-
+  satisfied units are appended to the parsed tree (`SpGen.Merge`); units
+  whose `requires` are unmet defer until the closure of the run that
+  creates the missing citizen back-fills them.
 
   `module` is the expected dotted module name. When a file exists but declares
   a different module, merging aborts — the generator refuses to edit an
   unexpected file.
 
-  `format: false` marks non-Elixir artifacts (YAML): created verbatim,
-  never merged into, never formatted.
+  `format: false` marks non-Elixir artifacts (YAML): created verbatim from
+  `scaffold`, never merged into, never formatted.
   """
 
   @enforce_keys [:path]
-  defstruct [:path, :module, :scaffold, units: [], note: nil, format: true]
+  defstruct [:path, :module, :scaffold, units: [], note: nil, format: true, unit_created: false]
 
   @type t :: %__MODULE__{
           path: String.t(),
@@ -23,7 +30,9 @@ defmodule SpGen.FilePlan do
           # [SpGen.Unit.t()]
           units: [SpGen.Unit.t()],
           note: String.t() | nil,
-          format: boolean()
+          format: boolean(),
+          # create by applying units to a module shell instead of from scaffold
+          unit_created: boolean()
         }
 end
 

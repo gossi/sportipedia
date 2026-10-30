@@ -18,6 +18,10 @@ defmodule SpGen.Blueprint.ReadModel do
   def name, do: :read_model
   def source_kinds, do: [:"read-model"]
 
+  @doc "The read model's file path (used as a `requires` gate)."
+  @spec module_file(Context.t()) :: String.t()
+  def module_file(%Context{} = ctx), do: Context.render(@path, ctx)
+
   def plans(%Context{} = ctx) do
     [
       %FilePlan{

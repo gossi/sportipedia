@@ -20,6 +20,7 @@ defmodule SpGen.Blueprint.CommandTest do
         path: @test_path,
         module: @test_module,
         alias_templates: [Command.module_template()],
+        requires: fn c -> [{Command.module_file(c), "command not generated (spgen command)"}] end,
         describes: [{"<Command> command", &describe_body/2}]
       )
     ]

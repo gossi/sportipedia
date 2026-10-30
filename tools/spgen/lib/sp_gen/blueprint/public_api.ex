@@ -29,6 +29,10 @@ defmodule SpGen.Blueprint.PublicAPI do
 
   def name, do: :public_api
   def source_kinds, do: [:command, :query]
+
+  @doc "The public API's file path (used as a `requires` gate)."
+  @spec module_file(Context.t()) :: String.t()
+  def module_file(%Context{} = ctx), do: Context.render(@path, ctx)
   def operations, do: [:create, :update, :delete, :read, :collection]
   def optional_template?, do: true
 

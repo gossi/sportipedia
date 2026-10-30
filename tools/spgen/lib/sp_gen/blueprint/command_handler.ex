@@ -28,6 +28,10 @@ defmodule SpGen.Blueprint.CommandHandler do
 
   @doc false
   def module_template, do: @module
+
+  @doc "The handler module's file path (used as a `requires` gate)."
+  @spec module_file(Context.t()) :: String.t()
+  def module_file(%Context{} = ctx), do: Context.render(@path, ctx)
   @doc false
   def command_template, do: @command_module
   @doc false

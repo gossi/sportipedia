@@ -49,7 +49,8 @@ defmodule SpGen.Context do
   Builds the context for `element`.
 
   Options: `:subdomain`, `:composite`, `:constituent` (overrides), `:operation`
-  (defaults to `:create`).
+  (defaults to the operation derived from the domain model — see
+  `derive_operation/2`).
   """
   @spec build(Esdm.t(), Element.t(), keyword()) :: {:ok, %__MODULE__{}} | {:error, term()}
   def build(model, element, opts \\ []) do
@@ -62,7 +63,7 @@ defmodule SpGen.Context do
         subdomain: subdomain,
         composite: composite,
         constituent: constituent,
-        operation: Keyword.get(opts, :operation, :create),
+        operation: Keyword.get(opts, :operation) || derive_operation(model, element),
         repo_root: Keyword.get(opts, :repo_root),
         aggregate: fetch(Esdm.aggregate_of(model, element)),
         read_model: fetch(Esdm.read_model_for(model, element)),
@@ -83,6 +84,44 @@ defmodule SpGen.Context do
     case Keyword.get(opts, var) || inferred do
       nil -> {:error, {:unknown_location, var}}
       value -> {:ok, value}
+    end
+  end
+
+  # What the element's operation does, read from the model:
+  #
+  # * command/event — the effect of the published event's projection rule on
+  #   the read model (`create` inserts a row, `update` merges, `delete`
+  #   removes it)
+  # * query — `:collection` when the result is an array, `:read` otherwise
+  # * anything else — `:create` (the template is irrelevant or fixed)
+  @doc false
+  @spec derive_operation(Esdm.t(), Element.t()) :: __MODULE__.operation()
+  def derive_operation(model, %Element{} = element) do
+    case element.kind do
+      :command ->
+        element |> Esdm.publishes() |> List.first() |> event_effect(model, element)
+
+      :event ->
+        event_effect(element.name, model, element)
+
+      :query ->
+        if get_in(element.doc, ["result", "type"]) == "array", do: :collection, else: :read
+
+      _kind ->
+        :create
+    end
+  end
+
+  defp event_effect(nil, _model, _element), do: :create
+
+  defp event_effect(event_name, model, element) do
+    with {:ok, rm} <- Esdm.read_model_for(model, element) do
+      case Enum.find(Esdm.projections(rm), fn p -> p["event"] == event_name end) do
+        nil -> :create
+        projection -> Esdm.projection_effect(projection)
+      end
+    else
+      _ -> :create
     end
   end
 

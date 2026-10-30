@@ -8,7 +8,7 @@ defmodule SpGen.Blueprint.CommandRouter do
 
   use SpGen.Blueprint
 
-  alias SpGen.Blueprint.Command
+  alias SpGen.Blueprint.{Aggregate, Command, CommandHandler}
 
   @router_path "services/api/lib/sportipedia/<_subdomain>/<composite>/router.ex"
   @aggregate_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Aggregate"
@@ -18,6 +18,16 @@ defmodule SpGen.Blueprint.CommandRouter do
     handler = command <> "Handler"
     aggregate = Context.render("<DomainObject>Aggregate", ctx)
 
+    cmd_gate = fn c -> [{Command.module_file(c), "command not generated (spgen command)"}] end
+
+    handler_gate = fn c ->
+      [{CommandHandler.module_file(c), "handler not generated (spgen command_handler)"}]
+    end
+
+    agg_gate = fn c ->
+      [{Aggregate.module_file(c), "aggregate not generated (spgen aggregate)"}]
+    end
+
     [
       %FilePlan{
         path: Context.render(@router_path, ctx),
@@ -25,30 +35,35 @@ defmodule SpGen.Blueprint.CommandRouter do
         scaffold: nil,
         units:
           [
-            registration_alias(Context.render(Command.module_template(), ctx)),
-            registration_alias(Context.render(Command.module_template(), ctx) <> "Handler"),
-            registration_alias(Context.render(@aggregate_module, ctx)),
-            identify_unit(ctx, aggregate),
-            dispatch_unit(command, handler, aggregate)
+            registration_alias(Context.render(Command.module_template(), ctx), cmd_gate),
+            registration_alias(
+              Context.render(Command.module_template(), ctx) <> "Handler",
+              handler_gate
+            ),
+            registration_alias(Context.render(@aggregate_module, ctx), agg_gate),
+            identify_unit(ctx, aggregate, agg_gate),
+            dispatch_unit(command, handler, aggregate, [cmd_gate, handler_gate, agg_gate])
           ]
           |> Enum.reject(&is_nil/1)
       }
     ]
   end
 
-  defp registration_alias(full) do
+  defp registration_alias(full, gate) do
     %Unit{
       id: {:router_alias, full},
       check: fn src -> Source.has_alias?(src, full) end,
       render: fn _ctx -> "alias #{full}" end,
+      requires: gate,
       place: Merge.alias_of(full)
     }
   end
 
-  defp identify_unit(_ctx, aggregate) do
+  defp identify_unit(_ctx, aggregate, gate) do
     %Unit{
       id: {:identify, aggregate},
       check: fn src -> Source.entry?(src, :identify, aggregate) end,
+      requires: gate,
       render: fn c ->
         prefix = Context.render("<-composite>/<domain-object>/", c)
         "identify #{aggregate}, by: :id, prefix: \"#{prefix}\""
@@ -62,10 +77,11 @@ defmodule SpGen.Blueprint.CommandRouter do
     }
   end
 
-  defp dispatch_unit(command, handler, aggregate) do
+  defp dispatch_unit(command, handler, aggregate, gates) do
     %Unit{
       id: {:dispatch, command},
       check: fn src -> Source.entry?(src, :dispatch, command) end,
+      requires: fn c -> Enum.flat_map(gates, & &1.(c)) end,
       render: fn _ctx ->
         "dispatch #{command}, to: #{handler}, aggregate: #{aggregate}"
       end,

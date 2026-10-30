@@ -9,7 +9,7 @@ defmodule SpGen.Blueprint.ProjectorTest do
   use SpGen.Blueprint
 
   alias SpGen.{Esdm, Templates}
-  alias SpGen.Blueprint.{OperationTest, Projector}
+  alias SpGen.Blueprint.{Event, OperationTest, Projector, ReadModel}
 
   @test_path "services/api/test/sportipedia/<_subdomain>/<composite>/<domain_object>/operation/<_operation>_test.exs"
   @test_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Operation.<Command>Test"
@@ -30,6 +30,13 @@ defmodule SpGen.Blueprint.ProjectorTest do
         module: @test_module,
         extra_vars: %{"operation" => command.name, "command" => command.name},
         alias_templates: [Projector.module_template()],
+        requires: fn c ->
+          [
+            {Projector.module_file(c), "projector not generated (spgen projector)"},
+            {Event.module_file(c), "event not generated (spgen event)"},
+            {ReadModel.module_file(c), "read model not generated (spgen read_model)"}
+          ]
+        end,
         describes: [{"<DomainObject>Projector - <Event>", &describe_body/2, [plain]}]
       )
     end)

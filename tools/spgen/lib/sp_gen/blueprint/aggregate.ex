@@ -14,6 +14,7 @@ defmodule SpGen.Blueprint.Aggregate do
   use SpGen.Blueprint
 
   alias SpGen.Esdm
+  alias SpGen.Blueprint.Event
 
   @path "services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/aggregate.ex"
   @module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Aggregate"
@@ -25,55 +26,19 @@ defmodule SpGen.Blueprint.Aggregate do
   @doc "The aggregate's module-name template (referenced by `AggregateTest`)."
   def module_template, do: @module
 
+  @doc "The aggregate module's file path (used as a `requires` gate)."
+  @spec module_file(Context.t()) :: String.t()
+  def module_file(%Context{} = ctx), do: Context.render(@path, ctx)
+
   def plans(%Context{} = ctx) do
     [
       %FilePlan{
         path: Context.render(@path, ctx),
         module: Context.render(@module, ctx),
-        scaffold: &scaffold/1,
-        units: units(ctx)
+        units: units(ctx),
+        unit_created: true
       }
     ]
-  end
-
-  @doc false
-  def scaffold(ctx) do
-    events = Esdm.events_of(ctx.model, ctx.constituent)
-
-    aliases =
-      Enum.map_join(events, "\n", fn e ->
-        "  alias #{Context.render(@event_module, %{ctx | element: e})}"
-      end)
-
-    fields =
-      ctx.fields
-      |> Enum.map(fn f -> "    field :#{f.name}, #{Context.elixir_type(f)}" end)
-      |> Enum.join("\n")
-
-    applies =
-      events
-      |> Enum.map(fn e ->
-        apply_clause(ctx, e, Esdm.projection_effect(projection_for(ctx, e)))
-      end)
-      |> Enum.join("\n\n")
-
-    """
-    defmodule #{Context.render(@module, ctx)} do
-      @moduledoc \"\"\"
-      #{moduledoc_text(ctx)}
-      \"\"\"
-
-      use TypedStruct
-
-    #{aliases}
-
-      typedstruct do
-    #{fields}
-      end
-
-    #{applies}
-    end
-    """
   end
 
   defp moduledoc_text(ctx) do
@@ -124,23 +89,33 @@ defmodule SpGen.Blueprint.Aggregate do
           id: {:alias, full},
           check: fn src -> Source.has_alias?(src, full) end,
           render: fn _ctx -> "alias #{full}" end,
+          requires: event_gate(ctx, e),
           place: Merge.alias_of(full)
         }
       end) ++
       field_units(ctx) ++
       Enum.map(events, fn e ->
-        key = Context.render("<Event>", %{ctx | element: e}) <> "{}"
-
         %Unit{
           id: {:apply, e.name},
-          check: fn src -> Source.def_head_has?(src, :apply, 2, key) end,
+          check: fn src -> Source.def_head_has?(src, :apply, 2, event_key(ctx, e)) end,
           render: fn c ->
             apply_clause(c, e, Esdm.projection_effect(projection_for(c, e)))
           end,
+          requires: event_gate(ctx, e),
           place: Merge.after_def(:apply, 2)
         }
       end)
   end
+
+  # the event's own module file must exist before the aggregate may
+  # reference it (alias + pattern match on its struct)
+  defp event_gate(ctx, %Element{} = e) do
+    path = Event.module_file(%{ctx | element: e})
+    reason = "event #{e.name} not generated (spgen event #{e.name})"
+    fn _ctx -> [{path, reason}] end
+  end
+
+  defp event_key(ctx, e), do: Context.render("<Event>", %{ctx | element: e}) <> "{}"
 
   defp field_units(ctx) do
     Enum.map(ctx.fields, fn f ->
@@ -150,7 +125,7 @@ defmodule SpGen.Blueprint.Aggregate do
         id: {:field, f.name},
         check: fn src -> Source.entry?(src, :field, key) end,
         render: fn _ctx -> "field :#{f.name}, #{Context.elixir_type(f)}" end,
-        place: Merge.inside(:typedstruct)
+        place: Merge.inside(:typedstruct, fn _ctx, text -> "typedstruct do\n#{text}\nend" end)
       }
     end)
   end

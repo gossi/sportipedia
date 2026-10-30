@@ -8,7 +8,7 @@ defmodule SpGen.Blueprint.CommandHandlerTest do
   use SpGen.Blueprint
 
   alias SpGen.Templates
-  alias SpGen.Blueprint.{CommandHandler, OperationTest}
+  alias SpGen.Blueprint.{Command, CommandHandler, OperationTest}
 
   @test_path "services/api/test/sportipedia/<_subdomain>/<composite>/<domain_object>/operation/<_operation>_test.exs"
   @test_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Operation.<Command>Test"
@@ -24,6 +24,12 @@ defmodule SpGen.Blueprint.CommandHandlerTest do
           CommandHandler.event_template(),
           CommandHandler.aggregate_template()
         ],
+        requires: fn c ->
+          [
+            {CommandHandler.module_file(c), "handler not generated (spgen command_handler)"},
+            {Command.module_file(c), "command not generated (spgen command)"}
+          ]
+        end,
         describes: [{"<Command>Handler", &describe_body/2}]
       )
     ]

@@ -9,7 +9,7 @@ defmodule SpGen.Blueprint.AggregateTest do
   use SpGen.Blueprint
 
   alias SpGen.{Context, Esdm, Templates}
-  alias SpGen.Blueprint.{Aggregate, OperationTest}
+  alias SpGen.Blueprint.{Aggregate, Event, OperationTest}
 
   @test_path "services/api/test/sportipedia/<_subdomain>/<composite>/<domain_object>/operation/<_operation>_test.exs"
   @test_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Operation.<Command>Test"
@@ -25,6 +25,18 @@ defmodule SpGen.Blueprint.AggregateTest do
         module: @test_module,
         extra_vars: %{"operation" => command_name, "command" => command_name},
         alias_templates: [Aggregate.module_template()],
+        alias_requires: fn c ->
+          [{Aggregate.module_file(c), "aggregate not generated (spgen aggregate)"}]
+        end,
+        requires: fn c ->
+          [{Aggregate.module_file(c), "aggregate not generated (spgen aggregate)"}] ++
+            for(
+              e <- Esdm.events_of(c.model, c.constituent),
+              do:
+                {Event.module_file(%{c | element: e}),
+                 "event #{e.name} not generated (spgen event #{e.name})"}
+            )
+        end,
         describes: [{"<DomainObject>Aggregate", &describe_body/2}]
       )
     end)

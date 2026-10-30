@@ -18,6 +18,7 @@ defmodule SpGen.Blueprint.Validator do
   use SpGen.Blueprint
 
   alias SpGen.Templates
+  alias SpGen.Blueprint.InternalAPI
 
   @path "services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/validators/<_validator>.ex"
   @module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Validators.<Validator>"
@@ -25,6 +26,12 @@ defmodule SpGen.Blueprint.Validator do
 
   def name, do: :validator
   def source_kinds, do: [:command, :aggregate]
+
+  @doc "The validator module's file path (used as a `requires` gate)."
+  @spec module_file(Context.t(), map()) :: String.t()
+  def module_file(%Context{} = ctx, validator) do
+    Context.render(@path, ctx, %{"validator" => validator.snake})
+  end
 
   def plans(%Context{} = ctx) do
     Enum.map(ctx.validators, fn validator ->
@@ -134,12 +141,18 @@ defmodule SpGen.Blueprint.Validator do
         id: {:alias, internal},
         check: fn src -> Source.has_alias?(src, internal) end,
         render: fn c -> "alias #{Context.render(@internal_module, c)}" end,
+        requires: fn c ->
+          [{InternalAPI.module_file(c), "internal API not generated (spgen internal_api)"}]
+        end,
         place: Merge.alias_of(internal)
       },
       %Unit{
         id: {:def, :validate, 2},
         check: fn src -> Source.has_def?(src, :validate, 2) end,
         render: fn c -> def_block(validator, c) end,
+        requires: fn c ->
+          [{InternalAPI.module_file(c), "internal API not generated (spgen internal_api)"}]
+        end,
         place: Merge.before_helpers()
       }
     ]

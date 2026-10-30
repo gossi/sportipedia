@@ -19,6 +19,10 @@ defmodule SpGen.Blueprint.InternalAPI do
   def name, do: :internal_api
   def source_kinds, do: [:"read-model", :aggregate, :command, :event, :query]
 
+  @doc "The internal API's file path (used as a `requires` gate)."
+  @spec module_file(Context.t()) :: String.t()
+  def module_file(%Context{} = ctx), do: Context.render(@path, ctx)
+
   def plans(%Context{} = ctx) do
     [
       %FilePlan{

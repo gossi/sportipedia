@@ -125,6 +125,17 @@ defmodule SpGen.CLI do
     "merged    #{path} (#{Enum.map_join(ids, ", ", &inspect/1)})"
   end
 
+  def format({:backfill, path, ids}) do
+    "backfill  #{path} (#{Enum.map_join(ids, ", ", &inspect/1)})"
+  end
+
+  def format({:deferred, path, entries}) do
+    "deferred  #{path} — " <>
+      Enum.map_join(Enum.uniq_by(entries, &elem(&1, 0)), "; ", fn {id, reason} ->
+        "#{inspect(id)}: #{reason}"
+      end)
+  end
+
   def format({:unchanged, path}), do: "unchanged #{path}"
 
   def format({:checked, path, ids}) do

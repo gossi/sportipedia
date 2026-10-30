@@ -12,6 +12,7 @@ defmodule SpGen.Blueprint.Projector do
   use SpGen.Blueprint
 
   alias SpGen.Templates
+  alias SpGen.Blueprint.{Event, InternalAPI, ReadModel}
 
   @path "services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/projector.ex"
   @module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Projector"
@@ -26,6 +27,10 @@ defmodule SpGen.Blueprint.Projector do
 
   @doc false
   def module_template, do: @module
+
+  @doc "The projector's file path (used as a `requires` gate)."
+  @spec module_file(Context.t()) :: String.t()
+  def module_file(%Context{} = ctx), do: Context.render(@path, ctx)
 
   @doc "The projector's `:name` option, also used as metadata `handler_name`."
   def projection_name(%Context{} = ctx),
@@ -95,25 +100,38 @@ defmodule SpGen.Blueprint.Projector do
         render: fn c -> String.trim_trailing(use_block(c)) end,
         place: Merge.head(:use)
       },
-      alias_unit(Context.render(@read_model_module, ctx)),
-      alias_unit(Context.render(@internal_module, ctx)),
-      alias_unit(Context.render(@event_module, ctx)),
+      alias_unit(Context.render(@read_model_module, ctx), fn c ->
+        [{ReadModel.module_file(c), "read model not generated (spgen read_model)"}]
+      end),
+      alias_unit(Context.render(@internal_module, ctx), fn c ->
+        [{InternalAPI.module_file(c), "internal API not generated (spgen internal_api)"}]
+      end),
+      alias_unit(Context.render(@event_module, ctx), fn c ->
+        [{Event.module_file(c), "event not generated (spgen event)"}]
+      end),
       %Unit{
         id: {:project, ctx.element.name},
         check: fn src -> Source.entry?(src, :project, event_pascal <> "{}") end,
         render: fn c ->
           clause(c, Context.effect_for_event(c, c.element.name), Context.pascal(c.element.name))
         end,
+        requires: fn c ->
+          [
+            {ReadModel.module_file(c), "read model not generated (spgen read_model)"},
+            {InternalAPI.module_file(c), "internal API not generated (spgen internal_api)"}
+          ]
+        end,
         place: Merge.after_macro(:project, fn _ -> true end)
       }
     ]
   end
 
-  defp alias_unit(module) do
+  defp alias_unit(module, gate) do
     %Unit{
       id: {:alias, module},
       check: fn src -> Source.has_alias?(src, module) end,
       render: fn _ctx -> "alias #{module}" end,
+      requires: gate,
       place: Merge.alias_of(module)
     }
   end

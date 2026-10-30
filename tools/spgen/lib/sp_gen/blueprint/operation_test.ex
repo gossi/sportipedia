@@ -15,7 +15,7 @@ defmodule SpGen.Blueprint.OperationTest do
   scaffold creates the file with everything for this blueprint at once.
   """
 
-  alias SpGen.{Context, FilePlan, Merge, Source, Templates, Unit}
+  alias SpGen.{Context, FilePlan, Merge, Source, Unit}
 
   @test_use "Sportipedia.<Subdomain>TestCase"
 
@@ -31,6 +31,8 @@ defmodule SpGen.Blueprint.OperationTest do
   * `describes` — `[{subject_template, (ctx -> body_text)}]` this blueprint
     contributes (subject rendered with the same vars)
   * `alias_templates` — module templates the describes reference
+  * `requires` — `(ctx -> [{path, reason}])` gating the describes
+  * `alias_requires` — same shape, gating the alias units (default: `requires`)
   """
   @spec plan(Context.t(), keyword()) :: FilePlan.t()
   def plan(ctx, opts) do
@@ -39,6 +41,8 @@ defmodule SpGen.Blueprint.OperationTest do
     extra_vars = Keyword.get(opts, :extra_vars, %{})
     alias_tpls = Keyword.get(opts, :alias_templates, [])
     describes = Keyword.get(opts, :describes, [])
+    requires = Keyword.get(opts, :requires, fn _ctx -> [] end)
+    alias_requires = Keyword.get(opts, :alias_requires, requires)
 
     path = Context.render(path_tpl, ctx, extra_vars)
     module = Context.render(module_tpl, ctx, extra_vars)
@@ -61,6 +65,7 @@ defmodule SpGen.Blueprint.OperationTest do
           id: {:describe, subject},
           check: fn src -> Enum.any?(accepted, &Source.has_describe?(src, &1)) end,
           render: fn c -> body_fn.(c, subject) end,
+          requires: requires,
           place: Merge.describe()
         }
       end)
@@ -68,49 +73,12 @@ defmodule SpGen.Blueprint.OperationTest do
     %FilePlan{
       path: path,
       module: module,
-      scaffold: fn c ->
-        scaffold(c, module_tpl, test_case, alias_modules, describes, extra_vars)
-      end,
       units:
         List.wrap(use_unit(test_case)) ++
           List.wrap(tag_unit()) ++
-          Enum.map(alias_modules, &alias_unit(&1)) ++ describe_units
+          Enum.map(alias_modules, &alias_unit(&1, alias_requires)) ++ describe_units,
+      unit_created: true
     }
-  end
-
-  # describes accept 2- or 3-tuples: {subject_tpl, body_fn} or
-  # {subject_tpl, body_fn, alternate_subject_tpls}
-  defp scaffold(ctx, module_tpl, test_case, alias_modules, describes, extra_vars) do
-    bodies =
-      describes
-      |> Enum.map(fn describe ->
-        {subject_tpl, body_fn} =
-          case describe do
-            {a, b} -> {a, b}
-            {a, b, _alts} -> {a, b}
-          end
-
-        subject = Context.render(subject_tpl, ctx, extra_vars)
-        body_fn.(ctx, subject)
-      end)
-      |> Enum.join("\n\n")
-
-    aliases =
-      alias_modules
-      |> Enum.map(&"  alias #{&1}")
-      |> Enum.join("\n")
-
-    """
-    defmodule #{Context.render(module_tpl, ctx, extra_vars)} do
-      use #{test_case}
-
-    #{aliases}
-
-      @moduletag :integration
-
-    #{Templates.indent(bodies, 2)}
-    end
-    """
   end
 
   # the test-case module name depends only on the subdomain, so it is rendered
@@ -133,11 +101,12 @@ defmodule SpGen.Blueprint.OperationTest do
     }
   end
 
-  defp alias_unit(module) do
+  defp alias_unit(module, requires) do
     %Unit{
       id: {:test_alias, module},
       check: fn src -> Source.has_alias?(src, module) end,
       render: fn _ctx -> "alias #{module}" end,
+      requires: requires,
       place: Merge.alias_of(module)
     }
   end

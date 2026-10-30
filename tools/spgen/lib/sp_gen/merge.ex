@@ -69,11 +69,17 @@ defmodule SpGen.Merge do
   @doc """
   Append inside the `macro do ... end` block of the first top-level call to
   `macro`; `:blocked` when no such call (or block) exists.
+
+  With a `wrapper` (`(ctx, unit_text -> full_call_text)`), a missing block is
+  *materialized* around the unit instead of blocking — the container exists
+  exactly when it has content, and never as an empty block.
   """
-  @spec inside(atom()) :: place()
-  def inside(macro) do
+  @spec inside(atom(), (SpGen.Context.t(), String.t() -> String.t()) | nil) :: place()
+  def inside(macro, wrapper \\ nil) do
     fn ast, unit, ctx ->
-      with_module(ast, fn exprs -> inside_block(exprs, macro, nodes(unit, ctx)) end)
+      with_module(ast, fn exprs ->
+        inside_block(exprs, macro, nodes(unit, ctx), wrapper, unit, ctx)
+      end)
     end
   end
 
@@ -330,10 +336,19 @@ defmodule SpGen.Merge do
 
   # ------------------------------------------------------------ inside block
 
-  defp inside_block(exprs, macro, nodes) do
+  defp inside_block(exprs, macro, nodes, wrapper, unit, ctx) do
     case Enum.find_index(exprs, &local_call?(&1, macro)) do
       nil ->
-        {exprs, false}
+        cond do
+          is_nil(wrapper) ->
+            {exprs, false}
+
+          true ->
+            container = Sourceror.parse_string!(wrapper.(ctx, unit.render.(ctx)))
+            # the materialized block belongs with the directives, above code
+            boundary = Enum.find_index(exprs, fn e -> is_nil(rank_of(e)) end) || length(exprs)
+            {List.insert_at(exprs, boundary, container), true}
+        end
 
       index ->
         node = Enum.fetch!(exprs, index)

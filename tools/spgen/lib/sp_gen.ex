@@ -1,6 +1,7 @@
 defmodule SpGen do
   @moduledoc """
-  The blueprint code generators (`mix sp.gen.*`).
+  The blueprint code generators (reached through `mix sp.gen.*`, which
+  delegate to the `spgen` escript built from this project).
 
   Generators are addressed by **family** (one `mix sp.gen.<family>` task).
   A family lists its blueprint modules — one per generated file role: the
@@ -8,23 +9,21 @@ defmodule SpGen do
   runs them against one resolved `Context`.
 
   Each module yields `FilePlan`s, applied idempotently against the tree: a
-  missing file gets its scaffold, an existing file only receives the units it
-  lacks. Merging is append-only AST editing (`SpGen.Merge`):
-  presence is checked on the parsed file (`SpGen.Source`),
+  missing file gets its units applied to a fresh module shell (or, for
+  un-gated blueprints still on scaffolds, its scaffold text); an existing
+  file only receives the units it lacks. Merging is append-only AST editing
+  (`SpGen.Merge`): presence is checked on the parsed file (`SpGen.Source`),
   missing units are inserted as new nodes in the module tree, and the whole
-  tree is printed and formatted back. Present content is never rewritten, and
-  files are only touched when units are actually missing.
+  tree is printed and formatted back. Present content is never rewritten,
+  and files are only touched when units are actually missing.
 
-  ## Usage
-
-      mix sp.gen.command <element> --template create|update|delete \\
-        [--subdomain catalog] [--composite equipment] [--constituent apparatus] \\
-        [--model docs/domain-model] [--check] [--root .]
-
-  `<element>` is an `esdm:` reference, a `*.esdm.yaml` file path, a
-  `kind.name`, or a bare (unambiguous) name. Subdomain, composite and
-  constituent are inferred from the model and the architecture layout; args
-  override, and unresolvable information is an error, never a guess.
+  Units whose code references another citizen are **gated**
+  (`SpGen.Unit.requires/0`): while the referenced file is missing the unit
+  *defers* — reported, exit 0, nothing written — which keeps generated trees
+  compilable in any generation order. When a run *creates* a file, a
+  **closure pass** re-applies the gated units of the constituent's
+  neighborhood (merge-only, never creating), so referencing code lands
+  exactly when its subject exists.
   """
 
   alias SpGen.{Blueprint, Context, Esdm, FilePlan, Formatter, Merge, Source, Unit}
@@ -39,6 +38,8 @@ defmodule SpGen do
     root: :string,
     check: :boolean
   ]
+
+  @max_closure_rounds 3
 
   @doc """
   Registry: generator family → its blueprint modules, one per generated file
@@ -74,7 +75,7 @@ defmodule SpGen do
   Runs one generator family against `argv`.
 
   Returns `{:ok, results}` or `{:error, message}`; printing and exit codes are
-  the task's business.
+  the CLI's business.
   """
   @spec run(atom(), [String.t()]) :: {:ok, [term()]} | {:error, String.t()}
   def run(family, argv) when is_atom(family) do
@@ -107,7 +108,7 @@ defmodule SpGen do
   end
 
   defp apply_family(modules, blueprint, _family, address, opts) do
-    repo_root = Keyword.get(opts, :root, default_root())
+    repo_root = Keyword.get(opts, :root, default_root()) |> Path.expand()
     model_root = Path.join(repo_root, Keyword.get(opts, :model, "docs/domain-model"))
     formatter_cwd = Path.join(repo_root, "services/api")
 
@@ -125,7 +126,20 @@ defmodule SpGen do
       check? = Keyword.get(opts, :check, false)
       formatter_opts = Formatter.opts(formatter_cwd)
 
-      {:ok, apply_all(plans, ctx, repo_root, formatter_opts, check?)}
+      run = new_run(repo_root, formatter_opts, check?)
+
+      {run, seed} = apply_plans(plans, ctx, run)
+      created? = Enum.any?(seed, &match?({:created, _}, &1))
+
+      backfill =
+        if created? and not check? do
+          {_run, rows} = closure_rounds(model, ctx, opts, run)
+          rows
+        else
+          []
+        end
+
+      {:ok, seed ++ backfill}
     else
       {:error, {:unknown_location, var}} ->
         {:error,
@@ -134,6 +148,17 @@ defmodule SpGen do
       other ->
         other
     end
+  end
+
+  defp new_run(repo_root, formatter_opts, check?) do
+    %{
+      repo_root: repo_root,
+      formatter_opts: formatter_opts,
+      check?: check?,
+      merge_only: false,
+      creating: false,
+      planned: MapSet.new()
+    }
   end
 
   defp norm_location({:ok, element}), do: {:ok, element}
@@ -211,6 +236,7 @@ defmodule SpGen do
 
     Options:
       --template       what the operation does: create | update | delete | read | collection
+                       (default: derived from the domain model)
       --subdomain      override the inferred subdomain
       --composite      override the inferred composite
       --constituent    override the inferred constituent (domain object)
@@ -222,101 +248,194 @@ defmodule SpGen do
 
   # -- planning & applying ------------------------------------------------------
 
-  @doc """
-  Applies file plans, returning per-file results:
+  # Per-file result rows of a run:
+  #
+  # * `{:created, path}` — new file written (shell + units, or scaffold)
+  # * `{:merged, path, [unit_id]}` — missing units appended into an existing file
+  # * `{:backfill, path, [unit_id]}` — appended by the closure pass after this
+  #   run created a citizen that the unit references
+  # * `{:unchanged, path}` — everything the plan wants is already there
+  # * `{:deferred, path, [{unit_id, reason}]}` — units waiting for a citizen
+  #   that has not been generated yet (reported only — generation order is
+  #   not an error, and the tree stays compilable)
+  # * `{:checked, path, [unit_id | {:unplaceable, unit_id} | {:deferred, unit_id}]}`
+  #   — in `--check` mode, what *would* change
+  # * `{:blocked, path, [unit_id]}` — a unit is missing but has no home in
+  #   this file (reported, nothing written)
+  # * `{:error, path, reason}` — unparsable file, foreign module, or a missing
+  #   registration file
+  @type row :: term()
 
-  * `{:created, path}` — new file written
-  * `{:merged, path, [unit_id]}` — missing units appended into an existing file
-  * `{:unchanged, path}` — everything the plan wants is already there
-    (nothing was written)
-  * `{:checked, path, [unit_id | {:unplaceable, unit_id}]}` — in `--check`
-    mode, what *would* change
-  * `{:blocked, path, [unit_id]}` — a unit is missing but has no home in
-    this file (reported, nothing written)
-  * `{:error, path, reason}` — unparsable file, foreign module, or a missing
-    registration file
-  """
-  def apply_all(plans, ctx, repo_root, formatter_opts, check?) do
-    Enum.map(plans, &apply_plan(&1, ctx, repo_root, formatter_opts, check?))
+  @doc "Applies `plans` for `ctx`, threading the run state (planned paths)."
+  @spec apply_plans([FilePlan.t()], Context.t(), map()) :: {map(), [row()]}
+  def apply_plans(plans, ctx, run) do
+    {rows, run} =
+      Enum.map_reduce(plans, run, fn plan, acc ->
+        {rows, acc} = apply_plan(plan, ctx, acc)
+        {rows, acc}
+      end)
+
+    {run, rows |> List.flatten() |> Enum.reject(&is_nil/1)}
   end
 
   @doc false
-  def apply_plan(%FilePlan{path: rel_path} = plan, ctx, repo_root, formatter_opts, check?) do
-    abs_path = Path.join(repo_root, rel_path)
+  @spec apply_plan(FilePlan.t(), Context.t(), map()) :: {[row()], map()}
+  def apply_plan(%FilePlan{path: rel_path} = plan, ctx, run) do
+    abs_path = Path.join(run.repo_root, rel_path)
 
     case File.read(abs_path) do
-      {:error, :enoent} -> create(plan, ctx, abs_path, rel_path, formatter_opts, check?)
-      {:ok, text} -> merge(plan, ctx, text, abs_path, rel_path, formatter_opts, check?)
+      {:error, :enoent} -> create(plan, ctx, abs_path, rel_path, run)
+      {:ok, text} -> merge(plan, ctx, text, abs_path, rel_path, run)
     end
   end
 
-  defp create(%FilePlan{scaffold: nil}, _ctx, _abs, rel_path, _formatter_opts, _check?) do
-    {:error, rel_path, :registration_file_missing}
+  # ------------------------------------------------------------ creation
+
+  defp create(%FilePlan{} = _plan, _ctx, _abs, _rel_path, %{merge_only: true} = run) do
+    # the closure pass never creates — a citizen materializes via its own run
+    {[], run}
   end
 
-  defp create(%FilePlan{scaffold: scaffold} = plan, ctx, abs, rel_path, formatter_opts, check?) do
+  defp create(%FilePlan{unit_created: true, module: module} = plan, ctx, abs, rel_path, run) do
+    shell = "defmodule #{module} do\nend\n"
+
+    if run.check? do
+      {[{:checked, rel_path, [:whole_file]}], run}
+    else
+      # units are applied to the in-memory shell; the file appears only once
+      # at least one unit is actually placeable (an empty shell is not code)
+      {rows, run} =
+        place_units(plan, ctx, Source.parse(shell), abs, rel_path, %{run | creating: true})
+
+      {rows, %{run | creating: false}}
+    end
+  end
+
+  defp create(%FilePlan{scaffold: nil} = _plan, _ctx, _abs, rel_path, run) do
+    {[{:error, rel_path, :registration_file_missing}], run}
+  end
+
+  defp create(%FilePlan{scaffold: scaffold} = plan, ctx, abs, rel_path, run) do
     content =
       if plan.format do
-        Merge.render_new(scaffold.(ctx), formatter_opts)
+        Merge.render_new(scaffold.(ctx), run.formatter_opts)
       else
         # non-Elixir artifacts (YAML): verbatim, single trailing newline
         scaffold.(ctx) |> String.trim_trailing("\n") |> Kernel.<>("\n")
       end
 
-    if check? do
-      {:checked, rel_path, [:whole_file]}
+    if run.check? do
+      {[{:checked, rel_path, [:whole_file]}], run}
     else
       File.mkdir_p!(Path.dirname(abs))
       File.write!(abs, content)
-      {:created, rel_path}
+      {[{:created, rel_path}], mark_planned(run, rel_path)}
     end
   end
 
-  defp merge(%FilePlan{} = plan, ctx, text, abs, rel_path, formatter_opts, check?) do
+  # ------------------------------------------------------------- merge/edit
+
+  defp merge(%FilePlan{} = plan, ctx, text, abs, rel_path, run) do
     unless plan.format do
       # text artifacts are create-only: existing docs are never rewritten
-      {:unchanged, rel_path}
+      {[{:unchanged, rel_path}], run}
     else
       source = Source.parse(text)
 
       cond do
         is_nil(source.ast) ->
-          {:error, rel_path, :unparsable}
+          {[{:error, rel_path, :unparsable}], run}
 
         foreign_module?(plan, source) ->
-          {:error, rel_path, {:unexpected_module, Source.module_name(source)}}
+          {[{:error, rel_path, {:unexpected_module, Source.module_name(source)}}], run}
 
         true ->
-          merge_units(plan, ctx, source, abs, rel_path, formatter_opts, check?)
+          place_units(plan, ctx, source, abs, rel_path, run)
       end
     end
   end
 
-  defp merge_units(%FilePlan{units: units}, ctx, source, abs, rel_path, formatter_opts, check?) do
+  defp place_units(%FilePlan{units: units}, ctx, source, abs, rel_path, run) do
+    # creation by units starts from a shell nothing is present in; merging
+    # only considers the missing units
     missing = Enum.reject(units, &Unit.present?(&1, source))
 
     if missing == [] do
-      {:unchanged, rel_path}
+      {[{:unchanged, rel_path}], run}
     else
+      existing? = existing_fn(run)
+
+      {deferred, placeable} =
+        Enum.split_with(missing, fn unit -> Unit.deferred(unit, ctx, existing?) != [] end)
+
       {ast, placed, blocked} =
-        Enum.reduce(missing, {source.ast, [], []}, fn unit, {acc, placed, blocked} ->
+        Enum.reduce(placeable, {source.ast, [], []}, fn unit, {acc, placed, blocked} ->
           case unit.place.(acc, unit, ctx) do
             {:ok, new_ast} -> {new_ast, placed ++ [unit.id], blocked}
             :blocked -> {acc, placed, blocked ++ [unit.id]}
           end
         end)
 
-      cond do
-        placed == [] ->
-          {:blocked, rel_path, blocked}
+      deferred_entries =
+        for unit <- deferred,
+            {_path, reason} <- Unit.deferred(unit, ctx, existing?),
+            do: {unit.id, reason}
 
-        check? ->
-          {:checked, rel_path, placed ++ Enum.map(blocked, &{:unplaceable, &1})}
+      created? = run.creating
 
-        true ->
-          File.write!(abs, Merge.render(ast, formatter_opts))
-          {:merged, rel_path, placed}
+      rows =
+        cond do
+          run.check? ->
+            [{:checked, rel_path, ids_for_check(placed, blocked, deferred)}]
+
+          placed == [] and blocked == [] ->
+            # nothing placeable yet: a bare shell is not code — write nothing
+            [{:deferred, rel_path, deferred_entries}]
+
+          true ->
+            if placed != [] do
+              File.mkdir_p!(Path.dirname(abs))
+              File.write!(abs, Merge.render(ast, run.formatter_opts))
+            end
+
+            result_rows(placed, blocked, rel_path, run, created?) ++
+              if(deferred_entries == [], do: [], else: [{:deferred, rel_path, deferred_entries}])
+        end
+
+      run = if placed != [], do: mark_planned(run, rel_path), else: run
+      {rows, run}
+    end
+  end
+
+  defp ids_for_check(placed, blocked, deferred) do
+    placed ++ Enum.map(blocked, &{:unplaceable, &1}) ++ Enum.map(deferred, &{:deferred, &1.id})
+  end
+
+  defp result_rows([], blocked, rel_path, _run, _created?) when blocked != [] do
+    [{:blocked, rel_path, blocked}]
+  end
+
+  defp result_rows(placed, blocked, rel_path, run, created?) do
+    tag = if created?, do: :created, else: if(run.merge_only, do: :backfill, else: :merged)
+
+    main =
+      case tag do
+        :created -> [{:created, rel_path}]
+        :backfill -> [{:backfill, rel_path, placed}]
+        :merged -> [{:merged, rel_path, placed}]
       end
+
+    main ++ if(blocked == [], do: [], else: [{:blocked, rel_path, blocked}])
+  end
+
+  defp mark_planned(run, rel_path) do
+    update_in(run.planned, &MapSet.put(&1, rel_path))
+  end
+
+  defp existing_fn(run) do
+    fn path ->
+      MapSet.member?(run.planned, path) or
+        File.exists?(Path.join(run.repo_root, path))
     end
   end
 
@@ -328,5 +447,74 @@ defmodule SpGen do
       ^module -> false
       _other -> true
     end
+  end
+
+  # ------------------------------------------------- neighborhood closure
+
+  # Creating a citizen flips `requires` gates across its constituent:
+  # re-apply every neighborhood family's plans merge-only (existing files
+  # only) until a round places nothing.
+  defp closure_rounds(model, seed_ctx, opts, run) do
+    elements = neighborhood(model, seed_ctx)
+
+    Enum.reduce_while(1..@max_closure_rounds, {run, []}, fn _round, {run, acc} ->
+      {run, rows} =
+        Enum.reduce(elements, {run, []}, fn element, {run, rows} ->
+          apply_family_neighborhood(model, element, opts, run, rows)
+        end)
+
+      changed? =
+        Enum.any?(rows, fn
+          {:backfill, _, ids} -> ids != []
+          {:created, _} -> true
+          _ -> false
+        end)
+
+      if changed?, do: {:cont, {run, acc ++ rows}}, else: {:halt, {run, acc}}
+    end)
+  end
+
+  defp apply_family_neighborhood(model, element, opts, run, rows_acc) do
+    Enum.reduce(families(), {run, rows_acc}, fn {_family, modules}, {run, rows} ->
+      primary = hd(modules)
+
+      if primary.accepts?(element) do
+        case closure_ctx(model, element, opts, run) do
+          {:ok, ctx} ->
+            plans = modules |> Enum.flat_map(& &1.plans(ctx))
+            {run, new_rows} = apply_plans(plans, ctx, %{run | merge_only: true})
+            {run, rows ++ Enum.reject(new_rows, &match?({:unchanged, _}, &1))}
+
+          _ ->
+            {run, rows}
+        end
+      else
+        {run, rows}
+      end
+    end)
+  end
+
+  defp closure_ctx(model, element, opts, run) do
+    Context.build(
+      model,
+      element,
+      Keyword.take(opts, [:subdomain, :composite, :constituent]) ++ [repo_root: run.repo_root]
+    )
+  end
+
+  defp neighborhood(model, %Context{} = seed) do
+    c = seed.constituent
+
+    model.elements
+    |> Enum.filter(fn e ->
+      case e.kind do
+        :aggregate -> e.name == c
+        kind when kind in [:command, :event] -> Element.aggregate_name(e) == c
+        :query -> Element.read_model_name(e) == c
+        :"read-model" -> e.name == c
+        _ -> false
+      end
+    end)
+    |> Enum.uniq_by(& &1.address)
   end
 end

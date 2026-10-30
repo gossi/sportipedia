@@ -8,6 +8,8 @@ defmodule SpGen.Blueprint.ProjectorSupervisor do
 
   use SpGen.Blueprint
 
+  alias SpGen.Blueprint.Projector
+
   @candidates [
     "services/api/lib/sportipedia/<_subdomain>/<composite>/supervisor.ex",
     "services/api/lib/sportipedia/<_subdomain>/supervisor.ex"
@@ -26,6 +28,9 @@ defmodule SpGen.Blueprint.ProjectorSupervisor do
             id: {:child, module},
             check: fn src -> Source.has_child?(src, module) end,
             render: fn _ctx -> module end,
+            requires: fn c ->
+              [{Projector.module_file(c), "projector not generated (spgen projector)"}]
+            end,
             place: Merge.children_list()
           }
         ]

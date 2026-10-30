@@ -21,6 +21,10 @@ defmodule SpGen.Blueprint.Policy do
   def name, do: :policy
   def source_kinds, do: [:command, :query]
 
+  @doc "The policy's file path (used as a `requires` gate)."
+  @spec module_file(Context.t()) :: String.t()
+  def module_file(%Context{} = ctx), do: Context.render(@path, ctx)
+
   def plans(%Context{} = ctx) do
     [
       %FilePlan{

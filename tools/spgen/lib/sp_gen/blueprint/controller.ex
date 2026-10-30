@@ -29,6 +29,10 @@ defmodule SpGen.Blueprint.Controller do
 
   @doc false
   def module_template, do: @module
+
+  @doc "The controller's file path (used as a `requires` gate)."
+  @spec module_file(Context.t()) :: String.t()
+  def module_file(%Context{} = ctx), do: Context.render(@path, ctx)
   @doc false
   def public_api_template, do: @public_api_module
   @doc false

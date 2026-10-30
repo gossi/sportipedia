@@ -26,71 +26,19 @@ defmodule SpGen.Blueprint.Event do
   @doc "The event's module-name template (referenced by `EventTest` and `Projector`)."
   def module_template, do: @module
 
+  @doc "The event module's file path for the element in `ctx` (used as a `requires` gate)."
+  @spec module_file(Context.t()) :: String.t()
+  def module_file(%Context{} = ctx), do: Context.render(@path, ctx)
+
   def plans(%Context{} = ctx) do
     [
       %FilePlan{
         path: Context.render(@path, ctx),
         module: Context.render(@module, ctx),
-        scaffold: &scaffold/1,
-        units: units(ctx)
+        units: units(ctx),
+        unit_created: true
       }
     ]
-  end
-
-  @doc false
-  def scaffold(ctx) do
-    doc =
-      Context.render("<Describe what happened in the domain, derived from the event name.>", ctx)
-
-    """
-    defmodule #{Context.render(@module, ctx)} do
-      @moduledoc \"\"\"
-      #{doc}
-      \"\"\"
-
-      use TypedStruct
-      use ExConstructor
-
-      @derive Jason.Encoder
-      @doc \"\"\"
-      Creates a new #{Context.render("<Event>", ctx)} event.
-      \"\"\"
-      typedstruct do
-    #{field_block(ctx)}
-      end
-    #{changes_block(ctx)}
-    end
-    """
-  end
-
-  defp field_block(ctx) do
-    ctx.fields
-    |> Enum.map(fn f -> "    " <> Templates.field_line(f) end)
-    |> Enum.join("\n")
-  end
-
-  # get_changes/1 only for partial-update events
-  defp changes_block(%Context{operation: op}) when op in [:create, :delete], do: "\n"
-
-  defp changes_block(_ctx) do
-    "\n\n" <>
-      Templates.indent(
-        """
-        @doc \"\"\"
-        Returns a map of only the non-nil changed fields (excluding id).
-        \"\"\"
-        @spec get_changes(t()) :: map()
-        def get_changes(%__MODULE__{} = event) do
-          event
-          |> Map.from_struct()
-          |> Map.drop([:id])
-          |> Enum.reject(fn {_k, v} -> is_nil(v) end)
-          |> Map.new()
-        end
-        """,
-        2
-      ) <>
-      "\n"
   end
 
   # ------------------------------------------------------------------- units
@@ -145,7 +93,7 @@ defmodule SpGen.Blueprint.Event do
         id: {:field, f.name},
         check: fn src -> Source.entry?(src, :field, key) end,
         render: fn _ctx -> Templates.field_line(f) end,
-        place: Merge.inside(:typedstruct)
+        place: Merge.inside(:typedstruct, fn _ctx, text -> "typedstruct do\n#{text}\nend" end)
       }
     end)
   end
