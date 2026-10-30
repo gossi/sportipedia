@@ -568,6 +568,63 @@ defmodule SpGenTest do
       {"bruno", ["list-widgets"]}
     ]
 
+    test "order-independence: the reversed full chain converges to the same citizen", %{} do
+      fwd = build_scratch("fwd")
+      rev = build_scratch("rev")
+
+      try do
+        for {name, args} <- @chain do
+          assert {:ok, _} = SpGen.run(String.to_atom(name), args ++ ["--root", fwd])
+        end
+
+        for {name, args} <- Enum.reverse(@chain) do
+          assert {:ok, _} = SpGen.run(String.to_atom(name), args ++ ["--root", rev])
+        end
+
+        fwd_files = generated_files(fwd) |> Enum.map(&Path.relative_to(&1, fwd)) |> Enum.sort()
+        rev_files = generated_files(rev) |> Enum.map(&Path.relative_to(&1, rev)) |> Enum.sort()
+        assert fwd_files == rev_files, "the two orders generated different file sets"
+
+        # same code in both trees: sibling order (describe blocks, routes) may
+        # differ by insertion history, so compare canonically sorted ASTs
+        for rel <- fwd_files do
+          assert canon_sort(File.read!(Path.join(fwd, rel))) ==
+                   canon_sort(File.read!(Path.join(rev, rel))),
+                 "AST mismatch in #{rel}"
+        end
+
+        # the reversed tree is a fixed point: a forward sweep changes nothing
+        for {name, args} <- @chain do
+          {:ok, results} = SpGen.run(String.to_atom(name), args ++ ["--check", "--root", rev])
+
+          assert Enum.all?(results, &match?({:unchanged, _}, &1)),
+                 "#{name} reversed-tree drift: #{inspect(results)}"
+        end
+      after
+        File.rm_rf(fwd)
+        File.rm_rf(rev)
+      end
+    end
+
+    # Canonical structure: every __block__ (module bodies, do-blocks) is
+    # replaced by the sorted Macro.to_string of its expressions, so two trees
+    # with the same code in any sibling order compare equal.
+    defp canon_sort(text) do
+      {:ok, ast} = Code.string_to_quoted(text)
+
+      {ast, _} =
+        Macro.postwalk(ast, nil, fn
+          {:__block__, meta, exprs}, acc ->
+            sorted = exprs |> Enum.map(&Macro.to_string/1) |> Enum.sort()
+            {{:__block__, meta, sorted}, acc}
+
+          other, acc ->
+            {other, acc}
+        end)
+
+      Macro.to_string(ast)
+    end
+
     test "the whole citizen chain: creates, then is a no-op", %{root: root} do
       for {name, args} <- @chain do
         assert {:ok, _} = SpGen.run(String.to_atom(name), args ++ ["--root", root])

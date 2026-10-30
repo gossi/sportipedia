@@ -50,15 +50,12 @@ defmodule SpGen.Blueprint.Controller do
     ]
   end
 
-  defp plug_block(ctx) do
-    bodyguard =
-      "  plug Bodyguard.Plug.Authorize,\n" <>
-        "    policy: #{Context.render(@public_api_module, ctx)}.Policy,\n" <>
-        "    action: {Phoenix.Controller, :action_name},\n" <>
-        "    user: {Sportipedia.Auth, :get_user_from_assigns},\n" <>
-        "    fallback: FallbackController\n"
-
-    bodyguard <> query_parser_plug(ctx)
+  defp bodyguard_plug(ctx) do
+    "  plug Bodyguard.Plug.Authorize,\n" <>
+      "    policy: #{Context.render(@public_api_module, ctx)}.Policy,\n" <>
+      "    action: {Phoenix.Controller, :action_name},\n" <>
+      "    user: {Sportipedia.Auth, :get_user_from_assigns},\n" <>
+      "    fallback: FallbackController\n"
   end
 
   defp query_parser_plug(ctx) do
@@ -124,29 +121,49 @@ defmodule SpGen.Blueprint.Controller do
       %Unit{
         id: {:plug, "Bodyguard.Plug.Authorize"},
         check: fn src -> Source.entry?(src, :plug, "Bodyguard.Plug.Authorize") end,
-        render: fn c -> c |> plug_block() |> String.trim_trailing() end,
+        render: fn c -> c |> bodyguard_plug() |> String.trim_trailing() end,
         place: Merge.after_macro(:use, fn _ -> true end, Merge.head(:attribute))
-      },
-      %Unit{
-        id: :tags,
-        check: fn src -> Source.entry?(src, :tags, tags_key(ctx)) end,
-        render: fn c -> "tags [\"#{c.composite}\"]" end,
-        place: Merge.after_macro(:plug, fn _ -> true end, Merge.body_end())
-      },
-      %Unit{
-        id: {:alias, "OpenApiSpex.Reference"},
-        check: fn src -> Source.has_alias?(src, "OpenApiSpex.Reference") end,
-        render: fn _ctx -> "alias OpenApiSpex.Reference" end,
-        place: Merge.alias_of("OpenApiSpex.Reference")
-      },
-      %Unit{
-        id: {:alias, "SportipediaWeb.System.FallbackController"},
-        check: fn src -> Source.has_alias?(src, "SportipediaWeb.System.FallbackController") end,
-        render: fn _ctx -> "alias SportipediaWeb.System.FallbackController" end,
-        place: Merge.alias_of("SportipediaWeb.System.FallbackController")
-      },
-      public_api_alias_unit(ctx)
-    ]
+      }
+      # the collection parser belongs to list endpoints only
+    ] ++
+      query_parser_unit(ctx) ++
+      [
+        %Unit{
+          id: :tags,
+          check: fn src -> Source.entry?(src, :tags, tags_key(ctx)) end,
+          render: fn c -> "tags [\"#{c.composite}\"]" end,
+          place: Merge.after_macro(:plug, fn _ -> true end, Merge.body_end())
+        },
+        %Unit{
+          id: {:alias, "OpenApiSpex.Reference"},
+          check: fn src -> Source.has_alias?(src, "OpenApiSpex.Reference") end,
+          render: fn _ctx -> "alias OpenApiSpex.Reference" end,
+          place: Merge.alias_of("OpenApiSpex.Reference")
+        },
+        %Unit{
+          id: {:alias, "SportipediaWeb.System.FallbackController"},
+          check: fn src -> Source.has_alias?(src, "SportipediaWeb.System.FallbackController") end,
+          render: fn _ctx -> "alias SportipediaWeb.System.FallbackController" end,
+          place: Merge.alias_of("SportipediaWeb.System.FallbackController")
+        },
+        public_api_alias_unit(ctx)
+      ]
+  end
+
+  defp query_parser_unit(ctx) do
+    if Context.collection?(ctx) do
+      [
+        %Unit{
+          id: {:plug, "JSONAPI.QueryParser"},
+          check: fn src -> Source.entry?(src, :plug, "JSONAPI.QueryParser") end,
+          render: fn c -> c |> query_parser_plug() |> String.trim_trailing() end,
+          requires: fn c -> [{View.module_file(c), "view not generated (spgen view)"}] end,
+          place: Merge.after_macro(:plug, fn _ -> true end, Merge.head(:attribute))
+        }
+      ]
+    else
+      []
+    end
   end
 
   defp tags_key(ctx), do: "[\"#{ctx.composite}\"]"
