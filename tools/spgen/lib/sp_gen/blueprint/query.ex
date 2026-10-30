@@ -13,37 +13,25 @@ defmodule SpGen.Blueprint.Query do
 
   use SpGen.Blueprint
 
-  alias SpGen.Templates
-
   @path "services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/queries/<_query>.ex"
   @module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Queries.<Query>"
 
   def name, do: :query
   def source_kinds, do: [:query]
 
+  @doc "The query module's file path (used as a `requires` gate)."
+  @spec module_file(Context.t()) :: String.t()
+  def module_file(%Context{} = ctx), do: Context.render(@path, ctx)
+
   def plans(%Context{} = ctx) do
     [
       %FilePlan{
         path: Context.render(@path, ctx),
         module: Context.render(@module, ctx),
-        scaffold: &scaffold/1,
-        units: units()
+        units: units(),
+        unit_created: true
       }
     ]
-  end
-
-  defp scaffold(ctx) do
-    """
-    defmodule #{Context.render(@module, ctx)} do
-      @moduledoc \"\"\"
-      #{doc(ctx)}
-      \"\"\"
-
-      import Ecto.Query
-
-    #{def_block(ctx) |> String.trim_trailing() |> Templates.indent(2)}
-    end
-    """
   end
 
   defp doc(ctx) do

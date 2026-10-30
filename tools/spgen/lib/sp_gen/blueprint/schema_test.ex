@@ -6,7 +6,6 @@ defmodule SpGen.Blueprint.SchemaTest do
 
   use SpGen.Blueprint
 
-  alias SpGen.Templates
   alias SpGen.Blueprint.Schema
 
   @test_dir "services/api/test/sportipedia_web/<_subdomain>/<composite>/<domain_object>/schemas"
@@ -21,7 +20,7 @@ defmodule SpGen.Blueprint.SchemaTest do
     %FilePlan{
       path: Context.render("#{@test_dir}/" <> n[:stem] <> "_test.exs", ctx),
       module: n[:full] <> "Test",
-      scaffold: fn _c -> test_scaffold(n) end,
+      unit_created: true,
       units: [
         %Unit{
           id: {:use, "ExUnit.Case"},
@@ -39,22 +38,13 @@ defmodule SpGen.Blueprint.SchemaTest do
           id: {:describe, n[:short]},
           check: fn src -> Source.has_describe?(src, n[:short]) end,
           render: fn _c -> test_describe(n) end,
+          requires: fn c ->
+            [{Schema.module_file(c, which), "schema not generated (spgen schema)"}]
+          end,
           place: Merge.describe()
         }
       ]
     }
-  end
-
-  defp test_scaffold(n) do
-    """
-    defmodule #{n[:full]}Test do
-      use ExUnit.Case
-
-      alias #{n[:full]}
-
-    #{test_describe(n) |> String.trim_trailing() |> Templates.indent(2)}
-    end
-    """
   end
 
   defp test_describe(n) do

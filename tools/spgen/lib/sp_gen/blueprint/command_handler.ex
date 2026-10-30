@@ -17,6 +17,8 @@ defmodule SpGen.Blueprint.CommandHandler do
 
   use SpGen.Blueprint
 
+  alias SpGen.Blueprint.{Aggregate, Command, Event}
+
   @path "services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/operation/<_operation>/handler.ex"
   @module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<Command>Handler"
   @aggregate_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Aggregate"
@@ -44,35 +46,10 @@ defmodule SpGen.Blueprint.CommandHandler do
       %FilePlan{
         path: Context.render(@path, ctx),
         module: Context.render(@module, ctx),
-        scaffold: &scaffold/1,
-        units: units(ctx)
+        units: units(ctx),
+        unit_created: true
       }
     ]
-  end
-
-  @doc false
-  def scaffold(ctx) do
-    aliases = alias_block(ctx)
-    event = event_render(ctx)
-
-    """
-    defmodule #{Context.render(@module, ctx)} do
-      @moduledoc \"\"\"
-      Handles the #{Context.render("<Command>", ctx)} command.
-      \"\"\"
-
-      @behaviour Commanded.Commands.Handler
-    #{aliases}
-      @doc \"\"\"
-      Handles the #{Context.render("<Command>", ctx)} command and returns #{event} event(s).
-      \"\"\"
-      @spec handle(#{Context.render("<DomainObject>Aggregate", ctx)}.t(), #{Context.render("<Command>", ctx)}.t()) :: #{event}.t() | [#{event}.t()]
-      def handle(%#{Context.render("<DomainObject>Aggregate", ctx)}{} = aggregate, %#{Context.render("<Command>", ctx)}{} = cmd) do
-        # implement logic here
-        # return events
-      end
-    end
-    """
   end
 
   @doc "Pascal-cased first event name of the command, e.g. `ApparatusCataloged`."
@@ -84,11 +61,6 @@ defmodule SpGen.Blueprint.CommandHandler do
       _ ->
         "Event"
     end
-  end
-
-  defp alias_block(ctx) do
-    modules = alias_modules(ctx)
-    "\n" <> Enum.map_join(modules, "\n", fn m -> "  alias #{m}" end) <> "\n"
   end
 
   @doc false
@@ -134,16 +106,41 @@ defmodule SpGen.Blueprint.CommandHandler do
   end
 
   defp alias_units(ctx) do
-    ctx
-    |> alias_modules()
-    |> Enum.map(fn full ->
+    aggregate = Context.render(@aggregate_module, ctx)
+    command = Context.render(@command_module, ctx)
+
+    [
       %Unit{
-        id: {:router_alias, full},
-        check: fn src -> Source.has_alias?(src, full) end,
-        render: fn _ctx -> "alias #{full}" end,
-        place: Merge.alias_of(full)
+        id: {:router_alias, aggregate},
+        check: fn src -> Source.has_alias?(src, aggregate) end,
+        render: fn _ctx -> "alias #{aggregate}" end,
+        requires: fn c ->
+          [{Aggregate.module_file(c), "aggregate not generated (spgen aggregate)"}]
+        end,
+        place: Merge.alias_of(aggregate)
+      },
+      %Unit{
+        id: {:router_alias, command},
+        check: fn src -> Source.has_alias?(src, command) end,
+        render: fn _ctx -> "alias #{command}" end,
+        requires: fn c -> [{Command.module_file(c), "command not generated (spgen command)"}] end,
+        place: Merge.alias_of(command)
       }
-    end)
+    ] ++
+      Enum.map(ctx.events, fn ev ->
+        full = Context.render(@event_module, %{ctx | element: ev})
+        path = Event.module_file(%{ctx | element: ev})
+
+        %Unit{
+          id: {:router_alias, full},
+          check: fn src -> Source.has_alias?(src, full) end,
+          render: fn _ctx -> "alias #{full}" end,
+          requires: fn _c ->
+            [{path, "event #{ev.name} not generated (spgen event #{ev.name})"}]
+          end,
+          place: Merge.alias_of(full)
+        }
+      end)
   end
 
   defp handle_units(ctx) do
@@ -155,6 +152,12 @@ defmodule SpGen.Blueprint.CommandHandler do
       %Unit{
         id: {:def, :handle, 2},
         check: fn src -> Source.has_def?(src, :handle, 2) end,
+        requires: fn c ->
+          [
+            {Command.module_file(c), "command not generated (spgen command)"},
+            {Aggregate.module_file(c), "aggregate not generated (spgen aggregate)"}
+          ]
+        end,
         render: fn _ctx ->
           """
           @doc \"\"\"

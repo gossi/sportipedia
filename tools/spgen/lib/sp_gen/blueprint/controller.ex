@@ -14,6 +14,7 @@ defmodule SpGen.Blueprint.Controller do
   use SpGen.Blueprint
 
   alias SpGen.Templates
+  alias SpGen.Blueprint.{PublicAPI, ReadModel, Schema, View}
 
   @path "services/api/lib/sportipedia_web/<_subdomain>/<composite>/<domain_object>/<domain_object>_controller.ex"
   @module "SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Controller"
@@ -43,32 +44,10 @@ defmodule SpGen.Blueprint.Controller do
       %FilePlan{
         path: Context.render(@path, ctx),
         module: Context.render(@module, ctx),
-        scaffold: &scaffold/1,
-        units: units(ctx)
+        units: units(ctx),
+        unit_created: true
       }
     ]
-  end
-
-  defp scaffold(ctx) do
-    """
-    defmodule #{Context.render(@module, ctx)} do
-      @moduledoc \"\"\"
-      Handles HTTP requests for #{ctx.constituent} operations.
-      \"\"\"
-
-      alias OpenApiSpex.Reference
-      alias #{Context.render(@public_api_module, ctx)}
-      alias SportipediaWeb.System.FallbackController
-
-      use SportipediaWeb, :controller
-      use OpenApiSpex.ControllerSpecs
-
-    #{plug_block(ctx)}
-      tags ["#{ctx.composite}"]
-
-    #{operation_block(ctx) |> String.trim_trailing() |> Templates.indent(2)}
-    end
-    """
   end
 
   defp plug_block(ctx) do
@@ -110,6 +89,7 @@ defmodule SpGen.Blueprint.Controller do
         %Unit{
           id: {:operation, op},
           check: fn src -> Source.has_def?(src, op, 2) end,
+          requires: &op_gate/1,
           render: fn c ->
             c |> operation_block() |> String.trim_trailing()
           end,
@@ -196,9 +176,52 @@ defmodule SpGen.Blueprint.Controller do
         id: {:alias, module},
         check: fn src -> Source.has_alias?(src, module) or Source.has_def?(src, op, 2) end,
         render: fn _ctx -> "alias #{module}" end,
+        requires: alias_gate(tpl),
         place: Merge.alias_of(module)
       }
     end)
+  end
+
+  # the action body calls the public API; read actions also pattern-match the
+  # read model struct
+  defp op_gate(%Context{} = c) do
+    base = [{PublicAPI.module_file(c), "public API not generated (spgen public_api)"}]
+
+    if c.element.kind == :query and not Context.collection?(c) do
+      base ++ [{ReadModel.module_file(c), "read model not generated (spgen read_model)"}]
+    else
+      base
+    end
+  end
+
+  # which citizen file each reference template resolves to
+  defp alias_gate(tpl) do
+    cond do
+      tpl == @view_module ->
+        fn c -> [{View.module_file(c), "view not generated (spgen view)"}] end
+
+      tpl == @read_model_module ->
+        fn c -> [{ReadModel.module_file(c), "read model not generated (spgen read_model)"}] end
+
+      tpl == "#{@schemas}.<DomainObject>CollectionResponse" ->
+        fn c ->
+          [{Schema.module_file(c, :collection_response), "schema not generated (spgen schema)"}]
+        end
+
+      tpl == "#{@schemas}.<DomainObject>Response" ->
+        fn c -> [{Schema.module_file(c, :response), "schema not generated (spgen schema)"}] end
+
+      tpl == "#{@schemas}.<Command>Request" ->
+        fn c -> [{Schema.module_file(c, :request), "schema not generated (spgen schema)"}] end
+
+      tpl == "#{@schemas}.<Operation>QueryParams" ->
+        fn c ->
+          [{Schema.module_file(c, :query_params), "schema not generated (spgen schema)"}]
+        end
+
+      true ->
+        fn _c -> [] end
+    end
   end
 
   defp op_aliases(ctx) do

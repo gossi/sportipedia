@@ -18,32 +18,10 @@ defmodule SpGen.Blueprint.ViewTest do
       %FilePlan{
         path: Context.render(@test_path, ctx),
         module: Context.render(@test_module, ctx),
-        scaffold: fn c -> test_scaffold(c) end,
-        units: test_units(ctx)
+        units: test_units(ctx),
+        unit_created: true
       }
     ]
-  end
-
-  defp test_scaffold(ctx) do
-    describes =
-      [
-        {"type/0", type_test(ctx)},
-        {"fields/0", fields_test(ctx)},
-        {"path/0", path_test(ctx)},
-        {"render show.json", render_test(ctx)}
-      ]
-      |> Enum.map_join("\n\n", fn {subject, body} -> describe(subject, body) end)
-
-    """
-    defmodule #{Context.render(@test_module, ctx)} do
-      use SportipediaWeb.ConnCase
-
-      alias #{Context.render(View.read_model_template(), ctx)}
-      alias #{Context.render(View.module_template(), ctx)}
-
-    #{describes |> Templates.indent(2)}
-    end
-    """
   end
 
   defp describe(subject, body) do
@@ -74,6 +52,7 @@ defmodule SpGen.Blueprint.ViewTest do
       id: {:describe, subject},
       check: fn src -> Source.has_describe?(src, subject) end,
       render: fn _ctx -> describe(subject, body_fun.()) end,
+      requires: fn c -> [{View.module_file(c), "view not generated (spgen view)"}] end,
       place: Merge.describe()
     }
   end

@@ -18,6 +18,7 @@ defmodule SpGen.Blueprint.Command do
   use SpGen.Blueprint
 
   alias SpGen.Templates
+  alias SpGen.Blueprint.Validator
 
   @path "services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/operation/<_operation>/command.ex"
   @module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<Command>"
@@ -39,74 +40,10 @@ defmodule SpGen.Blueprint.Command do
       %FilePlan{
         path: Context.render(@path, ctx),
         module: Context.render(@module, ctx),
-        scaffold: &scaffold/1,
-        units: units(ctx)
+        units: units(ctx),
+        unit_created: true
       }
     ]
-  end
-
-  @doc false
-  def scaffold(ctx) do
-    doc =
-      Context.render(
-        "<Describe what the command does to the aggregate, derived from the domain model.>",
-        ctx
-      )
-
-    aliases = alias_block(ctx)
-    fields = field_block(ctx)
-    validations = validation_block(ctx)
-
-    """
-    defmodule #{Context.render(@module, ctx)} do
-      @moduledoc \"\"\"
-      #{doc}
-      \"\"\"
-
-      use TypedStruct
-      use ExConstructor
-    #{aliases}
-      @doc \"\"\"
-      Creates a new #{Context.render("<Command>", ctx)} command.
-      \"\"\"
-      typedstruct do
-    #{fields}
-      end
-
-      # Validation
-      use Vex.Struct
-    #{validations}
-    end
-    """
-  end
-
-  defp alias_block(ctx) do
-    case ctx.validators do
-      [] ->
-        "\n"
-
-      validators ->
-        "\n" <>
-          Enum.map_join(validators, "\n", fn v ->
-            "  alias #{validator_module(ctx, v)}"
-          end) <> "\n"
-    end
-  end
-
-  defp field_block(ctx) do
-    ctx.fields
-    |> Enum.map(fn f -> "    " <> Templates.field_line(f) end)
-    |> Enum.join("\n")
-  end
-
-  defp validation_block(ctx) do
-    lines = Templates.validates_lines(ctx)
-
-    if lines == [] do
-      "\n"
-    else
-      "\n" <> Enum.map_join(lines, "\n", fn l -> "  " <> l end) <> "\n"
-    end
   end
 
   defp validator_module(ctx, v) do
@@ -164,6 +101,7 @@ defmodule SpGen.Blueprint.Command do
         id: {:alias, full},
         check: fn src -> Source.has_alias?(src, full) end,
         render: fn _ctx -> "alias #{full}" end,
+        requires: validator_gate(ctx, v),
         place: Merge.alias_of(full)
       }
     end)
@@ -177,9 +115,15 @@ defmodule SpGen.Blueprint.Command do
         id: {:field, f.name},
         check: fn src -> Source.entry?(src, :field, key) end,
         render: fn _ctx -> Templates.field_line(f) end,
-        place: Merge.inside(:typedstruct)
+        place: Merge.inside(:typedstruct, fn _ctx, text -> "typedstruct do\n#{text}\nend" end)
       }
     end)
+  end
+
+  defp validator_gate(ctx, v) do
+    path = Validator.module_file(ctx, v)
+    reason = "validator #{v.snake} not generated (spgen validator)"
+    fn _c -> [{path, reason}] end
   end
 
   defp validates_units(ctx) do
@@ -193,6 +137,12 @@ defmodule SpGen.Blueprint.Command do
         id: {:validates, f.name},
         check: fn src -> Source.entry?(src, :validates, key) end,
         render: fn _ctx -> line end,
+        requires: fn c ->
+          case Enum.find(c.validators, fn v -> v.field == f.name end) do
+            nil -> []
+            v -> [{Validator.module_file(c, v), "validator not generated (spgen validator)"}]
+          end
+        end,
         place:
           Merge.after_macro(
             :validates,

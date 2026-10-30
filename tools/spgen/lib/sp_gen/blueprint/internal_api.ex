@@ -9,7 +9,7 @@ defmodule SpGen.Blueprint.InternalAPI do
 
   use SpGen.Blueprint
 
-  alias SpGen.Templates
+  alias SpGen.Blueprint.ReadModel
 
   @path "services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/internal.ex"
   @module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Internal"
@@ -28,34 +28,10 @@ defmodule SpGen.Blueprint.InternalAPI do
       %FilePlan{
         path: Context.render(@path, ctx),
         module: Context.render(@module, ctx),
-        scaffold: &scaffold/1,
-        units: units(ctx)
+        units: units(ctx),
+        unit_created: true
       }
     ]
-  end
-
-  defp scaffold(ctx) do
-    by_id = by_id_clause(ctx)
-    by_slugs = Enum.map(unique_fields(ctx), fn f -> accessor_clause(ctx, f) end)
-
-    aliases =
-      [
-        "  alias #{Context.render(@read_model_module, ctx)}",
-        "  alias #{Context.render(@repo_module, ctx)}"
-      ] ++ query_alias_lines(ctx)
-
-    """
-    defmodule #{Context.render(@module, ctx)} do
-      @moduledoc \"\"\"
-      Internal API for querying #{ctx.constituent} read models within the bounded context.
-      \"\"\"
-
-    #{Enum.join(aliases, "\n")}
-
-    #{Templates.indent(by_id, 2)}
-    #{(by_slugs ++ []) |> Enum.join("\n\n") |> then(fn s -> if s == "", do: "", else: "\n" <> Templates.indent(s, 2) end)}
-    end
-    """
   end
 
   defp unique_fields(ctx) do
@@ -71,10 +47,6 @@ defmodule SpGen.Blueprint.InternalAPI do
       "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Queries.<DomainObject>By#{pascal_field}",
       ctx
     )
-  end
-
-  defp query_alias_lines(ctx) do
-    Enum.map(unique_fields(ctx), fn f -> "  alias #{query_module_for(ctx, f)}" end)
   end
 
   defp by_id_clause(ctx) do
@@ -130,11 +102,18 @@ defmodule SpGen.Blueprint.InternalAPI do
       %Unit{
         id: {:def, :"#{do_}_by_id", 1},
         check: fn src -> Source.has_def?(src, :"#{do_}_by_id", 1) end,
+        requires: fn c ->
+          [{ReadModel.module_file(c), "read model not generated (spgen read_model)"}]
+        end,
         render: fn c -> c |> by_id_clause() end,
         place: Merge.before_helpers()
       },
-      alias_unit(Context.render(@read_model_module, ctx), :"#{do_}_by_id"),
-      alias_unit(Context.render(@repo_module, ctx), :"#{do_}_by_id")
+      alias_unit(
+        Context.render(@read_model_module, ctx),
+        :"#{do_}_by_id",
+        fn c -> [{ReadModel.module_file(c), "read model not generated (spgen read_model)"}] end
+      ),
+      alias_unit(Context.render(@repo_module, ctx), :"#{do_}_by_id", fn _c -> [] end)
     ]
 
     accessor_units =
@@ -145,10 +124,11 @@ defmodule SpGen.Blueprint.InternalAPI do
           %Unit{
             id: {:def, accessor, 1},
             check: fn src -> Source.has_def?(src, accessor, 1) end,
+            requires: query_gate(ctx, f),
             render: fn c -> c |> accessor_clause(f) end,
             place: Merge.before_helpers()
           },
-          alias_unit(query_module_for(ctx, f), accessor)
+          alias_unit(query_module_for(ctx, f), accessor, query_gate(ctx, f))
         ]
       end)
       |> List.flatten()
@@ -156,12 +136,29 @@ defmodule SpGen.Blueprint.InternalAPI do
     base ++ accessor_units
   end
 
-  defp alias_unit(module, owner_def) do
+  defp alias_unit(module, owner_def, gate) do
     %Unit{
       id: {:alias, module},
       check: fn src -> Source.has_alias?(src, module) || Source.has_def?(src, owner_def, 1) end,
       render: fn _ctx -> "alias #{module}" end,
+      requires: gate,
       place: Merge.alias_of(module)
     }
+  end
+
+  # accessor units reference the field-query module; it is only placeable
+  # once that query citizen exists
+  defp query_gate(ctx, field) do
+    file =
+      ctx
+      |> query_module_for(field)
+      |> then(fn mod -> mod |> String.split(".") |> List.last() end)
+      |> Macro.underscore()
+
+    path =
+      "services/api/lib/sportipedia/#{ctx.subdomain}/#{ctx.composite}/#{ctx.constituent}/queries/#{file}.ex"
+
+    reason = "query for #{field} not generated (spgen query)"
+    fn _c -> [{path, reason}] end
   end
 end

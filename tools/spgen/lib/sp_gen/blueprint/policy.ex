@@ -13,8 +13,6 @@ defmodule SpGen.Blueprint.Policy do
 
   use SpGen.Blueprint
 
-  alias SpGen.Templates
-
   @path "services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/policy.ex"
   @module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Policy"
 
@@ -30,26 +28,10 @@ defmodule SpGen.Blueprint.Policy do
       %FilePlan{
         path: Context.render(@path, ctx),
         module: Context.render(@module, ctx),
-        scaffold: &scaffold/1,
-        units: units(ctx)
+        units: units(ctx),
+        unit_created: true
       }
     ]
-  end
-
-  defp scaffold(ctx) do
-    """
-    defmodule #{Context.render(@module, ctx)} do
-      @moduledoc \"\"\"
-      Authorizes #{ctx.constituent} operations based on user roles.
-      \"\"\"
-
-      @behaviour Bodyguard.Policy
-
-      import Sportipedia.Auth.Roles
-
-    #{clauses(ctx) |> Templates.indent(2)}
-    end
-    """
   end
 
   @doc false

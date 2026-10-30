@@ -17,7 +17,6 @@ defmodule SpGen.Blueprint.Validator do
 
   use SpGen.Blueprint
 
-  alias SpGen.Templates
   alias SpGen.Blueprint.InternalAPI
 
   @path "services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/validators/<_validator>.ex"
@@ -38,29 +37,10 @@ defmodule SpGen.Blueprint.Validator do
       %FilePlan{
         path: Context.render(@path, ctx, %{"validator" => validator.snake}),
         module: Context.render(@module, ctx, %{"validator" => validator.module}),
-        scaffold: fn c -> scaffold(c, validator) end,
-        units: units(validator, ctx)
+        units: units(validator, ctx),
+        unit_created: true
       }
     end)
-  end
-
-  defp scaffold(ctx, validator) do
-    module = Context.render(@module, ctx, %{"validator" => validator.module})
-    internal = Context.render(@internal_module, ctx)
-
-    """
-    defmodule #{module} do
-      @moduledoc \"\"\"
-      #{doc(validator, ctx)}
-      \"\"\"
-
-      use Vex.Validator
-
-      alias #{internal}
-
-    #{def_block(validator, ctx) |> String.trim_trailing() |> Templates.indent(2)}
-    end
-    """
   end
 
   defp doc(%{kind: :unique} = v, ctx) do

@@ -27,53 +27,10 @@ defmodule SpGen.Blueprint.ReadModel do
       %FilePlan{
         path: Context.render(@path, ctx),
         module: Context.render(@module, ctx),
-        scaffold: &scaffold/1,
-        units: units(ctx)
+        units: units(ctx),
+        unit_created: true
       }
     ]
-  end
-
-  @doc false
-  def scaffold(ctx) do
-    fields = schema_fields(ctx)
-
-    """
-    defmodule #{Context.render(@module, ctx)} do
-      @moduledoc \"\"\"
-      #{moduledoc_text(ctx)}
-      \"\"\"
-
-      use TypedEctoSchema
-      import Ecto.Changeset
-
-      @primary_key {:id, :binary_id, autogenerate: false}
-      @timestamps_opts [type: :utc_datetime_usec]
-      @schema_prefix "#{ctx.subdomain}"
-
-      typed_schema "#{ctx.constituent}" do
-    #{fields |> Enum.map(fn f -> "    field :#{f.name}, #{Context.ecto_type(f)}" end) |> Enum.join("\n")}
-
-        timestamps()
-      end
-
-      @doc \"\"\"
-      Validates and prepares the #{ctx.constituent} read model for insertion.
-      \"\"\"
-      def insert_changeset(read_model, attrs) do
-        read_model
-        |> cast(attrs, [#{all_field_atoms(ctx)}])
-        |> validate_required([#{required_field_atoms(ctx)}])
-      end
-
-      @doc \"\"\"
-      Validates and prepares the #{ctx.constituent} read model for update.
-      \"\"\"
-      def update_changeset(read_model, attrs) do
-        read_model
-        |> cast(attrs, [#{updatable_field_atoms(ctx)}])
-      end
-    end
-    """
   end
 
   defp moduledoc_text(ctx) do
@@ -147,7 +104,10 @@ defmodule SpGen.Blueprint.ReadModel do
         id: {:field, f.name},
         check: fn src -> Source.entry?(src, :field, key) end,
         render: fn _ctx -> "field :#{f.name}, #{Context.ecto_type(f)}" end,
-        place: Merge.inside(:typed_schema)
+        place:
+          Merge.inside(:typed_schema, fn c, text ->
+            "typed_schema \"#{c.constituent}\" do\n#{text}\n\n  timestamps()\nend"
+          end)
       }
     end)
   end

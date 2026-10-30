@@ -41,30 +41,10 @@ defmodule SpGen.Blueprint.Projector do
       %FilePlan{
         path: Context.render(@path, ctx),
         module: Context.render(@module, ctx),
-        scaffold: &scaffold/1,
-        units: units(ctx)
+        units: units(ctx),
+        unit_created: true
       }
     ]
-  end
-
-  defp scaffold(ctx) do
-    event_pascal = Context.pascal(ctx.element.name)
-    effect = Context.effect_for_event(ctx, ctx.element.name)
-
-    """
-    defmodule #{Context.render(@module, ctx)} do
-      @moduledoc \"\"\"
-      Projects #{ctx.constituent} events to the #{ctx.constituent} read model.
-      \"\"\"
-
-    #{use_block(ctx)}
-      alias #{Context.render(@read_model_module, ctx)}
-      alias #{Context.render(@internal_module, ctx)}
-      alias #{Context.render(@event_module, ctx)}
-
-    #{clause(ctx, effect, event_pascal) |> Templates.indent(2)}
-    end
-    """
   end
 
   defp use_block(ctx) do

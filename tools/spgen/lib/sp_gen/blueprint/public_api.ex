@@ -18,7 +18,7 @@ defmodule SpGen.Blueprint.PublicAPI do
 
   use SpGen.Blueprint
 
-  alias SpGen.Templates
+  alias SpGen.Blueprint.{Command, InternalAPI, ReadModel}
 
   @path "services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/public_api.ex"
   @module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>"
@@ -41,25 +41,10 @@ defmodule SpGen.Blueprint.PublicAPI do
       %FilePlan{
         path: Context.render(@path, ctx),
         module: Context.render(@module, ctx),
-        scaffold: &scaffold/1,
-        units: units(ctx)
+        units: units(ctx),
+        unit_created: true
       }
     ]
-  end
-
-  defp scaffold(ctx) do
-    """
-    defmodule #{Context.render(@module, ctx)} do
-      @moduledoc \"\"\"
-      Public API for managing #{ctx.constituent}s in the #{Context.bounded_context(ctx)}.
-      \"\"\"
-
-      alias Sportipedia.Architecture
-    #{aliases(ctx) |> Enum.map(&("  " <> &1)) |> Enum.join("\n")}
-
-    #{body(ctx) |> String.trim_trailing() |> Templates.indent(2)}
-    end
-    """
   end
 
   @doc false
@@ -245,6 +230,23 @@ defmodule SpGen.Blueprint.PublicAPI do
     "%{" <> Enum.join(parts, ", ") <> "}"
   end
 
+  # which citizen files the operation's body references
+  defp body_gate(%Context{element: %{kind: :command}} = c) do
+    gates = [{Command.module_file(c), "command not generated (spgen command)"}]
+
+    if c.operation == :delete,
+      do: gates,
+      else:
+        gates ++ [{InternalAPI.module_file(c), "internal API not generated (spgen internal_api)"}]
+  end
+
+  defp body_gate(%Context{} = c) do
+    [
+      {InternalAPI.module_file(c), "internal API not generated (spgen internal_api)"},
+      {ReadModel.module_file(c), "read model not generated (spgen read_model)"}
+    ]
+  end
+
   # ------------------------------------------------------------------- units
 
   defp units(ctx) do
@@ -262,6 +264,7 @@ defmodule SpGen.Blueprint.PublicAPI do
       %Unit{
         id: {:def, String.to_atom(op), 1},
         check: fn src -> Source.has_def?(src, String.to_atom(op), 1) end,
+        requires: &body_gate/1,
         render: fn c -> c |> body() |> String.trim_trailing() end,
         place: Merge.body_end()
       }

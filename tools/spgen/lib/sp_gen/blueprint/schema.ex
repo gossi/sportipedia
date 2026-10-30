@@ -19,7 +19,6 @@ defmodule SpGen.Blueprint.Schema do
 
   use SpGen.Blueprint
 
-  alias SpGen.Templates
   alias SpGen.Blueprint.View
 
   @dir "services/api/lib/sportipedia_web/<_subdomain>/<composite>/<domain_object>/schemas"
@@ -29,6 +28,14 @@ defmodule SpGen.Blueprint.Schema do
 
   def name, do: :schema
   def source_kinds, do: [:"read-model", :command, :query]
+
+  @doc "The schema module's file path for one role (used as a `requires` gate)."
+  @spec module_file(Context.t(), atom()) :: String.t()
+  def module_file(%Context{} = ctx, which) do
+    n = names(ctx, which)
+    Context.render("#{@dir}/" <> n[:stem] <> ".ex", ctx)
+  end
+
   def operations, do: [:create, :update, :delete, :read, :collection]
   def optional_template?, do: true
 
@@ -98,23 +105,11 @@ defmodule SpGen.Blueprint.Schema do
     n = names(ctx, which)
 
     %FilePlan{
-      path: Context.render("#{@dir}/" <> n[:stem] <> ".ex", ctx),
+      path: module_file(ctx, which),
       module: n[:full],
-      scaffold: fn c -> scaffold(c, which, n) end,
-      units: units(ctx, which)
+      units: units(ctx, which, n),
+      unit_created: true
     }
-  end
-
-  defp scaffold(ctx, which, n) do
-    """
-    defmodule #{n[:full]} do
-      @moduledoc \"\"\"
-      #{moduledoc(ctx, which)}
-      \"\"\"
-
-    #{body(ctx, which, n) |> String.trim_trailing() |> Templates.indent(2)}
-    end
-    """
   end
 
   defp moduledoc(ctx, which) do
@@ -262,15 +257,34 @@ defmodule SpGen.Blueprint.Schema do
 
   # ------------------------------------------------------------------ units
 
-  defp units(ctx, which) do
+  defp units(ctx, which, n) do
+    view_gate = fn c -> [{View.module_file(c), "view not generated (spgen view)"}] end
+
     [
+      %Unit{
+        id: :moduledoc,
+        check: &Source.has_moduledoc?/1,
+        render: fn c -> "@moduledoc \"\"\"\n#{moduledoc(c, which)}\n\"\"\"" end,
+        place: Merge.head(:moduledoc)
+      },
       %Unit{
         id: {:require, "OpenApiSpex"},
         check: fn src -> Source.has_require?(src, "OpenApiSpex") end,
         render: fn _ctx -> "require OpenApiSpex" end,
         place: Merge.head(:require)
       }
-    ] ++ alias_units(ctx, which)
+    ] ++
+      alias_units(ctx, which) ++
+      [
+        %Unit{
+          id: :schema_body,
+          check: fn src -> src.text =~ "OpenApiSpex.schema(" end,
+          render: fn c -> body(c, which, n) |> String.trim_trailing() end,
+          requires:
+            if(which in [:response, :collection_response], do: view_gate, else: fn _c -> [] end),
+          place: Merge.body_end()
+        }
+      ]
   end
 
   defp alias_units(ctx, which) when which in [:response, :collection_response] do
@@ -280,10 +294,18 @@ defmodule SpGen.Blueprint.Schema do
   defp alias_units(_ctx, _which), do: []
 
   defp alias_unit(module) do
+    gate =
+      if module == "Sportipedia.Support.JSONAPI.OpenApiSchema" do
+        fn _c -> [] end
+      else
+        fn c -> [{View.module_file(c), "view not generated (spgen view)"}] end
+      end
+
     %Unit{
       id: {:alias, module},
       check: fn src -> Source.has_alias?(src, module) end,
       render: fn _ctx -> "alias #{module}" end,
+      requires: gate,
       place: Merge.alias_of(module)
     }
   end

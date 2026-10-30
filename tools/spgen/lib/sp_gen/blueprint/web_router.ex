@@ -29,6 +29,9 @@ defmodule SpGen.Blueprint.WebRouter do
           %Unit{
             id: {:route, ":#{op}"},
             check: fn src -> Source.route_present?(src, verb, ":#{op}", paths) end,
+            requires: fn c ->
+              [{Controller.module_file(c), "controller not generated (spgen controller)"}]
+            end,
             render: fn _ctx -> line end,
             place: Merge.scope(chain)
           }

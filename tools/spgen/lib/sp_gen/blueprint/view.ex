@@ -31,8 +31,8 @@ defmodule SpGen.Blueprint.View do
       %FilePlan{
         path: Context.render(@path, ctx),
         module: Context.render(@module, ctx),
-        scaffold: &scaffold/1,
-        units: units(ctx)
+        units: units(ctx),
+        unit_created: true
       }
     ]
   end
@@ -47,28 +47,6 @@ defmodule SpGen.Blueprint.View do
   @doc "The JSON:API resource path, e.g. `catalog/equipment/apparatuses`."
   def view_path(%Context{} = ctx) do
     Context.render("<-subdomain>/<composite>/<domain-object>s", ctx)
-  end
-
-  defp scaffold(ctx) do
-    """
-    defmodule #{Context.render(@module, ctx)} do
-      @moduledoc \"\"\"
-      Renders #{ctx.constituent} resources in JSON:API format.
-      \"\"\"
-
-      use JSONAPI.View, type: "#{ctx.constituent}"
-
-      @doc \"\"\"
-      Returns the path for #{ctx.constituent} resources.
-      \"\"\"
-      def path, do: "#{view_path(ctx)}"
-
-      @doc \"\"\"
-      Returns the fields for rendering a #{ctx.constituent}.
-      \"\"\"
-      def fields, do: [#{Enum.join(view_fields(ctx), ", ")}]
-    end
-    """
   end
 
   # ------------------------------------------------------------------- units

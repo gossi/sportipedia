@@ -8,7 +8,7 @@ defmodule SpGen.Blueprint.PolicyTest do
   use SpGen.Blueprint
 
   alias SpGen.Templates
-  alias SpGen.Blueprint.OperationTest
+  alias SpGen.Blueprint.{OperationTest, Policy}
 
   @test_path "services/api/test/sportipedia/<_subdomain>/<composite>/<domain_object>/operation/<_operation>_test.exs"
   @test_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Operation.<Operation>Test"
@@ -19,6 +19,7 @@ defmodule SpGen.Blueprint.PolicyTest do
         path: @test_path,
         module: @test_module,
         alias_templates: [],
+        requires: fn c -> [{Policy.module_file(c), "policy not generated (spgen policy)"}] end,
         describes: [{"Policy - <_operation>", &describe_body/2, ["Policy"]}]
       )
     ]
