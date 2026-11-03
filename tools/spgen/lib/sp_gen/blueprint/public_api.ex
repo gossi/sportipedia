@@ -33,6 +33,7 @@ defmodule SpGen.Blueprint.PublicAPI do
   @doc "The public API's file path (used as a `requires` gate)."
   @spec module_file(Context.t()) :: String.t()
   def module_file(%Context{} = ctx), do: Context.render(@path, ctx)
+  def module_template, do: @module
   def operations, do: [:create, :update, :delete, :read, :collection]
   def optional_template?, do: true
 
@@ -80,11 +81,18 @@ defmodule SpGen.Blueprint.PublicAPI do
           ]
 
       true ->
+        uuid? = Context.read_param(ctx) =~ "_or_"
+
         base ++
           [
             "alias #{Context.render(@internal_module, ctx)}",
             "alias #{Context.render(@read_model_module, ctx)}"
-          ]
+          ] ++
+          if uuid? do
+            ["alias Sportipedia.Support.Validators.UuidValidator"]
+          else
+            []
+          end
     end
     |> Enum.uniq()
   end
@@ -170,36 +178,49 @@ defmodule SpGen.Blueprint.PublicAPI do
     """
   end
 
+  # id-or-slug reads look the row up through a private helper that branches on
+  # the id format (golden shape); plain by-id reads call the accessor directly
   defp read(ctx, op, doc) do
     param = Context.read_param(ctx)
     do_ = ctx.constituent
 
-    lookup =
-      if param =~ "_or_" do
-        [id_part, slug_part] = String.split(param, "_or_")
-
+    case String.split(param, "_or_") do
+      [id_part, slug_part] ->
         """
-        case #{internal(ctx)}.#{do_}_by_#{id_part}(#{param}) do
-          nil -> #{internal(ctx)}.#{do_}_by_#{slug_part}(#{param})
-          read_model -> read_model
+        @doc \"\"\"
+        #{doc}
+        \"\"\"
+        @spec #{op}(String.t()) :: Architecture.public_api(#{read_model(ctx)}.t())
+        def #{op}(#{param}) do
+          case lookup_#{do_}(#{param}) do
+            nil -> {:error, :not_found}
+            read_model -> {:ok, read_model}
+          end
+        end
+
+        defp lookup_#{do_}(#{param}) do
+          if UuidValidator.valid_uuid?(#{param}) do
+            #{internal(ctx)}.#{do_}_by_#{id_part}(#{param})
+          else
+            #{internal(ctx)}.#{do_}_by_#{slug_part}(#{param})
+          end
         end
         """
-      else
-        "#{internal(ctx)}.#{do_}_by_id(#{param})"
-      end
 
-    """
-    @doc \"\"\"
-    #{doc}
-    \"\"\"
-    @spec #{op}(String.t()) :: Architecture.public_api(#{read_model(ctx)}.t())
-    def #{op}(#{param}) do
-      case #{String.trim(lookup)} do
-        nil -> {:error, :not_found}
-        read_model -> {:ok, read_model}
-      end
+      _ ->
+        """
+        @doc \"\"\"
+        #{doc}
+        \"\"\"
+        @spec #{op}(String.t()) :: Architecture.public_api(#{read_model(ctx)}.t())
+        def #{op}(#{param}) do
+          case #{internal(ctx)}.#{do_}_by_id(#{param}) do
+            nil -> {:error, :not_found}
+            read_model -> {:ok, read_model}
+          end
+        end
+        """
     end
-    """
   end
 
   defp collection(ctx, op, doc) do

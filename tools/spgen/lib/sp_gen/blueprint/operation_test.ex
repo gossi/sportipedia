@@ -31,6 +31,8 @@ defmodule SpGen.Blueprint.OperationTest do
   * `describes` — `[{subject_template, (ctx -> body_text)}]` this blueprint
     contributes (subject rendered with the same vars)
   * `alias_templates` — module templates the describes reference
+  * `alias_modules` — same, already rendered (when the modules come from
+    related elements, e.g. every event of an aggregate)
   * `requires` — `(ctx -> [{path, reason}])` gating the describes
   * `alias_requires` — same shape, gating the alias units (default: `requires`)
   """
@@ -40,6 +42,7 @@ defmodule SpGen.Blueprint.OperationTest do
     module_tpl = Keyword.fetch!(opts, :module)
     extra_vars = Keyword.get(opts, :extra_vars, %{})
     alias_tpls = Keyword.get(opts, :alias_templates, [])
+    extra_modules = Keyword.get(opts, :alias_modules, [])
     describes = Keyword.get(opts, :describes, [])
     requires = Keyword.get(opts, :requires, fn _ctx -> [] end)
     alias_requires = Keyword.get(opts, :alias_requires, requires)
@@ -48,7 +51,8 @@ defmodule SpGen.Blueprint.OperationTest do
     module = Context.render(module_tpl, ctx, extra_vars)
     test_case = test_case_module(ctx)
 
-    alias_modules = Enum.map(alias_tpls, fn tpl -> Context.render(tpl, ctx, extra_vars) end)
+    alias_modules =
+      Enum.map(alias_tpls, fn tpl -> Context.render(tpl, ctx, extra_vars) end) ++ extra_modules
 
     describe_units =
       Enum.map(describes, fn describe ->

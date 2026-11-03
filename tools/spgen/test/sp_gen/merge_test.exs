@@ -28,6 +28,13 @@ defmodule SpGen.MergeTest do
     text |> String.split("\n") |> Enum.find_index(&String.contains?(&1, needle))
   end
 
+  # the project formatter may print `timestamps()` without parens
+  defp timestamps_line(text) do
+    text
+    |> String.split("\n")
+    |> Enum.find_index(&(String.trim(&1) in ["timestamps()", "timestamps"]))
+  end
+
   # ------------------------------------------------------------- print fidelity
 
   describe "whole-file print round-trip (real sources)" do
@@ -85,6 +92,32 @@ defmodule SpGen.MergeTest do
     test "blocked when the block does not exist" do
       u = unit("field :x, :integer", Merge.inside(:typedstruct))
       assert :blocked = u.place.(ast!("lib/sportipedia_web/router.ex"), u, nil)
+    end
+  end
+
+  describe "inside with before_trailing" do
+    @read_model "lib/sportipedia/catalog/equipment/apparatus/read_model.ex"
+
+    test "inserts before the trailing timestamps() call" do
+      rendered =
+        merge!(
+          @read_model,
+          "field :capacity, :integer",
+          Merge.inside(:typed_schema, nil, before_trailing: :timestamps)
+        )
+
+      assert line_of(rendered, "field :capacity") < timestamps_line(rendered)
+    end
+
+    test "appends when the block has no trailing call" do
+      rendered =
+        merge!(
+          @command,
+          "field :capacity, :integer",
+          Merge.inside(:typedstruct, nil, before_trailing: :timestamps)
+        )
+
+      assert line_of(rendered, "field :capacity") > line_of(rendered, "field :slug")
     end
   end
 

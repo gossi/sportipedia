@@ -28,7 +28,7 @@ defmodule SpGen.Blueprint.Query do
       %FilePlan{
         path: Context.render(@path, ctx),
         module: Context.render(@module, ctx),
-        units: units(),
+        units: units(ctx),
         unit_created: true
       }
     ]
@@ -42,32 +42,28 @@ defmodule SpGen.Blueprint.Query do
     if Context.one_of_params(ctx) != [], do: "String.t()", else: "map()"
   end
 
+  # the scaffold is a warning-free `TODO:` marker: an unused parameter stays
+  # underscore-prefixed until the body implements the query
   defp def_block(ctx) do
     """
     @doc \"\"\"
     Creates a new query to fetch #{ctx.constituent}s.
     \"\"\"
     @spec new(#{param_type(ctx)}) :: Ecto.Query.t()
-    def new(params) do
+    def new(_params) do
       # TODO: construct and return the query from the read model
       raise "TODO: implement #{ctx.element.name} query (see the feature spec)"
     end
     """
   end
 
-  defp units do
-    [
+  defp units(ctx) do
+    base = [
       %Unit{
         id: :moduledoc,
         check: &Source.has_moduledoc?/1,
         render: fn c -> "@moduledoc \"\"\"\n#{doc(c)}\n\"\"\"" end,
         place: Merge.head(:moduledoc)
-      },
-      %Unit{
-        id: {:import, "Ecto.Query"},
-        check: fn src -> Source.has_import?(src, "Ecto.Query") end,
-        render: fn _ctx -> "import Ecto.Query" end,
-        place: Merge.head(:import)
       },
       %Unit{
         id: {:def, :new, 1},
@@ -76,5 +72,35 @@ defmodule SpGen.Blueprint.Query do
         place: Merge.body_end()
       }
     ]
+
+    # the scaffold raises; `Ecto.Query` becomes an unused import until the
+    # query is written, so the import joins once the body implements it
+    if implemented?(ctx) do
+      import_unit() ++ base
+    else
+      base
+    end
+  end
+
+  defp import_unit do
+    [
+      %Unit{
+        id: {:import, "Ecto.Query"},
+        check: fn src -> Source.has_import?(src, "Ecto.Query") end,
+        render: fn _ctx -> "import Ecto.Query" end,
+        place: Merge.head(:import)
+      }
+    ]
+  end
+
+  # the query is implemented once the file exists without the `TODO:` marker
+  defp implemented?(%Context{} = ctx) do
+    file = module_file(ctx)
+    abs = if ctx.repo_root, do: Path.join(ctx.repo_root, file), else: file
+
+    case File.read(abs) do
+      {:ok, text} -> not (text =~ "TODO: implement")
+      _ -> false
+    end
   end
 end

@@ -18,7 +18,7 @@ defmodule SpGen.Blueprint.PolicyTest do
       OperationTest.plan(ctx,
         path: @test_path,
         module: @test_module,
-        alias_templates: [],
+        alias_templates: [Policy.module_template()],
         requires: fn c -> [{Policy.module_file(c), "policy not generated (spgen policy)"}] end,
         describes: [{"Policy - <_operation>", &describe_body/2, ["Policy"]}]
       )
@@ -27,19 +27,20 @@ defmodule SpGen.Blueprint.PolicyTest do
 
   @doc false
   def describe_body(ctx, subject) do
-    policy = Context.render("<DomainObject>Policy", ctx)
+    # the alias brings `Policy` into scope (golden shape)
+    policy = "Policy"
     action = Context.op_snake(ctx)
     guest = if guest_allowed?(ctx), do: ":ok", else: ":error"
 
     tests = [
       """
       test "denies or allows guests for #{action}" do
-        assert #{policy}.authorize(:#{action}, %{role: "guest"}, %{}) == #{guest}
+        assert #{policy}.authorize(:#{action}, nil, %{}) == #{guest}
       end
       """,
       """
       test "allows users for #{action}" do
-        assert #{policy}.authorize(:#{action}, %{role: "user"}, %{}) == :ok
+        assert #{policy}.authorize(:#{action}, %{id: UUID.uuid4(), role: "user"}, %{}) == :ok
       end
       """
     ]

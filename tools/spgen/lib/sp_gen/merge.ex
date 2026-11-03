@@ -47,6 +47,15 @@ defmodule SpGen.Merge do
     fn ast, unit, ctx -> insert_in_body(ast, [rank: 3, sort: module], nodes(unit, ctx)) end
   end
 
+  @doc """
+  Insert at the start of the code region, after all directives — the place
+  for macro-call clusters (Vex `validates` lines) that must sit below the
+  aliases they reference.
+  """
+  @spec after_directives() :: place()
+  def after_directives,
+    do: fn ast, unit, ctx -> insert_in_body(ast, [rank: 99], nodes(unit, ctx)) end
+
   @doc "Insert before the first `defp` group (public API above private helpers), else append."
   @spec before_helpers() :: place()
   def before_helpers,
@@ -73,12 +82,16 @@ defmodule SpGen.Merge do
   With a `wrapper` (`(ctx, unit_text -> full_call_text)`), a missing block is
   *materialized* around the unit instead of blocking — the container exists
   exactly when it has content, and never as an empty block.
+
+  With `before_trailing: macro`, units insert before the block's trailing
+  run of calls to `macro` (e.g. `timestamps()` at the end of a `typed_schema`
+  block); when absent, units append at the end of the block.
   """
-  @spec inside(atom(), (SpGen.Context.t(), String.t() -> String.t()) | nil) :: place()
-  def inside(macro, wrapper \\ nil) do
+  @spec inside(atom(), (SpGen.Context.t(), String.t() -> String.t()) | nil, keyword()) :: place()
+  def inside(macro, wrapper \\ nil, opts \\ []) do
     fn ast, unit, ctx ->
       with_module(ast, fn exprs ->
-        inside_block(exprs, macro, nodes(unit, ctx), wrapper, unit, ctx)
+        inside_block(exprs, macro, nodes(unit, ctx), wrapper, unit, ctx, opts)
       end)
     end
   end
@@ -336,7 +349,7 @@ defmodule SpGen.Merge do
 
   # ------------------------------------------------------------ inside block
 
-  defp inside_block(exprs, macro, nodes, wrapper, unit, ctx) do
+  defp inside_block(exprs, macro, nodes, wrapper, unit, ctx, opts) do
     case Enum.find_index(exprs, &local_call?(&1, macro)) do
       nil ->
         cond do
@@ -358,11 +371,37 @@ defmodule SpGen.Merge do
             {exprs, false}
 
           _pair ->
-            new_node = put_do_kw(node, rebuild(body_exprs(do_body(node)) ++ nodes))
+            body = body_exprs(do_body(node))
+            {head, tail} = Enum.split(body, trailing_index(body, opts[:before_trailing]))
+            new_node = put_do_kw(node, rebuild(head ++ nodes ++ tail))
             {List.replace_at(exprs, index, new_node), true}
         end
     end
   end
+
+  # index inside the block body at which to insert: the start of the trailing
+  # run of `before_trailing` calls (`timestamps()` at the end of the block),
+  # else the end of the body
+  defp trailing_index(body, nil), do: length(body)
+
+  defp trailing_index(body, before) do
+    run =
+      body
+      |> Enum.reverse()
+      |> Stream.take_while(&call?(&1, before))
+      |> Enum.count()
+
+    length(body) - run
+  end
+
+  # like `local_call?/2` but matches zero-arg calls in both spellings
+  # (`timestamps()` and bare `timestamps`)
+  defp call?({name, meta, args}, name)
+       when is_list(meta) and (is_list(args) or is_nil(args)) do
+    not Keyword.has_key?(meta, :alias)
+  end
+
+  defp call?(_node, _name), do: false
 
   # the `do:` pair of a call node. Parsed calls carry their keyword args in a
   # nested list (`{:scope, m, [path, alias, [do: body]]}`); the pair may also

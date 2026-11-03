@@ -8,7 +8,7 @@ defmodule SpGen.Blueprint.ViewTest do
   use SpGen.Blueprint
 
   alias SpGen.Templates
-  alias SpGen.Blueprint.View
+  alias SpGen.Blueprint.{ReadModel, View}
 
   @test_path "services/api/test/sportipedia_web/<_subdomain>/<composite>/<domain_object>/<domain_object>_view_test.exs"
   @test_module "SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>ViewTest"
@@ -44,6 +44,30 @@ defmodule SpGen.Blueprint.ViewTest do
       describe_unit("fields/0", fn -> fields_test(ctx) end),
       describe_unit("path/0", fn -> path_test(ctx) end),
       describe_unit("render show.json", fn -> render_test(ctx) end)
+    ] ++ alias_units(ctx)
+  end
+
+  # the render test references the view and the read model struct
+  defp alias_units(ctx) do
+    view = Context.render(View.module_template(), ctx)
+    read_model = Context.render(ReadModel.module_template(), ctx)
+
+    [
+      %Unit{
+        id: {:alias, view},
+        check: fn src -> Source.has_alias?(src, view) end,
+        render: fn _ctx -> "alias #{view}" end,
+        place: Merge.alias_of(view)
+      },
+      %Unit{
+        id: {:alias, read_model},
+        check: fn src -> Source.has_alias?(src, read_model) end,
+        render: fn _ctx -> "alias #{read_model}" end,
+        requires: fn c ->
+          [{ReadModel.module_file(c), "read model not generated (spgen read_model)"}]
+        end,
+        place: Merge.alias_of(read_model)
+      }
     ]
   end
 
@@ -94,7 +118,7 @@ defmodule SpGen.Blueprint.ViewTest do
     attrs =
       ctx.fields
       |> Enum.reject(&(&1.name in ["id", "inserted_at", "updated_at"]))
-      |> Enum.map(fn f -> "#{f.name}: \"sample-#{f.name}\"" end)
+      |> Enum.map(fn f -> "#{f.name}: #{Templates.sample_value(ctx, f)}" end)
       |> Enum.join(", ")
 
     """

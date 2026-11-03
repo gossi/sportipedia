@@ -65,8 +65,8 @@ defmodule SpGen.Context do
         constituent: constituent,
         operation: Keyword.get(opts, :operation) || derive_operation(model, element),
         repo_root: Keyword.get(opts, :repo_root),
-        aggregate: fetch(Esdm.aggregate_of(model, element)),
-        read_model: fetch(Esdm.read_model_for(model, element)),
+        aggregate: fetch(aggregate_link(model, element)),
+        read_model: fetch(read_model_link(model, element)),
         events:
           Esdm.publishes(element) |> Enum.map(&find_event(model, &1)) |> Enum.reject(&is_nil/1),
         actors: Esdm.actors(element),
@@ -99,7 +99,10 @@ defmodule SpGen.Context do
   def derive_operation(model, %Element{} = element) do
     case element.kind do
       :command ->
-        element |> Esdm.publishes() |> List.first() |> event_effect(model, element)
+        # a command's own verb states what it does to the aggregate; the
+        # projection rule only describes the effect on the read model
+        verb_operation(element.name) ||
+          element |> Esdm.publishes() |> List.first() |> event_effect(model, element)
 
       :event ->
         event_effect(element.name, model, element)
@@ -127,6 +130,32 @@ defmodule SpGen.Context do
 
   defp fetch({:ok, e}), do: e
   defp fetch(_error), do: nil
+
+  # a family may be driven from the aggregate/read-model element itself
+  # (e.g. `sp.gen.validator position`); the aggregate_of/read_model_for
+  # lookups only follow links from related elements, so self-link here
+  defp aggregate_link(model, %Element{kind: :aggregate} = element),
+    do: model |> Esdm.aggregate_of(element) |> or_self(element, :aggregate)
+
+  # read models project from exactly one aggregate (their first projection);
+  # self-linking it gives read-model-driven families the aggregate's rules
+  # (invariants + command constraints), e.g. unique fields for the read model
+  defp aggregate_link(model, %Element{kind: :"read-model"} = element) do
+    case Esdm.projections(element) do
+      [%{"aggregate" => name} | _] -> Esdm.find(model, :aggregate, name)
+      _ -> {:error, :not_found}
+    end
+  end
+
+  defp aggregate_link(model, element), do: Esdm.aggregate_of(model, element)
+
+  defp read_model_link(model, %Element{kind: :"read-model"} = element),
+    do: model |> Esdm.read_model_for(element) |> or_self(element, :"read-model")
+
+  defp read_model_link(model, element), do: Esdm.read_model_for(model, element)
+
+  defp or_self({:error, _}, %Element{kind: kind} = e, kind), do: {:ok, e}
+  defp or_self(other, _e, _kind), do: other
 
   # -- inference ------------------------------------------------------------
 
@@ -227,26 +256,80 @@ defmodule SpGen.Context do
   # against the context's fields (which already carry the injected id)
   defp validators_for(%__MODULE__{} = ctx, fields) do
     invs = if ctx.aggregate, do: Esdm.invariants(ctx.aggregate), else: []
-    cons = Esdm.constraints(ctx.element)
+    cons = Enum.flat_map(constraint_sources(ctx), &Esdm.constraints/1)
     field_names = Enum.map(fields, & &1.name)
 
     (invs ++ cons)
-    |> Enum.map(&validator_for(&1, field_names))
+    |> Enum.map(&validator_for(&1, field_names, ctx.constituent))
     |> Enum.reject(&is_nil/1)
+    |> Enum.uniq_by(& &1.name)
     |> Enum.sort_by(& &1.name)
   end
 
-  defp validator_for(%{"name" => name} = rule, field_names) do
+  # Constraint rules live on the commands; when the family is driven from
+  # the aggregate itself (bare-name resolution), the aggregate's commands'
+  # rules are the same citizen's constraints
+  defp constraint_sources(%__MODULE__{element: %Element{kind: :aggregate} = aggregate} = ctx) do
+    [aggregate | commands_of(ctx.model, aggregate.name)]
+  end
+
+  defp constraint_sources(%__MODULE__{element: element}), do: [element]
+
+  defp commands_of(%Esdm{} = model, aggregate) do
+    Enum.filter(model.elements, fn
+      %Element{kind: :command} = e -> Element.aggregate_name(e) == aggregate
+      _ -> false
+    end)
+  end
+
+  @doc """
+  Fields carrying a unique rule (aggregate invariants + command constraints),
+  e.g. the slug of a `unique-slug` invariant.
+  """
+  @spec unique_fields(%__MODULE__{}) :: [String.t()]
+  def unique_fields(%__MODULE__{} = ctx) do
+    ctx.validators
+    |> Enum.filter(&(&1.kind == :unique))
+    |> Enum.map(& &1.field)
+  end
+
+  # rule → validator, kinds per the validator blueprint's example shapes:
+  #
+  # * `unique-<field>` → uniqueness against the internal API
+  # * `<domain_object>-exists` (this domain object) → existence check by id
+  # * anything else → `:rule`, a scaffold the operator implements
+  #
+  # rules that name no field of the citizen are not validators at all
+  # (e.g. an operational precondition) and are dropped
+  defp validator_for(%{"name" => name} = rule, field_names, constituent) do
     text = "#{name} #{rule["rule"]}"
-    field = Enum.find(field_names, fn f -> text =~ ~r/\b#{Regex.escape(f)}\b/i end)
+
+    kind =
+      cond do
+        name =~ ~r/\Aunique-/ -> :unique
+        name == "#{constituent}-exists" -> :exists
+        true -> :rule
+      end
+
+    field =
+      case kind do
+        # the field is part of the rule's name; `unique-slug` validates `slug`
+        :unique ->
+          name |> String.replace_prefix("unique-", "") |> then(&(&1 in field_names && &1))
+
+        :exists ->
+          "id" in field_names && "id"
+
+        :rule ->
+          Enum.find(field_names, fn f -> text =~ ~r/\b#{Regex.escape(f)}\b/i end)
+      end
 
     if field do
-      kind = if name =~ ~r/unique/i, do: :unique, else: :exists
-
       %{
         name: name,
         field: field,
         kind: kind,
+        rule: rule["rule"],
         module: pascal(name),
         snake: String.replace(name, "-", "_")
       }
@@ -358,6 +441,7 @@ defmodule SpGen.Context do
 
   @doc "Ecto type atom text for schema fields (read models, P3)."
   def ecto_type(%{type: "string", format: "uuid"}), do: ":binary_id"
+  def ecto_type(%{type: "string", format: "date-time"}), do: ":utc_datetime_usec"
   def ecto_type(%{type: "string"}), do: ":string"
   def ecto_type(%{type: "integer"}), do: ":integer"
   def ecto_type(%{type: "number"}), do: ":float"
@@ -420,6 +504,17 @@ defmodule SpGen.Context do
   end
 
   def effect_for_event(_ctx, _event_name), do: :create
+
+  # `archive-position`, `edit-position`, `catalog-position`: the leading verb
+  # of the command's name is what it does to the aggregate
+  defp verb_operation(name) do
+    cond do
+      name =~ ~r/\A(archive|delete|remove|withdraw)(-|\z)/ -> :delete
+      name =~ ~r/\A(edit|update|amend|change)(-|\z)/ -> :update
+      name =~ ~r/\A(catalog|create|add|register)(-|\z)/ -> :create
+      true -> nil
+    end
+  end
 
   @doc "Parameter names of a query's `parameters.oneOf`, e.g. [\"id\", \"slug\"]."
   def one_of_params(%__MODULE__{element: %{doc: doc}}) do

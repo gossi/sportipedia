@@ -134,7 +134,9 @@ defmodule SpGen.Blueprint.Aggregate do
 
   @doc false
   def apply_clause(ctx, event, effect) do
-    aggregate = Context.render("<DomainObject>Aggregate", ctx)
+    # self-references inside the aggregate module go through `__MODULE__`:
+    # by its expanded name the struct is not yet defined while compiling
+    aggregate = "__MODULE__"
 
     event_pascal =
       event.name |> String.split("-") |> Enum.map(&String.capitalize/1) |> Enum.join()

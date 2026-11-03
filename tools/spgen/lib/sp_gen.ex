@@ -135,7 +135,16 @@ defmodule SpGen do
       backfill =
         if created? and not check? do
           {_run, rows} = closure_rounds(model, ctx, opts, run)
+
+          # rounds repeat unmet gates while they wait; keep the most
+          # recent (smallest) deferred report per file
           rows
+          |> Enum.reverse()
+          |> Enum.uniq_by(fn
+            {:deferred, path, _} -> {:deferred, path}
+            row -> {make_ref(), row}
+          end)
+          |> Enum.reverse()
         else
           []
         end

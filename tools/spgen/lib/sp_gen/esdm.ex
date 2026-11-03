@@ -435,9 +435,10 @@ defmodule SpGen.Esdm do
     case projection["rule"] || Map.get(projection, :rule) do
       rule when is_binary(rule) ->
         cond do
-          rule =~ ~r/\b(remove|delete|archive|withdraw)\b/i -> :delete
-          rule =~ ~r/\b(update|change|edit|amend)\b/i -> :update
-          rule =~ ~r/\b(add|project|insert|create|catalog)\b/i -> :create
+          # stems, so inflections match ("archived", "removed", ...)
+          rule =~ ~r/\b(remov|delet|withdraw)/i -> :delete
+          rule =~ ~r/\b(updat|chang|edit|amend|mark)/i -> :update
+          rule =~ ~r/\b(add|project|insert|creat|catalog)/i -> :create
           true -> :unknown
         end
 

@@ -139,17 +139,54 @@ defmodule SpGen.Blueprint.ControllerTest do
   end
 
   defp write_happy(ctx, name) do
+    case ctx.operation do
+      :update -> update_happy(ctx, name)
+      _create -> create_happy(ctx, name)
+    end
+  end
+
+  defp create_happy(ctx, name) do
     """
     test "#{name}", %{conn: conn} do
       conn =
         conn
         |> authenticate_conn()
         |> api_conn()
-        |> post("#{Controller.collection_path(ctx)}/#{ctx.element.name}", Jason.encode!(jsonapi_body("#{ctx.constituent}", #{scenario_literal(ctx)})))
+        |> post("#{Controller.collection_path(ctx)}/#{ctx.element.name}", Jason.encode!(jsonapi_body("#{ctx.constituent}", #{data_literal(ctx, ctx.element)})))
 
       body = json_response(conn, 200)
 
       assert jsonapi_type(body) == "#{ctx.constituent}"
+    end
+    """
+  end
+
+  # an update addresses an existing row: the golden pattern creates it first
+  defp update_happy(ctx, name) do
+    base = Controller.collection_path(ctx)
+    create = create_command(ctx)
+    {:ok, create_ctx} = Context.build(ctx.model, create)
+
+    """
+    test "#{name}", %{conn: conn} do
+      catalog_conn =
+        conn
+        |> authenticate_conn()
+        |> api_conn()
+        |> post("#{base}/#{create_ctx.element.name}", Jason.encode!(jsonapi_body("#{ctx.constituent}", #{data_literal(create_ctx, create)})))
+
+      catalog_body = json_response(catalog_conn, 200)
+      id = jsonapi_id(catalog_body)
+
+      conn =
+        conn
+        |> authenticate_conn()
+        |> api_conn()
+        |> post("#{base}/#{ctx.element.name}", Jason.encode!(jsonapi_body("#{ctx.constituent}", #{data_literal(ctx, ctx.element)}, id)))
+
+      body = json_response(conn, 200)
+
+      assert jsonapi_id(body) == id
     end
     """
   end
@@ -178,7 +215,8 @@ defmodule SpGen.Blueprint.ControllerTest do
         |> api_conn()
         |> post("#{Controller.collection_path(ctx)}/#{ctx.element.name}", Jason.encode!(jsonapi_body("#{ctx.constituent}", %{}, id)))
 
-      assert json_response(conn, 204)
+      assert conn.status == 204
+      assert conn.resp_body == ""
     end
     """
   end
@@ -244,14 +282,33 @@ defmodule SpGen.Blueprint.ControllerTest do
     """
   end
 
-  # data literal from the operation's happy feature scenario (`when.data`)
-  defp scenario_literal(ctx) do
+  # the write body: the happy feature scenario's `when.data` when the model
+  # has one, else the command's required fields with type-correct samples
+  defp data_literal(%Context{} = ctx, element) do
     case ctx.scenarios do
       [%{"when" => %{"data" => data}} | _] when map_size(data) > 0 ->
         "%{" <> Enum.map_join(data, ", ", fn {k, v} -> "#{k}: #{inspect(v)}" end) <> "}"
 
       _ ->
-        "%{}"
+        unique = Context.unique_fields(ctx)
+
+        element
+        |> Esdm.fields()
+        |> Enum.filter(&(&1.required and &1.name != "id"))
+        |> Enum.map(fn f ->
+          value =
+            if f.name in unique do
+              "\"sample-#{f.name}-\#{UUID.uuid4()}\""
+            else
+              Templates.sample_value(ctx, f)
+            end
+
+          "#{f.name}: #{value}"
+        end)
+        |> case do
+          [] -> "%{}"
+          parts -> "%{" <> Enum.join(parts, ", ") <> "}"
+        end
     end
   end
 
@@ -263,26 +320,12 @@ defmodule SpGen.Blueprint.ControllerTest do
         raise "no create command for #{ctx.constituent} found to seed tests"
 
       cmd ->
+        {:ok, create_ctx} = Context.build(ctx.model, cmd)
         api = Context.pascal(ctx.constituent)
         op = cmd.name |> String.replace("-", "_")
-        data = cmd |> scenarios_for(ctx.model) |> literal_for(cmd)
-        "#{api}.#{op}(#{data})"
+        "#{api}.#{op}(#{data_literal(create_ctx, cmd)})"
     end
   end
-
-  defp literal_for([], _cmd), do: "%{}"
-
-  defp literal_for([scenario | rest], cmd) do
-    case get_in(scenario, ["when", "data"]) do
-      data when map_size(data) > 0 ->
-        "%{" <> Enum.map_join(data, ", ", fn {k, v} -> "#{k}: #{inspect(v)}" end) <> "}"
-
-      _ ->
-        literal_for(rest, cmd)
-    end
-  end
-
-  defp scenarios_for(cmd, model), do: Esdm.scenarios(model, cmd)
 
   defp create_command(ctx) do
     ctx.model.elements

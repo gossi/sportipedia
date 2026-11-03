@@ -17,6 +17,7 @@ defmodule SpGen.Blueprint.ReadModel do
 
   def name, do: :read_model
   def source_kinds, do: [:"read-model"]
+  def module_template, do: @module
 
   @doc "The read model's file path (used as a `requires` gate)."
   @spec module_file(Context.t()) :: String.t()
@@ -43,7 +44,7 @@ defmodule SpGen.Blueprint.ReadModel do
   defp schema_fields(ctx), do: Enum.reject(ctx.fields, &(&1.name == "id"))
 
   defp all_field_atoms(ctx) do
-    ["id" | Enum.map(schema_fields(ctx), &":#{&1.name}")] |> Enum.join(", ")
+    [":id" | Enum.map(schema_fields(ctx), &":#{&1.name}")] |> Enum.join(", ")
   end
 
   defp required_field_atoms(ctx) do
@@ -105,14 +106,20 @@ defmodule SpGen.Blueprint.ReadModel do
         check: fn src -> Source.entry?(src, :field, key) end,
         render: fn _ctx -> "field :#{f.name}, #{Context.ecto_type(f)}" end,
         place:
-          Merge.inside(:typed_schema, fn c, text ->
-            "typed_schema \"#{c.constituent}\" do\n#{text}\n\n  timestamps()\nend"
-          end)
+          Merge.inside(
+            :typed_schema,
+            fn c, text ->
+              "typed_schema \"#{c.constituent}\" do\n#{text}\n\n  timestamps()\nend"
+            end,
+            before_trailing: :timestamps
+          )
       }
     end)
   end
 
-  defp changeset_units(_ctx) do
+  defp changeset_units(ctx) do
+    unique_lines = unique_constraint_lines(ctx)
+
     for {name, atomize} <- [
           {"insert_changeset", &all_field_atoms/1},
           {"update_changeset", &updatable_field_atoms/1}
@@ -130,12 +137,26 @@ defmodule SpGen.Blueprint.ReadModel do
             |> cast(attrs, [#{atomize.(c)}])
           #{if name == "insert_changeset" do
             "    |> validate_required([#{required_field_atoms(c)}])"
-          end}
+          end}#{unique_lines}
           end
           """
         end,
         place: Merge.body_end()
       }
     end
+  end
+
+  # fields declared unique by the aggregate's invariants / command constraints
+  # get a `unique_constraint` chain step; the exact name matches the default
+  # unique-index name migrations create (`<table>_<field>_index`)
+  defp unique_constraint_lines(%Context{} = ctx) do
+    ctx
+    |> Context.unique_fields()
+    |> Enum.uniq()
+    |> Enum.map(fn field ->
+      snake = Macro.underscore(field)
+      "    |> unique_constraint(:#{snake}, name: :#{ctx.constituent}_#{snake}_index)"
+    end)
+    |> Enum.join("\n")
   end
 end

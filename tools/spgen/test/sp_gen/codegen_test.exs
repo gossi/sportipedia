@@ -383,7 +383,7 @@ defmodule SpGenTest do
                end)
 
         filled = read(a, agg_rel)
-        assert filled =~ "def apply(%WidgetAggregate{} = _aggregate, %WidgetCreated{} = event)"
+        assert filled =~ "def apply(%__MODULE__{} = _aggregate, %WidgetCreated{} = event)"
 
         # B) event first: the aggregate is created complete — nothing about
         # the aggregate itself defers (unrelated command units may still, via
@@ -517,6 +517,71 @@ defmodule SpGenTest do
       assert test_file =~ ~s|describe "WidgetCreated event" do|
       assert test_file =~ ~s|describe "CreateWidgetHandler" do|
       assert test_file =~ ~s|describe "CreateWidget command" do|
+    end
+
+    # the athlete's position is the richest citizen in the model: a date-time
+    # field, a unique invariant, and constraints on its commands
+    test "generated read model matches the blueprint shape", %{root: root} do
+      {:ok, _} = run(:read_model, ["read-model.position"], root)
+
+      # the by-slug query is the hand-written host the internal accessor
+      # delegates to (see the unique-slug example in the blueprint docs)
+      query_path =
+        Path.join(
+          root,
+          "services/api/lib/sportipedia/catalog/athlete/position/queries/position_by_slug.ex"
+        )
+
+      File.mkdir_p!(Path.dirname(query_path))
+
+      File.write!(query_path, ~S'''
+      defmodule Sportipedia.Catalog.Athlete.Position.Queries.PositionBySlug do
+        @moduledoc """
+        Query to fetch a position by its slug.
+        """
+
+        alias Sportipedia.Catalog.Athlete.Position.PositionReadModel
+        import Ecto.Query
+
+        @doc """
+        Creates a new query to fetch a position by slug.
+        """
+        def new(slug) do
+          from(r in PositionReadModel,
+            where: r.slug == ^slug
+          )
+        end
+      end
+      ''')
+
+      {:ok, _} = run(:internal_api, ["read-model.position"], root)
+
+      rm = read(root, "lib/sportipedia/catalog/athlete/position/read_model.ex")
+
+      # the injected primary key is cast as an atom, fields land before the
+      # trailing `timestamps()`, and date-times map to the timestamp type
+      assert rm =~ "cast(attrs, [:id, :title, :slug"
+      assert rm =~ "field :archivedAt, :utc_datetime_usec"
+
+      lines = String.split(rm, "\n")
+      field = Enum.find_index(lines, &String.contains?(&1, "field :instrumentId"))
+      ts = Enum.find_index(lines, &String.contains?(&1, "timestamps()"))
+      assert field < ts, "field after timestamps():\n#{rm}"
+
+      # the aggregate's unique invariant becomes a unique constraint on the
+      # index name the migration will create (`<table>_<field>_index`)
+      assert rm =~ "unique_constraint(:slug, name: :position_slug_index)"
+
+      # read-model-driven families see the projected aggregate's rules, too:
+      # the by-slug accessor back-fills next to its query
+      internal = read(root, "lib/sportipedia/catalog/athlete/position/internal.ex")
+      assert internal =~ "def position_by_slug"
+
+      # second run: complete no-op
+      assert {:ok, results} = run(:read_model, ["read-model.position"], root)
+      assert Enum.all?(results, &match?({:unchanged, _}, &1)), inspect(results)
+      assert {:ok, results} = run(:internal_api, ["read-model.position"], root)
+      assert Enum.all?(results, &match?({:unchanged, _}, &1)), inspect(results)
     end
 
     test "all four address forms resolve to the same command", %{root: root} do

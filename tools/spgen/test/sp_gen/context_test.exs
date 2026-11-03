@@ -144,6 +144,22 @@ defmodule SpGen.ContextTest do
       assert_raise ArgumentError, assert_context_raise
     end
 
+    test "aggregate-driven families self-link (validator sees the aggregate's invariants)", %{
+      model: model
+    } do
+      {:ok, aggregate} = Esdm.resolve(model, "aggregate.apparatus")
+      assert {:error, :not_found} = Esdm.aggregate_of(model, aggregate)
+
+      {:ok, c} = Context.build(model, aggregate)
+      assert c.aggregate.name == "apparatus"
+
+      # invariants of the aggregate + constraints of its commands, deduped:
+      # unique-slug (invariant) + apparatus-exists (archive/edit commands)
+      modules = Enum.map(c.validators, & &1.module)
+      assert "UniqueSlug" in modules
+      assert "ApparatusExists" in modules
+    end
+
     test "extra vars override (event writing into its command's test file)", %{model: model} do
       c = ctx(model, "event.apparatus-cataloged")
 

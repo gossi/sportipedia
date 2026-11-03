@@ -30,9 +30,13 @@ defmodule SpGen.Blueprint.CommandTest do
   def describe_body(ctx, subject) do
     cmd = Context.render("<Command>", ctx)
 
+    # the nil-id test is meaningful only when a validator looks the id up:
+    # `Repo.get(_, nil)` raises; a plain presence check would not
+    nil_id = if exists_by_id?(ctx), do: id_nil_test(ctx, cmd), else: []
+
     tests =
       [requires_id_test(cmd)] ++
-        id_nil_test(cmd) ++
+        nil_id ++
         presence_tests(ctx, cmd)
 
     """
@@ -52,11 +56,20 @@ defmodule SpGen.Blueprint.CommandTest do
     """
   end
 
-  defp id_nil_test(cmd) do
+  # every enforced field must be present; only the id is nil
+  defp id_nil_test(ctx, cmd) do
+    body =
+      ctx.fields
+      |> Enum.reject(&(&1.name == "id"))
+      |> Enum.map(fn f -> "#{f.name}: #{Templates.sample_value(ctx, f)}" end)
+      |> Enum.join(", ")
+
+    literal = if body == "", do: "id: nil", else: "#{body}, id: nil"
+
     [
       """
       test "id cannot be nil" do
-        cmd = %#{cmd}{id: nil}
+        cmd = %#{cmd}{#{literal}}
 
         assert_raise ArgumentError, fn ->
           Vex.validate(cmd)
@@ -64,6 +77,10 @@ defmodule SpGen.Blueprint.CommandTest do
       end
       """
     ]
+  end
+
+  defp exists_by_id?(%Context{} = ctx) do
+    Enum.any?(ctx.validators, fn v -> v.kind == :exists and v.field == "id" end)
   end
 
   defp presence_tests(ctx, cmd) do

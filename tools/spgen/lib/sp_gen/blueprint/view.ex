@@ -20,6 +20,9 @@ defmodule SpGen.Blueprint.View do
   @doc false
   def module_template, do: @module
 
+  @doc false
+  def read_model_module_template, do: @read_model_module
+
   @doc "The view's file path (used as a `requires` gate)."
   @spec module_file(Context.t()) :: String.t()
   def module_file(%Context{} = ctx), do: Context.render(@path, ctx)

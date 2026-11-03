@@ -147,7 +147,7 @@ defmodule SpGen.Blueprint.Command do
           Merge.after_macro(
             :validates,
             fn _ -> true end,
-            Merge.after_macro(:use, fn first -> first == "Vex.Struct" end)
+            Merge.after_directives()
           )
       }
     end)

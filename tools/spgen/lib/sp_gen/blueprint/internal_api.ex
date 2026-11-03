@@ -34,12 +34,6 @@ defmodule SpGen.Blueprint.InternalAPI do
     ]
   end
 
-  defp unique_fields(ctx) do
-    ctx.validators
-    |> Enum.filter(&(&1.kind == :unique))
-    |> Enum.map(& &1.field)
-  end
-
   defp query_module_for(ctx, field) do
     pascal_field = Context.pascal(field)
 
@@ -117,7 +111,7 @@ defmodule SpGen.Blueprint.InternalAPI do
     ]
 
     accessor_units =
-      Enum.map(unique_fields(ctx), fn f ->
+      Enum.map(Context.unique_fields(ctx), fn f ->
         accessor = :"#{do_}_by_#{f}"
 
         [

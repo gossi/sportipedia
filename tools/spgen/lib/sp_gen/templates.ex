@@ -73,6 +73,16 @@ defmodule SpGen.Templates do
   @doc "Sample source value for a field, preferring scenario data."
   def sample_value(%Context{} = _ctx, %{name: "id"}), do: "UUID.uuid4()"
 
+  # typed fields get type-correct literals: the DB would reject a
+  # `"sample-apparatusId"` for a `:binary_id` column
+  def sample_value(%Context{} = _ctx, %{format: "uuid"}), do: "UUID.uuid4()"
+  def sample_value(%Context{} = _ctx, %{format: "date-time"}), do: "DateTime.utc_now()"
+  def sample_value(%Context{} = _ctx, %{type: "integer"}), do: "1"
+  def sample_value(%Context{} = _ctx, %{type: "number"}), do: "1.0"
+  def sample_value(%Context{} = _ctx, %{type: "boolean"}), do: "true"
+  def sample_value(%Context{} = _ctx, %{type: "array"}), do: "[]"
+  def sample_value(%Context{} = _ctx, %{type: "object"}), do: "%{}"
+
   def sample_value(%Context{} = ctx, %{name: name} = field) do
     case scenario_value(ctx, name) do
       nil -> field |> default_value() |> inspect_value()

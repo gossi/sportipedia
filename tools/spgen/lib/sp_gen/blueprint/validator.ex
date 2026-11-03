@@ -9,6 +9,11 @@ defmodule SpGen.Blueprint.Validator do
   * `unique-<field>` invariants → uniqueness against the internal API
     accessor, tolerating the object that already owns the value (edit case)
   * `<domain_object>-exists` command constraints → existence check by id
+  * any other rule naming a field of the citizen (cross-field or
+    cross-aggregate) → a scaffold the operator implements
+
+  Rules that name no field (operational preconditions) are not validators
+  and are skipped.
 
   Validators are tested as part of the command's tests (`validator.md`'s Test
   section delegates to `command.md`), so this generator contributes no test
@@ -49,6 +54,10 @@ defmodule SpGen.Blueprint.Validator do
 
   defp doc(%{kind: :exists}, ctx) do
     "Validates that a #{ctx.constituent} exists."
+  end
+
+  defp doc(%{kind: :rule} = v, _ctx) do
+    "Validates the '#{v.name}' rule: #{v.rule}"
   end
 
   defp def_block(validator, ctx) do
@@ -99,10 +108,36 @@ defmodule SpGen.Blueprint.Validator do
     """
   end
 
+  # no example shape for the rule (cross-field, cross-aggregate, …):
+  # scaffold it, the operator implements what the invariant demands
+  defp body(%{kind: :rule} = v, _ctx) do
+    """
+    def validate(_value, _context) do
+      raise "TODO: implement the #{v.name} validator (see the domain model rule)"
+    end
+    """
+  end
+
   # ------------------------------------------------------------------- units
 
   defp units(validator, ctx) do
     internal = Context.render(@internal_module, ctx)
+
+    # scaffolded rules call no query; the example shapes need the internal API
+    alias_unit =
+      if validator.kind == :rule do
+        []
+      else
+        [
+          %Unit{
+            id: {:alias, internal},
+            check: fn src -> Source.has_alias?(src, internal) end,
+            render: fn c -> "alias #{Context.render(@internal_module, c)}" end,
+            requires: internal_gate(validator),
+            place: Merge.alias_of(internal)
+          }
+        ]
+      end
 
     [
       %Unit{
@@ -116,25 +151,24 @@ defmodule SpGen.Blueprint.Validator do
         check: fn src -> Source.has_use?(src, "Vex.Validator") end,
         render: fn _ctx -> "use Vex.Validator" end,
         place: Merge.head(:use)
-      },
-      %Unit{
-        id: {:alias, internal},
-        check: fn src -> Source.has_alias?(src, internal) end,
-        render: fn c -> "alias #{Context.render(@internal_module, c)}" end,
-        requires: fn c ->
-          [{InternalAPI.module_file(c), "internal API not generated (spgen internal_api)"}]
-        end,
-        place: Merge.alias_of(internal)
-      },
-      %Unit{
-        id: {:def, :validate, 2},
-        check: fn src -> Source.has_def?(src, :validate, 2) end,
-        render: fn c -> def_block(validator, c) end,
-        requires: fn c ->
-          [{InternalAPI.module_file(c), "internal API not generated (spgen internal_api)"}]
-        end,
-        place: Merge.before_helpers()
       }
-    ]
+    ] ++
+      alias_unit ++
+      [
+        %Unit{
+          id: {:def, :validate, 2},
+          check: fn src -> Source.has_def?(src, :validate, 2) end,
+          render: fn c -> def_block(validator, c) end,
+          requires: internal_gate(validator),
+          place: Merge.before_helpers()
+        }
+      ]
+  end
+
+  # the internal API module must exist before the alias/lookup may appear
+  defp internal_gate(%{kind: :rule}), do: fn _c -> [] end
+
+  defp internal_gate(_validator) do
+    fn c -> [{InternalAPI.module_file(c), "internal API not generated (spgen internal_api)"}] end
   end
 end
