@@ -1,0 +1,51 @@
+info:
+  name: Catalog Position
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{apiUrl}}/catalog/athlete/positions/catalog-position"
+  body:
+    type: json
+    data: |-
+      {
+        "data": {
+          "type": "position",
+          "attributes": {
+            "title": "sample-title",
+            "slug": "sample-slug",
+            "apparatusId": "sample-apparatusId",
+            "description": "sample-description",
+            "instrumentId": "sample-instrumentId"
+          }
+        }
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: Catalog Position
+    request:
+      url: "{{apiUrl}}/catalog/athlete/positions/catalog-position"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "data": {
+              "type": "position",
+              "attributes": {
+                "title": "sample-title",
+                "slug": "sample-slug",
+                "apparatusId": "sample-apparatusId",
+                "description": "sample-description",
+                "instrumentId": "sample-instrumentId"
+              }
+            }
+          }
