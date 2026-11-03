@@ -271,13 +271,22 @@ defmodule SpGen do
   # * `{:deferred, path, [{unit_id, reason}]}` — units waiting for a citizen
   #   that has not been generated yet (reported only — generation order is
   #   not an error, and the tree stays compilable)
-  # * `{:checked, path, [unit_id | {:unplaceable, unit_id} | {:deferred, unit_id}]}`
-  #   — in `--check` mode, what *would* change
+  # * `{:checked, path, [unit_id | {:unplaceable, unit_id} | {:deferred, unit_id, [reason]}]}`
+  #   — in `--check` mode, what *would* change; `[:whole_file]` when the file
+  #   itself is missing
   # * `{:blocked, path, [unit_id]}` — a unit is missing but has no home in
   #   this file (reported, nothing written)
   # * `{:error, path, reason}` — unparsable file, foreign module, or a missing
   #   registration file
-  @type row :: term()
+  @type row ::
+          {:created, String.t()}
+          | {:merged, String.t(), [term()]}
+          | {:backfill, String.t(), [term()]}
+          | {:unchanged, String.t()}
+          | {:deferred, String.t(), [{term(), String.t()}]}
+          | {:checked, String.t(), [term()]}
+          | {:blocked, String.t(), [term()]}
+          | {:error, String.t(), term()}
 
   @doc "Applies `plans` for `ctx`, threading the run state (planned paths)."
   @spec apply_plans([FilePlan.t()], Context.t(), map()) :: {map(), [row()]}
@@ -399,7 +408,7 @@ defmodule SpGen do
       rows =
         cond do
           run.check? ->
-            [{:checked, rel_path, ids_for_check(placed, blocked, deferred)}]
+            [{:checked, rel_path, ids_for_check(placed, blocked, deferred, deferred_entries)}]
 
           placed == [] and blocked == [] ->
             # nothing placeable yet: a bare shell is not code — write nothing
@@ -420,8 +429,12 @@ defmodule SpGen do
     end
   end
 
-  defp ids_for_check(placed, blocked, deferred) do
-    placed ++ Enum.map(blocked, &{:unplaceable, &1}) ++ Enum.map(deferred, &{:deferred, &1.id})
+  defp ids_for_check(placed, blocked, deferred, deferred_entries) do
+    reasons = fn id -> for({^id, reason} <- deferred_entries, do: reason) end
+
+    placed ++
+      Enum.map(blocked, &{:unplaceable, &1}) ++
+      Enum.map(deferred, fn unit -> {:deferred, unit.id, reasons.(unit.id)} end)
   end
 
   defp result_rows([], blocked, rel_path, _run, _created?) when blocked != [] do

@@ -8,9 +8,11 @@ defmodule SpGen.CLI do
       spgen                       # list all generator families
       spgen <family> <element> [options]
 
-  Prints one line per file the generator touched, and turns problems (usage
-  errors, units with no place in an existing file, missing registration
-  files) into exit status 1; deferred units are reported and exit 0.
+  Prints the run's report grouped by what happened (`Created`, `Updated`,
+  `Ignored`, plus `Blocked` / `Failed` when they apply — see
+  `SpGen.Report`), and turns problems (usage errors, units with no place in
+  an existing file, missing registration files) into exit status 1; deferred
+  units are reported and exit 0.
   """
 
   alias SpGen
@@ -111,42 +113,13 @@ defmodule SpGen.CLI do
   end
 
   defp print(results) do
-    for result <- results, do: IO.puts(format(result))
+    results
+    |> SpGen.Report.render()
+    |> Enum.each(&IO.puts/1)
   end
 
   defp die(message) do
     IO.puts(:stderr, "error: " <> message)
     System.halt(1)
   end
-
-  @doc false
-  def format({:created, path}), do: "created   #{path}"
-
-  def format({:merged, path, ids}) do
-    "merged    #{path} (#{Enum.map_join(ids, ", ", &inspect/1)})"
-  end
-
-  def format({:backfill, path, ids}) do
-    "backfill  #{path} (#{Enum.map_join(ids, ", ", &inspect/1)})"
-  end
-
-  def format({:deferred, path, entries}) do
-    "deferred  #{path} — " <>
-      Enum.map_join(Enum.uniq_by(entries, &elem(&1, 0)), "; ", fn {id, reason} ->
-        "#{inspect(id)}: #{reason}"
-      end)
-  end
-
-  def format({:unchanged, path}), do: "unchanged #{path}"
-
-  def format({:checked, path, ids}) do
-    "would add #{path} (#{Enum.map_join(ids, ", ", &inspect/1)})"
-  end
-
-  def format({:blocked, path, ids}) do
-    "BLOCKED   #{path} — no place for #{Enum.map_join(ids, ", ", &inspect/1)}"
-  end
-
-  def format({:error, path, reason}), do: "ERROR     #{path} — #{inspect(reason)}"
-  def format(other), do: inspect(other)
 end
