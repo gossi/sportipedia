@@ -73,7 +73,8 @@ mix sp.gen.command <element> --template create
   (`Blueprint.CommandRouter`, `Blueprint.ProjectorSupervisor`,
   `Blueprint.WebRouter`).
 - Generators resolve an ESDM element (`esdm:` reference, model file,
-  `kind.name`, or bare name), fill the placeholders per
+  `kind.name`, or bare name — matched against the kinds the
+  generator produces), fill the placeholders per
   [naming substitution](../naming-substitution.md), and merge idempotently
   by append-only AST editing (`SpGen.Merge`): missing units
   (`use`/`alias`, function clauses, `field`/`validates`/`dispatch`/`project`

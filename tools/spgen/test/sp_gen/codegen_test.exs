@@ -731,6 +731,24 @@ defmodule SpGenTest do
       assert message =~ "fixed"
     end
 
+    test "bare element names resolve among the generator's kinds" do
+      # apparatus exists as both aggregate and read-model; each family finds its own
+      assert {:ok, results} = SpGen.run(:aggregate, ["apparatus", "--check"])
+      assert Enum.all?(results, &match?({:unchanged, _}, &1)), inspect(results)
+
+      assert {:ok, results} = SpGen.run(:read_model, ["apparatus", "--check"])
+      assert Enum.all?(results, &match?({:unchanged, _}, &1)), inspect(results)
+
+      assert {:ok, results} = SpGen.run(:view, ["apparatus", "--check"])
+      assert Enum.all?(results, &match?({:unchanged, _}, &1)), inspect(results)
+
+      # internal_api genuinely accepts both colliding kinds → ambiguity persists,
+      # and the error tells the caller how to disambiguate
+      assert {:error, message} = SpGen.run(:internal_api, ["apparatus", "--check"])
+      assert message =~ "aggregate=apparatus"
+      assert message =~ "read-model=apparatus"
+    end
+
     test "wrong element kind is refused" do
       assert {:error, message} =
                SpGen.run(:command, ["apparatus-cataloged", "--template", "create"])

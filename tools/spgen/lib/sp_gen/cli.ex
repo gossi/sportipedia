@@ -2,7 +2,8 @@ defmodule SpGen.CLI do
   @moduledoc """
   Escript entry point (`tools/spgen/spgen`) and report formatting.
 
-  Usage — mirrors the `mix sp.gen.*` tasks, which delegate here:
+  Usage — mirrors the `mix sp.gen.*` tasks, which delegate here.
+  Bare element names resolve among the kinds the generator produces.
 
       spgen                       # list all generator families
       spgen <family> <element> [options]

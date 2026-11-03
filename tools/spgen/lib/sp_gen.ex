@@ -113,7 +113,8 @@ defmodule SpGen do
     formatter_cwd = Path.join(repo_root, "services/api")
 
     with {:ok, model} <- Esdm.load(model_root),
-         {:ok, element} <- model |> Esdm.resolve(address) |> norm_location(),
+         {:ok, element} <-
+           model |> Esdm.resolve(address, kinds: blueprint.source_kinds()) |> norm_location(),
          :ok <- accept_kind(blueprint, element),
          {:ok, operation} <- validate_operation(blueprint, opts, element),
          {:ok, ctx} <-
@@ -232,7 +233,10 @@ defmodule SpGen do
       * an esdm: reference — esdm:domain=sport/bounded-context=sport/aggregate=apparatus/command=catalog-apparatus
       * a *.esdm.yaml model file — docs/domain-model/catalog/equipment/command.catalog-apparatus.esdm.yaml
       * kind.name — command.catalog-apparatus
-      * a unique bare name — catalog-apparatus
+      * a bare name — resolved among the kinds this generator produces
+        (so `sp.gen.aggregate widget` finds the aggregate, not the
+        same-named read model; `kind.name` or an esdm: reference always
+        disambiguates)
 
     Options:
       --template       what the operation does: create | update | delete | read | collection

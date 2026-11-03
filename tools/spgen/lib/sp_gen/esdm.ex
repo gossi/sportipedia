@@ -167,20 +167,27 @@ defmodule SpGen.Esdm do
   * a file path to a `*.esdm.yaml` file holding a single element
   * `kind.name` (e.g. `command.catalog-apparatus`)
   * a bare element name (e.g. `catalog-apparatus`)
+
+  Option `:kinds` — the element kinds a caller accepts. It only affects
+  *bare names*: the candidate set is narrowed to those kinds before the
+  unique/ambiguous decision, so `sp.gen.aggregate position` resolves the
+  aggregate even though a read-model shares the name. Explicit forms
+  (`esdm:`, `kind.name`, file path) keep addressing whatever they name;
+  a kind the caller cannot use is rejected later, by `accept_kind`.
   """
-  @spec resolve(t(), String.t()) :: {:ok, Element.t()} | {:error, term()}
-  def resolve(%__MODULE__{elements: elements}, address) do
+  @spec resolve(t(), String.t(), keyword()) :: {:ok, Element.t()} | {:error, term()}
+  def resolve(%__MODULE__{elements: elements}, address, opts \\ []) do
     cond do
       String.starts_with?(address, "esdm:") -> resolve_reference(elements, address)
       String.ends_with?(address, ".esdm.yaml") -> resolve_file(elements, address)
       String.contains?(address, ".") -> resolve_kind_name(elements, address)
-      true -> resolve_name(elements, address)
+      true -> resolve_name(elements, address, Keyword.get(opts, :kinds))
     end
   end
 
-  @doc "Like `resolve/2` but raises with a formatted message."
-  def resolve!(model, address) do
-    case resolve(model, address) do
+  @doc "Like `resolve/3` but raises with a formatted message."
+  def resolve!(model, address, opts \\ []) do
+    case resolve(model, address, opts) do
       {:ok, element} -> element
       {:error, reason} -> raise "cannot resolve #{inspect(address)}: #{format_error(reason)}"
     end
@@ -265,11 +272,24 @@ defmodule SpGen.Esdm do
     end
   end
 
-  defp resolve_name(elements, name) do
-    case Enum.filter(elements, fn e -> e.name == name end) do
-      [element] -> {:ok, element}
-      [] -> {:error, {:unknown_element, name}}
-      many -> {:error, {:ambiguous, Enum.map(many, & &1.address)}}
+  defp resolve_name(elements, name, kinds) do
+    matching = Enum.filter(elements, fn e -> e.name == name end)
+    narrowed = if kinds, do: Enum.filter(matching, fn e -> e.kind in kinds end), else: matching
+
+    case narrowed do
+      [element] ->
+        {:ok, element}
+
+      [] ->
+        # the name exists but only in kinds this caller cannot use
+        if matching != [] && kinds != [] do
+          {:error, {:kind_mismatch, name, kinds, matching}}
+        else
+          {:error, {:unknown_element, name}}
+        end
+
+      many ->
+        {:error, {:ambiguous, Enum.map(many, & &1.address)}}
     end
   end
 
@@ -282,6 +302,14 @@ defmodule SpGen.Esdm do
   def format_error({:ambiguous_file, path, elements}) do
     "the file #{path} holds more than one element — pass an esdm: reference:\n" <>
       Enum.map_join(elements, "\n", fn e -> "  " <> e end)
+  end
+
+  def format_error({:kind_mismatch, name, kinds, found}) do
+    "no #{kinds |> Enum.map(&to_string/1) |> Enum.join("/")} element named \"#{name}\" — " <>
+      "the name exists as:\n" <>
+      Enum.map_join(found, "\n", fn e ->
+        "  #{e.address} (try `#{e.kind}.#{e.name}` or this reference)"
+      end)
   end
 
   def format_error({:unknown_reference, address}), do: "no such element: #{address}"

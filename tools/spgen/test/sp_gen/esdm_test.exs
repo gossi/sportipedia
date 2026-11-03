@@ -93,6 +93,34 @@ defmodule SpGen.EsdmTest do
       assert element.name == "catalog-apparatus"
     end
 
+    test "bare names narrow to the caller's kinds", %{model: model} do
+      # "apparatus" exists as aggregate and read-model
+      assert {:ok, %{kind: :aggregate}} =
+               Esdm.resolve(model, "apparatus", kinds: [:aggregate, :command, :event])
+
+      assert {:ok, %{kind: :"read-model"}} =
+               Esdm.resolve(model, "apparatus", kinds: [:"read-model"])
+    end
+
+    test "a name only in foreign kinds reports kind_mismatch with pointers", %{model: model} do
+      assert {:error, {:kind_mismatch, "apparatus", [:query], found}} =
+               Esdm.resolve(model, "apparatus", kinds: [:query])
+
+      assert found |> Enum.map(& &1.kind) |> Enum.sort() == [:aggregate, :"read-model"]
+
+      hint = Esdm.format_error({:kind_mismatch, "apparatus", [:query], found})
+      assert hint =~ "read-model.apparatus"
+      assert hint =~ "esdm:domain=sport/bounded-context=sport/read-model=apparatus"
+    end
+
+    test "genuine ambiguity survives narrowing", %{model: model} do
+      # internal_api legitimately drives from both kinds — the caller must pick
+      assert {:error, {:ambiguous, addresses}} =
+               Esdm.resolve(model, "apparatus", kinds: [:"read-model", :aggregate])
+
+      assert length(addresses) == 2
+    end
+
     test "ambiguous bare name lists esdm: references", %{model: model} do
       # "apparatus" is an aggregate AND a read model — allowed to coexist
       assert {:error, {:ambiguous, addresses}} = Esdm.resolve(model, "apparatus")
