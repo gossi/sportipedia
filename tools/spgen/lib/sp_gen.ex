@@ -40,6 +40,10 @@ defmodule SpGen do
   ]
 
   @max_closure_rounds 3
+  @layers [:domain, :web]
+
+  @typedoc "Which half of the blueprint tree a generator transfers: `backend/domain` or `backend/web`"
+  @type layer :: :domain | :web
 
   @doc """
   Registry: generator family → its blueprint modules, one per generated file
@@ -70,6 +74,25 @@ defmodule SpGen do
 
   @doc "The primary module of a family (head of its module list)."
   def primary(family) when is_atom(family), do: families()[family] |> List.first()
+
+  @doc "The blueprint layer a family transfers, as declared by its primary."
+  @spec layer(atom()) :: layer()
+  def layer(family) when is_atom(family), do: primary(family).layer()
+
+  @doc """
+  The families grouped by layer, layers in `#{inspect(@layers)}` order and each
+  group sorted by family name — the shape `mix sp.gen` lists.
+  """
+  @spec families_by_layer() :: [{layer(), [atom()]}]
+  def families_by_layer do
+    by_family = Enum.map(families(), fn {family, _modules} -> {family, layer(family)} end)
+
+    @layers
+    |> Enum.map(fn layer ->
+      {layer, for({family, ^layer} <- by_family, do: family) |> Enum.sort()}
+    end)
+    |> Enum.reject(fn {_layer, families} -> families == [] end)
+  end
 
   @doc """
   Runs one generator family against `argv`.

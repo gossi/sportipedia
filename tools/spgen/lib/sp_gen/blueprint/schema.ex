@@ -28,6 +28,7 @@ defmodule SpGen.Blueprint.Schema do
 
   def name, do: :schema
   def source_kinds, do: [:"read-model", :command, :query]
+  def layer, do: :web
 
   @doc "The schema module's file path for one role (used as a `requires` gate)."
   @spec module_file(Context.t(), atom()) :: String.t()

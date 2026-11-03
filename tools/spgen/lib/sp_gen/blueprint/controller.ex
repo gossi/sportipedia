@@ -25,6 +25,7 @@ defmodule SpGen.Blueprint.Controller do
 
   def name, do: :controller
   def source_kinds, do: [:command, :query]
+  def layer, do: :web
   def operations, do: [:create, :update, :delete, :read, :collection]
   def optional_template?, do: true
 

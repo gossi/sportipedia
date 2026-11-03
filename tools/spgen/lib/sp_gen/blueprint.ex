@@ -68,10 +68,12 @@ defmodule SpGen.Blueprint do
   Generators are addressed by **family** (`mix sp.gen.<family>`): the family
   registry in `SpGen.families/0` lists the blueprint modules it
   runs, with the primary module (the head of the list) defining the element
-  kinds it consumes (`source_kinds/0`) and the `--template` operations it
-  renders (`operations/0`, `optional_template?/0`). Test-file and
-  registration modules inherit sane defaults and are not consulted for
-  validation.
+  kinds it consumes (`source_kinds/0`), the `--template` operations it
+  renders (`operations/0`, `optional_template?/0`) and the blueprint
+  **layer** it belongs to (`layer/0`: `:domain` or `:web`, mirroring
+  `docs/architecture/blueprints/backend/{domain,web}` — the domain layer is the
+  default). Test-file and registration modules inherit sane defaults and are
+  not consulted for validation.
 
   Templates keep the placeholder notation of
   `docs/architecture/naming-substitution.md` and the prose slots of the
@@ -89,6 +91,7 @@ defmodule SpGen.Blueprint do
   @callback source_kinds() :: [Element.kind()]
   @callback accepts?(Element.t()) :: boolean()
   @callback plans(Context.t()) :: [FilePlan.t()]
+  @callback layer() :: SpGen.layer()
 
   defmacro __using__(_opts) do
     quote do
@@ -108,7 +111,15 @@ defmodule SpGen.Blueprint do
 
       def optional_template?, do: false
 
-      defoverridable name: 0, accepts?: 1, operations: 0, source_kinds: 0, optional_template?: 0
+      # which half of the blueprint tree this generator transfers
+      def layer, do: :domain
+
+      defoverridable name: 0,
+                     accepts?: 1,
+                     operations: 0,
+                     source_kinds: 0,
+                     optional_template?: 0,
+                     layer: 0
     end
   end
 

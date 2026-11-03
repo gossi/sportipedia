@@ -79,29 +79,49 @@ defmodule SpGen.CLI do
     end
   end
 
-  @doc "The families listing (also what bare `spgen` prints)."
+  @doc "Print the grouped families listing and the shared help text."
   def list_families do
-    IO.puts("Sportipedia blueprint generators:\n")
-
-    for {family, modules} <- SpGen.families() do
-      primary = hd(modules)
-      kinds = primary.source_kinds() |> Enum.map(&Atom.to_string/1) |> Enum.join(", ")
-
-      templates =
-        case primary.operations() do
-          :fixed -> "fixed (no --template)"
-          ops -> "--template " <> Enum.join(ops, " | ")
-        end
-
-      files = modules |> Enum.map(&short_name/1) |> Enum.join(", ")
-
-      IO.puts("  spgen #{family} <element>")
-      IO.puts("    from: #{kinds}")
-      IO.puts("    #{templates}")
-      IO.puts("    blueprints: #{files}\n")
-    end
-
+    IO.puts(Enum.join(families_listing(), "\n"))
     IO.puts(SpGen.help())
+  end
+
+  @doc """
+  The families listing as lines (what bare `spgen` prints), grouped by the
+  blueprint layer each family transfers — Domain first, then Web — with the
+  families of each group in name order.
+  """
+  @spec families_listing() :: [String.t()]
+  def families_listing do
+    header = ["Sportipedia blueprint generators:", ""]
+    header ++ Enum.flat_map(SpGen.families_by_layer(), &section/1)
+  end
+
+  defp section({layer, families}) do
+    [layer_label(layer) | Enum.flat_map(families, &family_lines/1)]
+  end
+
+  defp layer_label(layer), do: layer |> Atom.to_string() |> String.capitalize()
+
+  defp family_lines(family) do
+    modules = SpGen.families()[family]
+    primary = hd(modules)
+    kinds = primary.source_kinds() |> Enum.map(&Atom.to_string/1) |> Enum.join(", ")
+
+    templates =
+      case primary.operations() do
+        :fixed -> "fixed (no --template)"
+        ops -> "--template " <> Enum.join(ops, " | ")
+      end
+
+    files = modules |> Enum.map(&short_name/1) |> Enum.join(", ")
+
+    [
+      "  spgen #{family} <element>",
+      "    from: #{kinds}",
+      "    #{templates}",
+      "    blueprints: #{files}",
+      ""
+    ]
   end
 
   defp to_family(name) do

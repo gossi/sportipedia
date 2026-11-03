@@ -16,6 +16,7 @@ defmodule SpGen.Blueprint.View do
 
   def name, do: :view
   def source_kinds, do: [:"read-model"]
+  def layer, do: :web
 
   @doc false
   def module_template, do: @module
