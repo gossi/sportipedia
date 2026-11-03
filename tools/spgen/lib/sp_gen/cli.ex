@@ -5,8 +5,8 @@ defmodule SpGen.CLI do
   Usage — mirrors the `mix sp.gen.*` tasks, which delegate here.
   Bare element names resolve among the kinds the generator produces.
 
-      spgen                       # list all generator families
-      spgen <family> <element> [options]
+      spgen                       # list all generators
+      spgen <generator> <element> [options]
 
   Prints the run's report grouped by what happened (`Created`, `Updated`,
   `Ignored`, plus `Blocked` / `Failed` when they apply — see
@@ -24,16 +24,16 @@ defmodule SpGen.CLI do
 
     case argv do
       [] ->
-        list_families()
+        list_generators()
 
       ["--help"] ->
-        list_families()
+        list_generators()
         IO.puts(SpGen.help())
 
-      [family | rest] ->
-        case to_family(family) do
+      [generator | rest] ->
+        case to_generator(generator) do
           nil ->
-            die("unknown generator family: #{family}\n\nRun `spgen` to list families.")
+            die("unknown generator: #{generator}\n\nRun `spgen` to list generators.")
 
           atom ->
             case run(atom, rest) do
@@ -44,12 +44,12 @@ defmodule SpGen.CLI do
     end
   end
 
-  @doc "Runs family `family` against `argv`, reports, returns `:ok | {:error, msg}`."
+  @doc "Runs generator `generator` against `argv`, reports, returns `:ok | {:error, msg}`."
   @spec run(atom(), [String.t()]) :: :ok | {:error, String.t()}
-  def run(family, argv) do
-    task = "sp.gen.#{family}"
+  def run(generator, argv) do
+    task = "sp.gen.#{generator}"
 
-    case SpGen.run(family, argv) do
+    case SpGen.run(generator, argv) do
       {:error, message} ->
         {:error, message}
 
@@ -79,31 +79,31 @@ defmodule SpGen.CLI do
     end
   end
 
-  @doc "Print the grouped families listing and the shared help text."
-  def list_families do
-    IO.puts(Enum.join(families_listing(), "\n"))
+  @doc "Print the grouped generator listing and the shared help text."
+  def list_generators do
+    IO.puts(Enum.join(generators_listing(), "\n"))
     IO.puts(SpGen.help())
   end
 
   @doc """
-  The families listing as lines (what bare `spgen` prints), grouped by the
-  blueprint layer each family transfers — Domain first, then Web — with the
-  families of each group in name order.
+  The generator listing as lines (what bare `spgen` prints), grouped by the
+  actor each generator serves — Domain first, then Web — each group in the
+  order the generators are meant to run in.
   """
-  @spec families_listing() :: [String.t()]
-  def families_listing do
+  @spec generators_listing() :: [String.t()]
+  def generators_listing do
     header = ["Sportipedia blueprint generators:", ""]
-    header ++ Enum.flat_map(SpGen.families_by_layer(), &section/1)
+    header ++ Enum.flat_map(SpGen.generators_by_actor(), &section/1)
   end
 
-  defp section({layer, families}) do
-    [layer_label(layer) | Enum.flat_map(families, &family_lines/1)]
+  defp section({actor, generators}) do
+    [actor_label(actor) | Enum.flat_map(generators, &generator_lines/1)]
   end
 
-  defp layer_label(layer), do: layer |> Atom.to_string() |> String.capitalize()
+  defp actor_label(actor), do: actor |> Atom.to_string() |> String.capitalize()
 
-  defp family_lines(family) do
-    modules = SpGen.families()[family]
+  defp generator_lines(generator) do
+    modules = SpGen.generators()[generator]
     primary = hd(modules)
     kinds = primary.source_kinds() |> Enum.map(&Atom.to_string/1) |> Enum.join(", ")
 
@@ -116,7 +116,7 @@ defmodule SpGen.CLI do
     files = modules |> Enum.map(&short_name/1) |> Enum.join(", ")
 
     [
-      "  spgen #{family} <element>",
+      "  spgen #{generator} <element>",
       "    from: #{kinds}",
       "    #{templates}",
       "    blueprints: #{files}",
@@ -124,8 +124,8 @@ defmodule SpGen.CLI do
     ]
   end
 
-  defp to_family(name) do
-    Enum.find(SpGen.families() |> Map.keys(), &(&1 |> Atom.to_string() == name))
+  defp to_generator(name) do
+    Enum.find(SpGen.generators() |> Map.keys(), &(&1 |> Atom.to_string() == name))
   end
 
   defp short_name(module) do

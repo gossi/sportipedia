@@ -65,15 +65,15 @@ defmodule SpGen.Blueprint do
   * `plans/1` — the `FilePlan`s this module produces for a resolved `Context`
   * `name/0` — the module's id (snake-cased from the alias by default)
 
-  Generators are addressed by **family** (`mix sp.gen.<family>`): the family
-  registry in `SpGen.families/0` lists the blueprint modules it
-  runs, with the primary module (the head of the list) defining the element
-  kinds it consumes (`source_kinds/0`), the `--template` operations it
-  renders (`operations/0`, `optional_template?/0`) and the blueprint
-  **layer** it belongs to (`layer/0`: `:domain` or `:web`, mirroring
-  `docs/architecture/blueprints/backend/{domain,web}` — the domain layer is the
-  default). Test-file and registration modules inherit sane defaults and are
-  not consulted for validation.
+  Generators are addressed by name (`mix sp.gen.<name>`): the registry in
+  `SpGen.generators/0` lists the blueprint modules a generator runs, with the
+  primary blueprint (the head of the list) defining the element kinds it
+  consumes (`source_kinds/0`), the `--template` operations it renders
+  (`operations/0`, `optional_template?/0`) and the **actor** it serves
+  (`actor/0`: `:domain` inside the hexagon, `:web` at the HTTP driving
+  adapter — mirroring `docs/architecture/blueprints/backend/{domain,web}`, with
+  `:domain` as the default). Test-file and registration modules inherit sane
+  defaults and are not consulted for validation.
 
   Templates keep the placeholder notation of
   `docs/architecture/naming-substitution.md` and the prose slots of the
@@ -91,7 +91,7 @@ defmodule SpGen.Blueprint do
   @callback source_kinds() :: [Element.kind()]
   @callback accepts?(Element.t()) :: boolean()
   @callback plans(Context.t()) :: [FilePlan.t()]
-  @callback layer() :: SpGen.layer()
+  @callback actor() :: SpGen.actor()
 
   defmacro __using__(_opts) do
     quote do
@@ -111,15 +111,15 @@ defmodule SpGen.Blueprint do
 
       def optional_template?, do: false
 
-      # which half of the blueprint tree this generator transfers
-      def layer, do: :domain
+      # which actor of the hexagon this blueprint serves
+      def actor, do: :domain
 
       defoverridable name: 0,
                      accepts?: 1,
                      operations: 0,
                      source_kinds: 0,
                      optional_template?: 0,
-                     layer: 0
+                     actor: 0
     end
   end
 

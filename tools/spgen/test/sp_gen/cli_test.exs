@@ -1,7 +1,7 @@
 defmodule SpGen.CLITest do
   @moduledoc """
-  The `mix sp.gen` listing: families grouped by the blueprint layer they
-  transfer (`docs/architecture/blueprints/backend/domain` vs `…/web`).
+  The `mix sp.gen` listing: generators grouped by the hexagonal actor they
+  serve, each group in the order the generators are meant to run in.
   """
   use ExUnit.Case, async: true
 
@@ -9,70 +9,107 @@ defmodule SpGen.CLITest do
 
   @web [:bruno, :controller, :schema, :view]
 
-  describe "SpGen.layer/1" do
-    test "the web half of the blueprint tree declares it" do
-      for family <- @web, do: assert(SpGen.layer(family) == :web)
+  # what a citizen is built in: read side first, then facts and state, the
+  # commands that produce them, and finally the HTTP surface
+  @usage_order [
+    {:domain,
+     [
+       :read_model,
+       :event,
+       :aggregate,
+       :query,
+       :internal_api,
+       :validator,
+       :command,
+       :command_handler,
+       :projector,
+       :policy,
+       :public_api
+     ]},
+    {:web, [:view, :schema, :controller, :bruno]}
+  ]
+
+  describe "SpGen.actor/1" do
+    test "the web driving adapter declares itself" do
+      for generator <- @web, do: assert(SpGen.actor(generator) == :web)
     end
 
-    test "everything else is domain" do
-      for family <- Map.keys(SpGen.families()) -- @web do
-        assert SpGen.layer(family) == :domain, "#{inspect(family)} should be a domain generator"
+    test "everything inside the hexagon is domain" do
+      for generator <- Map.keys(SpGen.generators()) -- @web do
+        assert SpGen.actor(generator) == :domain,
+               "#{inspect(generator)} should serve the domain actor"
       end
     end
   end
 
-  describe "families_by_layer/0" do
-    test "covers every family exactly once, Domain first, names sorted" do
-      layers = SpGen.families_by_layer()
+  describe "generators_by_actor/0" do
+    test "actors in order, each group in usage order, covering every generator once" do
+      assert SpGen.generators_by_actor() == @usage_order
 
-      assert Enum.map(layers, &elem(&1, 0)) == [:domain, :web]
+      flat = for({_actor, generators} <- @usage_order, generator <- generators, do: generator)
+      assert Enum.sort(flat) == Map.keys(SpGen.generators()) |> Enum.sort()
+    end
 
-      grouped = layers |> Enum.flat_map(&elem(&1, 1)) |> Enum.sort()
-      assert grouped == Map.keys(SpGen.families()) |> Enum.sort()
+    test "the order is a dependency order, not an alphabetical one" do
+      {_actor, domain} = List.keyfind(@usage_order, :domain, 0)
+      assert domain == Enum.uniq(domain)
+      refute domain == Enum.sort(domain)
+      # each generator comes after the ones its units are gated on
+      assert Enum.find_index(domain, &(&1 == :read_model)) <
+               Enum.find_index(domain, &(&1 == :internal_api))
 
-      for {_layer, families} <- layers do
-        assert families == Enum.sort(families), "not sorted: #{inspect(families)}"
-      end
+      assert Enum.find_index(domain, &(&1 == :internal_api)) <
+               Enum.find_index(domain, &(&1 == :validator))
+
+      assert Enum.find_index(domain, &(&1 == :command)) <
+               Enum.find_index(domain, &(&1 == :public_api))
     end
   end
 
-  describe "families_listing/0" do
+  describe "generators_listing/0" do
     setup do
-      %{lines: CLI.families_listing()}
+      %{lines: CLI.generators_listing()}
     end
 
-    test "a heading per layer, in order, with the families under it", %{lines: lines} do
-      positions =
+    test "a heading per actor, in order, with its generators under it", %{lines: lines} do
+      [{"Domain", domain_at}, {"Web", web_at}] =
         for heading <- ["Domain", "Web"] do
           {heading, Enum.find_index(lines, &(&1 == heading))}
         end
 
-      assert [{"Domain", domain_at}, {"Web", web_at}] = positions
       assert domain_at < web_at
 
-      # each entry sits under its own layer's heading
-      for family <- @web do
-        entry = "  spgen #{family} <element>"
-        assert Enum.find_index(lines, &(&1 == entry)) > web_at
+      {_actor, web_generators} = List.keyfind(@usage_order, :web, 0)
+
+      for generator <- web_generators do
+        assert Enum.find_index(lines, &(&1 == entry(generator))) > web_at
       end
 
-      for family <- Map.keys(SpGen.families()) -- @web do
-        entry = "  spgen #{family} <element>"
-        index = Enum.find_index(lines, &(&1 == entry))
+      {_actor, domain_generators} = List.keyfind(@usage_order, :domain, 0)
+
+      for generator <- domain_generators do
+        index = Enum.find_index(lines, &(&1 == entry(generator)))
         assert index > domain_at and index < web_at
       end
     end
 
-    test "every family is listed once with its kinds, templates and blueprints",
-         %{lines: lines} do
-      for family <- Map.keys(SpGen.families()) do
-        entries = Enum.filter(lines, &(&1 == "  spgen #{family} <element>"))
-        assert length(entries) == 1, "#{family} listed #{length(entries)} times"
+    test "each actor's generators are listed in run order", %{lines: lines} do
+      for {_actor, generators} <- @usage_order do
+        positions = Enum.map(generators, &Enum.find_index(lines, fn l -> l == entry(&1) end))
+        assert positions == Enum.sort(positions), "out of run order: #{inspect(generators)}"
+      end
+    end
 
-        index = Enum.find_index(lines, &(&1 == "  spgen #{family} <element>"))
+    test "every generator is listed once with its kinds, templates and blueprints",
+         %{lines: lines} do
+      for generator <- Map.keys(SpGen.generators()) do
+        entries = Enum.filter(lines, &(&1 == entry(generator)))
+        assert length(entries) == 1, "#{generator} listed #{length(entries)} times"
+
+        index = Enum.find_index(lines, &(&1 == entry(generator)))
         [kinds, templates, blueprints] = Enum.slice(lines, (index + 1)..(index + 3))
 
-        primary = SpGen.primary(family)
+        primary = SpGen.primary_blueprint(generator)
 
         assert kinds ==
                  "    from: " <>
@@ -89,14 +126,16 @@ defmodule SpGen.CLITest do
       end
     end
 
-    test "no family is missing and none is invented", %{lines: lines} do
+    test "no generator is missing and none is invented", %{lines: lines} do
       listed =
         for line <- lines,
             match?("  spgen " <> _, line),
             do: line |> String.replace_leading("  spgen ", "") |> String.split(" ") |> hd()
 
-      assert Enum.sort(listed) ==
-               Map.keys(SpGen.families()) |> Enum.map(&Atom.to_string/1) |> Enum.sort()
+      assert Enum.map(listed, &String.to_atom/1) ==
+               for({_actor, generators} <- @usage_order, generator <- generators, do: generator)
     end
   end
+
+  defp entry(generator), do: "  spgen #{generator} <element>"
 end

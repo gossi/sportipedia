@@ -405,16 +405,16 @@ defmodule SpGenTest do
         # convergence: the same code in either generation order (AST equality)
         assert canon_ast(filled) == canon_ast(read(b, agg_rel))
 
-        # fixed points: re-running any of these families changes nothing
+        # fixed points: re-running any of these generators changes nothing
         for root <- [a, b],
-            {family, args} <- [
+            {generator, args} <- [
               {:aggregate, ["aggregate.widget"]},
               {:event, ["widget-created", "--template", "create"]}
             ] do
-          {:ok, results} = SpGen.run(family, args ++ ["--root", root])
+          {:ok, results} = SpGen.run(generator, args ++ ["--root", root])
 
           assert Enum.all?(results, &match?({:unchanged, _}, &1)),
-                 "#{family} #{inspect(args)} on #{root}: #{inspect(results)}"
+                 "#{generator} #{inspect(args)} on #{root}: #{inspect(results)}"
         end
       after
         File.rm_rf(a)
@@ -434,8 +434,8 @@ defmodule SpGenTest do
       end)
     end
 
-    defp run(family, args, root) do
-      SpGen.run(family, args ++ ["--root", root])
+    defp run(generator, args, root) do
+      SpGen.run(generator, args ++ ["--root", root])
     end
 
     test "creates a complete citizen and is then a no-op", %{root: root} do
@@ -573,7 +573,7 @@ defmodule SpGenTest do
       # index name the migration will create (`<table>_<field>_index`)
       assert rm =~ "unique_constraint(:slug, name: :position_slug_index)"
 
-      # read-model-driven families see the projected aggregate's rules, too:
+      # read-model-driven generators see the projected aggregate's rules, too:
       # the by-slug accessor back-fills next to its query
       internal = read(root, "lib/sportipedia/catalog/athlete/position/internal.ex")
       assert internal =~ "def position_by_slug"
@@ -651,7 +651,7 @@ defmodule SpGenTest do
     test "the projector run creates the subdomain supervisor it registers into", %{root: root} do
       File.rm_rf!(Path.join(root, "services/api/lib/sportipedia/catalog/supervisor.ex"))
 
-      for {family, args} <- [
+      for {generator, args} <- [
             {:event, ["widget-created"]},
             {:command_handler, ["create-widget"]},
             {:command, ["create-widget"]},
@@ -659,7 +659,7 @@ defmodule SpGenTest do
             {:read_model, ["read-model.widget"]},
             {:internal_api, ["read-model.widget"]}
           ] do
-        assert {:ok, _} = run(family, args, root)
+        assert {:ok, _} = run(generator, args, root)
       end
 
       assert {:ok, results} = run(:projector, ["widget-created"], root)
@@ -931,7 +931,7 @@ defmodule SpGenTest do
     end
 
     test "bare element names resolve among the generator's kinds" do
-      # apparatus exists as both aggregate and read-model; each family finds its own
+      # apparatus exists as both aggregate and read-model; each generator finds its own
       assert {:ok, results} = SpGen.run(:aggregate, ["apparatus", "--check"])
       assert Enum.all?(results, &match?({:unchanged, _}, &1)), inspect(results)
 

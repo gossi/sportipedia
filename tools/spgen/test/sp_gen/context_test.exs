@@ -144,7 +144,7 @@ defmodule SpGen.ContextTest do
       assert_raise ArgumentError, assert_context_raise
     end
 
-    test "aggregate-driven families self-link (validator sees the aggregate's invariants)", %{
+    test "aggregate-driven generators self-link (validator sees the aggregate's invariants)", %{
       model: model
     } do
       {:ok, aggregate} = Esdm.resolve(model, "aggregate.apparatus")

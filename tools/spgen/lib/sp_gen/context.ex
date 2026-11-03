@@ -131,14 +131,14 @@ defmodule SpGen.Context do
   defp fetch({:ok, e}), do: e
   defp fetch(_error), do: nil
 
-  # a family may be driven from the aggregate/read-model element itself
+  # a generator may be driven from the aggregate/read-model element itself
   # (e.g. `sp.gen.validator position`); the aggregate_of/read_model_for
   # lookups only follow links from related elements, so self-link here
   defp aggregate_link(model, %Element{kind: :aggregate} = element),
     do: model |> Esdm.aggregate_of(element) |> or_self(element, :aggregate)
 
   # read models project from exactly one aggregate (their first projection);
-  # self-linking it gives read-model-driven families the aggregate's rules
+  # self-linking it gives read-model-driven generators the aggregate's rules
   # (invariants + command constraints), e.g. unique fields for the read model
   defp aggregate_link(model, %Element{kind: :"read-model"} = element) do
     case Esdm.projections(element) do
@@ -266,7 +266,7 @@ defmodule SpGen.Context do
     |> Enum.sort_by(& &1.name)
   end
 
-  # Constraint rules live on the commands; when the family is driven from
+  # Constraint rules live on the commands; when the generator is driven from
   # the aggregate itself (bare-name resolution), the aggregate's commands'
   # rules are the same citizen's constraints
   defp constraint_sources(%__MODULE__{element: %Element{kind: :aggregate} = aggregate} = ctx) do

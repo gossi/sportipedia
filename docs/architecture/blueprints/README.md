@@ -67,13 +67,17 @@ mix sp.gen.command <element> --template create
   adds one pointer line per implemented blueprint.
 - Blueprints define the file _contents_; the generators know the _layout_
   (canonical paths live with the generator, see `SpGen`).
-- A generator family (`mix sp.gen.<family>`) runs one blueprint module per
+- A generator (`mix sp.gen.<generator>`) runs one blueprint module per
   generated file: the citizen's module (e.g. `Blueprint.Aggregate`), its
   test file (`Blueprint.AggregateTest`) and any registration file
   (`Blueprint.CommandRouter`, `Blueprint.CommandApplication`,
   `Blueprint.ProjectorSupervisor`, `Blueprint.WebRouter`). A registration file
   a run needs is created when absent — see each blueprint's Registration
   section.
+- Generators serve one of the hexagon's two actors — `:domain` (inside) or
+  `:web` (the HTTP driving adapter) — which is how
+  `docs/architecture/blueprints/backend/` is divided, and how `mix sp.gen`
+  groups them: by actor, each group in the order they are meant to run.
 - Generators resolve an ESDM element (`esdm:` reference, model file,
   `kind.name`, or bare name — matched against the kinds the
   generator produces), fill the placeholders per

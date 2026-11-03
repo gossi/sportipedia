@@ -29,7 +29,7 @@ defmodule SpGen.Blueprint.Bruno do
 
   def name, do: :bruno
   def source_kinds, do: [:command, :query]
-  def layer, do: :web
+  def actor, do: :web
 
   def plans(%Context{} = ctx) do
     [request_plan(ctx)]

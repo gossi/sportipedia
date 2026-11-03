@@ -4,13 +4,13 @@ defmodule Mix.Tasks.Sp.Gen do
   @moduledoc """
   The one supported entry point to the blueprint generators.
 
-  This task (and its `mix sp.gen.<family>` siblings) delegates to the
+  This task (and its `mix sp.gen.<generator>` siblings) delegates to the
   `spgen` escript built from the `tools/spgen` Mix project — the executable
   transfers of the blueprints in `docs/architecture/blueprints/`. The
   executable is built automatically when missing or older than the tool's
   sources (`SPGEN_NO_AUTOBUILD=1` opts out).
 
-      mix sp.gen                                            # list families
+      mix sp.gen                                            # list generators
       mix sp.gen.command catalog-apparatus --template create
       mix sp.gen.aggregate widget --check
 
@@ -26,7 +26,7 @@ defmodule Mix.Tasks.Sp.Gen do
   compiling after every run (references to not-yet-generated citizens stay
   deferred), and the same binary works standalone from anywhere in the repo:
 
-      tools/spgen/spgen <family> <element> [options]
+      tools/spgen/spgen <generator> <element> [options]
   """
 
   use Mix.Task
@@ -36,7 +36,7 @@ defmodule Mix.Tasks.Sp.Gen do
 
   @doc false
   @spec delegate(atom(), [String.t()]) :: :ok
-  def delegate(family, argv), do: exec([Atom.to_string(family) | argv])
+  def delegate(generator, argv), do: exec([Atom.to_string(generator) | argv])
 
   defp exec(args) do
     bin = executable()

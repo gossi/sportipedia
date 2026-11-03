@@ -3,10 +3,10 @@ defmodule SpGen do
   The blueprint code generators (reached through `mix sp.gen.*`, which
   delegate to the `spgen` escript built from this project).
 
-  Generators are addressed by **family** (one `mix sp.gen.<family>` task).
-  A family lists its blueprint modules — one per generated file role: the
-  citizen's own module, its test output, and any registration files — and
-  runs them against one resolved `Context`.
+  A **generator** is one `mix sp.gen.<name>` task. It runs a list of
+  **blueprints** — one per generated file role: the citizen's own module, its
+  test output, and any registration files — all against one resolved
+  `Context`.
 
   Each module yields `FilePlan`s, applied idempotently against the tree: a
   missing file gets its units applied to a fresh module shell (or, for
@@ -40,17 +40,39 @@ defmodule SpGen do
   ]
 
   @max_closure_rounds 3
-  @layers [:domain, :web]
+  @actors [:domain, :web]
 
-  @typedoc "Which half of the blueprint tree a generator transfers: `backend/domain` or `backend/web`"
-  @type layer :: :domain | :web
+  # The order generators are meant to run in: what a generator writes is gated
+  # on the citizens before it, so this pass needs no deferral round-trips.
+  # It is also the order `mix sp.gen` lists them in.
+  @generator_order [
+    :read_model,
+    :event,
+    :aggregate,
+    :query,
+    :internal_api,
+    :validator,
+    :command,
+    :command_handler,
+    :projector,
+    :policy,
+    :public_api,
+    :view,
+    :schema,
+    :controller,
+    :bruno
+  ]
+
+  @typedoc "The hexagonal actor a generator serves: `:domain` inside the hexagon, `:web` at the HTTP driving adapter"
+  @type actor :: :domain | :web
 
   @doc """
-  Registry: generator family → its blueprint modules, one per generated file
-  role. The head of the list is the family's primary module — it owns the
-  element kinds and `--template` semantics the whole family runs under.
+  Registry: generator → the blueprint modules it runs, one per generated file
+  role. The head of the list is the generator's primary blueprint — it owns the
+  element kinds, `--template` semantics and `actor/0` the whole generator runs
+  under.
   """
-  def families do
+  def generators do
     alias SpGen.Blueprint, as: B
 
     %{
@@ -72,47 +94,62 @@ defmodule SpGen do
     }
   end
 
-  @doc "The primary module of a family (head of its module list)."
-  def primary(family) when is_atom(family), do: families()[family] |> List.first()
+  @doc "The primary blueprint of a generator (head of its module list)."
+  def primary_blueprint(generator) when is_atom(generator) do
+    generators()[generator] |> List.first()
+  end
 
-  @doc "The blueprint layer a family transfers, as declared by its primary."
-  @spec layer(atom()) :: layer()
-  def layer(family) when is_atom(family), do: primary(family).layer()
+  @doc "The actor a generator serves, as declared by its primary blueprint."
+  @spec actor(atom()) :: actor()
+  def actor(generator) when is_atom(generator), do: primary_blueprint(generator).actor()
 
   @doc """
-  The families grouped by layer, layers in `#{inspect(@layers)}` order and each
-  group sorted by family name — the shape `mix sp.gen` lists.
+  The generators grouped by actor, actors in `#{inspect(@actors)}` order and each
+  group in `@generator_order` — the shape `mix sp.gen` lists.
   """
-  @spec families_by_layer() :: [{layer(), [atom()]}]
-  def families_by_layer do
-    by_family = Enum.map(families(), fn {family, _modules} -> {family, layer(family)} end)
+  @spec generators_by_actor() :: [{actor(), [atom()]}]
+  def generators_by_actor do
+    by_generator = Enum.map(generators(), fn {gen, _mods} -> {gen, actor(gen)} end)
 
-    @layers
-    |> Enum.map(fn layer ->
-      {layer, for({family, ^layer} <- by_family, do: family) |> Enum.sort()}
+    @actors
+    |> Enum.map(fn actor ->
+      group = for({gen, ^actor} <- by_generator, do: gen)
+      {actor, sort_by_usage(group)}
     end)
-    |> Enum.reject(fn {_layer, families} -> families == [] end)
+    |> Enum.reject(fn {_actor, generators} -> generators == [] end)
+  end
+
+  defp sort_by_usage(generators) do
+    Enum.sort_by(generators, fn generator ->
+      case Enum.find_index(@generator_order, &(&1 == generator)) do
+        nil ->
+          raise ArgumentError, "generator #{inspect(generator)} needs a place in @generator_order"
+
+        index ->
+          index
+      end
+    end)
   end
 
   @doc """
-  Runs one generator family against `argv`.
+  Runs one generator against `argv`.
 
   Returns `{:ok, results}` or `{:error, message}`; printing and exit codes are
   the CLI's business.
   """
   @spec run(atom(), [String.t()]) :: {:ok, [term()]} | {:error, String.t()}
-  def run(family, argv) when is_atom(family) do
-    case families()[family] do
+  def run(generator, argv) when is_atom(generator) do
+    case generators()[generator] do
       nil ->
-        {:error, "unknown generator family: #{inspect(family)}"}
+        {:error, "unknown generator: #{inspect(generator)}"}
 
       modules ->
         primary = hd(modules)
-        do_run(family, modules, primary, argv)
+        do_run(generator, modules, primary, argv)
     end
   end
 
-  defp do_run(family, modules, blueprint, argv) do
+  defp do_run(generator, modules, blueprint, argv) do
     {opts, args, invalid} = OptionParser.parse(argv, strict: @switches)
 
     cond do
@@ -120,17 +157,17 @@ defmodule SpGen do
         {:error, "unknown option(s): " <> Enum.map_join(invalid, ", ", fn {k, _} -> k end)}
 
       args == [] ->
-        {:error, "usage: mix sp.gen.#{family} <element> [options]\n\n#{help()}"}
+        {:error, "usage: mix sp.gen.#{generator} <element> [options]\n\n#{help()}"}
 
       length(args) > 1 ->
         {:error, "expected exactly one element, got: #{Enum.join(args, " ")}"}
 
       true ->
-        apply_family(modules, blueprint, family, hd(args), opts)
+        apply_generator(modules, blueprint, generator, hd(args), opts)
     end
   end
 
-  defp apply_family(modules, blueprint, _family, address, opts) do
+  defp apply_generator(modules, blueprint, _generator, address, opts) do
     repo_root = Keyword.get(opts, :root, default_root()) |> Path.expand()
     model_root = Path.join(repo_root, Keyword.get(opts, :model, "docs/domain-model"))
     formatter_cwd = Path.join(repo_root, "services/api")
@@ -523,7 +560,7 @@ defmodule SpGen do
   # ------------------------------------------------- neighborhood closure
 
   # Creating a citizen flips `requires` gates across its constituent:
-  # re-apply every neighborhood family's plans merge-only (existing files
+  # re-apply every neighborhood generator's plans merge-only (existing files
   # only) until a round places nothing.
   defp closure_rounds(model, seed_ctx, opts, run) do
     elements = neighborhood(model, seed_ctx)
@@ -531,7 +568,7 @@ defmodule SpGen do
     Enum.reduce_while(1..@max_closure_rounds, {run, []}, fn _round, {run, acc} ->
       {run, rows} =
         Enum.reduce(elements, {run, []}, fn element, {run, rows} ->
-          apply_family_neighborhood(model, element, opts, run, rows)
+          apply_generator_neighborhood(model, element, opts, run, rows)
         end)
 
       changed? =
@@ -545,8 +582,8 @@ defmodule SpGen do
     end)
   end
 
-  defp apply_family_neighborhood(model, element, opts, run, rows_acc) do
-    Enum.reduce(families(), {run, rows_acc}, fn {_family, modules}, {run, rows} ->
+  defp apply_generator_neighborhood(model, element, opts, run, rows_acc) do
+    Enum.reduce(generators(), {run, rows_acc}, fn {_generator, modules}, {run, rows} ->
       primary = hd(modules)
 
       if primary.accepts?(element) do
