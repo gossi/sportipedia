@@ -682,6 +682,65 @@ defmodule SpGenTest do
       assert Enum.all?(again, &match?({:unchanged, _}, &1)), inspect(again)
     end
 
+    # A test file is a container for tests: a contributor whose units all wait
+    # defers without creating it, and the first one with a test to write owns
+    # its birth.
+    test "a test file appears with the first test written into it", %{root: root} do
+      rel =
+        "services/api/test/sportipedia/catalog/equipment/widget/operation/create_widget_test.exs"
+
+      path = Path.join(root, rel)
+
+      # the aggregate's contribution is gated on its events, which are not
+      # generated yet: nothing may be written
+      assert {:ok, results} = run(:aggregate, ["aggregate.widget"], root)
+      refute File.exists?(path), "an empty test file was created"
+
+      assert Enum.any?(results, fn
+               {:deferred, ^rel, _} -> true
+               _ -> false
+             end),
+             inspect(results)
+
+      # the event has a test to write, so it creates the file
+      assert {:ok, _} = run(:event, ["widget-created", "--template", "create"], root)
+      assert File.exists?(path)
+      assert File.read!(path) =~ ~s|describe "WidgetCreated event"|
+
+      # the aggregate now merges into the file that exists (its own run had to
+      # defer, and the event run's closure already back-filled it)
+      assert {:ok, _} = run(:aggregate, ["aggregate.widget"], root)
+      content = File.read!(path)
+      assert content =~ ~s|describe "WidgetCreated event"|
+      assert content =~ ~s|describe "WidgetAggregate"|
+
+      # fixed point
+      assert {:ok, again} = run(:aggregate, ["aggregate.widget"], root)
+      assert Enum.all?(again, &match?({:unchanged, _}, &1)), inspect(again)
+    end
+
+    test "--check promises a test file only if a test would be written", %{root: root} do
+      rel =
+        "services/api/test/sportipedia/catalog/equipment/widget/operation/create_widget_test.exs"
+
+      assert {:ok, results} = run(:aggregate, ["aggregate.widget", "--check"], root)
+
+      refute Enum.any?(results, fn
+               {:checked, ^rel, ids} -> :whole_file in ids
+               _ -> false
+             end),
+             "check promised a file the run would not write: #{inspect(results)}"
+
+      assert {:ok, results} =
+               run(:event, ["widget-created", "--template", "create", "--check"], root)
+
+      assert Enum.any?(results, fn
+               {:checked, ^rel, ids} -> :whole_file in ids
+               _ -> false
+             end),
+             "the event has a test to write and should create the file: #{inspect(results)}"
+    end
+
     @chain [
       {"event", ["widget-created"]},
       {"command_handler", ["create-widget"]},

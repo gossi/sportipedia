@@ -319,18 +319,15 @@ defmodule SpGen do
   end
 
   defp create(%FilePlan{unit_created: true, module: module} = plan, ctx, abs, rel_path, run) do
-    shell = "defmodule #{module} do\nend\n"
+    # units are applied to the in-memory shell; the file appears only once it
+    # has content (`place_units/6`), so a shell alone is never written
+    {rows, run} =
+      place_units(plan, ctx, Source.parse("defmodule #{module} do\nend\n"), abs, rel_path, %{
+        run
+        | creating: true
+      })
 
-    if run.check? do
-      {[{:checked, rel_path, [:whole_file]}], run}
-    else
-      # units are applied to the in-memory shell; the file appears only once
-      # at least one unit is actually placeable (an empty shell is not code)
-      {rows, run} =
-        place_units(plan, ctx, Source.parse(shell), abs, rel_path, %{run | creating: true})
-
-      {rows, %{run | creating: false}}
-    end
+    {rows, %{run | creating: false}}
   end
 
   defp create(%FilePlan{scaffold: nil} = _plan, _ctx, _abs, rel_path, run) do
@@ -377,7 +374,7 @@ defmodule SpGen do
     end
   end
 
-  defp place_units(%FilePlan{units: units}, ctx, source, abs, rel_path, run) do
+  defp place_units(%FilePlan{units: units} = plan, ctx, source, abs, rel_path, run) do
     # creation by units starts from a shell nothing is present in; merging
     # only considers the missing units
     missing = Enum.reject(units, &Unit.present?(&1, source))
@@ -405,17 +402,38 @@ defmodule SpGen do
 
       created? = run.creating
 
+      # a file appears only once it gets real content: a bare shell is not
+      # code, and a test module without a single `describe` is not a test file.
+      # Merging into a file that exists is never held back — it already has
+      # content, and the closure must be able to back-fill single units into it
+      content? = placed != [] and (not created? or file_content?(plan, placed))
+
       rows =
         cond do
+          run.check? and run.creating ->
+            # a missing file is reported whole only if the run would really
+            # write it: waiting units are a deferral, not a creation
+            cond do
+              content? ->
+                [{:checked, rel_path, [:whole_file]}]
+
+              deferred_entries != [] ->
+                [{:deferred, rel_path, deferred_entries}]
+
+              true ->
+                [{:checked, rel_path, ids_for_check(placed, blocked, deferred, deferred_entries)}]
+            end
+
           run.check? ->
             [{:checked, rel_path, ids_for_check(placed, blocked, deferred, deferred_entries)}]
 
-          placed == [] and blocked == [] ->
-            # nothing placeable yet: a bare shell is not code — write nothing
+          not content? and blocked == [] ->
+            # nothing placeable yet — write nothing, the units wait for the
+            # closure of the run that creates the citizen they reference
             [{:deferred, rel_path, deferred_entries}]
 
           true ->
-            if placed != [] do
+            if content? do
               File.mkdir_p!(Path.dirname(abs))
               File.write!(abs, Merge.render(ast, run.formatter_opts))
             end
@@ -424,10 +442,14 @@ defmodule SpGen do
               if(deferred_entries == [], do: [], else: [{:deferred, rel_path, deferred_entries}])
         end
 
-      run = if placed != [], do: mark_planned(run, rel_path), else: run
+      run = if content?, do: mark_planned(run, rel_path), else: run
       {rows, run}
     end
   end
+
+  # a test file is created by the first contributor that has a test to write
+  defp file_content?(%FilePlan{requires_describe: false}, placed), do: placed != []
+  defp file_content?(_plan, placed), do: Enum.any?(placed, &match?({:describe, _}, &1))
 
   defp ids_for_check(placed, blocked, deferred, deferred_entries) do
     reasons = fn id -> for({^id, reason} <- deferred_entries, do: reason) end

@@ -19,7 +19,8 @@ defmodule SpGen.Blueprint.ViewTest do
         path: Context.render(@test_path, ctx),
         module: Context.render(@test_module, ctx),
         units: test_units(ctx),
-        unit_created: true
+        unit_created: true,
+        requires_describe: true
       }
     ]
   end

@@ -21,6 +21,7 @@ defmodule SpGen.Blueprint.SchemaTest do
       path: Context.render("#{@test_dir}/" <> n[:stem] <> "_test.exs", ctx),
       module: n[:full] <> "Test",
       unit_created: true,
+      requires_describe: true,
       units: [
         %Unit{
           id: {:use, "ExUnit.Case"},

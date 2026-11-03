@@ -17,10 +17,24 @@ defmodule SpGen.FilePlan do
 
   `format: false` marks non-Elixir artifacts (YAML): created verbatim from
   `scaffold`, never merged into, never formatted.
+
+  `requires_describe: true` marks a test file: creating it takes more than a
+  placeable unit — at least one `describe` has to land, so no contributor ever
+  writes a test module without tests. Such a file appears with whichever
+  contributor is first to have a test to write.
   """
 
   @enforce_keys [:path]
-  defstruct [:path, :module, :scaffold, units: [], note: nil, format: true, unit_created: false]
+  defstruct [
+    :path,
+    :module,
+    :scaffold,
+    units: [],
+    note: nil,
+    format: true,
+    unit_created: false,
+    requires_describe: false
+  ]
 
   @type t :: %__MODULE__{
           path: String.t(),
@@ -32,7 +46,9 @@ defmodule SpGen.FilePlan do
           note: String.t() | nil,
           format: boolean(),
           # create by applying units to a module shell instead of from scaffold
-          unit_created: boolean()
+          unit_created: boolean(),
+          # test file: creation waits for a `describe` to place
+          requires_describe: boolean()
         }
 end
 

@@ -77,6 +77,9 @@ defmodule SpGen.Blueprint.OperationTest do
     %FilePlan{
       path: path,
       module: module,
+      # shared with the other contributors of this operation's tests: whoever
+      # is first to have a `describe` to write creates the file
+      requires_describe: true,
       units:
         List.wrap(use_unit(test_case)) ++
           List.wrap(tag_unit()) ++
