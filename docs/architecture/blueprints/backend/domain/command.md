@@ -1,6 +1,8 @@
 # Command
 
 > **Implemented as an executable blueprint:** `SpGen.Blueprint.Command`
+> (+ `SpGen.Blueprint.CommandTest`, `SpGen.Blueprint.CommandRouter`,
+> `SpGen.Blueprint.CommandApplication`)
 > — run `mix sp.gen.command <element> --template create|update|delete`.
 > This markdown stays the design document; the generator owns the file layout
 > and merges idempotently into existing code.
@@ -93,6 +95,14 @@ end
 
 - register at a commanded router
 - router locations: `/services/api/lib/sportipedia/<_subdomain>/<_composite>/router.ex`
+- the router is a registration file, but a composite may not lack one: the
+  `command` generator creates it (`use Commanded.Commands.Router`, both
+  middlewares) and registers it with the subdomain's commanded application
+  (`router …Router` in `…/<_subdomain>/application.ex`, also created when
+  missing) — a new composite therefore needs no hand-written registration
+  files. Starting that application from the root supervisor stays the
+  per-subdomain step the operator owns, together with the Repo and the
+  subdomain's test case.
 - dispatch contents:
 
 ```elixir

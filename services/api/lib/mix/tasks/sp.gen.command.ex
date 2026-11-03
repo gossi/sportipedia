@@ -9,7 +9,9 @@ defmodule Mix.Tasks.Sp.Gen.Command do
 
   * `services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/operation/<_operation>/command.ex`
   * the `<Command> command` `describe` block in the operation test file
-  * registration in the composite's commanded router (`identify`/`dispatch`)
+  * registration in the composite's commanded router (`identify`/`dispatch`),
+    and that router with the subdomain's commanded application (`router …`) —
+    both files are created here when the composite or subdomain lacks one
 
   The command struct is created for what the operation does:
 
@@ -21,8 +23,8 @@ defmodule Mix.Tasks.Sp.Gen.Command do
   `--composite`, `--constituent`, `--check`, ...).
 
   Idempotent: existing files only receive units (module, `use`s, aliases,
-  `field`s, `validates`, router entries, `describe`) that are missing; running
-  the task twice changes nothing.
+  `field`s, `validates`, `middleware`, `identify`/`dispatch` entries,
+  `describe`) that are missing; running the task twice changes nothing.
   """
 
   use Mix.Task

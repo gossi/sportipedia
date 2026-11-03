@@ -52,7 +52,7 @@ defmodule SpGen do
     %{
       aggregate: [B.Aggregate, B.AggregateTest],
       bruno: [B.Bruno, B.BrunoFolder],
-      command: [B.Command, B.CommandTest, B.CommandRouter],
+      command: [B.Command, B.CommandTest, B.CommandRouter, B.CommandApplication],
       command_handler: [B.CommandHandler, B.CommandHandlerTest],
       controller: [B.Controller, B.ControllerTest, B.WebRouter],
       event: [B.Event, B.EventTest],

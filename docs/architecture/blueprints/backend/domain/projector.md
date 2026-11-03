@@ -111,6 +111,10 @@ end
 ### Register Projector at Supervisor
 
 - register the projector at the nearest supervisor
+- neither location exists: the `projector` generator creates the subdomain
+  supervisor (its `start_link/1` and `init/1` skeleton) and registers into it;
+  starting that supervisor from the root application stays the operator's
+  per-subdomain step
 - supervisor locations:
   - `/services/api/lib/sportipedia/<_subdomain>/<_composite>/supervisor.ex`
   - `/services/api/lib/sportipedia/<_subdomain>/supervisor.ex`

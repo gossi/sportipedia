@@ -33,7 +33,8 @@ defmodule SpGenTest do
         assert Enum.all?(results, &match?({:unchanged, _}, &1)),
                "#{name} wanted changes: #{inspect(results)}"
 
-        assert length(results) == 3
+        # command, its test file, the composite router, the subdomain application
+        assert length(results) == 4
       end
     end
 
@@ -607,6 +608,80 @@ defmodule SpGenTest do
       assert Enum.any?(hd(results_per_form), &match?({:checked, _, _}, &1))
     end
 
+    # The registration hosts are not a precondition of a run: the generators
+    # that write into them create them when the composite or subdomain lacks
+    # one (router.ex and application.ex by `command`, supervisor.ex by
+    # `projector`).
+    test "the command run creates the composite router and the commanded application", %{
+      root: root
+    } do
+      File.rm_rf!(Path.join(root, "services/api/lib/sportipedia/catalog/equipment/router.ex"))
+
+      {:ok, _} = run(:event, ["widget-created"], root)
+      {:ok, _} = run(:command_handler, ["create-widget"], root)
+      {:ok, _} = run(:command, ["create-widget"], root)
+      # the aggregate's run back-fills the router entries the command deferred
+      {:ok, _} = run(:aggregate, ["aggregate.widget"], root)
+
+      router = read(root, "lib/sportipedia/catalog/equipment/router.ex")
+
+      assert router =~ "defmodule Sportipedia.Catalog.Equipment.Router do"
+      assert router =~ "use Commanded.Commands.Router"
+      assert router =~ "alias Sportipedia.Support.Commanded.Middleware.Identity"
+      assert router =~ "middleware Identity"
+      assert router =~ "middleware Validate"
+
+      assert router =~
+               ~S|identify WidgetAggregate, by: :id, prefix: "equipment/widget/"|
+
+      assert router =~
+               "dispatch CreateWidget, to: CreateWidgetHandler, aggregate: WidgetAggregate"
+
+      app = read(root, "lib/sportipedia/catalog/application.ex")
+
+      assert app =~ "defmodule Sportipedia.Catalog do"
+      assert app =~ "use Commanded.Application, otp_app: :sportipedia"
+      assert app =~ "router Sportipedia.Catalog.Equipment.Router"
+
+      # every host the run created is complete: a second run changes nothing
+      assert {:ok, again} = run(:command, ["create-widget"], root)
+      assert Enum.all?(again, &match?({:unchanged, _}, &1)), inspect(again)
+    end
+
+    test "the projector run creates the subdomain supervisor it registers into", %{root: root} do
+      File.rm_rf!(Path.join(root, "services/api/lib/sportipedia/catalog/supervisor.ex"))
+
+      for {family, args} <- [
+            {:event, ["widget-created"]},
+            {:command_handler, ["create-widget"]},
+            {:command, ["create-widget"]},
+            {:aggregate, ["aggregate.widget"]},
+            {:read_model, ["read-model.widget"]},
+            {:internal_api, ["read-model.widget"]}
+          ] do
+        assert {:ok, _} = run(family, args, root)
+      end
+
+      assert {:ok, results} = run(:projector, ["widget-created"], root)
+
+      assert Enum.any?(
+               results,
+               &match?({:created, "services/api/lib/sportipedia/catalog/supervisor.ex"}, &1)
+             ),
+             inspect(results)
+
+      supervisor = read(root, "lib/sportipedia/catalog/supervisor.ex")
+
+      assert supervisor =~ "defmodule Sportipedia.Catalog.Supervisor do"
+      assert supervisor =~ "use Supervisor"
+      assert supervisor =~ "Supervisor.start_link(__MODULE__, arg, name: __MODULE__)"
+      assert supervisor =~ "Supervisor.init(children, strategy: :one_for_one)"
+      assert supervisor =~ "Sportipedia.Catalog.Equipment.Widget.WidgetProjector"
+
+      assert {:ok, again} = run(:projector, ["widget-created"], root)
+      assert Enum.all?(again, &match?({:unchanged, _}, &1)), inspect(again)
+    end
+
     @chain [
       {"event", ["widget-created"]},
       {"command_handler", ["create-widget"]},
@@ -762,7 +837,7 @@ defmodule SpGenTest do
       # catalog-apparatus publishes apparatus-cataloged, whose projection creates a row
       assert {:ok, results} = SpGen.run(:command, ["catalog-apparatus", "--check"])
       assert Enum.all?(results, &match?({:unchanged, _}, &1))
-      assert length(results) == 3
+      assert length(results) == 4
     end
 
     test "template does not fit the element kind" do
