@@ -14,11 +14,19 @@ defmodule Mix.Tasks.Sp.Gen do
       mix sp.gen.command catalog-apparatus --template create
       mix sp.gen.aggregate widget --check
 
-  Because the generators live outside this app, running them never requires
-  the generated tree to compile — and the tree keeps compiling after every
-  run by construction (references to not-yet-generated citizens stay
-  deferred). Recovery hatch if the project itself is broken: run the binary
-  directly, `tools/spgen/spgen <family> <element> [options]`.
+  These task modules live in the generator project, and the API depends on it
+  (`{:spgen, path: "../../tools/spgen", runtime: false, only: [:dev, :test]}`).
+  That placement is deliberate: Mix resolves a dependency's tasks without
+  compiling the host project first, so a generator can repair a tree that does
+  not compile — e.g. one whose event file was deleted while its aggregate still
+  matches on its struct. Tasks defined inside the API would have had to compile
+  it first, and that is exactly the state the generator is called to fix.
+
+  The generators are also idempotent and append-only, so the tree keeps
+  compiling after every run (references to not-yet-generated citizens stay
+  deferred), and the same binary works standalone from anywhere in the repo:
+
+      tools/spgen/spgen <family> <element> [options]
   """
 
   use Mix.Task
@@ -39,8 +47,37 @@ defmodule Mix.Tasks.Sp.Gen do
     :ok
   end
 
-  # <repo>/services/api/lib/mix/tasks → up five = repo root
-  defp repo_root, do: Path.expand("../../../../..", __DIR__)
+  # The repo root is found by walking up from the host project's `mix.exs`
+  # (these tasks are a dependency of the API app) to the directory that holds
+  # both the generators and the domain model, so the layout is verified rather
+  # than assumed from a fixed number of `..`s.
+  defp repo_root do
+    start =
+      case Mix.Project.project_file() do
+        nil -> Mix.raise("sp.gen tasks must run inside a Mix project")
+        mix_exs -> Path.dirname(mix_exs)
+      end
+
+    walk_to_repo_root(start) ||
+      Mix.raise(
+        "could not find the Sportipedia repo from #{start} — expected a directory holding docs/domain-model"
+      )
+  end
+
+  defp walk_to_repo_root("/" <> _ = dir) do
+    cond do
+      repo_root?(dir) -> dir
+      dir == "/" -> nil
+      true -> walk_to_repo_root(Path.dirname(dir))
+    end
+  end
+
+  defp walk_to_repo_root(_), do: nil
+
+  defp repo_root?(dir) do
+    File.dir?(Path.join(dir, "docs/domain-model")) and
+      File.dir?(Path.join(dir, "tools/spgen"))
+  end
 
   defp executable do
     root = repo_root()
