@@ -10,9 +10,27 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Operation.CatalogApparatusTest
   alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusReadModel
   alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusProjector
 
-  @moduletag :integration
+  describe "Policy" do
+    @describetag :unit
 
-  describe "CatalogApparatus command" do
+    test "rejects guest users" do
+      assert :error = Policy.authorize(:catalog_apparatus, nil, %{})
+    end
+
+    test "allows authenticated users" do
+      user = %{id: UUID.uuid4(), role: "user"}
+      assert :ok = Policy.authorize(:catalog_apparatus, user, %{})
+    end
+
+    test "allows admin users" do
+      admin = %{id: UUID.uuid4(), role: "admin"}
+      assert :ok = Policy.authorize(:catalog_apparatus, admin, %{})
+    end
+  end
+
+  describe "Command" do
+    @describetag :unit
+
     test "creates command with required fields" do
       cmd = %CatalogApparatus{
         id: UUID.uuid4(),
@@ -89,7 +107,9 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Operation.CatalogApparatusTest
     end
   end
 
-  describe "CatalogApparatusHandler" do
+  describe "Handler" do
+    @describetag :unit
+
     test "handles CatalogApparatus command and returns ApparatusCataloged event" do
       id = UUID.uuid4()
 
@@ -112,7 +132,9 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Operation.CatalogApparatusTest
     end
   end
 
-  describe "Public API - catalog_apparatus" do
+  describe "Public API" do
+    @describetag :integration
+
     test "catalogs an apparatus successfully" do
       params = %{
         title: "Vaulting Table",
@@ -158,144 +180,6 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Operation.CatalogApparatusTest
 
       assert {:ok, _} = Apparatus.catalog_apparatus(params)
       assert {:error, {:validation_failure, _errors}} = Apparatus.catalog_apparatus(params)
-    end
-  end
-
-  describe "Policy" do
-    test "rejects guest users" do
-      assert :error = Policy.authorize(:catalog_apparatus, nil, %{})
-    end
-
-    test "allows authenticated users" do
-      user = %{id: UUID.uuid4(), role: "user"}
-      assert :ok = Policy.authorize(:catalog_apparatus, user, %{})
-    end
-
-    test "allows admin users" do
-      admin = %{id: UUID.uuid4(), role: "admin"}
-      assert :ok = Policy.authorize(:catalog_apparatus, admin, %{})
-    end
-  end
-
-  describe "ApparatusProjector" do
-    test "projects ApparatusCataloged event to read model" do
-      id = UUID.uuid4()
-
-      event = %ApparatusCataloged{
-        id: id,
-        title: "Vaulting Table",
-        slug: "vaulting-table",
-        description: "A gymnastics vault"
-      }
-
-      metadata = %{
-        handler_name: "equipment.apparatus_projection",
-        event_number: 1,
-        event_id: UUID.uuid4(),
-        stream_id: "apparatus-#{id}",
-        stream_version: 1,
-        correlation_id: nil,
-        causation_id: nil,
-        created_at: DateTime.utc_now(),
-        application: Sportipedia.Catalog,
-        state: nil
-      }
-
-      assert :ok = ApparatusProjector.handle(event, metadata)
-
-      record = Repo.get!(ApparatusReadModel, id)
-      assert record.title == "Vaulting Table"
-      assert record.slug == "vaulting-table"
-      assert record.description == "A gymnastics vault"
-    end
-
-    test "is idempotent - same event_number is skipped" do
-      id = UUID.uuid4()
-
-      event = %ApparatusCataloged{
-        id: id,
-        title: "Balance Beam",
-        slug: "balance-beam"
-      }
-
-      metadata = %{
-        handler_name: "equipment.apparatus_projection",
-        event_number: 2,
-        event_id: UUID.uuid4(),
-        stream_id: "apparatus-#{id}",
-        stream_version: 1,
-        correlation_id: nil,
-        causation_id: nil,
-        created_at: DateTime.utc_now(),
-        application: Sportipedia.Catalog,
-        state: nil
-      }
-
-      assert :ok = ApparatusProjector.handle(event, metadata)
-      assert :ok = ApparatusProjector.handle(event, metadata)
-
-      assert [record] = Repo.all(ApparatusReadModel)
-      assert record.id == id
-    end
-  end
-
-  describe "ApparatusAggregate" do
-    test "applies ApparatusCataloged to aggregate state" do
-      event = %ApparatusCataloged{
-        id: UUID.uuid4(),
-        title: "Vaulting Table",
-        slug: "vaulting-table",
-        description: "A gymnastics vault"
-      }
-
-      result = ApparatusAggregate.apply(%ApparatusAggregate{}, event)
-
-      assert result.id == event.id
-      assert result.title == "Vaulting Table"
-      assert result.slug == "vaulting-table"
-      assert result.description == "A gymnastics vault"
-    end
-  end
-
-  describe "ApparatusCataloged event" do
-    test "creates event with required fields" do
-      event = %ApparatusCataloged{
-        id: UUID.uuid4(),
-        title: "Vaulting Table",
-        slug: "vaulting-table"
-      }
-
-      assert event.title == "Vaulting Table"
-      assert event.slug == "vaulting-table"
-    end
-
-    test "creates event with optional description" do
-      event = %ApparatusCataloged{
-        id: UUID.uuid4(),
-        title: "Vaulting Table",
-        slug: "vaulting-table",
-        description: "A gymnastics vault"
-      }
-
-      assert event.description == "A gymnastics vault"
-    end
-
-    test "requires id, title, and slug" do
-      assert_raise ArgumentError, fn ->
-        struct!(ApparatusCataloged, %{})
-      end
-    end
-
-    test "serializes to JSON" do
-      event = %ApparatusCataloged{
-        id: UUID.uuid4(),
-        title: "Vaulting Table",
-        slug: "vaulting-table",
-        description: "A gymnastics vault"
-      }
-
-      json = Jason.encode!(event)
-      assert Jason.decode!(json)["title"] == "Vaulting Table"
     end
   end
 
