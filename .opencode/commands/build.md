@@ -2,7 +2,6 @@
 name: build
 description: Build domain features, or orchestrate multi-step work using recipes and specialized agents.
 agent: builder
-model: opencode-go/deepseek-v4-flash
 ---
 
 # Build
