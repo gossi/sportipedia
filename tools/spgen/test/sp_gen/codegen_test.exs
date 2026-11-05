@@ -31,6 +31,7 @@ defmodule SpGenTest do
 
   @event_test "services/api/test/sportipedia/catalog/equipment/widget/events/widget_created_test.exs"
   @operation_test "services/api/test/sportipedia/catalog/equipment/widget/operations/create_widget_test.exs"
+  @archive_command "services/api/lib/sportipedia/catalog/equipment/widget/operations/archive_widget/command.ex"
 
   # every generator the widget citizen needs, in the order the tool documents
   @chain [
@@ -443,7 +444,7 @@ defmodule SpGenTest do
       for {generator, args} <- @chain do
         {:ok, results} = FixtureRepo.check(repo, generator, args)
 
-        assert Enum.all?(results, &match?({:unchanged, _}, &1)),
+        assert writes(results) == [],
                "#{generator} #{inspect(args)} wanted changes: #{inspect(results)}"
       end
     end
@@ -477,7 +478,7 @@ defmodule SpGenTest do
       for {generator, args} <- @chain do
         {:ok, results} = FixtureRepo.check(reversed, generator, args)
 
-        assert Enum.all?(results, &match?({:unchanged, _}, &1)),
+        assert writes(results) == [],
                "#{generator} reversed drift: #{inspect(results)}"
       end
     end
@@ -500,12 +501,81 @@ defmodule SpGenTest do
     end
   end
 
+  # --------------------------------------------------- rules beyond the tool
+
+  describe "what the model states that the tool cannot realize" do
+    setup do
+      %{repo: FixtureRepo.build()}
+    end
+
+    test "a rule no invariant pattern claims is named in the report", %{repo: repo} do
+      {:ok, results} =
+        FixtureRepo.check(repo, :command, ["archive-widget", "--template", "delete"])
+
+      # `no-archive-when-in-use` names no field of the citizen at all, so no
+      # command can ever realize it; `at-most-one-owner` names `coachId`, which
+      # create-widget carries and does realize — reporting it here would be
+      # noise about this run instead of a fact about the model
+      assert {:unresolved, "command.archive-widget", details} =
+               Enum.find(results, &match?({:unresolved, _, _}, &1))
+
+      assert [detail] = details
+      assert detail =~ "no-archive-when-in-use"
+      assert detail =~ "no invariant pattern realizes it"
+      refute detail =~ "at-most-one-owner"
+    end
+
+    test "a validates line that lost its rule is reported, never appended twice", %{repo: repo} do
+      generate(repo)
+
+      # what a hand edit leaves behind: the presence check without the
+      # constraint the model states for the same field
+      FixtureRepo.write(
+        repo,
+        @archive_command,
+        read(repo, @archive_command)
+        |> String.replace(", by: [function: &WidgetExists.validate/2]", "")
+      )
+
+      args = ["archive-widget", "--template", "delete"]
+
+      {:ok, results} = FixtureRepo.check(repo, :command, args)
+
+      # in check mode the gap rides inside the row for that file, like a
+      # deferred or unplaceable unit does
+      assert {:checked, @archive_command, ids} =
+               Enum.find(results, &match?({:checked, @archive_command, _}, &1))
+
+      assert {:stale, {:validates, "id"}, ["add by: [function: &WidgetExists.validate/2]"]} in ids
+
+      # the run reports the same gap and writes nothing: appending a second
+      # `validates :id` line would *replace* the first in Vex, not extend it
+      {:ok, results} = FixtureRepo.run(repo, :command, args)
+
+      assert {:stale, @archive_command, _} = Enum.find(results, &match?({:stale, _, _}, &1))
+
+      source = read(repo, @archive_command)
+      assert length(Regex.scan(~r/validates :id/, source)) == 1
+      assert source =~ "validates :id, presence: true\n"
+    end
+  end
+
   # ------------------------------------------------------------------ helpers
 
   # paths in these tests are either repo-rooted or relative to the API project
   defp read(repo, rel), do: FixtureRepo.read(repo, rooted(rel))
   defp rooted("services/" <> _ = rel), do: rel
   defp rooted(rel), do: "services/api/" <> rel
+
+  # The rows of a `--check` sweep that would change the tree. `{:unresolved, _,
+  # _}` rows name model rules no invariant pattern realizes — the run writes
+  # nothing for them — so they are not drift and a fixed point keeps reporting
+  # them.
+  defp writes(results) do
+    results
+    |> Enum.reject(&match?({:unchanged, _}, &1))
+    |> Enum.reject(&match?({:unresolved, _, _}, &1))
+  end
 
   # The generated tree as one reviewable text: every generated file, in path
   # order, as `== <path> ==` followed by its content.

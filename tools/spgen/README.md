@@ -33,6 +33,11 @@ placement and optional gates. It is the smallest thing that can be safely
 re-applied, reported, deferred or blocked — and it is what makes the following
 decisions possible.
 
+Where one line carries several contributions (a `validates` line holds presence
+plus one `by:` pair per rule), the presence check reads the *parts*, not just the
+field key: a line that exists but has lost a rule is outdated, and outdated is a
+report, not an append.
+
 ### 4. Gating, deferral and the closure pass
 
 A unit that references another citizen carries a file gate. While the subject is
@@ -50,9 +55,15 @@ A generator is one `mix sp.gen.<name>` task running one blueprint per file role
 constraints are a second axis: `unique-slug` is not a file, it is a constraint
 in the read model, a query, an internal accessor, a validator, a `validates`
 line and tests. Files belong to elements; rules belong to the citizen — so no
-single artifact owns a rule. The rule axis exists (`Context`'s `validators` and
-`unique_fields/1`) and is consumed by the read model, internal API, validator and
-command blueprints.
+single artifact owns a rule.
+
+That second axis is `SpGen.Invariant`: a `namedRule` from the model is resolved
+by a pattern (`UniqueField`, `DomainObjectExists`, `FieldRule`) into a validator
+descriptor, which `Context` carries as `validators` and the read model, internal
+API, validator and command blueprints render. A rule no pattern claims stays in
+`Context.unresolved` instead of being silently dropped. The validator is not a
+generator: the command that validates with it owns it, through
+`Blueprint.dependencies/1`.
 
 ### 6. Emit native code, not string templates
 
@@ -87,27 +98,34 @@ the escript stays usable standalone.
 
 ### 10. Reporting and exit codes are part of the interface
 
-Results are grouped — `Created`, `Updated`, `Ignored`, plus `Blocked` / `Failed`
-— empty groups print nothing, and deferred files read
-`Ignored … skipped: spgen <generator>`. The report is how the operator decides
-what to run next: a deferral is guidance, a block is an error. `--check` uses the
-same shape in future tense. See `SpGen.Report`.
+Results are grouped — `Created`, `Updated`, `Ignored`, `Outdated`,
+`Unresolved rules`, plus `Blocked` / `Failed` — empty groups print nothing, and
+deferred files read `Ignored … skipped: spgen <generator>`. The report is how the
+operator decides what to run next: a deferral is guidance, a block is an error.
+`Outdated` (a line that exists but lacks a rule the model now states) and
+`Unresolved rules` (a rule no invariant pattern realizes) are the two ways a
+citizen can be behind its model without the run being wrong — both are reported,
+neither fails the run, because the merge may not rewrite a line the operator
+owns. `--check` uses the same shape in future tense. See `SpGen.Report`.
 
 ### 11. Two actors, listed in run order
 
 Generators declare the hexagonal actor they serve (`:domain` inside the hexagon,
 `:web` at the HTTP driving adapter), mirroring `backend/domain` vs
 `backend/web`. `mix sp.gen` groups by actor and orders each group by dependency:
-read model → event → aggregate → query → internal API → validator → command →
+read model → event → aggregate → query → internal API → command →
 command handler → projector → policy → public API, then view → schema →
 controller → bruno. The listing doubles as the known-good build sequence.
+Blueprints that are only implementation details — the validator, the lookup
+query, the registration hosts — are not in the listing: they arrive through
+`Blueprint.dependencies/1` of the generator that calls them.
 
 ### 12. Tests are acceptance criteria, not unit tests of internals
 
 - **Pickup** — a `--check` sweep over the repo's own citizens must be a no-op.
 - **Order independence** — the same citizen generated in forward and reversed
   order must be AST-equal.
-- **Black box** — generators are driven through `SpGen.run/2`, the same
+- **Black box** — generators are driven through `SpGen.run/2,3`, the same
   interface the CLI uses.
 
 ## Non-goals

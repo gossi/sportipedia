@@ -270,7 +270,38 @@ defmodule SpGen.Context do
       |> Enum.uniq_by(& &1["name"])
       |> Invariant.resolve_all(field_names, ctx.constituent)
 
+    unresolved = Enum.reject(unresolved, &realizable_by_citizen?(&1, ctx, field_names))
+
     {Enum.sort_by(validators, & &1.name), Enum.sort_by(unresolved, & &1["name"])}
+  end
+
+  # A rule that names a field only *another* element of the citizen carries is
+  # not a gap: `spgen command create-widget` realizes `at-most-one-owner`, so
+  # reporting it under `archive-widget` (which carries only `id`) would be noise
+  # about a run instead of a fact about the model. A rule that names no field
+  # anywhere in the citizen is the real thing: nothing can ever generate it.
+  defp realizable_by_citizen?(rule, %__MODULE__{} = ctx, field_names) do
+    text = "#{rule["name"]} #{rule["rule"]}"
+
+    ctx
+    |> citizen_field_names(field_names)
+    |> Enum.any?(fn field -> text =~ ~r/\b#{Regex.escape(field)}\b/i end)
+  end
+
+  defp citizen_field_names(%__MODULE__{} = ctx, own) do
+    elements =
+      [ctx.element, ctx.aggregate, ctx.read_model] ++
+        case ctx.aggregate do
+          %{name: name} -> commands_of(ctx.model, name)
+          nil -> []
+        end
+
+    (own ++
+       (elements
+        |> Enum.reject(&is_nil/1)
+        |> Enum.flat_map(&Esdm.fields/1)
+        |> Enum.map(& &1.name)))
+    |> Enum.uniq()
   end
 
   # Constraint rules live on the commands; when the generator is driven from
@@ -298,6 +329,20 @@ defmodule SpGen.Context do
     ctx.validators
     |> Enum.filter(&(&1.kind == :unique))
     |> Enum.map(& &1.field)
+  end
+
+  @doc """
+  The citizen's rules that no `SpGen.Invariant` pattern realizes, as
+  `{name, rule_text}`, sorted by name.
+
+  A rule naming no field of the citizen is not a validator — it is an
+  operational precondition over another aggregate or context — so nothing is
+  generated for it. Generators report it (see `SpGen`) rather than dropping it
+  silently.
+  """
+  @spec unresolved(%__MODULE__{}) :: [{String.t(), String.t()}]
+  def unresolved(%__MODULE__{unresolved: rules}) do
+    Enum.map(rules, fn rule -> {rule["name"], rule["rule"] || ""} end)
   end
 
   @doc """

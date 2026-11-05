@@ -9,10 +9,12 @@ defmodule SpGen.CLI do
       spgen <generator> <element> [options]
 
   Prints the run's report grouped by what happened (`Created`, `Updated`,
-  `Ignored`, plus `Blocked` / `Failed` when they apply — see
-  `SpGen.Report`), and turns problems (usage errors, units with no place in
-  an existing file, missing registration files) into exit status 1; deferred
-  units are reported and exit 0.
+  `Ignored`, `Outdated`, `Unresolved rules`, plus `Blocked` / `Failed` when they
+  apply — see `SpGen.Report`), and turns problems (usage errors, units with no
+  place in an existing file, missing registration files) into exit status 1.
+  Deferred units, outdated lines and unresolved rules are reported and exit 0:
+  the generator is non-destructive, and those three are work for the operator,
+  not failures of the run.
   """
 
   alias SpGen

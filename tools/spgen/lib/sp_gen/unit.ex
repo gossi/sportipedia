@@ -22,13 +22,28 @@ defmodule SpGen.Unit do
     `SpGen.Merge` factory
   * `requires.(ctx)` — `[{path, reason}]` that must exist on disk (or be
     created by the running generator) before this unit may be placed
+  * `stale.(source, ctx)` — `[]`, or the details of a unit whose *line is
+    present but does not carry everything the model states now*. Such a unit is
+    never placed (appending a second line would silently shadow the first —
+    `Vex.Struct.validates/2` keys validations by field) and is reported instead:
+    the operator owns the edit, the tool owns the notice.
   """
 
   @enforce_keys [:id, :check, :render, :place]
-  defstruct [:id, :check, :render, :place, requires: &SpGen.Unit.no_requires/1]
+  defstruct [
+    :id,
+    :check,
+    :render,
+    :place,
+    requires: &SpGen.Unit.no_requires/1,
+    stale: &SpGen.Unit.never_stale/2
+  ]
 
   @doc "The default `requires` — a unit with no references is always placeable."
   def no_requires(_ctx), do: []
+
+  @doc "The default `stale` — a unit that is present is complete."
+  def never_stale(_source, _ctx), do: []
 
   @type source :: SpGen.Source.t()
   @type ctx :: SpGen.Context.t()
@@ -37,11 +52,19 @@ defmodule SpGen.Unit do
           check: (source() -> boolean()),
           render: (ctx() -> String.t()),
           place: SpGen.Merge.place(),
-          requires: (ctx() -> [{String.t(), String.t()}])
+          requires: (ctx() -> [{String.t(), String.t()}]),
+          stale: (source(), ctx() -> [String.t()])
         }
 
   @doc "Is this unit already present in `source`?"
   def present?(%__MODULE__{check: check}, source), do: check.(source)
+
+  @doc """
+  Details of a unit that is present in `source` but incomplete for `ctx` —
+  `[]` when there is nothing to report.
+  """
+  @spec stale(t(), source(), ctx()) :: [String.t()]
+  def stale(%__MODULE__{stale: stale}, source, ctx), do: stale.(source, ctx)
 
   @doc """
   Missing references of this unit for `ctx`: entries of `requires` whose path

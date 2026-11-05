@@ -99,6 +99,15 @@ defmodule SpGen.FixtureRepo do
   @spec exists?(t(), String.t()) :: boolean()
   def exists?(%__MODULE__{} = repo, rel), do: SpGen.FS.exists?(repo.fs, Path.join(repo.root, rel))
 
+  @doc """
+  Overwrite `rel` — how a test states what hand-edited generated code looks like.
+  """
+  @spec write(t(), String.t(), String.t()) :: :ok
+  def write(%__MODULE__{pid: pid, root: root}, rel, content) do
+    :ok = SpGen.FS.VFS.write(pid, Path.join(root, rel), content)
+    :ok
+  end
+
   @doc "Remove `rel` (a host file a run is expected to recreate)."
   @spec remove(t(), String.t()) :: :ok
   def remove(%__MODULE__{} = repo, rel) do

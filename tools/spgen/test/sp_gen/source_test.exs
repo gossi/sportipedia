@@ -87,6 +87,36 @@ defmodule SpGen.SourceTest do
       refute Source.entry?(src, :validates, ":description")
     end
 
+    test "the keyword pairs a validates line carries", %{src: src} do
+      assert Source.entry_kws(src, :validates, ":title") == [presence: "true"]
+
+      assert Source.entry_kws(src, :validates, ":slug") == [
+               presence: "true",
+               by: "[function: &UniqueSlug.validate/2, allow_nil: true]"
+             ]
+
+      assert Source.entry_kws(src, :validates, ":coachId") == [
+               by: "[function: &AtMostOneOwner.validate/2]"
+             ]
+
+      assert Source.entry_kws(src, :validates, ":description") == []
+    end
+
+    test "repeated keys survive — two validators guarding one field" do
+      src =
+        Source.parse("""
+        defmodule X do
+          use Vex.Struct
+          validates :apparatusId, by: [function: &A.validate/2], by: [function: &B.validate/2]
+        end
+        """)
+
+      assert Source.entry_kws(src, :validates, ":apparatusId") == [
+               by: "[function: &A.validate/2]",
+               by: "[function: &B.validate/2]"
+             ]
+    end
+
     test "moduledoc attribute is seen", %{src: src} do
       assert Source.has_attribute?(src, :moduledoc)
     end

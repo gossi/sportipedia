@@ -118,6 +118,21 @@ defmodule SpGen.ContextTest do
       c = ctx(model, "command.archive-apparatus", operation: :delete)
       assert [%{field: "id", kind: :exists}] = c.validators
     end
+
+    test "unresolved/1 names only the rules no element of the citizen can realize", %{
+      model: model
+    } do
+      # `unique-slug` names `slug`, which catalog-apparatus carries and realizes,
+      # so archive-apparatus does not report it — the rule is the citizen's
+      # business where the citizen can express it, not this element's problem
+      archive = ctx(model, "command.archive-apparatus", operation: :delete)
+
+      assert [{"no-archive-when-in-use", rule}] = Context.unresolved(archive)
+      assert rule =~ "no sport references it"
+
+      assert [{"no-archive-when-in-use", _}] =
+               Context.unresolved(ctx(model, "aggregate.apparatus"))
+    end
   end
 
   describe "publishing_commands/1" do

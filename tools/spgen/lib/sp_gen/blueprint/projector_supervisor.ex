@@ -1,7 +1,7 @@
 defmodule SpGen.Blueprint.ProjectorSupervisor do
   @moduledoc """
   Registers the projector at the nearest supervisor
-  (`docs/architecture/blueprints/backend/domain/projector.md` — Registration):
+  (`docs/architecture/blueprints/backend/domain/projector.md`):
   appends the projector module to the `children` list of the composite's
   supervisor, falling back to the subdomain's supervisor.
 

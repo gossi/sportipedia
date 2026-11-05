@@ -27,6 +27,13 @@ defmodule SpGen do
   **closure pass** re-applies the gated units of the constituent's
   neighborhood (merge-only, never creating), so referencing code lands
   exactly when its subject exists.
+
+  A unit that is present **but incomplete** — today a `validates` line for a
+  field the model gave another rule — is never appended: a second line for the
+  same key would shadow the first (`Vex.Struct.validates/2` stores validations
+  per field). It reports under `Outdated` with the exact part to add. Rules the
+  model states that no `SpGen.Invariant` pattern realizes report under
+  `Unresolved rules`, because nothing is generated for them.
   """
 
   alias SpGen.{Blueprint, Context, Esdm, FilePlan, Formatter, FS, Merge, Source, Unit}
@@ -224,7 +231,7 @@ defmodule SpGen do
           []
         end
 
-      {:ok, seed ++ backfill}
+      {:ok, seed ++ backfill ++ unresolved_rows(ctx)}
     else
       {:error, {:unknown_location, var}} ->
         {:error,
@@ -233,6 +240,22 @@ defmodule SpGen do
       other ->
         other
     end
+  end
+
+  # The citizen's rules that no `SpGen.Invariant` pattern realizes are not an
+  # error and generate nothing — so they are named in the report instead of
+  # living only in `Context`, where no operator would find them.
+  defp unresolved_rows(%Context{unresolved: []}), do: []
+
+  defp unresolved_rows(%Context{} = ctx) do
+    details =
+      Enum.map(Context.unresolved(ctx), fn {name, rule} ->
+        text = if(rule == "", do: "", else: " — #{rule}")
+
+        "#{name}#{text}: no invariant pattern realizes it (implement it by hand — see the validator blueprint)"
+      end)
+
+    [{:unresolved, "#{ctx.element.kind}.#{ctx.element.name}", details}]
   end
 
   defp new_run(repo_root, formatter_opts, check?, fs) do
@@ -351,7 +374,13 @@ defmodule SpGen do
   # * `{:deferred, path, [{unit_id, reason}]}` — units waiting for a citizen
   #   that has not been generated yet (reported only — generation order is
   #   not an error, and the tree stays compilable)
-  # * `{:checked, path, [unit_id | {:unplaceable, unit_id} | {:deferred, unit_id, [reason]}]}`
+  # * `{:stale, path, [{unit_id, [detail]}]}` — a unit whose line exists but
+  #   does not carry everything the model states now; never appended (a second
+  #   line would shadow the first), always reported
+  # * `{:unresolved, element, [detail]}` — rules the domain model states that no
+  #   `SpGen.Invariant` pattern realizes: nothing is generated for them and the
+  #   operator has to implement them (see `docs/…/validator.md`)
+  # * `{:checked, path, [unit_id | {:unplaceable, unit_id} | {:deferred, unit_id, [reason]} | {:stale, unit_id, [detail]}]}`
   #   — in `--check` mode, what *would* change; `[:whole_file]` when the file
   #   itself is missing
   # * `{:blocked, path, [unit_id]}` — a unit is missing but has no home in
@@ -364,6 +393,8 @@ defmodule SpGen do
           | {:backfill, String.t(), [term()]}
           | {:unchanged, String.t()}
           | {:deferred, String.t(), [{term(), String.t()}]}
+          | {:stale, String.t(), [{term(), [String.t()]}]}
+          | {:unresolved, String.t(), [String.t()]}
           | {:checked, String.t(), [term()]}
           | {:blocked, String.t(), [term()]}
           | {:error, String.t(), term()}
@@ -520,6 +551,12 @@ defmodule SpGen do
       {deferred, placeable} =
         Enum.split_with(missing, fn unit -> Unit.deferred(unit, ctx, existing?) != [] end)
 
+      # a unit whose line is present but incomplete is never appended: a second
+      # line for the same field would shadow the first (`Vex.Struct.validates/2`
+      # keys validations by field), so the gap belongs in the report
+      {stale, placeable} =
+        Enum.split_with(placeable, fn unit -> Unit.stale(unit, source, ctx) != [] end)
+
       {ast, placed, blocked} =
         Enum.reduce(placeable, {source.ast, [], []}, fn unit, {acc, placed, blocked} ->
           case unit.place.(acc, unit, ctx) do
@@ -532,6 +569,12 @@ defmodule SpGen do
         for unit <- deferred,
             {_path, reason} <- Unit.deferred(unit, ctx, existing?),
             do: {unit.id, reason}
+
+      stale_entries = for unit <- stale, do: {unit.id, Unit.stale(unit, source, ctx)}
+      stale_rows = if stale_entries == [], do: [], else: [{:stale, rel_path, stale_entries}]
+
+      deferred_rows =
+        if deferred_entries == [], do: [], else: [{:deferred, rel_path, deferred_entries}]
 
       created? = run.creating
 
@@ -551,25 +594,31 @@ defmodule SpGen do
                 [{:checked, rel_path, [:whole_file]}]
 
               deferred_entries != [] ->
-                [{:deferred, rel_path, deferred_entries}]
+                deferred_rows ++ stale_rows
 
               true ->
-                [{:checked, rel_path, ids_for_check(placed, blocked, deferred, deferred_entries)}]
+                [
+                  {:checked, rel_path,
+                   ids_for_check(placed, blocked, deferred, deferred_entries, stale_entries)}
+                ]
             end
 
           run.check? ->
-            [{:checked, rel_path, ids_for_check(placed, blocked, deferred, deferred_entries)}]
+            [
+              {:checked, rel_path,
+               ids_for_check(placed, blocked, deferred, deferred_entries, stale_entries)}
+            ]
 
           not content? and blocked == [] ->
-            # nothing placeable yet — write nothing, the units wait for the
-            # closure of the run that creates the citizen they reference
-            [{:deferred, rel_path, deferred_entries}]
+            # nothing to append: the units either wait for a citizen (deferred)
+            # or need a human edit inside an existing line (stale)
+            deferred_rows ++ stale_rows
 
           true ->
             if content?, do: FS.write!(run.fs, abs, Merge.render(ast, run.formatter_opts))
 
             result_rows(placed, blocked, rel_path, run, created?) ++
-              if(deferred_entries == [], do: [], else: [{:deferred, rel_path, deferred_entries}])
+              deferred_rows ++ stale_rows
         end
 
       run = if content?, do: mark_planned(run, rel_path), else: run
@@ -581,12 +630,13 @@ defmodule SpGen do
   defp file_content?(%FilePlan{requires_describe: false}, placed), do: placed != []
   defp file_content?(_plan, placed), do: Enum.any?(placed, &match?({:describe, _}, &1))
 
-  defp ids_for_check(placed, blocked, deferred, deferred_entries) do
+  defp ids_for_check(placed, blocked, deferred, deferred_entries, stale_entries) do
     reasons = fn id -> for({^id, reason} <- deferred_entries, do: reason) end
 
     placed ++
       Enum.map(blocked, &{:unplaceable, &1}) ++
-      Enum.map(deferred, fn unit -> {:deferred, unit.id, reasons.(unit.id)} end)
+      Enum.map(deferred, fn unit -> {:deferred, unit.id, reasons.(unit.id)} end) ++
+      Enum.map(stale_entries, fn {id, details} -> {:stale, id, details} end)
   end
 
   defp result_rows([], blocked, rel_path, _run, _created?) when blocked != [] do

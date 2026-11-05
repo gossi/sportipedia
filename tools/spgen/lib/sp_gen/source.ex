@@ -52,6 +52,37 @@ defmodule SpGen.Source do
       end
     end
 
+    @doc """
+    Every keyword pair of the entry's keyword arguments, as
+    `{key, rendered_value}`, in source order.
+
+    Unlike `kw/2` this keeps *repeated* keys — the shape `validates` needs for
+    two custom validators on one field (`by:` twice, because a second
+    `validates` call for the same field would replace the first).
+    """
+    @spec pairs(t()) :: [{atom(), String.t()}]
+    def pairs(%Entry{args: args}) do
+      args
+      |> Enum.filter(&is_list/1)
+      |> Enum.flat_map(&pair/1)
+    end
+
+    defp pair(list) do
+      Enum.flat_map(list, fn
+        {{:__block__, _, [key]}, value} when is_atom(key) ->
+          [{key, SpGen.Source.render_arg(value)}]
+
+        {key, _meta, value} when is_atom(key) ->
+          [{key, SpGen.Source.render_arg(value)}]
+
+        {key, value} when is_atom(key) ->
+          [{key, SpGen.Source.render_arg(value)}]
+
+        _other ->
+          []
+      end)
+    end
+
     defp find_keyword(list, key) do
       Enum.find_value(list, fn
         {{:__block__, _, [^key]}, value} ->
@@ -335,6 +366,29 @@ defmodule SpGen.Source do
   @doc "True when an entry of `macro` exists that has keyword `key` at all."
   def entry_kw?(src, macro, key) do
     src |> calls(macro) |> Enum.any?(fn e -> not is_nil(Entry.kw(e, key)) end)
+  end
+
+  @doc """
+  The keyword pairs of every entry of `macro` whose first argument renders to
+  `key`, as `{keyword, rendered_value}` in source order.
+
+  `validates :slug, presence: true, by: [function: &UniqueSlug.validate/2]`
+  under key `":slug"` yields
+
+      [presence: "true",
+       by: "[function: &UniqueSlug.validate/2]"]
+
+  Presence of an entry (`entry?/3`) is not enough when a unit is a *line that
+  aggregates several contributions* — a `validates` line carries presence plus
+  one `by:` pair per validator — so a blueprint compares these rendered values
+  to tell "already there" from "there, but not complete".
+  """
+  @spec entry_kws(t(), atom(), String.t()) :: [{atom(), String.t()}]
+  def entry_kws(src, macro, key) do
+    for %Entry{args: [first | _]} = entry <- calls(src, macro),
+        render_arg(first) == key,
+        pair <- Entry.pairs(entry),
+        do: pair
   end
 
   # ------------------------------------------------------------------ bits

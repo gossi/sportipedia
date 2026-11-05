@@ -39,27 +39,52 @@ defmodule SpGen.Templates do
   Validators attached to the field add `by: [function: &Module.validate/2]`;
   `:unique` validators also add `allow_nil: true` (a partial update may omit
   the field), `:exists` validators do not.
+
+  Two validators on one field therefore produce **two `by:` pairs in one call**:
+
+      validates :apparatusId,
+        by: [function: &AtMostOneEquipment.validate/2],
+        by: [function: &EquipmentExists.validate/2]
+
+  That is not a mistake to clean up — it is the only shape Vex accepts.
+  `Vex.Struct.validates/2` stores validations with `Map.put(validations, field,
+  opts)`, so a *second call* for the same field replaces the first one and its
+  rule silently disappears. Within one call the validations are a keyword list
+  that `Vex.results/2` maps pair by pair, so duplicate `by:` keys both run and
+  both report their error (verified against vex 0.9.2:
+  `[{:error, :x, :by, :a_says_no}, {:error, :x, :by, :b_says_no}]`).
   """
   def validates_line(field, validators) do
-    validators = Enum.filter(validators, &(&1.field == field.name))
-
     parts =
-      if field.required && !field.internal, do: ["presence: true"], else: []
+      if(validates_presence?(field), do: ["presence: true"], else: []) ++
+        Enum.map(validators_for(field, validators), &validates_by_pair/1)
 
-    parts =
-      Enum.reduce(validators, parts, fn v, acc ->
-        by = "by: [function: &#{v.module}.validate/2"
-        # allow_nil belongs inside the by-list: Vex skips the validator for nil
-        by = if v.kind == :unique, do: by <> ", allow_nil: true", else: by
-        acc ++ [by <> "]"]
-      end)
-
-    if parts == [] do
-      nil
-    else
-      "validates :#{field.name}, " <> Enum.join(parts, ", ")
+    case parts do
+      [] -> nil
+      parts -> "validates :#{field.name}, " <> Enum.join(parts, ", ")
     end
   end
+
+  @doc "Does `field` owe the line a `presence: true` part?"
+  def validates_presence?(field), do: field.required && !field.internal
+
+  @doc "The validators guarding `field`, in the order their `by:` parts appear."
+  def validators_for(%{name: name}, validators), do: Enum.filter(validators, &(&1.field == name))
+
+  @doc """
+  The `by:` pair for one validator — the exact text a `validates` line needs.
+  `allow_nil` belongs inside the pair: Vex skips the validator for nil.
+  """
+  def validates_by_pair(%{kind: kind, module: module}) do
+    base = "by: [function: &#{module}.validate/2"
+    if kind == :unique, do: base <> ", allow_nil: true]", else: base <> "]"
+  end
+
+  @doc """
+  The text a `validates` line must contain for this validator to run at all —
+  what `Spgen.Blueprint.Command` compares against the parsed file.
+  """
+  def validates_needle(%{module: module}), do: "&#{module}.validate/2"
 
   @doc """
   All validates lines for a context (required fields and validator fields).

@@ -1,7 +1,7 @@
 defmodule SpGen.Blueprint.CommandRouter do
   @moduledoc """
   Registers the command in the composite's commanded router
-  (`docs/architecture/blueprints/backend/domain/command.md` — Registration):
+  (`docs/architecture/blueprints/backend/domain/command.md`):
   aliases for command, handler and aggregate, the `identify` entry (once per
   aggregate) and the `dispatch` entry grouping the command with its handler.
 

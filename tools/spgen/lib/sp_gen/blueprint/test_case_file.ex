@@ -3,7 +3,7 @@ defmodule SpGen.Blueprint.TestCaseFile do
   Shared machinery for a test file several blueprints contribute to: the
   operation test file (`docs/architecture/blueprints/backend/domain/operation-test.md`)
   owned by the operation, and the event test file
-  (`docs/architecture/blueprints/backend/domain/event.md`) owned by the fact.
+  (`docs/architecture/blueprints/backend/domain/event-test.md`) owned by the fact.
 
   The file is a container; each blueprint's `*Test` module contributes its own
   `describe` block plus the aliases it needs:

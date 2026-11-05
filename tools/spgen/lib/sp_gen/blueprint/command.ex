@@ -17,7 +17,10 @@ defmodule SpGen.Blueprint.Command do
 
   Presence-based merging means running this over existing, hand-finished
   commands is a no-op as long as module, `use`s, aliases, fields and
-  validations exist.
+  validations exist. A `validates` line counts as present only when it carries
+  every rule the model now states for that field; an incomplete one is reported
+  (`Outdated`) rather than appended to, because Vex keys validations per field —
+  a second line would replace the first, not extend it.
   """
 
   use SpGen.Blueprint
@@ -140,18 +143,12 @@ defmodule SpGen.Blueprint.Command do
     |> Enum.map(fn f -> {f, Templates.validates_line(f, ctx.validators)} end)
     |> Enum.reject(fn {_f, line} -> is_nil(line) end)
     |> Enum.map(fn {f, line} ->
-      key = ":#{f.name}"
-
       %Unit{
         id: {:validates, f.name},
-        check: fn src -> Source.entry?(src, :validates, key) end,
+        check: fn src -> validates_complete?(src, f, ctx.validators) end,
+        stale: fn src, _c -> stale_validations(src, f, ctx.validators) end,
         render: fn _ctx -> line end,
-        requires: fn c ->
-          case Enum.find(c.validators, fn v -> v.field == f.name end) do
-            nil -> []
-            v -> [{Validator.module_file(c, v), "validator not generated (spgen command)"}]
-          end
-        end,
+        requires: fn c -> validator_gates(c, f) end,
         place:
           Merge.after_macro(
             :validates,
@@ -160,5 +157,58 @@ defmodule SpGen.Blueprint.Command do
           )
       }
     end)
+  end
+
+  # every validator guarding the field gates the line: a `validates` line may
+  # never reference a validator whose file does not exist
+  defp validator_gates(c, field) do
+    field
+    |> Templates.validators_for(c.validators)
+    |> Enum.map(fn v ->
+      {Validator.module_file(c, v), "validator #{v.snake} not generated (spgen command)"}
+    end)
+  end
+
+  # ------------------------------------------------------ validates currency
+
+  # one `validates` line carries presence plus one `by:` pair per validator
+  # (Vex keys validations by field, so a second call would replace the first) —
+  # presence of *a* line is therefore not presence of *this* line. A line is
+  # never appended twice: an incomplete one is reported instead.
+  defp validates_complete?(src, field, validators) do
+    line?(src, field) and stale_validations(src, field, validators) == []
+  end
+
+  defp stale_validations(src, field, validators) do
+    if line?(src, field) do
+      src |> Source.entry_kws(:validates, ":#{field.name}") |> stale_details(field, validators)
+    else
+      []
+    end
+  end
+
+  defp line?(src, field), do: Source.entry?(src, :validates, ":#{field.name}")
+
+  defp stale_details(kws, field, validators) do
+    by_values = for {:by, value} <- kws, do: value
+
+    presence =
+      if Templates.validates_presence?(field) and
+           not Enum.any?(kws, &match?({:presence, "true"}, &1)) do
+        ["add presence: true"]
+      else
+        []
+      end
+
+    missing =
+      field
+      |> Templates.validators_for(validators)
+      |> Enum.reject(fn v ->
+        needle = Templates.validates_needle(v)
+        Enum.any?(by_values, &String.contains?(&1, needle))
+      end)
+      |> Enum.map(fn v -> "add " <> Templates.validates_by_pair(v) end)
+
+    presence ++ missing
   end
 end

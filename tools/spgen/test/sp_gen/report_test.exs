@@ -186,6 +186,63 @@ defmodule SpGen.ReportTest do
     end
   end
 
+  describe "render/1 the gap between model and code" do
+    test "an outdated line states what to add" do
+      rows = [
+        {:stale, @lib <> "operations/archive_apparatus/command.ex",
+         [
+           {{:validates, "id"},
+            ["add presence: true", "add by: [function: &ApparatusExists.validate/2]"]}
+         ]}
+      ]
+
+      assert Report.render(rows) == [
+               "Outdated",
+               "  catalog/equipment/apparatus/operations/archive_apparatus/command.ex",
+               "    - validates id: add presence: true",
+               "    - validates id: add by: [function: &ApparatusExists.validate/2]"
+             ]
+    end
+
+    test "an unresolved rule is stated under the element that carries it" do
+      rows = [
+        {:unresolved, "command.archive-apparatus",
+         ["no-archive-when-in-use: no invariant pattern realizes it"]}
+      ]
+
+      assert Report.render(rows) == [
+               "Unresolved rules",
+               "  command.archive-apparatus",
+               "    - no-archive-when-in-use: no invariant pattern realizes it"
+             ]
+    end
+
+    test "a check row that would update a file and finds it outdated shows both" do
+      rows = [
+        {:checked, @lib <> "command.ex",
+         [{:validates, "slug"}, {:stale, {:validates, "id"}, ["add presence: true"]}]}
+      ]
+
+      assert Report.render(rows) == [
+               "Would update",
+               "  catalog/equipment/apparatus/command.ex",
+               "Outdated",
+               "  catalog/equipment/apparatus/command.ex",
+               "    - validates id: add presence: true"
+             ]
+    end
+
+    test "a check row whose only finding is outdated is not a would-update" do
+      rows = [{:checked, @lib <> "command.ex", [{:stale, {:validates, "id"}, ["add x"]}]}]
+
+      assert Report.render(rows) == [
+               "Outdated",
+               "  catalog/equipment/apparatus/command.ex",
+               "    - validates id: add x"
+             ]
+    end
+  end
+
   describe "display_path/1" do
     test "strips the four project roots" do
       assert Report.display_path(@lib <> "aggregate.ex") ==
