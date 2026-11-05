@@ -10,6 +10,11 @@ defmodule SpGen.Blueprint.Command do
   * `--template update` — id enforced, data fields all partial
   * `--template delete` — id only
 
+  A command validates with the validators its invariants and constraints
+  imply: they are generated as this blueprint's dependencies, together with the
+  internal API they call and the lookup queries their accessors read through
+  (`SpGen.Blueprint.Validator`).
+
   Presence-based merging means running this over existing, hand-finished
   commands is a no-op as long as module, `use`s, aliases, fields and
   validations exist.
@@ -20,13 +25,17 @@ defmodule SpGen.Blueprint.Command do
   alias SpGen.Templates
   alias SpGen.Blueprint.Validator
 
-  @path "services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/operation/<_operation>/command.ex"
+  @path "services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/operations/<_operation>/command.ex"
   @module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<Command>"
 
   def name, do: :command
   def source_kinds, do: [:command]
   def operations, do: [:create, :update, :delete]
   def optional_template?, do: true
+
+  def dependencies(%Context{} = ctx) do
+    if ctx.validators == [], do: [], else: [{Validator, ctx.element}]
+  end
 
   @doc "The command's module-name template (referenced by `CommandTest` and `CommandRouter`)."
   def module_template, do: @module
@@ -122,7 +131,7 @@ defmodule SpGen.Blueprint.Command do
 
   defp validator_gate(ctx, v) do
     path = Validator.module_file(ctx, v)
-    reason = "validator #{v.snake} not generated (spgen validator)"
+    reason = "validator #{v.snake} not generated (spgen command)"
     fn _c -> [{path, reason}] end
   end
 
@@ -140,7 +149,7 @@ defmodule SpGen.Blueprint.Command do
         requires: fn c ->
           case Enum.find(c.validators, fn v -> v.field == f.name end) do
             nil -> []
-            v -> [{Validator.module_file(c, v), "validator not generated (spgen validator)"}]
+            v -> [{Validator.module_file(c, v), "validator not generated (spgen command)"}]
           end
         end,
         place:

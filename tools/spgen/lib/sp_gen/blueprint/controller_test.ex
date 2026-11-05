@@ -13,7 +13,7 @@ defmodule SpGen.Blueprint.ControllerTest do
   alias SpGen.Esdm.Element
   alias SpGen.Blueprint.Controller
 
-  @test_path "services/api/test/sportipedia_web/<_subdomain>/<composite>/<domain_object>/operation/<_operation>_endpoint_test.exs"
+  @test_path "services/api/test/sportipedia_web/<_subdomain>/<composite>/<domain_object>/operations/<_operation>_endpoint_test.exs"
   @test_module "SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.<Operation>EndpointTest"
 
   def plans(%Context{} = ctx) do

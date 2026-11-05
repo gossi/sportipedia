@@ -19,7 +19,7 @@ defmodule SpGen.Blueprint.CommandHandler do
 
   alias SpGen.Blueprint.{Aggregate, Command, Event}
 
-  @path "services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/operation/<_operation>/handler.ex"
+  @path "services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/operations/<_operation>/handler.ex"
   @module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<Command>Handler"
   @aggregate_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Aggregate"
   @command_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<Command>"

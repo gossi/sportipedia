@@ -6,8 +6,8 @@ defmodule SpGen.Report do
   paths show relative to their project root, not the repo.
 
   A deferred unit is not a failure — generation order never matters — so its
-  file folds into `Ignored` with a `skipped:` note naming the citizen to
-  generate first (`spgen validator`). `--check` rows read in future tense.
+  file folds into `Ignored` with a `skipped:` note naming the generator to run
+  first (`spgen internal_api`). `--check` rows read in future tense.
   """
 
   @typedoc "One report line, in print order."
@@ -162,7 +162,7 @@ defmodule SpGen.Report do
     end
   end
 
-  # "validator unique_slug not generated (spgen validator)" → "spgen validator"
+  # "validator unique_slug not generated (spgen command)" → "spgen command"
   defp commands(reasons) do
     reasons
     |> Enum.flat_map(&(Regex.run(~r/\((spgen [^)]*)\)/, &1, capture: :all_but_first) || []))

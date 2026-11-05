@@ -1,28 +1,28 @@
 defmodule SpGen.Blueprint.PublicAPITest do
   @moduledoc """
   The public API's contribution to the operation test file: a
-  `describe "Public API - <operation>"` block exercising the port's happy
-  path and failure contract.
+  `describe "Public API"` block exercising the port's happy path and failure
+  contract.
   """
 
   use SpGen.Blueprint
 
   alias SpGen.{Esdm, Templates}
-  alias SpGen.Blueprint.{OperationTest, PublicAPI}
+  alias SpGen.Blueprint.{TestCaseFile, PublicAPI}
 
-  @test_path "services/api/test/sportipedia/<_subdomain>/<composite>/<domain_object>/operation/<_operation>_test.exs"
+  @test_path "services/api/test/sportipedia/<_subdomain>/<composite>/<domain_object>/operations/<_operation>_test.exs"
   @test_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Operation.<Operation>Test"
 
   def plans(%Context{} = ctx) do
     [
-      OperationTest.plan(ctx,
+      TestCaseFile.plan(ctx,
         path: @test_path,
         module: @test_module,
         alias_templates: [PublicAPI.module_template()],
         requires: fn c ->
           [{PublicAPI.module_file(c), "public API not generated (spgen public_api)"}]
         end,
-        describes: [{"Public API - <_operation>", &describe_body/2}]
+        describes: [{"Public API", &describe_body/2, ["Public API - <_operation>"]}]
       )
     ]
   end

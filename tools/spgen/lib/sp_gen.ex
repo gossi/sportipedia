@@ -5,8 +5,11 @@ defmodule SpGen do
 
   A **generator** is one `mix sp.gen.<name>` task. It runs a list of
   **blueprints** — one per generated file role: the citizen's own module, its
-  test output, and any registration files — all against one resolved
-  `Context`.
+  test file, and any registration files — all against one resolved
+  `Context`. A blueprint also declares the blueprints its generated code calls
+  (`SpGen.Blueprint.dependencies/1`): those are planned first, in the same run,
+  so a command that validates with a validator generates that validator, the
+  internal API it delegates to, and the lookup query and read model behind it.
 
   Each module yields `FilePlan`s, applied idempotently against the tree: a
   missing file gets its units applied to a fresh module shell (or, for
@@ -26,7 +29,7 @@ defmodule SpGen do
   exactly when its subject exists.
   """
 
-  alias SpGen.{Blueprint, Context, Esdm, FilePlan, Formatter, Merge, Source, Unit}
+  alias SpGen.{Blueprint, Context, Esdm, FilePlan, Formatter, FS, Merge, Source, Unit}
   alias SpGen.Esdm.Element
 
   @switches [
@@ -44,6 +47,8 @@ defmodule SpGen do
 
   # The order generators are meant to run in: what a generator writes is gated
   # on the citizens before it, so this pass needs no deferral round-trips.
+  # A generator also produces the blueprints its code calls (its
+  # `dependencies/1`), so following this order never defers a reference.
   # It is also the order `mix sp.gen` lists them in.
   @generator_order [
     :read_model,
@@ -51,7 +56,6 @@ defmodule SpGen do
     :aggregate,
     :query,
     :internal_api,
-    :validator,
     :command,
     :command_handler,
     :projector,
@@ -71,6 +75,12 @@ defmodule SpGen do
   role. The head of the list is the generator's primary blueprint — it owns the
   element kinds, `--template` semantics and `actor/0` the whole generator runs
   under.
+
+  Blueprints a run only needs as an implementation detail of another one are
+  not in this registry: `Validator`, `InternalAPI`'s lookup queries and the
+  registration hosts they call are reached through `SpGen.Blueprint.dependencies/1`
+  of the blueprint that references them, so they are never a command the
+  operator types.
   """
   def generators do
     alias SpGen.Blueprint, as: B
@@ -89,7 +99,6 @@ defmodule SpGen do
       query: [B.Query, B.QueryTest],
       read_model: [B.ReadModel],
       schema: [B.Schema, B.SchemaTest],
-      validator: [B.Validator],
       view: [B.View, B.ViewTest]
     }
   end
@@ -134,22 +143,25 @@ defmodule SpGen do
   @doc """
   Runs one generator against `argv`.
 
+  Options: `:fs` — the `SpGen.FS` handle to run against (default: the real
+  disk). Tests pass an in-memory repository.
+
   Returns `{:ok, results}` or `{:error, message}`; printing and exit codes are
   the CLI's business.
   """
-  @spec run(atom(), [String.t()]) :: {:ok, [term()]} | {:error, String.t()}
-  def run(generator, argv) when is_atom(generator) do
+  @spec run(atom(), [String.t()], keyword()) :: {:ok, [term()]} | {:error, String.t()}
+  def run(generator, argv, opts \\ []) when is_atom(generator) do
     case generators()[generator] do
       nil ->
         {:error, "unknown generator: #{inspect(generator)}"}
 
       modules ->
         primary = hd(modules)
-        do_run(generator, modules, primary, argv)
+        do_run(generator, modules, primary, argv, opts)
     end
   end
 
-  defp do_run(generator, modules, blueprint, argv) do
+  defp do_run(generator, modules, blueprint, argv, run_opts) do
     {opts, args, invalid} = OptionParser.parse(argv, strict: @switches)
 
     cond do
@@ -163,16 +175,17 @@ defmodule SpGen do
         {:error, "expected exactly one element, got: #{Enum.join(args, " ")}"}
 
       true ->
-        apply_generator(modules, blueprint, generator, hd(args), opts)
+        apply_generator(modules, blueprint, generator, hd(args), opts, run_opts)
     end
   end
 
-  defp apply_generator(modules, blueprint, _generator, address, opts) do
-    repo_root = Keyword.get(opts, :root, default_root()) |> Path.expand()
+  defp apply_generator(modules, blueprint, _generator, address, opts, run_opts) do
+    fs = Keyword.get(run_opts, :fs, FS.default())
+    repo_root = opts |> Keyword.get(:root, default_root(fs)) |> Path.expand()
     model_root = Path.join(repo_root, Keyword.get(opts, :model, "docs/domain-model"))
     formatter_cwd = Path.join(repo_root, "services/api")
 
-    with {:ok, model} <- Esdm.load(model_root),
+    with {:ok, model} <- Esdm.load(model_root, fs: fs),
          {:ok, element} <-
            model |> Esdm.resolve(address, kinds: blueprint.source_kinds()) |> norm_location(),
          :ok <- accept_kind(blueprint, element),
@@ -181,15 +194,17 @@ defmodule SpGen do
            Context.build(
              model,
              element,
-             Keyword.put(context_opts(operation, opts), :repo_root, repo_root)
+             context_opts(operation, opts)
+             |> Keyword.put(:repo_root, repo_root)
+             |> Keyword.put(:fs, fs)
            ) do
-      plans = modules |> Enum.flat_map(& &1.plans(ctx))
+      plans = plans_for(modules, ctx, model, opts)
       check? = Keyword.get(opts, :check, false)
-      formatter_opts = Formatter.opts(formatter_cwd)
+      formatter_opts = Formatter.opts(formatter_cwd, fs)
 
-      run = new_run(repo_root, formatter_opts, check?)
+      run = new_run(repo_root, formatter_opts, check?, fs)
 
-      {run, seed} = apply_plans(plans, ctx, run)
+      {run, seed} = apply_plans(plans, run)
       created? = Enum.any?(seed, &match?({:created, _}, &1))
 
       backfill =
@@ -220,9 +235,10 @@ defmodule SpGen do
     end
   end
 
-  defp new_run(repo_root, formatter_opts, check?) do
+  defp new_run(repo_root, formatter_opts, check?, fs) do
     %{
       repo_root: repo_root,
+      fs: fs,
       formatter_opts: formatter_opts,
       check?: check?,
       merge_only: false,
@@ -268,31 +284,35 @@ defmodule SpGen do
     end)
   end
 
-  defp default_root, do: find_root(File.cwd!())
+  defp default_root(fs), do: fs |> cwd() |> find_root(fs)
+
+  defp cwd({SpGen.FS.Local, nil}), do: File.cwd!()
+  defp cwd(_fs), do: "/"
 
   @doc """
   Repo root discovery: the nearest ancestor of `cwd` that holds both
   `services/api` and `docs/domain-model`. Falls back to `cwd` itself (an
   explicit `--root` always overrides).
   """
-  @spec find_root(Path.t()) :: String.t()
-  def find_root(cwd) do
+  @spec find_root(Path.t(), FS.t()) :: String.t()
+  def find_root(cwd, fs \\ FS.default()) do
     parent = Path.expand("..", cwd)
 
     cond do
-      repo_marker_dir?(cwd) ->
+      repo_marker_dir?(cwd, fs) ->
         cwd
 
       parent == cwd ->
         cwd
 
       true ->
-        find_root(parent)
+        find_root(parent, fs)
     end
   end
 
-  defp repo_marker_dir?(dir) do
-    File.dir?(Path.join(dir, "services/api")) && File.dir?(Path.join(dir, "docs/domain-model"))
+  defp repo_marker_dir?(dir, fs) do
+    FS.dir?(fs, Path.join(dir, "services/api")) &&
+      FS.dir?(fs, Path.join(dir, "docs/domain-model"))
   end
 
   @doc "CLI help text shared by all sp.gen tasks."
@@ -348,11 +368,65 @@ defmodule SpGen do
           | {:blocked, String.t(), [term()]}
           | {:error, String.t(), term()}
 
-  @doc "Applies `plans` for `ctx`, threading the run state (planned paths)."
-  @spec apply_plans([FilePlan.t()], Context.t(), map()) :: {map(), [row()]}
-  def apply_plans(plans, ctx, run) do
+  # The plans of a run: `modules` and, before each module, the plans of the
+  # blueprints its code calls — a validator with the internal API it delegates
+  # to, that accessor with the lookup query and the read model behind it. A
+  # dependency is planned from its own element (a read model is not the
+  # command's partial field set) and every module plans exactly once, so a
+  # dependency shared by several callers appears once, ahead of all of them.
+  defp plans_for(modules, %Context{} = ctx, %Esdm{} = model, opts) do
+    {plans, _seen} =
+      Enum.reduce(modules, {[], MapSet.new()}, &plans_of(&1, ctx, model, opts, &2))
+
+    plans
+  end
+
+  defp plans_of(module, ctx, model, opts, {acc, seen}) do
+    if MapSet.member?(seen, module) do
+      {acc, seen}
+    else
+      seen = MapSet.put(seen, module)
+
+      {deps, seen} =
+        Enum.reduce(
+          module.dependencies(ctx),
+          {[], seen},
+          &plan_dependency(&1, ctx, model, opts, &2)
+        )
+
+      {acc ++ deps ++ owned([module], ctx), seen}
+    end
+  end
+
+  # a dependency with no element to plan from (no read model for the citizen)
+  # is skipped: its caller's reference gates defer as they always did
+  defp plan_dependency({module, %Element{} = element}, ctx, model, opts, {acc, seen}) do
+    case dependency_ctx(model, ctx, element, opts) do
+      {:ok, dep_ctx} -> plans_of(module, dep_ctx, model, opts, {acc, seen})
+      {:error, _} -> {acc, seen}
+    end
+  end
+
+  defp plan_dependency(_incomplete, _ctx, _model, _opts, acc), do: acc
+
+  defp dependency_ctx(model, %Context{} = ctx, %Element{} = element, opts) do
+    Context.build(
+      model,
+      element,
+      Keyword.take(opts, [:subdomain, :composite, :constituent]) ++
+        [repo_root: ctx.repo_root, fs: ctx.fs]
+    )
+  end
+
+  defp owned(modules, ctx) do
+    Enum.flat_map(modules, fn module -> Enum.map(module.plans(ctx), &{&1, ctx}) end)
+  end
+
+  @doc "Applies `{plan, context}` pairs, threading the run state (planned paths)."
+  @spec apply_plans([{FilePlan.t(), Context.t()}], map()) :: {map(), [row()]}
+  def apply_plans(plans, run) do
     {rows, run} =
-      Enum.map_reduce(plans, run, fn plan, acc ->
+      Enum.map_reduce(plans, run, fn {plan, ctx}, acc ->
         {rows, acc} = apply_plan(plan, ctx, acc)
         {rows, acc}
       end)
@@ -365,7 +439,7 @@ defmodule SpGen do
   def apply_plan(%FilePlan{path: rel_path} = plan, ctx, run) do
     abs_path = Path.join(run.repo_root, rel_path)
 
-    case File.read(abs_path) do
+    case FS.read(run.fs, abs_path) do
       {:error, :enoent} -> create(plan, ctx, abs_path, rel_path, run)
       {:ok, text} -> merge(plan, ctx, text, abs_path, rel_path, run)
     end
@@ -406,8 +480,7 @@ defmodule SpGen do
     if run.check? do
       {[{:checked, rel_path, [:whole_file]}], run}
     else
-      File.mkdir_p!(Path.dirname(abs))
-      File.write!(abs, content)
+      FS.write!(run.fs, abs, content)
       {[{:created, rel_path}], mark_planned(run, rel_path)}
     end
   end
@@ -493,10 +566,7 @@ defmodule SpGen do
             [{:deferred, rel_path, deferred_entries}]
 
           true ->
-            if content? do
-              File.mkdir_p!(Path.dirname(abs))
-              File.write!(abs, Merge.render(ast, run.formatter_opts))
-            end
+            if content?, do: FS.write!(run.fs, abs, Merge.render(ast, run.formatter_opts))
 
             result_rows(placed, blocked, rel_path, run, created?) ++
               if(deferred_entries == [], do: [], else: [{:deferred, rel_path, deferred_entries}])
@@ -542,8 +612,7 @@ defmodule SpGen do
 
   defp existing_fn(run) do
     fn path ->
-      MapSet.member?(run.planned, path) or
-        File.exists?(Path.join(run.repo_root, path))
+      MapSet.member?(run.planned, path) or FS.exists?(run.fs, Path.join(run.repo_root, path))
     end
   end
 
@@ -589,8 +658,11 @@ defmodule SpGen do
       if primary.accepts?(element) do
         case closure_ctx(model, element, opts, run) do
           {:ok, ctx} ->
-            plans = modules |> Enum.flat_map(& &1.plans(ctx))
-            {run, new_rows} = apply_plans(plans, ctx, %{run | merge_only: true})
+            # the same dependency expansion as a real run, so a blueprint that
+            # is only ever generated as a dependency (the validator) back-fills
+            # too — merge-only, so nothing here creates a file
+            plans = plans_for(modules, ctx, model, opts)
+            {run, new_rows} = apply_plans(plans, %{run | merge_only: true})
             {run, rows ++ Enum.reject(new_rows, &match?({:unchanged, _}, &1))}
 
           _ ->
@@ -606,7 +678,8 @@ defmodule SpGen do
     Context.build(
       model,
       element,
-      Keyword.take(opts, [:subdomain, :composite, :constituent]) ++ [repo_root: run.repo_root]
+      Keyword.take(opts, [:subdomain, :composite, :constituent]) ++
+        [repo_root: run.repo_root, fs: run.fs]
     )
   end
 

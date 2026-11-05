@@ -1,0 +1,52 @@
+apiVersion: schema.esdm.io/core/v1
+kind: aggregate
+name: widget
+description: "A piece of gym apparatus a coach catalogs for later reference"
+scope:
+  domain: sport
+  boundedContext: sport
+identifiedBy:
+  source: generated
+  generator: uuid
+invariants:
+  - name: unique-slug
+    rule: The slug for the widget must be unique within the domain
+  - name: at-most-one-owner
+    rule: A widget is owned by at most one coach (either coachId or teamId, not both)
+  - name: no-archive-when-in-use
+    rule: A widget can only be archived when no sport references it via use-widget
+state:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier"
+    title:
+      type: string
+      description: "Name of the widget"
+    slug:
+      type: string
+      description: "URL-friendly unique identifier"
+    label:
+      type: string
+      description: "Short label shown in lists"
+    description:
+      type: string
+      description: "Optional description"
+    archivedAt:
+      type: string
+      format: date-time
+      description: "When the widget was archived"
+    coachId:
+      type: string
+      format: uuid
+      description: "Reference to the owning coach (mutually exclusive with teamId)"
+    teamId:
+      type: string
+      format: uuid
+      description: "Reference to the owning team (mutually exclusive with coachId)"
+  required:
+    - id
+    - title
+    - slug

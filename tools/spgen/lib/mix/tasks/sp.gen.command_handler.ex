@@ -8,7 +8,7 @@ defmodule Mix.Tasks.Sp.Gen.CommandHandler do
   `docs/architecture/blueprints/backend/domain/command-handler.md`
   (transferred to `SpGen.Blueprint.CommandHandler`):
 
-  * `services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/operation/<_operation>/handler.ex`
+  * `services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/operations/<_operation>/handler.ex`
   * the `<Command>Handler` `describe` block in the operation test file
 
   The handler shape is fixed (input command, output events) — this generator

@@ -98,7 +98,7 @@ defmodule SpGen.Blueprint.Query do
     file = module_file(ctx)
     abs = if ctx.repo_root, do: Path.join(ctx.repo_root, file), else: file
 
-    case File.read(abs) do
+    case FS.read(ctx.fs, abs) do
       {:ok, text} -> not (text =~ "TODO: implement")
       _ -> false
     end

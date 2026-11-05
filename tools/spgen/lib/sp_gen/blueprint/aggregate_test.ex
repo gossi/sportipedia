@@ -1,74 +1,46 @@
 defmodule SpGen.Blueprint.AggregateTest do
   @moduledoc """
-  The aggregate's contribution to the operation test file(s)
-  (`operation-test.md`): one `describe "<DomainObject>Aggregate"` block per
-  publishing command's test file, applying every event of the aggregate to
-  the state.
+  The aggregate's contribution to each event's test file
+  (`events/<event>_test.exs`): a `describe "Aggregate"` block applying that
+  event to the state — the fact under test decides where its test lives, so
+  every event of the aggregate gets its own apply test in its own file.
   """
 
   use SpGen.Blueprint
 
   alias SpGen.{Context, Esdm, Templates}
-  alias SpGen.Blueprint.{Aggregate, Event, OperationTest}
+  alias SpGen.Blueprint.{Aggregate, Event, TestCaseFile}
 
-  @test_path "services/api/test/sportipedia/<_subdomain>/<composite>/<domain_object>/operation/<_operation>_test.exs"
-  @test_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Operation.<Command>Test"
+  @test_path "services/api/test/sportipedia/<_subdomain>/<composite>/<domain_object>/events/<_event>_test.exs"
+  @test_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Event.<Event>Test"
 
-  # the aggregate's tests live in every publishing command's operation test;
-  # each file applies the events that command publishes (golden shape)
   def plans(%Context{} = ctx) do
-    Esdm.events_of(ctx.model, ctx.constituent)
-    |> Enum.flat_map(fn e -> publishers(ctx, e.name) end)
-    |> Enum.uniq()
-    |> Enum.map(fn command_name ->
-      command_events = published_events(ctx, command_name)
+    ctx
+    |> Context.aggregate_events()
+    |> Enum.map(fn event -> plan_for_event(ctx, event) end)
+  end
 
-      OperationTest.plan(ctx,
-        path: @test_path,
-        module: @test_module,
-        extra_vars: %{"operation" => command_name, "command" => command_name},
-        alias_templates: [Aggregate.module_template()],
-        alias_modules: event_modules(ctx, command_events),
-        requires: fn c ->
-          [{Aggregate.module_file(c), "aggregate not generated (spgen aggregate)"}] ++
-            for(
-              e <- command_events,
-              do:
-                {Event.module_file(%{c | element: e}),
-                 "event #{e.name} not generated (spgen event #{e.name})"}
-            )
-        end,
-        describes: [
-          {"<DomainObject>Aggregate",
-           fn c, subject -> describe_body(c, subject, command_events) end}
+  defp plan_for_event(%Context{} = ctx, %Element{} = event) do
+    event_ctx = %{ctx | element: event}
+
+    TestCaseFile.plan(ctx,
+      path: @test_path,
+      module: @test_module,
+      extra_vars: %{"event" => event.name},
+      alias_templates: [Aggregate.module_template()],
+      alias_modules: [Context.render(Event.module_template(), event_ctx)],
+      requires: fn c ->
+        [
+          {Aggregate.module_file(c), "aggregate not generated (spgen aggregate)"},
+          {Event.module_file(event_ctx),
+           "event #{event.name} not generated (spgen event #{event.name})"}
         ]
-      )
-    end)
-  end
-
-  defp published_events(ctx, command_name) do
-    with {:ok, command} <- Esdm.find(ctx.model, :command, command_name) do
-      command
-      |> Esdm.publishes()
-      |> Enum.map(
-        &Enum.find(Esdm.events_of(ctx.model, ctx.constituent), fn e -> e.name == &1 end)
-      )
-      |> Enum.reject(&is_nil/1)
-    else
-      _ -> []
-    end
-  end
-
-  # the describe applies the command's events, so those event modules
-  # need an alias here
-  defp event_modules(ctx, events) do
-    Enum.map(events, fn e -> Context.render(Event.module_template(), %{ctx | element: e}) end)
-  end
-
-  defp publishers(ctx, event_name) do
-    ctx.model.elements
-    |> Enum.filter(fn el -> el.kind == :command and event_name in Esdm.publishes(el) end)
-    |> Enum.map(& &1.name)
+      end,
+      describes: [
+        {"Aggregate", fn c, subject -> describe_body(c, subject, [event]) end,
+         ["<DomainObject>Aggregate"]}
+      ]
+    )
   end
 
   @doc false
@@ -77,8 +49,7 @@ defmodule SpGen.Blueprint.AggregateTest do
 
     tests =
       Enum.map(events, fn e ->
-        event_pascal =
-          e.name |> String.split("-") |> Enum.map(&String.capitalize/1) |> Enum.join()
+        event_pascal = Context.pascal(e.name)
 
         # the literal carries the EVENT's fields; the state it is applied to is
         # seeded with the id so update/delete clauses have something to act on

@@ -220,8 +220,8 @@ defmodule SpGen.Blueprint.Bruno do
     dir = ctx.repo_root && Path.join(ctx.repo_root, Path.dirname(path))
 
     existing =
-      with true <- dir && File.dir?(dir),
-           {:ok, files} <- File.ls(dir) do
+      with true <- dir && FS.dir?(ctx.fs, dir),
+           {:ok, files} <- FS.ls(ctx.fs, dir) do
         files |> Enum.filter(&String.ends_with?(&1, ".yml")) |> Enum.reject(&(&1 == "folder.yml"))
       else
         _ -> []

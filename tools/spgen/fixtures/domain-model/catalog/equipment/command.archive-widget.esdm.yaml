@@ -1,0 +1,24 @@
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: archive-widget
+description: "Archives a widget that is no longer used"
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: widget
+data:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier of the widget to archive"
+  required:
+    - id
+constraints:
+  - name: widget-exists
+    rule: A widget needs to exist (check by id)
+publishes:
+  - widget-archived
+actors:
+  - user

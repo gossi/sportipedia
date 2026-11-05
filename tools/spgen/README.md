@@ -1,4 +1,4 @@
-# spgen — the idea and why it is built this way
+# Sportipedia Generator
 
 ## Idea
 

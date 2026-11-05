@@ -10,7 +10,9 @@ defmodule SpGen.CLITest do
   @web [:bruno, :controller, :schema, :view]
 
   # what a citizen is built in: read side first, then facts and state, the
-  # commands that produce them, and finally the HTTP surface
+  # commands that produce them, and finally the HTTP surface. A generator
+  # writes the blueprints its code calls, too (a command its validators), so
+  # only generators appear here
   @usage_order [
     {:domain,
      [
@@ -19,7 +21,6 @@ defmodule SpGen.CLITest do
        :aggregate,
        :query,
        :internal_api,
-       :validator,
        :command,
        :command_handler,
        :projector,
@@ -59,10 +60,21 @@ defmodule SpGen.CLITest do
                Enum.find_index(domain, &(&1 == :internal_api))
 
       assert Enum.find_index(domain, &(&1 == :internal_api)) <
-               Enum.find_index(domain, &(&1 == :validator))
+               Enum.find_index(domain, &(&1 == :command))
 
       assert Enum.find_index(domain, &(&1 == :command)) <
                Enum.find_index(domain, &(&1 == :public_api))
+    end
+  end
+
+  describe "blueprints that are not generators" do
+    # a validator is an implementation detail of the command that validates
+    # with it, and a lookup query is one of the internal API: reached through
+    # `dependencies/1`, never as a task the operator types
+    test "the invariant blueprints are not addressed by name" do
+      for generator <- [:validator, :lookup_query] do
+        refute Enum.member?(Map.keys(SpGen.generators()), generator)
+      end
     end
   end
 

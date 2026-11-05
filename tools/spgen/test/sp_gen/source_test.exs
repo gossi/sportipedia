@@ -1,31 +1,56 @@
 defmodule SpGen.SourceTest do
   @moduledoc """
-  Exercises presence detection against the real, hand-written apparatus
-  files of this codebase — the strongest guarantee that generated code
-  merges into them instead of duplicating what is already there.
+  Presence detection (`SpGen.Source`) — the check that decides whether a unit
+  merges or is already there.
 
-  Placement (where a missing unit lands) is `SpGen.MergeTest`'s
-  business.
+  Input is the generated code of the fixture citizen: the repository is built in
+  memory (`SpGen.FixtureRepo`), the generators write into it, and each test
+  parses what came out. That is the strongest guarantee the detector gives for
+  the shapes the generator actually produces — and it never reads the real tree.
+
+  Placement (where a missing unit lands) is `SpGen.MergeTest`'s business.
   """
   use ExUnit.Case, async: true
 
-  alias SpGen.Source
+  alias SpGen.{FixtureRepo, Source}
 
-  # __DIR__ = tools/spgen/test/sp_gen
-  @root Path.expand("../../../../services/api", __DIR__)
-  @api_root Path.join(@root, "lib/sportipedia")
+  setup_all do
+    repo = FixtureRepo.build()
 
-  defp source!(rel), do: Path.join(@api_root, rel) |> File.read!() |> Source.parse()
-  defp source_at_root!(rel), do: Path.join(@root, rel) |> File.read!() |> Source.parse()
+    for {generator, args} <- [
+          {:read_model, ["read-model.widget"]},
+          {:event, ["widget-created"]},
+          {:aggregate, ["aggregate.widget"]},
+          {:command_handler, ["create-widget"]},
+          {:command, ["create-widget", "--template", "create"]},
+          {:projector, ["widget-created"]},
+          {:policy, ["create-widget"]},
+          {:public_api, ["create-widget"]},
+          {:controller, ["create-widget"]},
+          {:bruno, ["create-widget"]}
+        ] do
+      assert {:ok, _} = FixtureRepo.run(repo, generator, args), "#{generator} #{inspect(args)}"
+    end
 
-  describe "module and directives — real command.ex" do
-    setup do
-      %{src: source!("catalog/equipment/apparatus/operation/catalog_apparatus/command.ex")}
+    %{repo: repo}
+  end
+
+  defp source(repo, rel), do: FixtureRepo.read(repo, rel) |> Source.parse()
+
+  describe "module and directives — generated command.ex" do
+    setup %{repo: repo} do
+      %{
+        src:
+          source(
+            repo,
+            "services/api/lib/sportipedia/catalog/equipment/widget/operations/create_widget/command.ex"
+          )
+      }
     end
 
     test "module name", %{src: src} do
       assert Source.module_name(src) ==
-               "Sportipedia.Catalog.Equipment.Apparatus.Command.CatalogApparatus"
+               "Sportipedia.Catalog.Equipment.Widget.Command.CreateWidget"
     end
 
     test "moduledoc and uses", %{src: src} do
@@ -39,17 +64,17 @@ defmodule SpGen.SourceTest do
     test "alias detection", %{src: src} do
       assert Source.has_alias?(
                src,
-               "Sportipedia.Catalog.Equipment.Apparatus.Validators.UniqueSlug"
+               "Sportipedia.Catalog.Equipment.Widget.Validators.UniqueSlug"
              )
 
       refute Source.has_alias?(
                src,
-               "Sportipedia.Catalog.Equipment.Apparatus.Validators.ApparatusExists"
+               "Sportipedia.Catalog.Equipment.Widget.Validators.WidgetExists"
              )
     end
 
     test "field entries by name", %{src: src} do
-      for field <- [":id", ":title", ":slug", ":description"] do
+      for field <- [":id", ":title", ":slug", ":label"] do
         assert Source.entry?(src, :field, field), "missing #{field}"
       end
 
@@ -67,9 +92,15 @@ defmodule SpGen.SourceTest do
     end
   end
 
-  describe "defs — real handler.ex" do
-    setup do
-      %{src: source!("catalog/equipment/apparatus/operation/catalog_apparatus/handler.ex")}
+  describe "defs — generated handler.ex" do
+    setup %{repo: repo} do
+      %{
+        src:
+          source(
+            repo,
+            "services/api/lib/sportipedia/catalog/equipment/widget/operations/create_widget/handler.ex"
+          )
+      }
     end
 
     test "behaviour and clauses", %{src: src} do
@@ -79,21 +110,20 @@ defmodule SpGen.SourceTest do
     end
 
     test "clause matching by head pattern", %{src: src} do
-      assert Source.def_head_has?(src, :handle, 2, "CatalogApparatus{}")
-      refute Source.def_head_has?(src, :handle, 2, "EditApparatus{}")
+      assert Source.def_head_has?(src, :handle, 2, "CreateWidget{}")
+      refute Source.def_head_has?(src, :handle, 2, "EditWidget{}")
     end
   end
 
-  describe "entries — real projector.ex" do
-    setup do
-      %{src: source!("catalog/equipment/apparatus/projector.ex")}
+  describe "entries — generated projector.ex" do
+    setup %{repo: repo} do
+      %{src: source(repo, "services/api/lib/sportipedia/catalog/equipment/widget/projector.ex")}
     end
 
     test "project entries keyed by event pattern", %{src: src} do
-      assert Source.entry?(src, :project, "ApparatusCataloged{}")
-      assert Source.entry?(src, :project, "ApparatusEdited{}")
-      assert Source.entry?(src, :project, "ApparatusArchived{}")
-      refute Source.entry?(src, :project, "InstrumentCataloged{}")
+      assert Source.entry?(src, :project, "WidgetCreated{}")
+      assert Source.entry?(src, :project, "WidgetEdited{}")
+      refute Source.entry?(src, :project, "GadgetCreated{}")
     end
 
     test "use with keyword options matches by module only", %{src: src} do
@@ -102,91 +132,90 @@ defmodule SpGen.SourceTest do
 
     test "project calls found with line ranges", %{src: src} do
       entries = Source.calls(src, :project)
-      assert length(entries) == 3
+      assert length(entries) == 5
       [%Source.Entry{line: line, end_line: end_line} | _] = entries
       assert line < end_line
     end
   end
 
-  describe "commanded router — real equipment/router.ex" do
-    setup do
-      %{src: source!("catalog/equipment/router.ex")}
+  describe "commanded router — the fixture host file plus what the run added" do
+    setup %{repo: repo} do
+      %{src: source(repo, "services/api/lib/sportipedia/catalog/equipment/router.ex")}
     end
 
     test "dispatch entries and aggregate keyword", %{src: src} do
-      assert Source.entry?(src, :dispatch, "CatalogApparatus")
-      assert Source.entry?(src, :dispatch, "ArchiveInstrument")
-      refute Source.entry?(src, :dispatch, "SuggestSport")
+      assert Source.entry?(src, :dispatch, "CreateWidget")
+      assert Source.entry?(src, :dispatch, "CreateGadget")
+      refute Source.entry?(src, :dispatch, "EditWidget")
 
       aggregates =
         src
         |> Source.calls(:dispatch)
-        |> Enum.map(&SpGen.Source.Entry.kw(&1, :aggregate))
+        |> Enum.map(&Source.Entry.kw(&1, :aggregate))
 
-      assert aggregates == [
-               "ApparatusAggregate",
-               "ApparatusAggregate",
-               "ApparatusAggregate",
-               "InstrumentAggregate",
-               "InstrumentAggregate",
-               "InstrumentAggregate"
-             ]
+      assert aggregates == ["GadgetAggregate", "WidgetAggregate"]
     end
 
     test "identify entries", %{src: src} do
-      assert Source.entry?(src, :identify, "ApparatusAggregate")
+      assert Source.entry?(src, :identify, "WidgetAggregate")
+      assert Source.entry?(src, :identify, "GadgetAggregate")
     end
 
     test "dispatch clustering by aggregate via Entry.kw", %{src: src} do
-      apparatus =
+      widgets =
         src
         |> Source.calls(:dispatch)
-        |> Enum.count(&(SpGen.Source.Entry.kw(&1, :aggregate) == "ApparatusAggregate"))
+        |> Enum.count(&(Source.Entry.kw(&1, :aggregate) == "WidgetAggregate"))
 
-      assert apparatus == 3
+      assert widgets == 1
     end
   end
 
   describe "supervisor" do
-    test "children by text presence" do
-      src = source_at_root!("lib/sportipedia/catalog/supervisor.ex")
-      assert Source.has_child?(src, "Sportipedia.Catalog.Equipment.Apparatus.ApparatusProjector")
+    test "children by text presence", %{repo: repo} do
+      src = source(repo, "services/api/lib/sportipedia/catalog/supervisor.ex")
+      assert Source.has_child?(src, "Sportipedia.Catalog.Equipment.Widget.WidgetProjector")
       refute Source.has_child?(src, "Sportipedia.Catalog.Skill.SkillProjector")
     end
   end
 
-  describe "operation test file" do
-    setup do
-      %{
-        src:
-          source_at_root!(
-            "test/sportipedia/catalog/equipment/apparatus/operation/catalog_apparatus_test.exs"
-          )
-      }
-    end
+  describe "test files" do
+    test "describe blocks in the event's own test file", %{repo: repo} do
+      src =
+        source(
+          repo,
+          "services/api/test/sportipedia/catalog/equipment/widget/events/widget_created_test.exs"
+        )
 
-    test "describe blocks", %{src: src} do
-      assert Source.has_describe?(src, "CatalogApparatus command")
-      assert Source.has_describe?(src, "CatalogApparatusHandler")
-      assert Source.has_describe?(src, "ApparatusCataloged event")
-      refute Source.has_describe?(src, "EditApparatus command")
-    end
-
-    test "moduletag and aliases", %{src: src} do
+      assert Source.has_describe?(src, "Event")
+      assert Source.has_describe?(src, "Aggregate")
       assert Source.has_attribute?(src, :moduletag)
 
       assert Source.has_alias?(
                src,
-               "Sportipedia.Catalog.Equipment.Apparatus.Command.CatalogApparatus"
+               "Sportipedia.Catalog.Equipment.Widget.Event.WidgetCreated"
              )
     end
 
-    test "route presence in the web router scope chain" do
-      src = source_at_root!("lib/sportipedia_web/router.ex")
-      chain = ["/catalog", "/equipment", "/apparatuses"]
-      assert Source.route_present?(src, :post, ":catalog_apparatus", chain)
-      refute Source.route_present?(src, :post, ":make_tea", chain)
+    test "describe blocks in the operation test file", %{repo: repo} do
+      src =
+        source(
+          repo,
+          "services/api/test/sportipedia/catalog/equipment/widget/operations/create_widget_test.exs"
+        )
+
+      assert Source.has_describe?(src, "Command")
+      assert Source.has_describe?(src, "Command Handler")
+      refute Source.has_describe?(src, "Event")
+      refute Source.has_describe?(src, "EditWidget command")
     end
+  end
+
+  test "route presence in the web router scope chain", %{repo: repo} do
+    src = source(repo, "services/api/lib/sportipedia_web/router.ex")
+    chain = ["/catalog", "/equipment", "/widgets"]
+    assert Source.route_present?(src, :post, ":create_widget", chain)
+    refute Source.route_present?(src, :post, ":make_tea", chain)
   end
 
   describe "unparsable file" do

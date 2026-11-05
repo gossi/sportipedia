@@ -1,21 +1,21 @@
 defmodule SpGen.Blueprint.CommandHandlerTest do
   @moduledoc """
   The command handler's contribution to the operation test file: a
-  `describe "<Command>Handler"` block exercising `handle/2` with a sample
+  `describe "Command Handler"` block exercising `handle/2` with a sample
   command and asserting the emitted event.
   """
 
   use SpGen.Blueprint
 
   alias SpGen.Templates
-  alias SpGen.Blueprint.{Command, CommandHandler, OperationTest}
+  alias SpGen.Blueprint.{Command, CommandHandler, TestCaseFile}
 
-  @test_path "services/api/test/sportipedia/<_subdomain>/<composite>/<domain_object>/operation/<_operation>_test.exs"
+  @test_path "services/api/test/sportipedia/<_subdomain>/<composite>/<domain_object>/operations/<_operation>_test.exs"
   @test_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Operation.<Command>Test"
 
   def plans(%Context{} = ctx) do
     [
-      OperationTest.plan(ctx,
+      TestCaseFile.plan(ctx,
         path: @test_path,
         module: @test_module,
         alias_templates: [
@@ -30,7 +30,7 @@ defmodule SpGen.Blueprint.CommandHandlerTest do
             {Command.module_file(c), "command not generated (spgen command)"}
           ]
         end,
-        describes: [{"<Command>Handler", &describe_body/2}]
+        describes: [{"Command Handler", &describe_body/2, ["<Command>Handler"]}]
       )
     ]
   end

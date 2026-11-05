@@ -1,27 +1,56 @@
 defmodule SpGen.MergeTest do
   @moduledoc """
-  Tree-merge machinery: whole-file print fidelity against real sources, and
-  every placement strategy (`SpGen.Merge` factories) —
-  including the `:blocked` cases where the target structure is absent.
+  Tree-merge machinery: whole-file print fidelity and every placement strategy
+  (`SpGen.Merge` factories) — including the `:blocked` cases where the target
+  structure is absent.
+
+  The sources are the generated citizen of `SpGen.FixtureRepo`: an in-memory
+  repository, so the shapes tested are the ones the generator produces and no
+  test reads the working tree.
   """
   use ExUnit.Case, async: true
 
-  alias SpGen.{Formatter, Merge, Source, Unit}
+  alias SpGen.{FixtureRepo, Formatter, Merge, Source, Unit}
 
-  # __DIR__ = tools/spgen/test/sp_gen → services/api
-  @root Path.expand("../../../../services/api", __DIR__)
+  @command "services/api/lib/sportipedia/catalog/equipment/widget/operations/create_widget/command.ex"
+  @read_model "services/api/lib/sportipedia/catalog/equipment/widget/read_model.ex"
+  @aggregate "services/api/lib/sportipedia/catalog/equipment/widget/aggregate.ex"
+  @projector "services/api/lib/sportipedia/catalog/equipment/widget/projector.ex"
+  @router "services/api/lib/sportipedia/catalog/equipment/router.ex"
+  @supervisor "services/api/lib/sportipedia/catalog/supervisor.ex"
+  @web_router "services/api/lib/sportipedia_web/router.ex"
+  @op_test "services/api/test/sportipedia/catalog/equipment/widget/operations/create_widget_test.exs"
 
-  defp read!(rel), do: Path.join(@root, rel) |> File.read!()
-  defp ast!(rel), do: read!(rel) |> Sourceror.parse_string!()
+  setup_all do
+    repo = FixtureRepo.build()
+
+    for {generator, args} <- [
+          {:read_model, ["read-model.widget"]},
+          {:event, ["widget-created"]},
+          {:aggregate, ["aggregate.widget"]},
+          {:command_handler, ["create-widget"]},
+          {:command, ["create-widget", "--template", "create"]},
+          {:projector, ["widget-created"]},
+          {:controller, ["create-widget"]}
+        ] do
+      assert {:ok, _} = FixtureRepo.run(repo, generator, args), "#{generator} #{inspect(args)}"
+    end
+
+    opts = Formatter.opts(Path.join(repo.root, "services/api"), repo.fs)
+    %{repo: repo, opts: opts}
+  end
+
+  defp read!(repo, rel), do: FixtureRepo.read(repo, rel)
+  defp ast!(repo, rel), do: read!(repo, rel) |> Sourceror.parse_string!()
 
   defp unit(text, place) do
     %Unit{id: :test, check: fn _ -> false end, render: fn _ -> text end, place: place}
   end
 
-  defp merge!(rel, text, place) do
+  defp merge!(repo, opts, rel, text, place) do
     u = unit(text, place)
-    {:ok, ast} = u.place.(ast!(rel), u, nil)
-    Merge.render(ast, Formatter.opts(@root))
+    {:ok, ast} = u.place.(ast!(repo, rel), u, nil)
+    Merge.render(ast, opts)
   end
 
   defp line_of(text, needle) do
@@ -37,31 +66,31 @@ defmodule SpGen.MergeTest do
 
   # ------------------------------------------------------------- print fidelity
 
-  describe "whole-file print round-trip (real sources)" do
-    test "hand-written command.ex prints back byte-identical" do
-      rel = "lib/sportipedia/catalog/equipment/apparatus/operation/catalog_apparatus/command.ex"
-      assert Merge.render(ast!(rel), Formatter.opts(@root)) == read!(rel)
+  describe "whole-file print round-trip" do
+    test "generated command.ex prints back byte-identical", %{repo: repo, opts: opts} do
+      assert Merge.render(ast!(repo, @command), opts) == read!(repo, @command)
     end
 
-    test "projector with fn blocks prints back byte-identical" do
-      rel = "lib/sportipedia/catalog/equipment/apparatus/projector.ex"
-      assert Merge.render(ast!(rel), Formatter.opts(@root)) == read!(rel)
+    test "projector with fn blocks prints back byte-identical", %{repo: repo, opts: opts} do
+      assert Merge.render(ast!(repo, @projector), opts) == read!(repo, @projector)
     end
 
-    test "web router with nested scopes prints back byte-identical" do
-      assert Merge.render(ast!("lib/sportipedia_web/router.ex"), Formatter.opts(@root)) ==
-               read!("lib/sportipedia_web/router.ex")
+    test "web router with nested scopes prints back byte-identical", %{repo: repo, opts: opts} do
+      assert Merge.render(ast!(repo, @web_router), opts) == read!(repo, @web_router)
     end
   end
 
   # ----------------------------------------------------------------- placements
 
   describe "alias placement" do
-    @command "lib/sportipedia/catalog/equipment/apparatus/operation/catalog_apparatus/command.ex"
-
-    test "inserts into the alias block, above the first line of code" do
+    test "inserts into the alias block, above the first line of code", %{
+      repo: repo,
+      opts: opts
+    } do
       rendered =
         merge!(
+          repo,
+          opts,
           @command,
           "alias Sportipedia.Catalog.Zed",
           Merge.alias_of("Sportipedia.Catalog.Zed")
@@ -74,33 +103,33 @@ defmodule SpGen.MergeTest do
                line_of(rendered, "typedstruct do")
     end
 
-    test "keeps aliases sorted" do
-      rendered = merge!(@command, "alias Aaa", Merge.alias_of("Aaa"))
+    test "keeps aliases sorted", %{repo: repo, opts: opts} do
+      rendered = merge!(repo, opts, @command, "alias Aaa", Merge.alias_of("Aaa"))
       assert line_of(rendered, "alias Aaa") < line_of(rendered, "alias Sportipedia.Catalog")
     end
   end
 
   describe "inside(typedstruct)" do
-    @command "lib/sportipedia/catalog/equipment/apparatus/operation/catalog_apparatus/command.ex"
+    test "appends a field inside the struct block", %{repo: repo, opts: opts} do
+      rendered =
+        merge!(repo, opts, @command, "field :capacity, :integer", Merge.inside(:typedstruct))
 
-    test "appends a field inside the struct block" do
-      rendered = merge!(@command, "field :capacity, :integer", Merge.inside(:typedstruct))
       assert Source.entry?(Source.parse(rendered), :field, ":capacity")
       assert line_of(rendered, "typedstruct do") < line_of(rendered, "field :capacity")
     end
 
-    test "blocked when the block does not exist" do
+    test "blocked when the block does not exist", %{repo: repo} do
       u = unit("field :x, :integer", Merge.inside(:typedstruct))
-      assert :blocked = u.place.(ast!("lib/sportipedia_web/router.ex"), u, nil)
+      assert :blocked = u.place.(ast!(repo, @web_router), u, nil)
     end
   end
 
   describe "inside with before_trailing" do
-    @read_model "lib/sportipedia/catalog/equipment/apparatus/read_model.ex"
-
-    test "inserts before the trailing timestamps() call" do
+    test "inserts before the trailing timestamps() call", %{repo: repo, opts: opts} do
       rendered =
         merge!(
+          repo,
+          opts,
           @read_model,
           "field :capacity, :integer",
           Merge.inside(:typed_schema, nil, before_trailing: :timestamps)
@@ -109,9 +138,11 @@ defmodule SpGen.MergeTest do
       assert line_of(rendered, "field :capacity") < timestamps_line(rendered)
     end
 
-    test "appends when the block has no trailing call" do
+    test "appends when the block has no trailing call", %{repo: repo, opts: opts} do
       rendered =
         merge!(
+          repo,
+          opts,
           @command,
           "field :capacity, :integer",
           Merge.inside(:typedstruct, nil, before_trailing: :timestamps)
@@ -122,25 +153,26 @@ defmodule SpGen.MergeTest do
   end
 
   describe "after_macro on the commanded router" do
-    @router "lib/sportipedia/catalog/equipment/router.ex"
-
-    test "dispatch lands after the last dispatch of its aggregate" do
+    test "dispatch lands after the last dispatch of its aggregate", %{repo: repo, opts: opts} do
       rendered =
         merge!(
+          repo,
+          opts,
           @router,
-          "dispatch NewThing, to: NewThingHandler, aggregate: ApparatusAggregate",
-          Merge.after_macro_kw(:dispatch, :aggregate, fn v -> v == "ApparatusAggregate" end)
+          "dispatch NewThing, to: NewThingHandler, aggregate: WidgetAggregate",
+          Merge.after_macro_kw(:dispatch, :aggregate, fn v -> v == "WidgetAggregate" end)
         )
 
       assert Source.entry?(Source.parse(rendered), :dispatch, "NewThing")
-      # appended below the apparatus cluster's last entry
-      assert line_of(rendered, "dispatch ArchiveApparatus") <
-               line_of(rendered, "dispatch NewThing")
+      # appended below the widget cluster's last entry
+      assert line_of(rendered, "dispatch CreateWidget") < line_of(rendered, "dispatch NewThing")
     end
 
-    test "identify lands after the dispatch cluster" do
+    test "identify lands after the dispatch cluster", %{repo: repo, opts: opts} do
       rendered =
         merge!(
+          repo,
+          opts,
           @router,
           "identify NewAggregate, by: :id, prefix: \"x/\"",
           Merge.after_macro(:dispatch, fn _ -> true end)
@@ -148,47 +180,52 @@ defmodule SpGen.MergeTest do
 
       assert Source.entry?(Source.parse(rendered), :identify, "NewAggregate")
 
-      assert line_of(rendered, "dispatch ArchiveInstrument") <
+      assert line_of(rendered, "dispatch CreateWidget") <
                line_of(rendered, "identify NewAggregate")
     end
   end
 
   describe "children_list" do
-    @supervisor "lib/sportipedia/catalog/supervisor.ex"
-
-    test "appends a child to the supervisor list" do
+    test "appends a child to the supervisor list", %{repo: repo, opts: opts} do
       rendered =
         merge!(
+          repo,
+          opts,
           @supervisor,
-          "Sportipedia.Catalog.Equipment.Widget.WidgetProjector",
+          "Sportipedia.Catalog.Equipment.Gadget.GadgetProjector",
           Merge.children_list()
         )
 
-      assert rendered =~ "Sportipedia.Catalog.Equipment.Widget.WidgetProjector"
+      assert rendered =~ "Sportipedia.Catalog.Equipment.Gadget.GadgetProjector"
       # still valid Elixir and the list is intact
       assert Source.has_child?(
                Source.parse(rendered),
-               "Sportipedia.Catalog.Equipment.Apparatus.ApparatusProjector"
+               "Sportipedia.Catalog.Equipment.Widget.WidgetProjector"
              )
     end
 
-    test "blocked when there is no children list" do
+    test "blocked when there is no children list", %{repo: repo} do
       u = unit("Foo", Merge.children_list())
-      assert :blocked = u.place.(ast!("lib/sportipedia/catalog/equipment/router.ex"), u, nil)
+      assert :blocked = u.place.(ast!(repo, @router), u, nil)
     end
   end
 
   describe "scope (web router)" do
-    @real_router "lib/sportipedia_web/router.ex"
     @chain [
       {"/catalog", "SportipediaWeb.Catalog"},
       {"/equipment", "Equipment"},
-      {"/apparatuses", "Apparatus"}
+      {"/gadgets", "Gadget"}
     ]
 
-    test "route lands inside the deepest existing scope" do
+    test "route lands inside the deepest existing scope", %{repo: repo, opts: opts} do
       rendered =
-        merge!(@real_router, "post \"/x-thing\", XController, :x_thing", Merge.scope(@chain))
+        merge!(
+          repo,
+          opts,
+          @web_router,
+          "post \"/x-thing\", XController, :x_thing",
+          Merge.scope(@chain)
+        )
 
       assert Source.route_present?(
                Source.parse(rendered),
@@ -198,7 +235,7 @@ defmodule SpGen.MergeTest do
              )
     end
 
-    test "missing tail of the chain is materialized" do
+    test "missing tail of the chain is materialized", %{opts: opts} do
       router = """
       defmodule SportipediaWeb.Router do
         scope "/catalog", SportipediaWeb.Catalog do
@@ -218,35 +255,41 @@ defmodule SpGen.MergeTest do
       u = unit("post \"/create-widget\", WidgetController, :create_widget", Merge.scope(chain))
       {:ok, ast} = u.place.(ast, u, nil)
 
-      assert Merge.render(ast, Formatter.opts(@root)) =~ "scope \"/widgets\", Widget do"
+      assert Merge.render(ast, opts) =~ "scope \"/widgets\", Widget do"
     end
 
-    test "blocked when the outermost scope is absent" do
+    test "blocked when the outermost scope is absent", %{repo: repo} do
       u = unit("post \"/x\", X, :x", Merge.scope(@chain))
-      assert :blocked = u.place.(ast!("lib/sportipedia/catalog/equipment/router.ex"), u, nil)
+      assert :blocked = u.place.(ast!(repo, @router), u, nil)
     end
   end
 
   describe "clause and describe grouping" do
-    @aggregate "lib/sportipedia/catalog/equipment/apparatus/aggregate.ex"
-
-    test "after_def keeps apply/2 clauses together" do
+    test "after_def keeps apply/2 clauses together", %{repo: repo, opts: opts} do
       rendered =
-        merge!(@aggregate, "def apply(_a, %Zz{}), do: :ok", Merge.after_def(:apply, 2))
+        merge!(
+          repo,
+          opts,
+          @aggregate,
+          "def apply(_a, %Zz{}), do: :ok",
+          Merge.after_def(:apply, 2)
+        )
 
       assert line_of(rendered, "def apply(_a, %Zz{})") > line_of(rendered, "def apply(%")
     end
 
-    @op_test "test/sportipedia/catalog/equipment/apparatus/operation/catalog_apparatus_test.exs"
-
-    test "describe appends after the last describe" do
+    test "describe appends after the last describe", %{repo: repo, opts: opts} do
       rendered =
-        merge!(@op_test, "describe \"Zed\" do\n  test(\"t\", do: :ok)\nend", Merge.describe())
+        merge!(
+          repo,
+          opts,
+          @op_test,
+          "describe \"Zed\" do\n  test(\"t\", do: :ok)\nend",
+          Merge.describe()
+        )
 
       assert Source.has_describe?(Source.parse(rendered), "Zed")
-
-      assert line_of(rendered, "describe \"Zed\"") >
-               line_of(rendered, "describe \"CatalogApparatus command\"")
+      assert line_of(rendered, "describe \"Zed\"") > line_of(rendered, "describe \"Command\"")
     end
 
     test "before_helpers lands above the first defp" do
@@ -266,6 +309,8 @@ defmodule SpGen.MergeTest do
       assert line_of(rendered, "def b") < line_of(rendered, "defp helper")
     end
   end
+
+  # ------------------------------------------------------------------- head/body
 
   describe "head ranks" do
     test "moduledoc first, use next, attributes after aliases" do

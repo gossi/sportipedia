@@ -1,26 +1,26 @@
 defmodule SpGen.Blueprint.PolicyTest do
   @moduledoc """
   The policy's contribution to the operation test file: a
-  `describe "Policy - <operation>"` block asserting the guest and user
-  outcomes of the operation's action.
+  `describe "Policy"` block asserting the guest and user outcomes of the
+  operation's action.
   """
 
   use SpGen.Blueprint
 
   alias SpGen.Templates
-  alias SpGen.Blueprint.{OperationTest, Policy}
+  alias SpGen.Blueprint.{TestCaseFile, Policy}
 
-  @test_path "services/api/test/sportipedia/<_subdomain>/<composite>/<domain_object>/operation/<_operation>_test.exs"
+  @test_path "services/api/test/sportipedia/<_subdomain>/<composite>/<domain_object>/operations/<_operation>_test.exs"
   @test_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Operation.<Operation>Test"
 
   def plans(%Context{} = ctx) do
     [
-      OperationTest.plan(ctx,
+      TestCaseFile.plan(ctx,
         path: @test_path,
         module: @test_module,
         alias_templates: [Policy.module_template()],
         requires: fn c -> [{Policy.module_file(c), "policy not generated (spgen policy)"}] end,
-        describes: [{"Policy - <_operation>", &describe_body/2, ["Policy"]}]
+        describes: [{"Policy", &describe_body/2, ["Policy - <_operation>"]}]
       )
     ]
   end

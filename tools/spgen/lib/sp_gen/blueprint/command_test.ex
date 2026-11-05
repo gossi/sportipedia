@@ -1,27 +1,26 @@
 defmodule SpGen.Blueprint.CommandTest do
   @moduledoc """
   The command's contribution to the operation test file
-  (`operation-test.md`): a `describe "<Command> command"` block validating
-  the struct's enforced fields (id always; required data fields per the
-  command template).
+  (`operation-test.md`): a `describe "Command"` block validating the struct's
+  enforced fields (id always; required data fields per the command template).
   """
 
   use SpGen.Blueprint
 
   alias SpGen.Templates
-  alias SpGen.Blueprint.{Command, OperationTest}
+  alias SpGen.Blueprint.{Command, TestCaseFile}
 
-  @test_path "services/api/test/sportipedia/<_subdomain>/<composite>/<domain_object>/operation/<_operation>_test.exs"
+  @test_path "services/api/test/sportipedia/<_subdomain>/<composite>/<domain_object>/operations/<_operation>_test.exs"
   @test_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Operation.<Command>Test"
 
   def plans(%Context{} = ctx) do
     [
-      OperationTest.plan(ctx,
+      TestCaseFile.plan(ctx,
         path: @test_path,
         module: @test_module,
         alias_templates: [Command.module_template()],
         requires: fn c -> [{Command.module_file(c), "command not generated (spgen command)"}] end,
-        describes: [{"<Command> command", &describe_body/2}]
+        describes: [{"Command", &describe_body/2, ["<Command> command"]}]
       )
     ]
   end

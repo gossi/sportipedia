@@ -1,18 +1,19 @@
-defmodule SpGen.Blueprint.OperationTest do
+defmodule SpGen.Blueprint.TestCaseFile do
   @moduledoc """
-  Shared machinery for the operation test file
-  (`docs/architecture/blueprints/backend/domain/operation-test.md`): the test
-  file is owned by the *operation*, while each blueprint's `*Test` module
-  contributes its own `describe` block plus the aliases it needs.
+  Shared machinery for a test file several blueprints contribute to: the
+  operation test file (`docs/architecture/blueprints/backend/domain/operation-test.md`)
+  owned by the operation, and the event test file
+  (`docs/architecture/blueprints/backend/domain/event.md`) owned by the fact.
 
-  A test blueprint therefore contributes:
+  The file is a container; each blueprint's `*Test` module contributes its own
+  `describe` block plus the aliases it needs:
 
   * the test file path and module name (rendered templates)
   * the alias modules its `describe` block references
   * its `describe` subject and body
 
-  Merging into an existing test file appends only the missing units; the
-  scaffold creates the file with everything for this blueprint at once.
+  Merging into an existing test file appends only the missing units; the first
+  contributor with a test to write creates the file.
   """
 
   alias SpGen.{Context, FilePlan, Merge, Source, Unit}

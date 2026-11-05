@@ -69,12 +69,12 @@ defmodule SpGen.ReportTest do
   describe "render/1 deferred units" do
     test "a file waiting on a citizen lands in Ignored with the command to run" do
       path = @lib <> "operation/catalog_apparatus/command.ex"
-      reason = "validator unique_slug not generated (spgen validator)"
+      reason = "validator unique_slug not generated (spgen command)"
       rows = [{:deferred, path, waiting({:alias, "V"}, reason)}]
 
       assert Report.render(rows) == [
                "Ignored",
-               "  catalog/equipment/apparatus/operation/catalog_apparatus/command.ex  skipped: spgen validator"
+               "  catalog/equipment/apparatus/operation/catalog_apparatus/command.ex  skipped: spgen command"
              ]
     end
 
@@ -88,13 +88,13 @@ defmodule SpGen.ReportTest do
             {:apply, "b"},
             "event apparatus-edited not generated (spgen event apparatus-edited)"
           ) ++
-          waiting({:validates, "c"}, "validator unique_slug not generated (spgen validator)")
+          waiting({:validates, "c"}, "validator unique_slug not generated (spgen command)")
 
       assert ["Ignored", line] = Report.render([{:deferred, @lib <> "aggregate.ex", entries}])
 
       assert line ==
                "  catalog/equipment/apparatus/aggregate.ex  " <>
-                 "skipped: spgen event apparatus-cataloged, spgen event apparatus-edited, spgen validator"
+                 "skipped: spgen command, spgen event apparatus-cataloged, spgen event apparatus-edited"
     end
 
     test "a partially updated file reports as Updated and keeps its note" do
@@ -139,10 +139,10 @@ defmodule SpGen.ReportTest do
 
     test "a check row whose units all wait reads as skipped, not as an update" do
       deferred =
-        {:deferred, {:alias, "V"}, ["validator unique_slug not generated (spgen validator)"]}
+        {:deferred, {:alias, "V"}, ["validator unique_slug not generated (spgen command)"]}
 
       assert ["Ignored", line] = Report.render([{:checked, @lib <> "command.ex", [deferred]}])
-      assert line =~ "skipped: spgen validator"
+      assert line =~ "skipped: spgen command"
     end
 
     test "a check row with unplaceable units reports Blocked, not an update" do

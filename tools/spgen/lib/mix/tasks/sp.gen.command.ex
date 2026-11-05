@@ -7,11 +7,14 @@ defmodule Mix.Tasks.Sp.Gen.Command do
   Executes the blueprint `docs/architecture/blueprints/backend/domain/command.md`
   (transferred to `SpGen.Blueprint.Command`):
 
-  * `services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/operation/<_operation>/command.ex`
+  * `services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/operations/<_operation>/command.ex`
   * the `<Command> command` `describe` block in the operation test file
   * registration in the composite's commanded router (`identify`/`dispatch`),
     and that router with the subdomain's commanded application (`router …`) —
     both files are created here when the composite or subdomain lacks one
+  * the validators its invariants and constraints imply, each with the
+    internal API it delegates to and — for a `unique-<field>` rule — the lookup
+    query and read model behind that accessor (`SpGen.Blueprint.Validator`)
 
   The command struct is created for what the operation does:
 

@@ -8,16 +8,24 @@ defmodule SpGen.Formatter do
   (`import_deps`). Those are computed once per cwd and cached: a dep exports
   its locals through `export: [locals_without_parens: ...]` in its own
   `.formatter.exs`; the project file carries them at the top level.
+
+  The configuration is read through a `SpGen.FS` handle, so a run against an
+  in-memory repository formats exactly like a run against the disk.
   """
 
-  @doc "Formatter options equivalent to the project's `mix format`."
-  @spec opts(Path.t()) :: keyword()
-  def opts(cwd \\ File.cwd!()) do
-    config = eval_formatter(cwd, ".formatter.exs")
+  alias SpGen.FS
+
+  @doc """
+  Formatter options equivalent to the project's `mix format`, read from `cwd`
+  through `fs`.
+  """
+  @spec opts(Path.t(), FS.t()) :: keyword()
+  def opts(cwd \\ File.cwd!(), fs \\ FS.default()) do
+    config = eval_formatter(cwd, ".formatter.exs", fs)
 
     locals =
       Keyword.get(config, :locals_without_parens, []) ++
-        deps_locals(cwd, Keyword.get(config, :import_deps, []), MapSet.new())
+        deps_locals(cwd, fs, Keyword.get(config, :import_deps, []), MapSet.new())
 
     [locals_without_parens: Enum.uniq(locals)]
   end
@@ -28,14 +36,9 @@ defmodule SpGen.Formatter do
     text |> Code.format_string!(opts) |> IO.iodata_to_binary()
   end
 
-  @spec format(String.t(), Path.t(), keyword()) :: String.t()
-  def format(text, cwd, _env) when is_binary(cwd) do
-    format(text, opts(cwd))
-  end
+  defp deps_locals(_cwd, _fs, [], _visited), do: []
 
-  defp deps_locals(_cwd, [], _visited), do: []
-
-  defp deps_locals(cwd, deps, visited) do
+  defp deps_locals(cwd, fs, deps, visited) do
     {new_locals, new_visited} =
       Enum.reduce(deps, {[], visited}, fn dep, {acc, seen} ->
         if MapSet.member?(seen, dep) do
@@ -43,7 +46,7 @@ defmodule SpGen.Formatter do
         else
           file = Path.join([cwd, "deps", to_string(dep), ".formatter.exs"])
 
-          case eval_file_if_exists(file) do
+          case eval_file_if_exists(file, fs) do
             nil ->
               {acc, MapSet.put(seen, dep)}
 
@@ -54,27 +57,30 @@ defmodule SpGen.Formatter do
               own = Keyword.get(config, :locals_without_parens, [])
 
               nested =
-                deps_locals(cwd, Keyword.get(config, :import_deps, []), MapSet.put(seen, dep))
+                deps_locals(cwd, fs, Keyword.get(config, :import_deps, []), MapSet.put(seen, dep))
 
               {acc ++ exported ++ own ++ nested, MapSet.put(seen, dep)}
           end
         end
       end)
 
-    new_locals ++ deps_locals(cwd, [], new_visited)
+    new_locals ++ deps_locals(cwd, fs, [], new_visited)
   end
 
-  defp eval_formatter(cwd, name) do
-    case eval_file_if_exists(Path.join(cwd, name)) do
+  defp eval_formatter(cwd, name, fs) do
+    case eval_file_if_exists(Path.join(cwd, name), fs) do
       nil -> []
       config -> config
     end
   end
 
-  defp eval_file_if_exists(path) do
-    if File.exists?(path) do
-      {config, _} = Code.eval_file(path)
+  defp eval_file_if_exists(path, fs) do
+    with true <- FS.exists?(fs, path),
+         {:ok, text} <- FS.read(fs, path) do
+      {config, _} = Code.eval_string(text, [], file: path)
       config
+    else
+      _ -> nil
     end
   end
 end

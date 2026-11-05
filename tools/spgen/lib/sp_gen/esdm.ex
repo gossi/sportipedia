@@ -64,7 +64,8 @@ defmodule SpGen.Esdm do
   Answers the generator's data needs from the domain model so blueprint
   variables can be filled without hand-passed args:
 
-  * `load/1` indexes every `*.esdm.yaml` document (multi-document files too).
+  * `load/2` indexes every `*.esdm.yaml` document (multi-document files too),
+    through a `SpGen.FS` handle.
   * `resolve/2` turns an address into exactly one element — an `esdm:`
     reference, a model file path, a `kind.name`, or a bare name. Ambiguity is
   an error listing the full `esdm:` references that disambiguate.
@@ -83,34 +84,37 @@ defmodule SpGen.Esdm do
 
   @type t :: %__MODULE__{root: String.t(), elements: [Element.t()]}
 
-  @doc "Loads all `.esdm.yaml` documents under `root` (a repo-relative path)."
-  @spec load(Path.t()) :: {:ok, t()}
-  def load(root) do
+  @doc """
+  Loads all `.esdm.yaml` documents under `root` (a repo-relative path).
+
+  Options: `:fs` — the `SpGen.FS` handle to read through (default: the disk).
+  """
+  @spec load(Path.t(), keyword()) :: {:ok, t()}
+  def load(root, opts \\ []) do
+    fs = Keyword.get(opts, :fs, SpGen.FS.default())
+
     elements =
-      root
-      |> Path.join("**/*.esdm.yaml")
-      |> Path.wildcard()
-      |> Enum.flat_map(&load_file/1)
+      SpGen.FS.files_with(fs, root, ".esdm.yaml")
+      |> Enum.flat_map(&load_file(fs, &1))
 
     {:ok, %__MODULE__{root: root, elements: elements}}
   end
 
   @doc "Like `load/1` but raises on failure."
-  def load!(root) do
-    {:ok, model} = load(root)
+  def load!(root, opts \\ []) do
+    {:ok, model} = load(root, opts)
     model
   end
 
-  defp load_file(path) do
-    case YamlElixir.read_all_from_file(path) do
-      {:ok, docs} ->
-        docs
-        |> List.wrap()
-        |> Enum.filter(&match?(%{}, &1))
-        |> Enum.map(&to_element(&1, path))
-
-      {:error, _} ->
-        []
+  defp load_file(fs, path) do
+    with {:ok, text} <- SpGen.FS.read(fs, path),
+         {:ok, docs} <- YamlElixir.read_all_from_string(text) do
+      docs
+      |> List.wrap()
+      |> Enum.filter(&match?(%{}, &1))
+      |> Enum.map(&to_element(&1, path))
+    else
+      _ -> []
     end
   end
 
@@ -430,7 +434,11 @@ defmodule SpGen.Esdm do
   @doc """
   The operation a projection performs on the database, read from its rule
   prose: `:create` | `:update` | `:delete` | `:unknown`.
+
+  `nil` — an event no read model projects (an audit-only fact) — is `:unknown`.
   """
+  def projection_effect(nil), do: :unknown
+
   def projection_effect(projection) do
     case projection["rule"] || Map.get(projection, :rule) do
       rule when is_binary(rule) ->

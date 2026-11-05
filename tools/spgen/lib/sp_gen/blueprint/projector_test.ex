@@ -1,34 +1,26 @@
 defmodule SpGen.Blueprint.ProjectorTest do
   @moduledoc """
-  The projector's contribution to the operation test file(s) of the commands
-  publishing its event: a `describe "<DomainObject>Projector - <Event>"`
-  block running `handle/2` with a fully populated metadata map and asserting
-  the projected row.
+  The projector's contribution to its event's test file
+  (`events/<event>_test.exs`): a `describe "Projector"` block running `handle/2`
+  with a fully populated metadata map and asserting the projected row — the
+  projection of a fact is tested where the fact is tested.
   """
 
   use SpGen.Blueprint
 
   alias SpGen.{Esdm, Templates}
-  alias SpGen.Blueprint.{Event, OperationTest, Projector, ReadModel}
+  alias SpGen.Blueprint.{Event, Projector, ReadModel, TestCaseFile}
 
-  @test_path "services/api/test/sportipedia/<_subdomain>/<composite>/<domain_object>/operation/<_operation>_test.exs"
-  @test_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Operation.<Command>Test"
+  @test_path "services/api/test/sportipedia/<_subdomain>/<composite>/<domain_object>/events/<_event>_test.exs"
+  @test_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Event.<Event>Test"
 
-  # the projector's tests live in the operation test file(s) of the commands
-  # publishing this event
   def plans(%Context{} = ctx) do
-    publishers =
-      ctx.model.elements
-      |> Enum.filter(fn el -> el.kind == :command and ctx.element.name in Esdm.publishes(el) end)
-      |> Enum.sort_by(& &1.name)
-
     plain = Context.render("<DomainObject>Projector", ctx)
 
-    Enum.map(publishers, fn command ->
-      OperationTest.plan(ctx,
+    [
+      TestCaseFile.plan(ctx,
         path: @test_path,
         module: @test_module,
-        extra_vars: %{"operation" => command.name, "command" => command.name},
         alias_templates: [Projector.module_template(), ReadModel.module_template()],
         alias_modules: seed_modules(ctx),
         requires: fn c ->
@@ -38,9 +30,9 @@ defmodule SpGen.Blueprint.ProjectorTest do
             {ReadModel.module_file(c), "read model not generated (spgen read_model)"}
           ]
         end,
-        describes: [{"<DomainObject>Projector - <Event>", &describe_body/2, [plain]}]
+        describes: [{"Projector", &describe_body/2, ["<DomainObject>Projector - <Event>", plain]}]
       )
-    end)
+    ]
   end
 
   @doc false

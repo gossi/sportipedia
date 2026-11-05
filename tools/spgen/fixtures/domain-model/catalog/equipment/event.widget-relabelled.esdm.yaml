@@ -1,0 +1,21 @@
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: widget-relabelled
+description: "A widget's label was renamed"
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: widget
+data:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier"
+    label:
+      type: string
+      description: "The new short label"
+  required:
+    - id
+    - label

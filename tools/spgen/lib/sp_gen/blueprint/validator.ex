@@ -4,7 +4,8 @@ defmodule SpGen.Blueprint.Validator do
   plus the example blueprints `examples/unique-slug.md` and
   `examples/domain-object-exists.md`.
 
-  Generates one Vex validator per invariant/constraint of the domain model:
+  Generates one Vex validator per invariant/constraint the
+  `SpGen.Invariant` registry resolved for the citizen:
 
   * `unique-<field>` invariants → uniqueness against the internal API
     accessor, tolerating the object that already owns the value (edit case)
@@ -12,11 +13,17 @@ defmodule SpGen.Blueprint.Validator do
   * any other rule naming a field of the citizen (cross-field or
     cross-aggregate) → a scaffold the operator implements
 
-  Rules that name no field (operational preconditions) are not validators
-  and are skipped.
+  Rules that name no field (operational preconditions) are not validators;
+  they stay visible in `SpGen.Context.unresolved`.
+
+  This blueprint is not a generator: the command that validates with the
+  validator owns it, the way it owns its router registration. Generating a
+  validator generates the internal API it calls and the lookup query that
+  accessor reads through — see `SpGen.Blueprint.InternalAPI` and
+  `SpGen.Blueprint.LookupQuery`.
 
   Validators are tested as part of the command's tests (`validator.md`'s Test
-  section delegates to `command.md`), so this generator contributes no test
+  section delegates to `command.md`), so this blueprint contributes no test
   file of its own.
   """
 
@@ -29,7 +36,11 @@ defmodule SpGen.Blueprint.Validator do
   @internal_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Internal"
 
   def name, do: :validator
-  def source_kinds, do: [:command, :aggregate]
+  def source_kinds, do: [:command]
+
+  def dependencies(%Context{} = ctx) do
+    if Enum.any?(ctx.validators, &(&1.kind != :rule)), do: [{InternalAPI, ctx.element}], else: []
+  end
 
   @doc "The validator module's file path (used as a `requires` gate)."
   @spec module_file(Context.t(), map()) :: String.t()
@@ -140,16 +151,20 @@ defmodule SpGen.Blueprint.Validator do
       end
 
     [
+      # a validator of an example shape is a call into the internal API: with
+      # no internal API to alias, nothing is placeable and the file stays away
       %Unit{
         id: :moduledoc,
         check: &Source.has_moduledoc?/1,
         render: fn c -> "@moduledoc \"\"\"\n#{doc(validator, c)}\n\"\"\"" end,
+        requires: internal_gate(validator),
         place: Merge.head(:moduledoc)
       },
       %Unit{
         id: {:use, "Vex.Validator"},
         check: fn src -> Source.has_use?(src, "Vex.Validator") end,
         render: fn _ctx -> "use Vex.Validator" end,
+        requires: internal_gate(validator),
         place: Merge.head(:use)
       }
     ] ++

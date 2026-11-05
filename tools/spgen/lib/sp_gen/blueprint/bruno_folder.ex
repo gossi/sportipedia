@@ -41,10 +41,10 @@ defmodule SpGen.Blueprint.BrunoFolder do
   defp folder_seq(ctx, path) do
     composite = ctx.repo_root && Path.join(ctx.repo_root, Path.dirname(Path.dirname(path)))
 
-    with true <- composite && File.dir?(composite),
-         {:ok, entries} <- File.ls(composite) do
+    with true <- composite && FS.dir?(ctx.fs, composite),
+         {:ok, entries} <- FS.ls(ctx.fs, composite) do
       entries
-      |> Enum.count(fn e -> File.dir?(Path.join(composite, e)) end)
+      |> Enum.count(fn e -> FS.dir?(ctx.fs, Path.join(composite, e)) end)
       |> max(1)
     else
       _ -> 1

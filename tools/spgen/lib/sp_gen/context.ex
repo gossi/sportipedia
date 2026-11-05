@@ -10,13 +10,15 @@ defmodule SpGen.Context do
     when unknown
   * `operation`: the `:create | :update | :delete | :read | :collection`
     template the user selected with `--template`
-  * data: fields (canonical order), validators (from aggregate invariants and
-    command constraints), published events, actors, documentation prose
+  * data: fields (canonical order), validators (the invariant/constraint rules
+    `SpGen.Invariant` resolved to a pattern), unresolved rules (named by the
+    model, claimed by no pattern), published events, actors, documentation
+    prose
 
   Renders blueprint templates with the placeholder engine.
   """
 
-  alias SpGen.{Esdm, Placeholders}
+  alias SpGen.{Esdm, Invariant, Placeholders}
   alias SpGen.Esdm.Element
 
   @enforce_keys [:element, :model, :subdomain, :composite, :constituent, :operation]
@@ -31,10 +33,12 @@ defmodule SpGen.Context do
     :read_model,
     :fields,
     :validators,
+    :unresolved,
     :events,
     :actors,
     :scenarios,
-    :repo_root
+    :repo_root,
+    fs: SpGen.FS.default()
   ]
 
   @type operation :: :create | :update | :delete | :read | :collection
@@ -65,6 +69,7 @@ defmodule SpGen.Context do
         constituent: constituent,
         operation: Keyword.get(opts, :operation) || derive_operation(model, element),
         repo_root: Keyword.get(opts, :repo_root),
+        fs: Keyword.get(opts, :fs, SpGen.FS.default()),
         aggregate: fetch(aggregate_link(model, element)),
         read_model: fetch(read_model_link(model, element)),
         events:
@@ -74,8 +79,9 @@ defmodule SpGen.Context do
       }
 
       fields = fields_for(ctx)
+      {validators, unresolved} = validators_for(ctx, fields)
 
-      {:ok, %{ctx | fields: fields, validators: validators_for(ctx, fields)}}
+      {:ok, %{ctx | fields: fields, validators: validators, unresolved: unresolved}}
     end
   end
 
@@ -132,7 +138,7 @@ defmodule SpGen.Context do
   defp fetch(_error), do: nil
 
   # a generator may be driven from the aggregate/read-model element itself
-  # (e.g. `sp.gen.validator position`); the aggregate_of/read_model_for
+  # (e.g. `sp.gen.internal_api position`); the aggregate_of/read_model_for
   # lookups only follow links from related elements, so self-link here
   defp aggregate_link(model, %Element{kind: :aggregate} = element),
     do: model |> Esdm.aggregate_of(element) |> or_self(element, :aggregate)
@@ -252,18 +258,19 @@ defmodule SpGen.Context do
     end
   end
 
-  # validators from aggregate invariants + command constraints, matched
+  # the citizen's invariant/constraint rules, resolved by the pattern registry
   # against the context's fields (which already carry the injected id)
   defp validators_for(%__MODULE__{} = ctx, fields) do
     invs = if ctx.aggregate, do: Esdm.invariants(ctx.aggregate), else: []
     cons = Enum.flat_map(constraint_sources(ctx), &Esdm.constraints/1)
     field_names = Enum.map(fields, & &1.name)
 
-    (invs ++ cons)
-    |> Enum.map(&validator_for(&1, field_names, ctx.constituent))
-    |> Enum.reject(&is_nil/1)
-    |> Enum.uniq_by(& &1.name)
-    |> Enum.sort_by(& &1.name)
+    {validators, unresolved} =
+      (invs ++ cons)
+      |> Enum.uniq_by(& &1["name"])
+      |> Invariant.resolve_all(field_names, ctx.constituent)
+
+    {Enum.sort_by(validators, & &1.name), Enum.sort_by(unresolved, & &1["name"])}
   end
 
   # Constraint rules live on the commands; when the generator is driven from
@@ -291,49 +298,6 @@ defmodule SpGen.Context do
     ctx.validators
     |> Enum.filter(&(&1.kind == :unique))
     |> Enum.map(& &1.field)
-  end
-
-  # rule → validator, kinds per the validator blueprint's example shapes:
-  #
-  # * `unique-<field>` → uniqueness against the internal API
-  # * `<domain_object>-exists` (this domain object) → existence check by id
-  # * anything else → `:rule`, a scaffold the operator implements
-  #
-  # rules that name no field of the citizen are not validators at all
-  # (e.g. an operational precondition) and are dropped
-  defp validator_for(%{"name" => name} = rule, field_names, constituent) do
-    text = "#{name} #{rule["rule"]}"
-
-    kind =
-      cond do
-        name =~ ~r/\Aunique-/ -> :unique
-        name == "#{constituent}-exists" -> :exists
-        true -> :rule
-      end
-
-    field =
-      case kind do
-        # the field is part of the rule's name; `unique-slug` validates `slug`
-        :unique ->
-          name |> String.replace_prefix("unique-", "") |> then(&(&1 in field_names && &1))
-
-        :exists ->
-          "id" in field_names && "id"
-
-        :rule ->
-          Enum.find(field_names, fn f -> text =~ ~r/\b#{Regex.escape(f)}\b/i end)
-      end
-
-    if field do
-      %{
-        name: name,
-        field: field,
-        kind: kind,
-        rule: rule["rule"],
-        module: pascal(name),
-        snake: String.replace(name, "-", "_")
-      }
-    end
   end
 
   @doc """

@@ -1,0 +1,59 @@
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: widget
+description: "A cataloged widget, projected from the widget aggregate"
+scope:
+  domain: sport
+  boundedContext: sport
+projections:
+  - boundedContext: sport
+    aggregate: widget
+    event: widget-created
+    rule: "Project the widget when it is created"
+  - boundedContext: sport
+    aggregate: widget
+    event: widget-edited
+    rule: "Update the widget details"
+  - boundedContext: sport
+    aggregate: widget
+    event: widget-archived
+    rule: "Delete the widget"
+  - boundedContext: sport
+    aggregate: widget
+    event: widget-relabelled
+    rule: "Update the widget label"
+schema:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier"
+    title:
+      type: string
+      description: "Name of the widget"
+    slug:
+      type: string
+      description: "URL-friendly unique identifier"
+    label:
+      type: string
+      description: "Short label shown in lists"
+    description:
+      type: string
+      description: "Optional description"
+    archivedAt:
+      type: string
+      format: date-time
+      description: "When the widget was archived"
+    coachId:
+      type: string
+      format: uuid
+      description: "Reference to the owning coach"
+    teamId:
+      type: string
+      format: uuid
+      description: "Reference to the owning team"
+  required:
+    - id
+    - title
+    - slug

@@ -42,7 +42,7 @@ defmodule SpGen.Blueprint.ProjectorSupervisor do
     Enum.find_value(@candidates, fn {path_tpl, module_tpl} ->
       path = Context.render(path_tpl, ctx)
 
-      if ctx.repo_root && File.exists?(Path.join(ctx.repo_root, path)) do
+      if ctx.repo_root && FS.exists?(ctx.fs, Path.join(ctx.repo_root, path)) do
         {path, Context.render(module_tpl, ctx)}
       end
     end)

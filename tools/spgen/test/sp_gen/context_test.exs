@@ -87,7 +87,7 @@ defmodule SpGen.ContextTest do
     end
   end
 
-  describe "validators (from invariants and constraints)" do
+  describe "validators (invariant patterns resolved over invariants and constraints)" do
     test "unique invariant maps to its field, allow_nil style :unique", %{model: model} do
       c = ctx(model, "command.catalog-apparatus", operation: :create)
 
@@ -105,10 +105,13 @@ defmodule SpGen.ContextTest do
       assert exists.module == "ApparatusExists"
     end
 
-    test "invariant without a matching field is dropped", %{model: model} do
+    test "an invariant that guards no field generates no validator", %{model: model} do
       c = ctx(model, "command.catalog-apparatus", operation: :create)
       # the no-archive-when-in-use invariant references no command field
       refute Enum.any?(c.validators, &(&1.name == "no-archive-when-in-use"))
+
+      # … and is not silently dropped: the model named a rule no pattern claims
+      assert [%{"name" => "no-archive-when-in-use"}] = c.unresolved
     end
 
     test "archive command keeps only the exists validator", %{model: model} do

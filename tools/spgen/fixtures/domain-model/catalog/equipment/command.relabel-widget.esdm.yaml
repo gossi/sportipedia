@@ -1,0 +1,29 @@
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: relabel-widget
+description: "Renames a widget and records the rename for the audit trail"
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: widget
+data:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier of the widget to relabel"
+    label:
+      type: string
+      description: "The new short label"
+  required:
+    - id
+    - label
+constraints:
+  - name: widget-exists
+    rule: A widget needs to exist (check by id)
+publishes:
+  - widget-relabelled
+  - widget-rename-logged
+actors:
+  - user

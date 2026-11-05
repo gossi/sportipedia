@@ -11,6 +11,11 @@ defmodule Mix.Tasks.Sp.Gen.InternalApi do
   technical query implementations live in queries and validators, which call
   these accessors.
 
+  The accessor's own dependencies are generated with it: the read model it
+  reads and, per unique field, the `Queries.<DomainObject>By<Field>` lookup it
+  delegates to (`SpGen.Blueprint.LookupQuery`). The same closure runs from
+  `mix sp.gen.command`, since that is what needs a validator.
+
       mix sp.gen.internal_api read-model.apparatus
 
   Fixed shape — no `--template`.
