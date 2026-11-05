@@ -1,68 +1,39 @@
+---
+generator: "mix sp.gen.policy <operation>"
+blueprints:
+  - SpGen.Blueprint.Policy
+  - SpGen.Blueprint.PolicyTest
+module: "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Policy"
+writes: [module, operation test]
+---
+
 # Policy
 
-> **Implemented as an executable blueprint:** `SpGen.Blueprint.Policy` — run `mix sp.gen.policy <operation>` (clause shape follows the element's `actors`).
-> This markdown stays the design document; the generator owns the file layout and
-> merges idempotently into existing code.
-
-| Attribute | Value |
-| --- | --- |
-| Schema | [Core](../../../../schemas/core/v1.yaml) (see `command` + `actor`) |
-| File Path | `/services/api/lib/sportipedia/<_subdomain>/<_composite>/<domain_object>/policy.ex` |
-| Module Name | `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Policy` |
-| Test | See [Operation Test](./operation-test.md) |
+One answer per operation: may this actor do this. Bodyguard, and the shared
+guards from `Sportipedia.Auth.Roles` — nothing else.
 
 ## Prerequisite
 
-- The [Domain Model](../../../../domain-model/README.md) contains the command
-  with actors
+- The [Domain Model](../../../../domain-model/README.md) lists the operation's
+  `actors`.
 
-## Implementation
+## What the generator does
 
-Derive authorization from the domain model and present rules and invariants.
+It appends the operation's `authorize/3` clause(s) to the constituent's policy,
+creating the file with `@behaviour Bodyguard.Policy` and the `import
+Sportipedia.Auth.Roles` when missing:
 
-- Policy uses the bodyguard framework
-- One function for "can actor do x for y"
-- Only functions needed for the given operation
-- Basis are the `actor` in the domain model. MUST use guards from `Sportipedia.Auth`:
-  - `is_guest?(user)`
-  - `is_user?(user)`
-  - `is_admin?(user)`
-  - Pick the relevant for the implementation at hand (not all three are always needed).
-    When guests are allowed, all others are too.
-    When a user is allowed, so are admins.
-- By using the provided guards the checks are centralized and guaranteed to be equal everywhere
+- `guest` among the actors → one open clause: `authorize(:op, _user, _params), do: :ok`.
+- otherwise the deny/allow pair: `is_guest?(user)` → `:error`,
+  `is_user?(user)` → `:ok`.
 
-### Documentation
+`is_user?/1` is "authenticated", so an `admin` actor needs no extra clause;
+`is_admin?/1` exists for the rare rule that is genuinely admin-only. Using the
+shared guards keeps the role checks identical everywhere — do not write a
+`user.role == …` comparison in a policy.
 
-Derive all documentation from the [Domain Model](../../../../domain-model/README.md):
+## Tests
 
-- **`@moduledoc`**: Describe the policy's purpose in authorizing operations.
-
-Example:
-
-```elixir
-@moduledoc """
-Authorizes sport operations based on user roles.
-"""
-```
-
-### Implementation Template
-
-```elixir
-defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Policy do
-  @moduledoc """
-  Authorizes <domain_object> operations based on user roles.
-  """
-
-  @behaviour Bodyguard.Policy
-
-  import Sportipedia.Auth.Roles
-
-  def authorize(:<_operation>, user, _params) when is_guest?(user), do: :error
-  def authorize(:<_operation>, user, _params) when is_user?(user), do: :ok
-end
-```
-
-## Test
-
-Tests `Policy.authorize/3` — pure function
+In the [operation test](./operation-test.md), under `describe "Policy"`: the
+guest denial and the user allowance, generated from the same actor list. An
+admin or param-dependent case is manual ([Known gaps](../../README.md#known-gaps)).

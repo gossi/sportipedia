@@ -1,75 +1,79 @@
+---
+generator: none
+owner: "dependency of mix sp.gen.command (and of the read model for unique fields)"
+blueprints:
+  - SpGen.Blueprint.Validator
+module: "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Validators.<Validator>"
+writes: [module]
+---
+
 # Validator
 
-> **Implemented as an executable blueprint:** `SpGen.Blueprint.Validator` — run `mix sp.gen.validator <operation-or-aggregate>` (bodies per the unique-slug / domain-object-exists examples).
-> This markdown stays the design document; the generator owns the file layout and
-> merges idempotently into existing code.
-
-| Attribute | Value |
-| --- | --- |
-| Schema | [Core](../../../../schemas/core/v1.yaml) |
-| File Path | `/services/api/lib/sportipedia/<_subdomain>/<_composite>/<domain_object>/validators/<_validator>.ex` |
-| Module Name | `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Validators.<Validator>` |
-| Test | See [Operation Test](./operation-test.md) |
+One modelled rule, one Vex validator. A validator answers "is this value
+acceptable" — it never fixes data.
 
 ## Prerequisite
 
-- The [Domain Model](../../../../domain-model/README.md) has an invariant/rule
-  implemented as validator
+- The [Domain Model](../../../../domain-model/README.md) states the rule as a
+  `namedRule`: an aggregate `invariant` or a command `constraint`, with a `name`
+  and prose.
 
-## Implementation
+## Not a command
 
-- `use Vex.Validator` on the validator
-- **Critical**: Do NOT configure them as "global" validators
-- implementation logic:
-  - according to test the given invariance
-  - May make use of a given query (if applicable)
-- if `nil` values are allowed:
-  - DO NOT: `def validate(nil, _contex), do: :ok`
-  - DO: use [`allow_nil: true`](./command.md#custom-validations)
+There is no `mix sp.gen.validator`. The command that validates with a validator
+owns it — the way it owns its router registration — and generating a validator
+generates the [internal API](./internal-api.md) accessor it calls and, for a
+unique field, the lookup query and read model behind that accessor.
 
-### Documentation
+## Patterns
 
-Derive all documentation from the [Domain Model](../../../../domain-model/README.md):
+`SpGen.Invariant` asks its patterns in order; the first that claims a rule
+decides the shape:
 
-- **`@moduledoc`**: Describe the validator's purpose in validating the invariant.
-- **`@doc`**: Describe the `validate/2` function.
+| Pattern | Claims | Generates |
+| --- | --- | --- |
+| `SpGen.Invariant.UniqueField` | `unique-<field>`, `<field>` a citizen field | validator calling `<do>_by_<field>`, tolerating the record that owns the value; accessor, lookup query, read model |
+| `SpGen.Invariant.DomainObjectExists` | `<domain-object>-exists` for the citizen itself, `id` a field | validator calling `<do>_by_id/1` |
+| `SpGen.Invariant.FieldRule` | any other rule naming a citizen field (cross-field, cross-aggregate) | a scaffold validator that raises `TODO: implement <rule> validator (see the domain model rule)` |
 
-Example:
+A rule naming no field (an operational precondition such as
+`no-archive-when-in-use`) is not a validator. It resolves to nothing and the run
+names it under `Unresolved rules`, with the element it came from — the command
+gains no `validates` line, so it is yours to implement, validator **and**
+`validates … by:` line, or to leave unenforced on purpose.
 
-```elixir
-@moduledoc """
-Validates that a sport slug is unique within the catalog.
-"""
+A rule that names a field of the citizen but not of the driven element is **not**
+reported: `at-most-one-owner` names `coachId`, which `create-widget` carries and
+realizes, so running `mix sp.gen.command archive-widget` stays quiet about it.
+Only a rule no element of the citizen can realize — one naming no field anywhere
+— reaches the report, because that is a fact about the model rather than about
+the run you just made.
 
-@doc """
-Validates the given slug value for uniqueness.
-"""
-```
+## Contracts
 
-### Implementation Template
+The error a validator returns is the pattern's, and the caller's assertion names
+it:
 
-```elixir
-defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Validators.<Validator> do
-  @moduledoc """
-  Validates that a <domain_object> <field> <describe the invariant>.
-  """
+- unique field: `{:error, :<field>_exists}`
+- exists: `{:error, :not_found}`
+- a scaffolded rule: whatever the model's rule text demands, stated in the
+  example and asserted in the command test.
 
-  use Vex.Validator
+Never invent a second convention for the same rule, and never a
+`def validate(nil, _), do: :ok`: optionality is `allow_nil: true` on the
+command's `validates` line ([command](./command.md)).
 
-  @doc """
-  Validates the given <field> value.
-  """
-  @spec validate(<value_type>, map()) :: :ok | {:error, String.t()}
-  def validate(value, _options) do
-    # run logic
-  end
-end
-```
+One `validates` call per field: `Vex.Struct.validates/2` keys validations by
+field, so a second call for the same field *replaces* the first. Several
+validators on one field are several `by:` pairs inside the same call, which is
+why the generator reports an incomplete line as `Outdated` instead of appending.
 
-### Example: Unique Slug
+Validators are not "global": they belong to the constituent, in the module the
+rule names.
 
-See [Unique Slug Example](./examples/unique-slug.md)
+## Tests
 
-## Test
-
-Done as part of testing a [command](./command.md)
+There is no validator test file. Validators are tested as part of the
+[command](./command.md) in the [operation test](./operation-test.md): the value
+that violates the rule, the value that satisfies it, and for an edit the record
+that already owns the value.

@@ -1,68 +1,41 @@
+---
+generator: "mix sp.gen.internal_api <element>"
+owner: "also reached as a dependency of every validator a command generates"
+blueprints:
+  - SpGen.Blueprint.InternalAPI
+  - SpGen.Blueprint.LookupQuery
+module: "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Internal"
+writes: [module]
+---
+
 # Internal API
 
-> **Implemented as an executable blueprint:** `SpGen.Blueprint.InternalAPI` — run `mix sp.gen.internal_api <element>` (fixed shape — `x_by_id/1` plus one accessor per unique invariant).
-> This markdown stays the design document; the generator owns the file layout and
-> merges idempotently into existing code.
+Data access inside one constituent — for its public API, its validators and its
+tests. Never across a constituent or composite boundary.
 
-| Attribute   | Value                                                                                  |
-| ----------- | -------------------------------------------------------------------------------------- |
-| File Path   | `/services/api/lib/sportipedia/<_subdomain>/<_composite>/<domain_object>/internal_api` |
-| Module Name | `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Internal`            |
-| Test        | See [Operation Test](./operation-test.md)                                              |
+## Prerequisite
 
-## Implementation
+- The [Domain Model](../../../../domain-model/README.md) contains the read model
+  and, for each lookup accessor, the invariant that makes the field addressable.
 
-Internal API is used within a constituent (including tests), but never from another constituent or composite.
+## What the generator does
 
-What it contains:
+`<domain_object>_by_id/1` through `Repo`, and one accessor per unique-field
+invariant (`<domain_object>_by_slug/1`, lowercasing the value and delegating to
+the lookup query). It is reached two ways: as its own generator, and as the
+dependency of every validator a command generates — together with the read model
+it reads and the `Queries.<…>` module its accessor calls, so a generated
+accessor never points at a module that does not exist.
 
-- Functions with descriptive names do hide implementation details to make the API memorable
-- Functions may call the implementation from elsewhere, eg. use an existing query
-- Function to get the read models via id: `<domain_object>_by_id(id)`
+What stays out of it by design: technical implementation that belongs elsewhere
+(a query, a validator) and anything another constituent has to reach — that goes
+through the [public API](./public-api.md). An accessor the model does not imply
+(a join, a read across several read models) is added by hand, together with the
+query it delegates to, and only for a caller that justifies it.
 
-What it does not contain:
+## Tests
 
-- Technical implemetation that has a better place to live elsewhere (eg. in a query or a validator)
-
-### Documentation
-
-Derive all documentation from the [Domain Model](../../../../domain-model/README.md):
-
-- **`@moduledoc`**: Describe the internal API's purpose for the aggregate.
-- **`@doc`**: Describe each function's purpose.
-
-Example:
-
-```elixir
-@moduledoc """
-Internal API for querying sport read models within the bounded context.
-"""
-
-@doc """
-Fetches a sport by its ID. Returns nil if not found.
-"""
-```
-
-### Implementation Template
-
-```elixir
-defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Internal do
-  @moduledoc """
-  Internal API for querying <domain_object> read models within the bounded context.
-  """
-
-  @doc """
-  Fetches a <domain_object> by its ID. Returns nil if not found.
-  """
-  @spec <domain_object>_by_id(String.t()) :: <DomainObject>ReadModel.t() | nil
-  def <domain_object>_by_id(id) do
-    # ecto query to read one record by id
-  end
-end
-```
-
-### Example: Unique Slug
-
-See [Unique Slug Example](./examples/unique-slug.md)
-
-## Test
+No test file of its own: the internal API is exercised through the
+[command](./command.md) validators and the
+[public API](./public-api.md) in the
+[operation test](./operation-test.md).

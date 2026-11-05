@@ -1,62 +1,60 @@
+---
+test_file: operation test
+module: "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Operation.<Operation>Test"
+contributors:
+  - "mix sp.gen.command <operation>"
+  - "mix sp.gen.command_handler <operation>"
+  - "mix sp.gen.policy <operation>"
+  - "mix sp.gen.public_api <operation>"
+  - "mix sp.gen.query <query>"
+---
+
 # Operation Test
 
-> **Implemented as a shared executable mechanism:** `SpGen.Blueprint.OperationTestFile`
-> — each implemented blueprint (command, event, command-handler) contributes
-> its own `describe` block and aliases to this file when its generator runs.
+One test file per operation, built from `describe` blocks contributed by the
+generators that write the operation's code. It tests the operation through the
+public API — the vertical slice, not the modules.
 
-Blueprint for a test file for one operation in the [Sportipedia Domain](../../../../domain-model/README.md).
+The shared machinery is `SpGen.Blueprint.TestCaseFile`: the file appears with the
+first contributor that has a test to write, and every later run appends only the
+missing `describe` and its aliases.
 
-| Attribute | Value |
-| --- | --- |
-| Test File | `/services/api/test/sportipedia/<_subdomain>/<_composite>/<domain-object>/operation/<_operation>_test.exs` |
-| Test Module Name | `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Operation.<Operation>Test` |
+## Prerequisite
 
-## Test
+- The operation's code has been generated (the same run contributes the tests).
 
-The test may (if applicable) cover the following:
+## Generated
 
-- [Policy](./policy.md)
-- [Command](./command.md)
-- [Command Handler](./command-handler.md)
-- [Event](./event.md)
-- Event Handler
-- [Aggregate](./aggregate.md)
-- [Projector](./projector.md)
-- [Public API](./public-api.md)
+- `use Sportipedia.<Subdomain>TestCase`, `@moduletag :integration`, and the
+  aliases each `describe` needs — gated on the modules they reference, so a test
+  never cites a citizen that does not exist yet.
+- `describe "Command"` — requires id, id cannot be nil, presence per required
+  field ([command](./command.md)).
+- `describe "Command Handler"` — command in, event out
+  ([command handler](./command-handler.md)).
+- `describe "Policy"` — guest and user cases from the model's `actors`
+  ([policy](./policy.md)).
+- `describe "Public API"` — success, `{:error, {:validation_failure, _}}` for
+  commands, `:not_found` for an unknown read, the collection case
+  ([public API](./public-api.md)).
+- `describe "Query"` — a placeholder case until the query is implemented
+  ([query](./query.md)).
 
-Each is represented as a `describe` block in the test file and explained below.
+Events, aggregates and projectors are **not** here: the fact owns its own file,
+the [event test](./event-test.md).
 
-### Test Template
+## Left to you
 
-Scaffolding template.
+Test helpers, when a case needs read-model state directly: a private
+`new_<domain_object>/1` inserting through
+`<DomainObject>ReadModel.insert_changeset/2` and `Sportipedia.<Subdomain>.Repo`,
+plus `new_<domain_object>s/1` for collections. Reach the same state through the
+public API when the test is about behaviour rather than a table row.
 
-```elixir
-defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Operation.<Operation>Test do
-  use Sportipedia.<Subdomain>TestCase
+Everything else that is still yours is listed once in
+[Known gaps](../../README.md#known-gaps).
 
-  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>
-  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Policy
-  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<Command>
-  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<Command>Handler
-  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Event.<Event>
-  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<Aggregate>
-  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<ReadModel>
-  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<Projector>
-  alias Sportipedia.<Subdomain>.Repo
-end
-```
+## Learnings
 
-Helper methods, use them when needed:
-
-```elixir
-  @spec new_<domain_object>(<DomainObject>ReadModel.t()) ::
-          {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
-  defp new_<domain_object>(attributes) do
-    <DomainObject>ReadModel.insert_changeset(%<DomainObject>ReadModel{}, attributes)
-    |> Repo.insert()
-  end
-
-  defp new_<domain_object>s(attribute_collection) do
-    Enum.each(attribute_collection, fn elem -> new_<domain_object>(elem) end)
-  end
-```
+- Test names say what the system does through the interface, in the model's
+  vocabulary; they do not name modules or private functions.

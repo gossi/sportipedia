@@ -1,73 +1,44 @@
+---
+generator: "mix sp.gen.command_handler <operation>"
+blueprints:
+  - SpGen.Blueprint.CommandHandler
+  - SpGen.Blueprint.CommandHandlerTest
+module: "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<Command>Handler"
+writes: [module, operation test]
+---
+
 # Command Handler
 
-> **Implemented as an executable blueprint:** `SpGen.Blueprint.CommandHandler`
-> — run `mix sp.gen.command_handler <element>` (fixed shape, no `--template`).
-> This markdown stays the design document; the generator owns the file layout
-> and merges idempotently into existing code.
-
-| Attribute | Value |
-| --- | --- |
-| Schema | [Core](../../../../schemas/core/v1.yaml) (see `command`) |
-| File Path | `/services/api/lib/sportipedia/<_subdomain>/<_composite>/<domain_object>/<_operation>/handler.ex` |
-| Module Name | `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<Command>Handler` |
-| Test | See [Operation Test](./operation-test.md) |
+Turns one command into the event(s) that fact happened.
 
 ## Prerequisite
 
 - The [Domain Model](../../../../domain-model/README.md) contains the command
+  and what it `publishes`.
 
-## Implementation
+The shape is identical for every operation — input command, output events — so
+this generator is fixed and takes no `--template`.
 
-Implement the actual command behavior.
+## What the generator does
 
-- Is a `commanded` command-handler
-- Takes the command as input
-- Outputs events
+- The `@behaviour Commanded.Commands.Handler`, the aliases for command, aggregate
+  and event, the `@doc`, the `@spec` (`event.t() | [event.t()]`) and the
+  `handle/2` head matching `%Aggregate{}` and `%Command{}`.
+- The handler's `dispatch … to:` entry in the commanded router is contributed by
+  the [command](./command.md) generator, not here.
 
-- Implementation depth:
-  - Shallow by mapping the command to events
-  - Deep to handle complex business logic
+## Left to you
 
-### Documentation
+The body of `handle/2`, left as `# implement logic here` / `# return events`:
 
-Derive all documentation from the [Domain Model](../../../../domain-model/README.md):
+- **Shallow** — build the published event from the command's fields; the field
+  lists are in the model, and this is the common case.
+- **Deep** — guard, compute or derive before emitting; decided by the feature
+  spec (`docs/specs/`), never copied from another citizen's handler.
 
-- **`@moduledoc`**: Describe the handler's purpose in handling the command.
-- **`@doc`**: Describe the `handle/2` function.
+## Tests
 
-Example:
-
-```elixir
-@moduledoc """
-Handles the SuggestSport command.
-"""
-
-@doc """
-Handles the SuggestSport command and returns a SportSuggested event.
-"""
-```
-
-### Implementation Template
-
-```elixir
-defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<Command>Handler do
-  @moduledoc """
-  Handles the <Command> command.
-  """
-
-  @behaviour Commanded.Commands.Handler
-
-  @doc """
-  Handles the <Command> command and returns <Event> event(s).
-  """
-  @spec handle(<DomainObject>Aggregate.t(), <Command>.t()) :: <Event>.t() | [<Event>.t()]
-  def handle(%<DomainObject>Aggregate{} = aggregate, %<Command>{} = cmd) do
-    # implement logic here
-    # return events
-  end
-end
-```
-
-## Test
-
-Tests the command handlers, input into output. Ideally pure, integration tests when needed.
+In the [operation test](./operation-test.md), under `describe "Command Handler"`:
+the generator asserts the returned event type. The field-by-field mapping case
+and every branch a deep handler has are manual
+([Known gaps](../../README.md#known-gaps)).

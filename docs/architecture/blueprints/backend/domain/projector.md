@@ -1,173 +1,47 @@
+---
+generator: "mix sp.gen.projector <event>"
+blueprints:
+  - SpGen.Blueprint.Projector
+  - SpGen.Blueprint.ProjectorSupervisor
+  - SpGen.Blueprint.ProjectorTest
+module: "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Projector"
+writes: [module, supervisor child, event test]
+---
+
 # Projector
 
-> **Implemented as an executable blueprint:** `SpGen.Blueprint.Projector` — run `mix sp.gen.projector <event>` (the read model's projection rule picks the clause body; registers the supervisor child).
-> This markdown stays the design document; the generator owns the file layout and
-> merges idempotently into existing code.
-
-| Attribute | Value |
-| --- | --- |
-| Schema | [Core](../../../../schemas/core/v1.yaml) (see `projection`) |
-| File Path | `/services/api/lib/sportipedia/<_subdomain>/<_composite>/<domain_object>/projector.ex` |
-| Module Name | `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Projector` |
-| Test | See [Operation Test](./operation-test.md) |
+Applies a fact to the read model(s). One clause per projected event.
 
 ## Prerequisite
 
-- The [Domain Model](../../../../domain-model/README.md) contains the projection
+- The [Domain Model](../../../../domain-model/README.md) has a `projection` on
+  the read model naming this event.
 
-## Implementation
+## What the generator does
 
-Applies fact changes to the read-model(s)
+`use Commanded.Projections.Ecto` with `application`, `repo`, the projection
+`name` (`<composite>.<domain_object>_projection`), `schema_prefix` and
+`consistency: :strong`; the `project/3` clause; the child in the nearest
+supervisor (composite first, else subdomain — created when missing); and the
+event test's `describe "Projector"`.
 
-- Projector uses `commanded_ecto_projections`
-- `project` macro on the Projector
-- use changeset functions from [read model](./read-model.md) (if applicable)
+The clause body is **derived, not chosen**: `SpGen.Context` reads the read
+model's projection rule (`Esdm.projection_effect/1`) and emits insert,
+update-from-`get_changes/1`, or delete — a missing row is a no-op for update and
+delete. `--template` is validated at the CLI; the body follows the model.
 
-### Documentation
+## Left to you
 
-Derive all documentation from the [Domain Model](../../../../domain-model/README.md):
+- **Check the clause against the rule.** A projection rule whose prose states no
+  effect falls back to create; if the model says otherwise, say so in the rule.
+- **Anything that is not row CRUD** — a computed column, a second read model, a
+  side effect — is spec logic, added inside the generated clause.
 
-- **`@moduledoc`**: Describe the projector's purpose in projecting events to read models.
-- **`@doc`**: Describe each `project/3` function clause.
+## Tests
 
-Example:
-
-```elixir
-@moduledoc """
-Projects sport events to the sport read model.
-"""
-```
-
-### Implementation Template
-
-```elixir
-defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Projector do
-  @moduledoc """
-  Projects <domain_object> events to the <domain_object> read model.
-  """
-
-  use Commanded.Projections.Ecto,
-    application: Sportipedia.<Subdomain>,
-    repo: Sportipedia.<Subdomain>.Repo,
-    name: "<_composite>.<domain_object>_projection",
-    schema_prefix: "<_subdomain>",
-    consistency: :strong
-
-  project %<Event>{} = event, _metadata, fn multi ->
-    # projection code
-  end
-end
-```
-
-### Example: `CREATE` Row
-
-```elixir
-  project %<Event>{} = event, _metadata, fn multi ->
-    multi
-    |> Ecto.Multi.insert(
-      :<_event>,
-      <DomainObject>ReadModel.insert_changeset(Map.from_struct(event))
-    )
-  end
-```
-
-### Example: `UPDATE` Row
-
-```elixir
-  project %<Event>{} = event, _metadata, fn multi ->
-    case <DomainObject>Internal.<domain_object>_by_id(event.id) do
-      nil ->
-        multi
-
-      %<DomainObject>ReadModel{} = <domain_object> ->
-        # Here the event contains a partial update and has a `get_changes/1` 
-        # function to get only the changed fields
-        attrs = <Event>.get_changes(event)
-
-        multi
-        |> Ecto.Multi.update(
-          :<_event>,
-          <DomainObject>ReadModel.update_changeset(<domain_object>, attrs)
-        )
-    end
-  end
-```
-
-### Example: `DELETE` Row
-
-```elixir
-  project %<Event>{} = event, _metadata, fn multi ->
-    case <DomainObject>Internal.<domain_object>_by_id(event.id) do
-      nil ->
-        multi
-
-      %<DomainObject>ReadModel{} = <domain_object> ->
-        multi
-        |> Ecto.Multi.delete(:<_event>, <domain_object>)
-    end
-  end
-```
-
-### Register Projector at Supervisor
-
-- register the projector at the nearest supervisor
-- neither location exists: the `projector` generator creates the subdomain
-  supervisor (its `start_link/1` and `init/1` skeleton) and registers into it;
-  starting that supervisor from the root application stays the operator's
-  per-subdomain step
-- supervisor locations:
-  - `/services/api/lib/sportipedia/<_subdomain>/<_composite>/supervisor.ex`
-  - `/services/api/lib/sportipedia/<_subdomain>/supervisor.ex`
-- add projector to children
-
-## Test
-
-Tests the projection logic by calling the projector's `handle/2` directly — needs DB.
-
-The `project` macro in `projector.ex` generates a `handle(event, metadata)` function clause.
-
-- Call `handle/2` with the event and a metadata map (see template below)
-  - Required fields: `handler_name`, `event_number`
-  - The `handler_name` in test metadata MUST exactly match the `:name` option in the projector's `use Commanded.Projections.Ecto` declaration.
-  - The `event_number` to be: unique non-negative integer
-
-Example:
-
-```elixir
-metadata = %{
-  handler_name: "<_projection>",
-  event_number: 1,
-  event_id: UUID.uuid4(),
-  stream_id: "entity-#{event.id}",
-  stream_version: 1,
-  correlation_id: nil,
-  causation_id: nil,
-  created_at: DateTime.utc_now(),
-  application: Sportipedia.<Subdomain>,
-  state: nil
-}
-```
-
-**Success case:**
-
-```elixir
-assert :ok = <Projector>.handle(event, metadata)
-
-record = Repo.get!(ReadModel, event.id)
-assert record.field == expected
-```
-
-**Idempotency case** (same `event_number` is skipped via `ProjectionVersion`):
-
-```elixir
-assert :ok = <Projector>.handle(event, metadata)
-assert :ok = <Projector>.handle(event, metadata)
-
-assert [record] == Repo.all(ReadModel)
-```
-
-**Error case** (e.g. DB constraint violation):
-
-```elixir
-assert {:error, _} == <Projector>.handle(event, metadata)
-```
+In the [event test](./event-test.md), under `describe "Projector"`: the
+generated case calls `handle/2` with a full metadata map —
+`handler_name` equals the projector's `name:` option, `event_number` is a unique
+non-negative integer — and asserts the row after an update or delete projection
+by first projecting the citizen's create event. Its idempotency and error cases
+are still manual ([Known gaps](../../README.md#known-gaps)).
