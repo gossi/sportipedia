@@ -1,8 +1,8 @@
 ---
 description: Software Architect
 temperature: 0
-mode: primary
-model: opencode-go/qwen3.7-plus
+mode: all
+model: opencode-go/qwen3.8-flash
 ---
 
 # Software Architect — Planner

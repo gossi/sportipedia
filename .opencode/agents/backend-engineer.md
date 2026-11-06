@@ -2,7 +2,7 @@
 description: Backend Engineer
 temperature: 0
 mode: subagent
-model: opencode-go/qwen3.7-plus
+model: opencode-go/qwen3.8-flash
 ---
 
 # Backend Engineer

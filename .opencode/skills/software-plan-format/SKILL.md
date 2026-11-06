@@ -7,28 +7,48 @@ description: Defines the format for a software design plan artifact passed betwe
 
 ## Overview
 
-A software plan is a high-level design artifact that captures the architecture of
-exactly ONE domain operation. It is produced by the Software Architect and
-consumed by the Backend Engineer. It focuses on **what** to build (module names,
-roles, APIs, flow) — not **how** to build it (that lives in implementation skills).
+A software plan is a design artifact that carries **the decisions the generators
+cannot make** for a domain slice. It is produced by the Software Architect and
+consumed by the Backend Engineer. It records cross-boundary calls, invariant
+realization, error semantics, actor mapping, model gaps and the slice boundary —
+never layout.
 
-All examples in this skill use the `catalog-apparatus` operation from the
-catalog subdomain. See the [naming substitution](../../../docs/architecture/naming-substitution.md)
-doc for the placeholder conventions used.
+Layout (module names, file paths, code shape) belongs to `mix sp.gen.*` and the
+blueprints. Restating it duplicates a source of truth; restating it wrongly
+creates a conflict the implementer must resolve. See
+[plan-domain-feature](../plan-domain-feature/SKILL.md) for what to include.
+
+All examples use the `catalog-apparatus` operation from the catalog subdomain.
+See the [naming substitution](../../../docs/architecture/naming-substitution.md)
+doc for placeholder conventions.
+
+## Scope
+
+A plan covers one of:
+
+| `scope` | Contents |
+|---|---|
+| `feature` | every operation of one constituent (aggregate) |
+| `operation` | exactly one command or query, domain actor |
+| `endpoint` | exactly one command or query, web actor |
+
+With `scope=feature`, one frontmatter block names the constituent and lists the
+operations; the decision list is grouped by operation. Do not emit one plan per
+operation.
 
 ## Structure
 
-A software plan has four parts:
-
 ```
 ┌─────────────────────────────────┐
-│  YAML Frontmatter               │ ← metadata for the builder
+│  YAML Frontmatter               │ ← slice identity, operations, scope
 ├─────────────────────────────────┤
-│  Mermaid Class Diagram          │ ← structural roles + relationships
+│  Decisions                      │ ← numbered, the plan's payload
 ├─────────────────────────────────┤
-│  Mermaid Sequence Diagram       │ ← behavioral flow
-├─────────────────────────────────┤
-│  Module Table                   │ ← full module names + file paths
+│  Model Gaps / Open Questions    │ ← if any
+└─────────────────────────────────┘
+
+┌─────────────────────────────────┐
+│  Diagrams (OPTIONAL)            │ ← only for non-obvious flow
 └─────────────────────────────────┘
 ```
 
@@ -36,24 +56,54 @@ A software plan has four parts:
 
 ## 1. YAML Frontmatter
 
-Minimal structured metadata for the builder to reference:
-
 ```yaml
 ---
-operation: catalog-apparatus
-type: command
+scope: feature
 subdomain: catalog
 composite: equipment
 constituent: apparatus
+operations: [catalog-apparatus, edit-apparatus, archive-apparatus, read-apparatus, list-apparatuses]
+spec: docs/specs/catalog/equipment/spec-manage-apparatuses-19-05-2026.md
 ---
+```
+
+For `scope=operation` or `scope=endpoint`, replace `operations` with the single
+`operation` and add `type: command | query`.
+
+---
+
+## 2. Decisions
+
+Numbered list. Each entry names the operation it applies to and cites the source
+it resolves (ESDM file, blueprint example, ADR). No preamble, no restatement of
+the domain model.
+
+```markdown
+1. **catalog-apparatus — `equipment-exists`** reaches the other constituent
+   through its public API, never `Repo` (internal-api.md). Existence only;
+   archived equipment is accepted.
+2. **all commands — `unique-slug`** per examples/unique-slug.md, plus a
+   `unique_index` in the migration.
+3. **archive-apparatus — actor mismatch:** model says `admin`, landed policy
+   clause allows `user`. Must use `is_admin?/1`.
 ```
 
 ---
 
-## 2. Mermaid Class Diagram
+## 3. Model Gaps / Open Questions
 
-Shows the module as a class with an architectural role stereotype (`<<role>>`)
-and its public fields. Arrows show the directional relationship between modules.
+Report, do not resolve. A field the read model requires that no event produces,
+a constraint with no data to enforce it, a schema that cannot represent a legal
+state. Prefix each with `MODEL GAP:`; ambiguity needing a business answer with
+`QUESTION:`.
+
+---
+
+## 4. Diagrams (Optional)
+
+Include a diagram only when the flow is genuinely non-obvious: a cross-boundary
+call, a process manager, a multi-aggregate read. For a plain command or query the
+sequence is already known and a diagram is padding.
 
 ### Stereotypes
 
@@ -77,172 +127,25 @@ and its public fields. Arrows show the directional relationship between modules.
 
 | Arrow | Meaning |
 |---|---|
-| `A --> B` | A dispatches to / calls B |
-| `A --> B` | A handles / processes B |
-| `A --> B` | A evolves / applies B |
-| `A --> B` | A projects / writes to B |
-| `A --> B` | A guards / authorizes B |
+| `A --> B` | A dispatches to / calls / handles / evolves / projects / guards B |
 
-### Example
-
-```mermaid
-classDiagram
-    class CatalogApparatus {
-        <<Command>>
-        +title: string
-        +slug: string
-        +description: string (optional)
-    }
-    class CatalogApparatusHandler {
-        <<CommandHandler>>
-        +handle(aggregate, command)
-    }
-    class ApparatusAggregate {
-        <<Aggregate>>
-        +id: UUID
-        +title: string
-        +slug: string
-        +description: string
-        +apply(aggregate, event)
-    }
-    class ApparatusCataloged {
-        <<Event>>
-        +id: UUID
-        +title: string
-        +slug: string
-        +description: string
-    }
-    class ApparatusProjector {
-        <<Projector>>
-        +project(%ApparatusCataloged{}, metadata, multi)
-    }
-    class ApparatusReadModel {
-        <<ReadModel>>
-        +id: UUID
-        +title: string
-        +slug: string
-        +description: string
-    }
-    class ApparatusPolicy {
-        <<Policy>>
-        +authorize(action, user, params)
-    }
-    class Apparatus {
-        <<PublicAPI>>
-        +catalog_apparatus(params)
-    }
-    class ApparatusInternal {
-        <<InternalAPI>>
-        +apparatus_by_id(id)
-        +apparatus_by_id!(id)
-    }
-    class UniqueSlugValidator {
-        <<Validator>>
-        +validate(value, context)
-    }
-
-    ApparatusController --> Apparatus : calls
-    Apparatus --> ApparatusPolicy : authorizes
-    Apparatus --> CatalogApparatus : dispatches
-    CatalogApparatusHandler --> CatalogApparatus : handles
-    CatalogApparatusHandler --> ApparatusAggregate : evolves
-    ApparatusAggregate --> ApparatusCataloged : produces
-    ApparatusProjector --> ApparatusCataloged : projects
-    ApparatusProjector --> ApparatusReadModel : writes to
-    UniqueSlugValidator --> CatalogApparatus : validates
-    Apparatus --> ApparatusInternal : delegates to
-```
-
-### Rules
-
-- Include ONLY modules for the named operation. No sibling or unrelated modules.
-- List public fields for commands, events, and read models (the data contract).
-- List public function signatures for PublicAPI, InternalAPI, and Controller.
-- For macros (like Projector's `project`), show the conceptual signature.
-- Omit implementation details (private functions, internal logic).
-
----
-
-## 3. Mermaid Sequence Diagram
-
-Shows the flow of a request through the system. Participants use readable aliases.
-Focus on the happy path; skip error handling.
-
-For commands, the projector runs asynchronously after the event is committed.
-Show it as a separate phase after the synchronous request flow.
-
-### Example
-
-```mermaid
-sequenceDiagram
-    participant Client
-    participant API as Equipment.Apparatus
-    participant Policy as Apparatus.Policy
-    participant Cmd as CatalogApparatus
-    participant Handler as CatalogApparatus.Handler
-    participant Aggregate as ApparatusAggregate
-    participant Projector as ApparatusProjector
-    participant ReadModel as ApparatusReadModel
-
-    Client->>+API: catalog_apparatus(params)
-    API->>Policy: authorize(:catalog_apparatus, user)
-    Policy-->>API: :ok
-    API->>+Cmd: dispatch
-    Cmd->>+Handler: handle(%CatalogApparatus{})
-    Handler->>+Aggregate: apply(%ApparatusCataloged{})
-    Aggregate-->>-Handler: new state
-    Handler-->>-Cmd: :ok
-    Cmd-->>-API: {:ok, apparatus}
-    API-->>-Controller: {:ok, apparatus}
-
-    par async projection
-        Projector-->>Projector: project(%ApparatusCataloged{}, metadata, multi)
-        Projector->>ReadModel: insert / update
-    end
-```
-
-### Rules
+### Sequence Diagram Rules
 
 - Use `->>+` for calls and `-->>-` for returns (activation/deactivation).
 - Label arrows with the function call or message.
-- Show authorization check (policy call) as early as possible.
-- For commands: Controller → API → Policy → Command → Handler → Aggregate.
-  Then show the async projection phase separately.
+- Show the authorization check as early as possible.
+- For commands: Controller → API → Policy → Command → Handler → Aggregate, then
+  the async projection phase separately.
 - For queries: Controller → API → Policy → Internal API → Query → ReadModel.
-
----
-
-## 4. Module Table
-
-A markdown table with three columns: Module, Role, and File. Lists every module
-the operation needs.
-
-### Example
-
-| Module | Role | File |
-|---|---|---|
-| `Sportipedia.Catalog.Equipment.Apparatus` | Public API | `services/api/lib/sportipedia/catalog/equipment/apparatus/public_api.ex` |
-| `Sportipedia.Catalog.Equipment.Apparatus.Command.CatalogApparatus` | Command | `services/api/lib/sportipedia/catalog/equipment/apparatus/operation/catalog_apparatus/command.ex` |
-| `Sportipedia.Catalog.Equipment.Apparatus.Command.CatalogApparatusHandler` | Handler | `services/api/lib/sportipedia/catalog/equipment/apparatus/operation/catalog_apparatus/handler.ex` |
-| `Sportipedia.Catalog.Equipment.Apparatus.Event.ApparatusCataloged` | Event | `services/api/lib/sportipedia/catalog/equipment/apparatus/events/apparatus_cataloged.ex` |
-| `Sportipedia.Catalog.Equipment.Apparatus.Validators.UniqueSlug` | Validator | `services/api/lib/sportipedia/catalog/equipment/apparatus/validators/unique_slug.ex` |
-| `Sportipedia.Catalog.Equipment.Apparatus.ApparatusAggregate` | Aggregate | `services/api/lib/sportipedia/catalog/equipment/apparatus/aggregate.ex` |
-| `Sportipedia.Catalog.Equipment.Apparatus.ApparatusInternal` | Internal API | `services/api/lib/sportipedia/catalog/equipment/apparatus/internal.ex` |
-| `Sportipedia.Catalog.Equipment.Apparatus.Policy` | Policy | `services/api/lib/sportipedia/catalog/equipment/apparatus/policy.ex` |
-| `Sportipedia.Catalog.Equipment.Apparatus.ApparatusProjector` | Projector | `services/api/lib/sportipedia/catalog/equipment/apparatus/projector.ex` |
-| `Sportipedia.Catalog.Equipment.Apparatus.ApparatusReadModel` | ReadModel | `services/api/lib/sportipedia/catalog/equipment/apparatus/read_model.ex` |
-
-### Rules
-
-- Derive file paths from architecture conventions (documentation), not from existing code.
-- Include registration files (router entries, commanded router, supervisor) if they are part of the operation.
-- Omit test files; they follow the same path convention as the module they test.
+- Name participants by role, not by file path.
 
 ---
 
 ## Constraints
 
-- **One operation per plan.** Never combine multiple operations into a single artifact.
-- **High-level only.** The plan describes structure and flow, not implementation details.
-- **Docs-first.** Derive module names, file paths, and conventions from documentation.
-  Never read implementation code for patterns.
+- **Never restate layout.** No module table, no file paths, no generator order.
+- **Never copy an ESDM schema** into the plan — reference the file.
+- **Only the named slice.** No sibling operations, no other actors.
+- **Docs-first.** Derive decisions from documentation. Never read implementation
+  code for patterns.
+- **Short.** A plan that a generator could have produced is not a plan.

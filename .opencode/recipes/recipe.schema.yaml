@@ -3,7 +3,7 @@ title: Sportipedia Recipe
 description: >-
   Schema for Sportipedia recipe files. A recipe defines a reusable workflow
   with steps that load skills, delegate to subagents, compose sub-recipes,
-  and loop.
+  run deterministic builder-side actions, and loop — serially or in parallel.
 type: object
 properties:
   name:
@@ -48,7 +48,8 @@ properties:
     type: array
     description: >-
       Ordered list of steps in the recipe. Each step can load a skill, delegate
-      to an agent, compose a sub-recipe, or loop over child steps.
+      to an agent, compose a sub-recipe, run a deterministic builder-side
+      action, or loop over child steps (serially or in parallel).
     items:
       $ref: "#/$defs/step"
     minItems: 1
@@ -109,6 +110,15 @@ $defs:
           sub-recipe's own steps declare their agents. Mutually exclusive with
           'skill' and 'skills'.
         pattern: "^[a-z][a-z0-9-]*$"
+      builder:
+        type: string
+        description: >-
+          Deterministic action executed by the builder itself, with no subagent
+          involved: extraction, gate commands, regeneration, git. Values:
+          'parse-operations', 'preflight', 'gates', 'converge', 'commit-feature',
+          'report'. Mutually exclusive with 'agent', 'skill', 'skills', 'recipe'.
+          The builder never implements domain logic on a subagent's behalf.
+        pattern: "^[a-z][a-z0-9-]*$"
       with:
         $ref: "#/$defs/with_bindings"
       exit-when:
@@ -129,6 +139,7 @@ $defs:
             - required: [skill]
             - required: [skills]
             - required: [recipe]
+            - required: [builder]
       - description: >-
           Single skill step: load one skill and delegate to the named agent.
         required: [agent, skill]
@@ -141,6 +152,16 @@ $defs:
           not needed — sub-recipe declares its own.
         required: [recipe]
       - description: >-
+          Builder step: deterministic action the orchestrator runs itself (grep,
+          gate commands, regeneration, git). No subagent, no judgement.
+        required: [builder]
+        not:
+          anyOf:
+            - required: [agent]
+            - required: [skill]
+            - required: [skills]
+            - required: [recipe]
+      - description: >-
           Loop step: repeat child steps until exit condition or max
           iterations.
         required: [loop]
@@ -150,13 +171,32 @@ $defs:
     type: object
     description: >-
       Repeated execution of child steps. Two modes: 'over' for iterating a
-      list, or 'max' + 'exit-when' for conditional repetition.
+      list, or 'max' + 'exit-when' for conditional repetition. Iteration mode
+      may run 'parallel', fanning each item out to concurrent subagents.
     properties:
       over:
         $ref: "#/$defs/expression"
         description: >-
           Expression resolving to a list. The child steps execute once per
           item. ${item} is available in step bindings.
+      mode:
+        type: string
+        description: >-
+          Only valid with 'over'. 'parallel' runs iterations concurrently as
+          independent subagent sessions; the builder still performs every
+          'builder:' action serially (git, gates, shared registry files).
+          Children of a parallel loop must not depend on each other's results.
+        enum: [serial, parallel]
+        default: serial
+      max-concurrency:
+        type: integer
+        description: >-
+          Upper bound on simultaneous iterations when mode is 'parallel'. Each
+          iteration that runs tests needs its own database partition, so keep
+          this within Postgres' connection budget: pool_size is
+          schedulers * 2 per repo, and there are two repos.
+        minimum: 1
+        maximum: 8
       max:
         type: integer
         description: >-
