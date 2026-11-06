@@ -16,7 +16,7 @@ projections:
   - boundedContext: sport
     aggregate: position
     event: position-archived
-    rule: "Mark position as archived"
+    rule: "Delete the position"
 schema:
   type: object
   properties:
@@ -41,10 +41,6 @@ schema:
       type: string
       format: uuid
       description: "Reference to instrument (optional)"
-    archivedAt:
-      type: string
-      format: date-time
-      description: "Timestamp when archived (null if active)"
   required:
     - id
     - title

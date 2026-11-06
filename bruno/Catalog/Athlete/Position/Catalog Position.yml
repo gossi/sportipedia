@@ -16,8 +16,7 @@ http:
             "title": "sample-title",
             "slug": "sample-slug",
             "apparatusId": "sample-apparatusId",
-            "description": "sample-description",
-            "instrumentId": "sample-instrumentId"
+            "description": "sample-description"
           }
         }
       }
@@ -44,8 +43,7 @@ examples:
                 "title": "sample-title",
                 "slug": "sample-slug",
                 "apparatusId": "sample-apparatusId",
-                "description": "sample-description",
-                "instrumentId": "sample-instrumentId"
+                "description": "sample-description"
               }
             }
           }
