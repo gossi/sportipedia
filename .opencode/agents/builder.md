@@ -170,6 +170,13 @@ round-trip.
 - **`preflight`** — `git status --short` for leftovers from an interrupted run,
   `mix compile --warnings-as-errors`, `esdm lint`. Report the baseline into the
   first delegation so no agent rediscovers a broken tree independently.
+  Check the **unpartitioned** test database too: run one existing test with no
+  `MIX_TEST_PARTITION`. A reverted branch can leave read-model tables and
+  `schema_migrations` rows in the shared `sportipedia_test` database, so the first
+  migration of a fresh slice dies with `ERROR 42P07 duplicate_table relation
+  "position" already exists` while every partitioned run is green. That failure
+  looks like a slice defect and is not; `mix ecto.reset` on the shared database fixes
+  it, but confirm with the owner first because it is everyone's local state.
 - **`gates`** — `mix compile --force --warnings-as-errors`, `MIX_ENV=test mix
   compile --warnings-as-errors`, `mix format --check-formatted`,
   `SportipediaWeb.System.ApiSpec.spec()`, `mix sp.gen … --check`, scoped tests.
@@ -212,6 +219,19 @@ sequence, stop and ask. Do not substitute judgement for it.
 
 ### Handoff Discipline
 
+- **Do not hand down library or framework behaviour as fact.** In one session the
+  builder asserted two things to implementers that were false, and both were caught
+  only by a reviewer reading `deps/` source:
+  - `JSONAPI.Exceptions.InvalidQuery` from an out-of-whitelist `sort`/`fields`/`filter`
+    is **not** a 500. It carries `plug_status: 400`, and `Phoenix.Endpoint.RenderErrors`
+    renders it. The `assert_raise` a test needs is an artefact of `ConnTest` re-raising
+    after the response was already sent — not evidence of a 500.
+  - `SpGen`'s append-only merge matches units at **`describe` granularity**
+    (`Source.has_describe?/2`; there is no per-test predicate). Keeping a generated test
+    *name* does not affect whether the merge re-adds it, so "keep the names so the merge
+    recognises the units" is not a valid reason to preserve a test.
+  Cite a document, a `deps/` file, or an existing test — or mark the claim
+  `UNVERIFIED` and have a test pin it. Same rule already applies to the architect.
 - **Plans are in-context, not on disk.** The architect returns the plan; you pass
   it to the implementer once. Do not re-state it, and do not write it into a file
   unless a recipe asks.
