@@ -88,10 +88,17 @@ operation it applies to.
    constraint: which pattern applies, and any wiring the generator cannot get
    right (e.g. two `by:` pairs that Vex would overwrite on the same field).
    Cite the blueprint example by path when one exists.
-3. **Error atom and HTTP status** — the atom each rule returns, and the status
-   it renders to. Check `Sportipedia.Support.ErrorClassifier` semantics: some
-   raw atoms are intercepted and re-routed, so the obvious atom may be
-   unusable. If a rule needs a distinct status, say so explicitly.
+3. **Error atom and HTTP status** — the atom each rule returns, and the status it
+   renders to. Check `Sportipedia.Support.ErrorClassifier` semantics: some raw atoms
+   are intercepted and re-routed, so the obvious atom may be unusable. If a rule
+   needs a distinct status, say so explicitly.
+
+   **Do not assert shared-infrastructure behaviour from reasoning.** State, verified
+   by a named document or an existing test, or mark it `UNVERIFIED — implementer must
+   pin by test`. On the `position` slice the plan asserted "a bare handler error
+   renders 422"; the fallback actually renders **500**, and the implementer had to
+   discover that by experiment and design around it. A plan that guesses at the
+   classifier is worse than a plan that says "verify".
 4. **Actor mapping** — command actors to policy clauses. Flag any actor mismatch
    you find between the model and the spec (e.g. the model says `admin` but a
    landed clause allows `user`). Admin-only actors need `is_admin?/1`.

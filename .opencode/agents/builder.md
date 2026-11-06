@@ -175,11 +175,34 @@ round-trip.
   `SportipediaWeb.System.ApiSpec.spec()`, `mix sp.gen … --check`, scoped tests.
   A failure goes back to the owning subagent as raw command output, not as a
   review cycle.
-- **`converge`** — after all parallel slices commit, re-run `mix sp.gen` for every
-  operation in the batch to restore registrations lost to concurrent writes,
-  verify with `--check`, re-run the gates, commit the repair. Generators are
-  append-only and idempotent; regeneration is the repair path, hand-merging a
-  registry file is not.
+
+  Gate harness rules, learned the hard way: the shell is zsh, which does **not**
+  word-split unquoted variables, so `mix sp.gen $element --check` with
+  `element="command catalog-position"` passes one bogus argument and prints an
+  error. Drive multi-word arguments with `sh -c "mix sp.gen $element --check"`.
+  And never let an empty or unrecognized run count as a pass — assert the output
+  contains one of `Outdated | Ignored | Would create | Would update | Up to date`
+  before classifying, otherwise a failed invocation reports as green.
+- **`converge`** — after all parallel slices commit, restore registrations lost to
+  concurrent writes. **Never blind re-run the generators.** Order of operations:
+  1. Verify the shared files first — `web/router.ex`, `<subdomain>/application.ex`,
+     `<subdomain>/supervisor.ex`, `<subdomain>/<composite>/router.ex` — that each
+     slice's route, router, projector child and dispatch entry is present. Often
+     nothing is missing and no generation is needed at all.
+  2. Run `sp.gen … --check` over every element in the batch and classify each
+     divergence: **authorized deviation** (a deliberate override of generated
+     output, recorded in the plan or the slice report) or **lost registration**
+     (a unit another slice's write clobbered).
+  3. Re-run the generator only for items in category 2, and only for elements whose
+     output is purely additive.
+  4. Re-run the gates, then commit the repair.
+
+  Re-running a generator whose element carries an authorized deviation actively
+  destroys that work: the split that replaced one scaffolded `equipment_exists`
+  validator with two field-specific ones will be reverted, the deleted raising
+  `Query` stub will be recreated, and the `Outdated` report for a validator pair
+  that was deliberately moved is not a defect. `--check` exits 0 even when it
+  reports `Outdated`, so parse its output — the exit code is not a signal.
 - **`commit-feature`** — `git add <the slice's FILES list>` then commit. Never
   `git add -A`: under parallel slices it swallows another agent's in-flight work.
 - **`report`** — the per-slice outcome table.

@@ -174,6 +174,15 @@ boundary. Do **not** ask it to re-run gates — it reviews naming, contract
 boundaries, authorization against the ESDM actors, invariant coverage, spec QA
 scenario coverage, and whether shared registrations survived.
 
+One dimension gates cannot see, and the reviewer must own it: **does the advertised
+API surface agree with what the pipeline actually accepts and emits?** A generated
+sort whitelist naming a field the read model does not have, or a sparse-fieldset
+enum publishing camelCase attributes that `JSONAPI.QueryParser` underscores before
+matching, both pass compile, format and tests while the documented contract is
+unusable — the first silently strips every `ORDER BY` from a paginated read, the
+second answers 500 to a client that follows the schema. Assertions about an
+advertised name must be traced to the schema module or library that consumes it.
+
 ## Deviation Discipline
 
 When the implementer overrides the plan (a real case: the plan demanded HTTP 422
@@ -185,6 +194,36 @@ decision instead of relitigating it.
 
 `MODEL GAP:` findings route to the product-specialist to fix the ESDM files, then
 `esdm lint`. Do not let the implementer invent a payload to close a model gap.
+
+### A deviation that leaves generator-active prose behind is not finished
+
+Some model text is not description but **input to the generator**. A read model's
+projection `rule:` prose selects the generated projector clause, so prose that does
+not match the code being written silently re-derives the wrong clause on the next
+run. Observed on the `position` aggregate: the rule text "Mark position as archived"
+derived an update clause whose `get_changes/1` was empty — a permanent no-op — and
+after the code was hand-corrected to a delete, that stale prose kept threatening to
+undo the correction.
+
+Rule: if you replace, delete or re-wire generator output, find the model text that
+drove it and correct it in the same batch, using the effect vocabulary the generator
+recognizes. If you cannot, say so explicitly rather than leaving a landmine for the
+next run.
+
+The reverse also holds: a deviation the model cannot express — a read-model field no
+event ever populates, an address key the command does not declare — is a `MODEL GAP`
+for the product-specialist, never a reason to invent code.
+
+### Generators add; they never remove
+
+`SpGen.Merge` is append-only by design, so **a deletion in the domain model does not
+propagate to code**. Dropping a read-model field leaves the schema field, the migration
+column, the published JSON:API attribute and the OpenAPI response entry all in place, and
+re-running the generator will not clean them up. Model deletions therefore require an
+explicit hand-deletion pass, and must be listed as such in the slice report.
+
+Practical consequence for review: an `--check` report that comes back **in-sync** after a
+model deletion is not evidence of convergence. Verify absence in the code itself.
 
 ## What Gets Built
 

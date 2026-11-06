@@ -188,15 +188,44 @@ review cycle needed to discover a broken build.
 
 ### Convergence
 
-After all slices commit:
+After all slices commit — **verify first, generate second, never blind**:
 
-1. Re-run `mix sp.gen` for every operation in the batch. Append-only + idempotent
-   means this re-adds any registration unit lost to a concurrent write.
-2. `sp.gen … --check` on each — a clean report proves convergence. Anything still
-   `Outdated` must be an *authorized* deviation from the plan, never unexplained.
-3. Compile, format, `ApiSpec.spec()`.
-4. Full test suite, serially, unpartitioned.
-5. Commit the repair.
+1. Inspect the shared files: `web/router.ex`, `<subdomain>/application.ex`,
+   `<subdomain>/supervisor.ex`, `<subdomain>/<composite>/router.ex`. Confirm each
+   slice's route, commanded router, projector child and dispatch entry is present.
+   With a single slice, or when no writes raced, **nothing is missing and no
+   generator should run at all**.
+2. `sp.gen … --check` over every element in the batch. Classify each divergence as
+   either an **authorized deviation** — a deliberate override recorded in the plan
+   or the slice report — or a **lost registration**. `--check` exits 0 even when it
+   reports `Outdated`, so parse its output; the exit code is not a signal.
+3. Re-run generators only for lost registrations, and only where the output is
+   purely additive.
+
+Re-running an element that carries an authorized deviation destroys work. The
+deviations that showed up for `position` are exactly the dangerous ones: a
+scaffolded `equipment_exists` validator replaced by two field-specific ones, a
+generated `Query` module deleted because the lookup chain is the implementation,
+and a validator pair deliberately moved to another field. `--check` flags all
+three as drift. They are not.
+
+Then re-run the gates and commit the repair.
+
+### Test Partition Naming
+
+`config/test.exs` interpolates `"sportipedia_test#{System.get_env("MIX_TEST_PARTITION")}"`
+— the value is **appended**, not joined with an underscore. So the database
+`sportipedia_test_position` requires `MIX_TEST_PARTITION=_position` with a leading
+underscore. A slice that passes `position` silently runs against
+`sportipedia_testposition`.
+
+### Gate Harness
+
+The shell is zsh, which does **not** word-split unquoted variables: `mix sp.gen $e --check`
+with `e="command catalog-position"` passes a single bogus argument and prints an error.
+Use `sh -c "mix sp.gen $e --check"`. Always assert the output contains one of
+`Outdated | Ignored | Would create | Would update | Up to date` before classifying a
+result — an empty or failed run must never count as green.
 
 ### Question Handling
 

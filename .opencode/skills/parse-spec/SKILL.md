@@ -58,8 +58,14 @@ Preserve the order they appear in the spec.
 ### Step 4: Group into Feature Slices
 
 Resolve each operation name to its ESDM file under `docs/domain-model/` and read
-its `scope` block. Group operations by `scope.aggregate` — that group is one
-**feature slice**, and it is the unit of parallel execution.
+its `scope` block. Group operations by aggregate — that group is one **feature
+slice**, and it is the unit of parallel execution.
+
+Commands carry `scope.aggregate`. Queries do not — they carry `readModel`, which
+names the same constituent. Use `scope.aggregate` for commands and `readModel` for
+queries; a query whose read model matches an aggregate's slice belongs to that
+slice. If a query's read model matches nothing, stop and report it — the model is
+incomplete.
 
 Operations on the same aggregate share `public_api.ex`, `policy.ex`,
 `<object>_controller.ex`, `aggregate.ex`, `projector.ex` and the web router
