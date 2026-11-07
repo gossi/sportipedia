@@ -16,7 +16,7 @@ projections:
   - boundedContext: sport
     aggregate: position
     event: position-archived
-    rule: "Delete the position"
+    rule: "Mark position as archived"
 schema:
   type: object
   properties:

@@ -10,7 +10,7 @@ identifiedBy:
   generator: uuid
 invariants:
   - name: unique-slug
-    rule: The slug for the position must be unique within the domain. The slug is stored in its canonical lowercase form by the write side; the accessor lowers the lookup, so the plain unique index backs one spelling
+    rule: The slug for the position must be unique within the domain.
   - name: at-most-one-equipment
     rule: A position can reference at most one piece of equipment (either apparatusId or instrumentId, not both)
 state:
