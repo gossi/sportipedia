@@ -51,6 +51,13 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.CatalogInstrumentTest
       assert Enum.any?(Vex.errors(cmd), &match?({:error, :slug, _, _}, &1))
     end
 
+    test "is invalid when the slug is not lower-case" do
+      cmd = CatalogInstrument.new(id: UUID.uuid4(), title: "Tennis Racket", slug: "Tennis-Racket")
+
+      refute Vex.valid?(cmd)
+      assert {:error, :slug, :by, :invalid_slug} in Vex.errors(cmd)
+    end
+
     test "is valid when description is omitted" do
       cmd = CatalogInstrument.new(id: UUID.uuid4(), title: "Tennis Racket", slug: "tennis-racket")
 

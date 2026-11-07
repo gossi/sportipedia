@@ -51,6 +51,24 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.CatalogPositionTest do
       assert {:error, [{:error, :slug, :by, :slug_exists}]} = Vex.validate(cmd)
     end
 
+    test "rejects a slug that is not lower-case, or holds a non-slug character, or starts with a dash" do
+      for slug <- ["Ready-STANCE", "ready stance", "-ready", "ready_stance"] do
+        cmd = %CatalogPosition{id: UUID.uuid4(), title: "Ready Stance", slug: slug}
+
+        assert {:error, [{:error, :slug, :by, :invalid_slug}]} = Vex.validate(cmd)
+      end
+    end
+
+    test "accepts a canonical slug of lower-case letters, digits and dashes" do
+      cmd = %CatalogPosition{
+        id: UUID.uuid4(),
+        title: "Lunge 2",
+        slug: "lunge-2-position"
+      }
+
+      assert {:ok, ^cmd} = Vex.validate(cmd)
+    end
+
     test "rejects a position that references both an apparatus and an instrument" do
       assert {:ok, apparatus} =
                Apparatus.catalog_apparatus(%{
@@ -178,14 +196,14 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.CatalogPositionTest do
       assert %PositionCataloged{} = events
     end
 
-    test "cataloging a position emits its data with the slug in canonical lowercase form" do
+    test "cataloging a position emits its data with the slug carried through unchanged" do
       apparatus_id = UUID.uuid4()
       instrument_id = UUID.uuid4()
 
       cmd = %CatalogPosition{
         id: UUID.uuid4(),
         title: "Ready Stance",
-        slug: "Ready-STANCE",
+        slug: "ready-stance",
         description: "Athletic stance with knees slightly bent",
         apparatusId: apparatus_id,
         instrumentId: instrument_id
@@ -231,7 +249,7 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.CatalogPositionTest do
                  slug: "rings-#{UUID.uuid4()}"
                })
 
-      slug = "Ring-HANG-#{UUID.uuid4()}"
+      slug = "ring-hang-#{UUID.uuid4()}"
 
       assert {:ok, read_model} =
                Position.catalog_position(%{
@@ -242,7 +260,7 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.CatalogPositionTest do
                })
 
       assert read_model.title == "Ring Hang"
-      assert read_model.slug == String.downcase(slug)
+      assert read_model.slug == slug
       assert read_model.apparatusId == apparatus.id
       assert read_model.instrumentId == nil
       assert read_model.description == "Hanging from the rings with arms fully extended"

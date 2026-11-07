@@ -7,6 +7,7 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Command.CatalogApparatus do
   use ExConstructor
 
   alias Sportipedia.Catalog.Equipment.Apparatus.Validators.UniqueSlug
+  alias Sportipedia.Support.Validators.SlugValidator
 
   @doc """
   Creates a new CatalogApparatus command.
@@ -21,5 +22,9 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Command.CatalogApparatus do
   use Vex.Struct
 
   validates :title, presence: true
-  validates :slug, presence: true, by: [function: &UniqueSlug.validate/2, allow_nil: true]
+
+  validates :slug,
+    presence: true,
+    by: [function: &SlugValidator.validate/2],
+    by: [function: &UniqueSlug.validate/2, allow_nil: true]
 end

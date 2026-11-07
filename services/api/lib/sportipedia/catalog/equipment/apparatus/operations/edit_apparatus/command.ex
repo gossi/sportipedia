@@ -5,6 +5,7 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Command.EditApparatus do
   """
   alias Sportipedia.Catalog.Equipment.Apparatus.Validators.ApparatusExists
   alias Sportipedia.Catalog.Equipment.Apparatus.Validators.UniqueSlug
+  alias Sportipedia.Support.Validators.SlugValidator
 
   use TypedStruct
   use ExConstructor
@@ -22,5 +23,8 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Command.EditApparatus do
   use Vex.Struct
 
   validates :id, presence: true, by: [function: &ApparatusExists.validate/2]
-  validates :slug, by: [function: &UniqueSlug.validate/2, allow_nil: true]
+
+  validates :slug,
+    by: [function: &SlugValidator.validate/2, allow_nil: true],
+    by: [function: &UniqueSlug.validate/2, allow_nil: true]
 end

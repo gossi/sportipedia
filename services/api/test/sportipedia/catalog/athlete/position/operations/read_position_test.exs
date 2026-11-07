@@ -12,10 +12,16 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.ReadPositionTest do
       assert Repo.one(ReadPosition.new(position.id)) == position
     end
 
-    test "answers the position addressed by a slug of any letter case" do
+    test "answers the position addressed by its canonical slug, exactly as stored" do
       position = new_position(%{slug: "handstand"})
 
-      assert Repo.one(ReadPosition.new("HandStand")) == position
+      assert Repo.one(ReadPosition.new("handstand")) == position
+    end
+
+    test "answers no position for a slug that differs in case" do
+      new_position(%{slug: "handstand"})
+
+      assert Repo.one(ReadPosition.new("HandStand")) == nil
     end
 
     test "answers no position for a slug that is not in the catalog" do

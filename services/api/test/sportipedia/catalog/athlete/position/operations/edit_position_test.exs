@@ -214,8 +214,8 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.EditPositionTest do
       assert event.apparatusId == apparatus_id
     end
 
-    test "lowers the slug the patch carries" do
-      cmd = %EditPosition{id: UUID.uuid4(), slug: "Ready-Stance"}
+    test "carries the canonical slug the patch brings through unchanged" do
+      cmd = %EditPosition{id: UUID.uuid4(), slug: "ready-stance"}
 
       event = EditPositionHandler.handle(%PositionAggregate{}, cmd)
 
@@ -309,16 +309,17 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.EditPositionTest do
                Position.edit_position(%{id: other.id, slug: taken.slug})
     end
 
-    test "edit_position lowers the slug it is given" do
+    test "edit_position rejects a slug that is not canonical" do
       assert {:ok, created} =
                Position.catalog_position(%{
                  title: "sample-title",
-                 slug: "lowered-slug-#{UUID.uuid4()}"
+                 slug: "rejecting-slug-#{UUID.uuid4()}"
                })
 
-      assert {:ok, edited} = Position.edit_position(%{id: created.id, slug: "LOWERED-Slug"})
+      assert {:error, {:validation_failure, errors}} =
+               Position.edit_position(%{id: created.id, slug: "LOWERED-Slug"})
 
-      assert edited.slug == "lowered-slug"
+      assert errors[:slug] == [:invalid_slug]
     end
 
     test "edit_position keeps the equipment a patch does not speak about" do

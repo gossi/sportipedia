@@ -21,7 +21,6 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.ApparatusInternal do
   @spec apparatus_by_slug(String.t()) :: ApparatusReadModel.t() | nil
   def apparatus_by_slug(slug) do
     slug
-    |> String.downcase()
     |> ApparatusBySlug.new()
     |> Repo.one()
   end

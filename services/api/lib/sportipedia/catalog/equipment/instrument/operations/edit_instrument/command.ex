@@ -8,6 +8,7 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Command.EditInstrument do
 
   alias Sportipedia.Catalog.Equipment.Instrument.Validators.InstrumentExists
   alias Sportipedia.Catalog.Equipment.Instrument.Validators.UniqueSlug
+  alias Sportipedia.Support.Validators.SlugValidator
 
   @doc """
   Creates a new EditInstrument command.
@@ -23,5 +24,8 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Command.EditInstrument do
   use Vex.Struct
 
   validates :id, presence: true, by: [function: &InstrumentExists.validate/2]
-  validates :slug, by: [function: &UniqueSlug.validate/2, allow_nil: true]
+
+  validates :slug,
+    by: [function: &SlugValidator.validate/2, allow_nil: true],
+    by: [function: &UniqueSlug.validate/2, allow_nil: true]
 end

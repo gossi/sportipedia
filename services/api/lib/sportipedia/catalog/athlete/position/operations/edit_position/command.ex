@@ -11,6 +11,7 @@ defmodule Sportipedia.Catalog.Athlete.Position.Command.EditPosition do
   alias Sportipedia.Catalog.Athlete.Position.Validators.AtMostOneEquipment
   alias Sportipedia.Catalog.Athlete.Position.Validators.PositionExists
   alias Sportipedia.Catalog.Athlete.Position.Validators.UniqueSlug
+  alias Sportipedia.Support.Validators.SlugValidator
 
   use TypedStruct
   use ExConstructor
@@ -35,5 +36,7 @@ defmodule Sportipedia.Catalog.Athlete.Position.Command.EditPosition do
     by: [function: &AtMostOneEquipment.validate/2],
     by: [function: &InstrumentExists.validate/2, allow_nil: true]
 
-  validates :slug, by: [function: &UniqueSlug.validate/2, allow_nil: true]
+  validates :slug,
+    by: [function: &SlugValidator.validate/2, allow_nil: true],
+    by: [function: &UniqueSlug.validate/2, allow_nil: true]
 end

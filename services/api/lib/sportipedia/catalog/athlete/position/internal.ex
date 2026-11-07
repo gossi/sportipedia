@@ -20,7 +20,6 @@ defmodule Sportipedia.Catalog.Athlete.Position.PositionInternal do
   @spec position_by_slug(String.t()) :: PositionReadModel.t() | nil
   def position_by_slug(slug) do
     slug
-    |> String.downcase()
     |> PositionBySlug.new()
     |> Repo.one()
   end

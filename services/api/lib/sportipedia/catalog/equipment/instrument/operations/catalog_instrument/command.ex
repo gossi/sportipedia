@@ -7,6 +7,7 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Command.CatalogInstrument do
   use ExConstructor
 
   alias Sportipedia.Catalog.Equipment.Instrument.Validators.UniqueSlug
+  alias Sportipedia.Support.Validators.SlugValidator
 
   @doc """
   Creates a new CatalogInstrument command.
@@ -25,5 +26,6 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Command.CatalogInstrument do
 
   validates :slug,
     presence: true,
+    by: [function: &SlugValidator.validate/2],
     by: [function: &UniqueSlug.validate/2, allow_nil: true]
 end

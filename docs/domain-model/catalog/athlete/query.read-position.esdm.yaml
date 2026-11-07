@@ -58,7 +58,7 @@ actors:
 constraints:
   - name: read-by-id-or-slug
     rule: "Take the parameter as the position's `id` when it is a UUID and as its `slug` otherwise."
-  - name: slug-match-is-case-insensitive
-    rule: "Match the slug without regard to case. The slug is unique among positions, so the read answers at most one position; it has no sort and no pages, so no ordering rule applies to it."
+  - name: slug-match-is-canonical
+    rule: "Match the slug exactly as stored: the reader sends the canonical slug and no case folding is applied. The slug is unique among positions, so the read answers at most one position; it has no sort and no pages, so no ordering rule applies to it."
   - name: not-found-when-absent
     rule: "Answer not-found when no position carries the given id or slug."

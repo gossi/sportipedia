@@ -105,6 +105,16 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Operation.CatalogApparatusTest
       assert {:error, [{:error, :slug, :by, :slug_exists}]} =
                Vex.validate(cmd)
     end
+
+    test "rejects a slug that is not lower-case" do
+      cmd = %CatalogApparatus{
+        id: UUID.uuid4(),
+        title: "Vaulting Table",
+        slug: "Vaulting-Table"
+      }
+
+      assert {:error, [{:error, :slug, :by, :invalid_slug}]} = Vex.validate(cmd)
+    end
   end
 
   describe "Handler" do
