@@ -77,6 +77,16 @@ defmodule SportipediaWeb.Router do
         get "/:id_or_slug", InstrumentController, :read_instrument
       end
     end
+
+    scope "/athlete", Athlete do
+      scope "/positions", Position do
+        post "/catalog-position", PositionController, :catalog_position
+        post "/archive-position", PositionController, :archive_position
+        post "/edit-position", PositionController, :edit_position
+        get "/", PositionController, :list_positions
+        get "/:id_or_slug", PositionController, :read_position
+      end
+    end
   end
 
   scope "/admin", SportipediaWeb do

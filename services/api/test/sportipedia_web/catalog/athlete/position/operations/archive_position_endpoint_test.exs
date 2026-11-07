@@ -1,0 +1,76 @@
+defmodule SportipediaWeb.Catalog.Athlete.Position.ArchivePositionEndpointTest do
+  use SportipediaWeb.ConnCase
+
+  import SportipediaWeb.RequestHelpers
+
+  alias Sportipedia.Catalog.Athlete.Position
+  alias Sportipedia.Catalog.Athlete.Position.PositionReadModel
+
+  describe "POST /catalog/athlete/positions/archive-position" do
+    test "archive-position returns 204 for a cataloged position", %{conn: conn} do
+      {:ok, %{id: id}} =
+        Position.catalog_position(%{title: "sample-title", slug: "sample-slug-#{UUID.uuid4()}"})
+
+      conn =
+        conn
+        |> authenticate_conn(%{id: UUID.uuid4(), role: "admin"})
+        |> api_conn()
+        |> post(
+          "/catalog/athlete/positions/archive-position",
+          Jason.encode!(jsonapi_body("position", %{}, id))
+        )
+
+      assert conn.status == 204
+      assert conn.resp_body == ""
+
+      # The endpoint owes the client only the fact that it left: no document.
+      assert Repo.get(PositionReadModel, id) == nil
+    end
+
+    test "returns 404 for an unknown id", %{conn: conn} do
+      conn =
+        conn
+        |> authenticate_conn(%{id: UUID.uuid4(), role: "admin"})
+        |> api_conn()
+        |> post(
+          "/catalog/athlete/positions/archive-position",
+          Jason.encode!(jsonapi_body("position", %{}, UUID.uuid4()))
+        )
+
+      assert json_response(conn, 404)
+    end
+
+    test "returns 403 when unauthenticated", %{conn: conn} do
+      conn =
+        conn
+        |> api_conn()
+        |> post(
+          "/catalog/athlete/positions/archive-position",
+          Jason.encode!(jsonapi_body("position", %{}))
+        )
+
+      assert json_response(conn, 403)
+    end
+
+    # Archive is admin-only: an authenticated user who is not an admin is
+    # denied before the command ever runs.
+    test "returns 403 for a user who is not an admin", %{conn: conn} do
+      {:ok, %{id: id}} =
+        Position.catalog_position(%{title: "sample-title", slug: "sample-slug-#{UUID.uuid4()}"})
+
+      conn =
+        conn
+        |> authenticate_conn(%{id: UUID.uuid4(), role: "user"})
+        |> api_conn()
+        |> post(
+          "/catalog/athlete/positions/archive-position",
+          Jason.encode!(jsonapi_body("position", %{}, id))
+        )
+
+      assert json_response(conn, 403)
+
+      # Denied means untouched: the position is still in the catalog.
+      refute Repo.get(PositionReadModel, id) == nil
+    end
+  end
+end
