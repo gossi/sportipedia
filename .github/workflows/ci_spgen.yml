@@ -1,0 +1,75 @@
+name: CI SpGen
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "tools/spgen/**"
+      - ".github/workflows/ci_spgen.yml"
+  pull_request:
+    paths:
+      - "tools/spgen/**"
+      - ".github/workflows/ci_spgen.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  CI:
+    name: CI
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      MIX_ENV: test
+
+    defaults:
+      run:
+        working-directory: tools/spgen
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install inotify-tools
+        run: sudo apt-get install -y inotify-tools
+
+      - name: Install Erlang/OTP and Elixir
+        uses: erlef/setup-elixir@v1
+        id: beam
+        with:
+          version-file: .tool-versions
+          version-type: strict
+
+      - name: Restore Cache
+        uses: actions/cache@v4
+        id: restore-cache
+        env:
+          OTP_VERSION: ${{ steps.beam.outputs.otp-version }}
+          ELIXIR_VERSION: ${{ steps.beam.outputs.elixir-version }}
+          MIX_LOCK_HASH: ${{ hashFiles('**/mix.lock') }}
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-${{ env.ELIXIR_VERSION }}-${{ env.OTP_VERSION }}-${{ env.MIX_ENV }}-mixlockhash-${{ env.MIX_LOCK_HASH }}
+
+      - name: Install mix dependencies
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        run: mix deps.get
+
+      - name: Compile dependencies
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        run: mix deps.compile
+
+      - name: Compile
+        run: mix compile
+        # run: mix compile --warnings-as-errors --force
+
+      - name: Check formatting
+        run: mix format --check-formatted
+
+      - name: Run tests
+        run: mix test
