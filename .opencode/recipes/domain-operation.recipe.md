@@ -1,7 +1,7 @@
 ---
 $schema: ./recipe.schema.yaml
 name: domain-operation
-description: Plan and implement the domain operation for exactly one command or query
+description: Design, generate, implement, review and commit the domain actor of exactly one operation
 parameters:
   operation:
     type: string
@@ -11,18 +11,23 @@ parameters:
     type: string
     required: false
     description: "Path to the governing spec, when one exists"
-  partition:
-    type: string
-    required: false
-    description: "MIX_TEST_PARTITION value. Defaults to the operation name."
 steps:
-  - id: plan
+  - id: design
     agent: software-architect
     skill: plan-domain-feature
     with:
       scope: operation
-      operation: ${parameters.operation}
-      spec_path: ${parameters.spec_path}
+      operation: "${parameters.operation}"
+      spec_path: "${parameters.spec_path}"
+
+  - id: generate
+    agent: backend-engineer
+    skill: use-blueprints
+    with:
+      phase: generate
+      scope: domain
+      operation: "${parameters.operation}"
+      design: ${steps.design.result}
 
   - id: implement
     agent: backend-engineer
@@ -30,63 +35,72 @@ steps:
       - tdd
       - use-blueprints
     with:
-      operation: ${parameters.operation}
-      scope: operation
-      plan: ${steps.plan.result}
-      spec_path: ${parameters.spec_path}
-      partition: ${parameters.partition}
+      phase: implement
+      scope: domain
+      operation: "${parameters.operation}"
+      design: ${steps.design.result}
+      generated_files: ${steps.generate.result}
+      spec_path: "${parameters.spec_path}"
 
-  - id: gates
-    builder: gates
-    with: { operation: "${parameters.operation}" }
-
-  - id: review-loop
-    loop:
-      max: 3
-      steps:
-        - agent: reviewer
-          with:
-            operation: ${parameters.operation}
-            scope: operation
-            plan: ${steps.plan.result}
-            gates: ${steps.gates.result}
-            spec_path: ${parameters.spec_path}
-          exit-when: ${result.review.status} == "pass"
-        - agent: backend-engineer
-          skills:
-            - tdd
-            - use-blueprints
-          with:
-            operation: ${parameters.operation}
-            scope: operation
-            review: ${result}
-            spec_path: ${parameters.spec_path}
-            partition: ${parameters.partition}
-
-  - id: commit
-    builder: commit-feature
+  - id: review
+    agent: software-architect
     with:
-      feature: ${parameters.operation}
+      scope: operation
+      operation: "${parameters.operation}"
+      design: ${steps.design.result}
+      files: ${steps.implement.result.files}
+
+  - id: adjust
+    agent: backend-engineer
+    skills:
+      - tdd
+      - use-blueprints
+    with:
+      phase: adjust
+      scope: domain
+      operation: "${parameters.operation}"
+      review: ${steps.review.result}
+      design: ${steps.design.result}
+      generated_files: ${steps.generate.result}
       files: ${steps.implement.result.files}
 approval: auto
 ---
 
 # Domain Operation Recipe
 
-Plan and implement exactly ONE CQRS/ES domain operation.
+Design, generate, implement, review and commit exactly ONE CQRS/ES domain
+operation.
 
-Standalone entry point for a single operation or a repair. `domain-feature` no
-longer composes this recipe — it inlines the same work across all of an
-aggregate's operations — but this remains at your disposal, and it follows the
-same rules.
+Standalone entry point for a single operation or a repair. `domain-feature` does
+not compose this recipe — it runs the same five phases across a whole aggregate in
+one design — but this stays at your disposal, and it follows the same rules.
 
 ## Structure
 
-1. **Plan** — `plan-domain-feature` with `scope=operation`. Decisions only.
-2. **Implement** — `tdd` + `use-blueprints`, test-first.
-3. **Gates** *(builder)* — deterministic checks, run directly.
-4. **Review** — up to 3 attempts, exit on `pass`.
-5. **Commit** *(builder)* — the operation's file list only.
+| Step | Agent | Does |
+|---|---|---|
+| `design` | software-architect | lints the model, preflights spec against model, translates to technical design, emits the generator call sequence, the work package, the deviation register, the boundary |
+| `generate` | backend-engineer | runs the calls verbatim, writes no logic, reports files touched |
+| `implement` | backend-engineer | fills the residual bodies, writes the tests, test-first |
+| `review` | software-architect | reviews the operation against the architecture |
+| `adjust` | backend-engineer | applies findings, repairs via `--check`, commits |
+
+## Rules
+
+Inherited verbatim from [domain-feature](./domain-feature.recipe.md) — read its
+prose sections rather than a copy of them here. Applies equally at this scope:
+generators own layout and the design never names a file path; the generator runs
+before logic and workers never run generators; generators append and never remove,
+so a model deletion needs a hand-deletion pass; `--check` is classified from its
+output and against the deviation register, never from its exit code; empty output
+is not a pass; the design step asserts nothing about shared-infrastructure
+behaviour without a citation or `UNVERIFIED`; the implementer is the only git
+writer and commits the union of the generate report and its own `FILES:`.
+
+## Scope boundary
+
+Domain actor only. No controller, view, schema, web route, endpoint test or Bruno
+file — that is `domain-endpoint`.
 
 ## What Gets Built
 
@@ -94,34 +108,8 @@ Public API function, command or query module, command handler, events, aggregate
 projector, read model, policy, validators and queries, internal API, migration,
 all tests.
 
-## Rules Inherited from the Feature Recipe
+## When to Prefer domain-feature
 
-- **No layout in the plan.** Module names, file paths and the generator order
-  belong to `mix sp.gen.*` and the blueprints. The plan is cross-boundary calls,
-  invariant realization, error atoms and statuses, actor mapping, model gaps,
-  migration content, and residuals.
-- **Pass artifacts by reference.** Give subagents the spec path; never paste its
-  contents into a prompt.
-- **No `find-domain-operation` step.** The generators fail loudly on an unknown
-  operation name, which is a cheaper existence check than a subagent call.
-- **Slice boundary.** Domain actor only. No controller, view, schema, web route,
-  endpoint test or Bruno file — that is `domain-endpoint`.
-- **No pre-wired siblings.** Do not add clauses for operations outside the named
-  one. Half-wired siblings break `--warnings-as-errors` and `ApiSpec.spec()`.
-- **Generators are the repair path.** Append-only and idempotent — re-run rather
-  than hand-merging a registry file.
-- **FILES contract.** The implementer and every fixer end with a `FILES:` list;
-  the builder unions it with spgen's reported paths and commits that set.
-  Subagents never run git; `git add -A` is forbidden.
-- **`MODEL GAP:` routing.** Report read-model fields no event produces, or actor
-  mismatches between the ESDM and the spec, for the product-specialist to fix.
-  Never close a model gap by inventing code.
-- **Deviations go back into the docs.** An override that survives review becomes a
-  blueprint or spec edit, so the next slice inherits the decision.
-
-## When to Prefer This Over the Feature Recipe
-
-Only when exactly one operation of an aggregate needs work — a repair, a missing
-test, a changed invariant. For a fresh aggregate, use `domain-feature`: it loads
-the shared scaffold once and reviews the slice as a whole, which is where
-cross-operation contamination is visible.
+For a fresh aggregate: it loads the shared scaffold once and reviews the whole
+constituent, which is where cross-operation contamination is visible. Use this
+recipe when exactly one operation of an existing aggregate needs work.

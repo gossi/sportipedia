@@ -1,7 +1,7 @@
 ---
 $schema: ./recipe.schema.yaml
 name: domain-endpoint
-description: Plan and implement the web endpoint for exactly one domain operation
+description: Design, generate, implement, review and commit the web endpoint of exactly one operation
 parameters:
   operation:
     type: string
@@ -11,18 +11,23 @@ parameters:
     type: string
     required: false
     description: "Path to the governing spec, when one exists"
-  partition:
-    type: string
-    required: false
-    description: "MIX_TEST_PARTITION value. Defaults to the operation name."
 steps:
-  - id: plan
+  - id: design
     agent: software-architect
     skill: plan-domain-feature
     with:
       scope: endpoint
-      operation: ${parameters.operation}
-      spec_path: ${parameters.spec_path}
+      operation: "${parameters.operation}"
+      spec_path: "${parameters.spec_path}"
+
+  - id: generate
+    agent: backend-engineer
+    skill: use-blueprints
+    with:
+      phase: generate
+      scope: web
+      operation: "${parameters.operation}"
+      design: ${steps.design.result}
 
   - id: implement
     agent: backend-engineer
@@ -30,68 +35,66 @@ steps:
       - tdd
       - use-blueprints
     with:
-      operation: ${parameters.operation}
-      scope: endpoint
-      plan: ${steps.plan.result}
-      spec_path: ${parameters.spec_path}
-      partition: ${parameters.partition}
+      phase: implement
+      scope: web
+      operation: "${parameters.operation}"
+      design: ${steps.design.result}
+      generated_files: ${steps.generate.result}
+      spec_path: "${parameters.spec_path}"
 
-  - id: gates
-    builder: gates
-    with: { operation: "${parameters.operation}" }
-
-  - id: review-loop
-    loop:
-      max: 3
-      steps:
-        - agent: reviewer
-          with:
-            operation: ${parameters.operation}
-            scope: endpoint
-            plan: ${steps.plan.result}
-            gates: ${steps.gates.result}
-            spec_path: ${parameters.spec_path}
-          exit-when: ${result.review.status} == "pass"
-        - agent: backend-engineer
-          skills:
-            - tdd
-            - use-blueprints
-          with:
-            operation: ${parameters.operation}
-            scope: endpoint
-            review: ${result}
-            spec_path: ${parameters.spec_path}
-            partition: ${parameters.partition}
-
-  - id: commit
-    builder: commit-feature
+  - id: review
+    agent: software-architect
     with:
-      feature: ${parameters.operation}
+      scope: endpoint
+      operation: "${parameters.operation}"
+      design: ${steps.design.result}
+      files: ${steps.implement.result.files}
+
+  - id: adjust
+    agent: backend-engineer
+    skills:
+      - tdd
+      - use-blueprints
+    with:
+      phase: adjust
+      scope: web
+      operation: "${parameters.operation}"
+      review: ${steps.review.result}
+      design: ${steps.design.result}
+      generated_files: ${steps.generate.result}
       files: ${steps.implement.result.files}
 approval: auto
 ---
 
 # Domain Endpoint Recipe
 
-Plan and implement the web endpoint for exactly ONE domain operation.
+Design, generate, implement, review and commit the web endpoint for exactly ONE
+domain operation.
 
-Standalone entry point for a single endpoint or a repair. `domain-feature` no
-longer composes this recipe — it builds domain and web actors in one agent — but
-this remains at your disposal, and it follows the same rules.
+Standalone entry point for a single endpoint or a repair. `domain-feature` does
+not compose this recipe — it builds domain and web actors in one design and one
+implementation pass — but this stays at your disposal, and it follows the same
+rules.
 
 ## Structure
 
-1. **Plan** — `plan-domain-feature` with `scope=endpoint`. Decisions only.
-2. **Implement** — `tdd` + `use-blueprints`, test-first.
-3. **Gates** *(builder)* — deterministic checks, run directly.
-4. **Review** — up to 3 attempts, exit on `pass`.
-5. **Commit** *(builder)* — the endpoint's file list only.
+| Step | Agent | Does |
+|---|---|---|
+| `design` | software-architect | preflights, translates the operation into endpoint design, emits the generator call sequence, the work package, the deviation register, the boundary |
+| `generate` | backend-engineer | runs the calls verbatim — view, schemas, controller with route, Bruno — reports files touched |
+| `implement` | backend-engineer | fills the residual bodies and the endpoint tests, test-first |
+| `review` | software-architect | reviews the endpoint against the architecture |
+| `adjust` | backend-engineer | applies findings, repairs via `--check`, commits |
 
-## What Gets Built
+## Rules
 
-Phoenix controller with `OpenApiSpex.ControllerSpecs`, router entry, JSON:API
-view, OpenAPI request and response schemas, Bruno API documentation, all endpoint
-tests.
+Inherited verbatim from [domain-feature](./domain-feature.recipe.md) — read its
+prose sections rather than a copy of them here. Same applies at this scope: layout
+belongs to the generators; generation precedes logic; workers never run
+generators; generators append and never remove; `--check` is classified from its
+output against the deviation register and never from its exit code; nothing about
+shared-infrastructure behaviour is asserted without a citation or `UNVERIFIED`;
+the implementer is the only git writer.
 
 ## Preconditions
 
@@ -100,42 +103,18 @@ public API and nothing else — the controller calls exactly one function on the
 constituent's port, and never touches `Repo`, queries, the aggregate or the
 command struct.
 
-## Rules Inherited from the Feature Recipe
+## What the design must state for an endpoint
 
-- **No layout in the plan.** Module names, file paths and the generator order
-  belong to `mix sp.gen.*` and the blueprints.
-- **Pass artifacts by reference.** Give subagents the spec path; never paste its
-  contents into a prompt.
-- **No `find-domain-operation` step.** The generators fail loudly on an unknown
-  operation name.
-- **Slice boundary.** Web actor only, for the named operation. Do not add actions
-  for sibling operations.
-- **FILES contract.** The implementer and every fixer end with a `FILES:` list;
-  the builder commits that set. Subagents never run git; `git add -A` is forbidden.
-
-## Endpoint-Specific Decisions the Plan Must State
-
-- **Authorization.** `Bodyguard.Plug.Authorize` on the controller with the
-  constituent's policy, per ADR-0001. State the actor set from the ESDM and flag
-  any mismatch with what landed in `policy.ex`.
-- **Success status.** Per `blueprints/backend/web/controller.md`, generated
-  creates answer `200`, not the legacy `201`. Blueprint over precedent.
-- **Error statuses.** Which atom maps to which status, and through whom.
-  `FallbackController` and `ErrorClassifier` own the mapping — the plan states the
-  contract, the controller adds no mapping of its own. A rejected reference on a
-  create is a validation failure, not a 404.
-- **Route.** Full path and verb. Commands are POST; there is no PATCH, PUT or
+- **Authorization** — `Bodyguard.Plug.Authorize` on the controller with the
+  constituent's policy, per ADR-0001, and the actor set from the ESDM.
+- **Statuses** — which success status, and which error atom renders to which
+  status through which component, each cited or marked `UNVERIFIED`.
+- **The route** — full path and verb. Commands are POST; there is no PATCH, PUT or
   DELETE for a command.
+- **Published contract** — request and response schemas, and the sort, filter and
+  sparse-fieldset surfaces for a collection read.
 
-## The Web Router Is Shared
+## What Gets Built
 
-`sportipedia_web/router.ex` is one file for the whole API, so concurrent endpoint
-slices will overwrite each other's scopes. That is expected and repaired: the
-route is regenerated by `mix sp.gen.controller`, append-only and idempotent. The
-builder's convergence step re-runs it and verifies with `--check`. Do not hand-fix
-a router conflict, and do not be surprised that whoever commits first also commits
-another slice's in-flight lines.
-
-An unverified symptom of a stomped route: the endpoint test passes while the real
-route table disagrees, because the test harness uses the compiled router. Gate on
-the route list, not only on the tests.
+Phoenix controller with `OpenApiSpex.ControllerSpecs`, router entry, JSON:API view,
+OpenAPI request and response schemas, Bruno API documentation, all endpoint tests.

@@ -8,24 +8,42 @@ description: Parse a spec markdown file and extract the ordered list of operatio
 ## Overview
 
 Read a spec document and extract the list of operations (commands and queries) it
-describes, grouped into feature slices, in build order.
+describes, grouped into the slice they belong to, in build order.
 
-**Executed by the builder directly.** This is deterministic extraction — pattern
-matching over markdown, not judgement. Do not delegate it to a subagent.
+**Executed by the software-architect** as the first part of the design step. A
+spec is a human document, so extraction is reading judgement, not a grep: the
+builder does not execute this skill.
 
 ## When to Use This Skill
 
 Use this skill when:
 
-- You are the builder starting the `spec` recipe
+- You are the software-architect starting a design or a review
 - You have been given a `spec_path`
-- You need the operation list and the feature grouping to fan out over
+- You need the operation list, its grouping, and the spec's own integrity state
 
 ## Input
 
 You receive a `spec_path` parameter — the path to the spec markdown file.
 
 ## Steps
+
+### Step 0: Lint the Domain Model
+
+Run `esdm lint` before reading the spec. This is the first integrity check of the
+flow, not a last-minute review finding: a model error silently changes what the
+generators emit.
+
+- **Block** on any error under `docs/domain-model/**` for the constituent you
+  are about to plan. A missing required field or unknown key in an aggregate,
+  command, event or read model means the design step would be planning against a
+  file the generators cannot read.
+- **Note** errors in unrelated subdomains or fixtures and pass them through as a
+  known-baseline — do not stop the slice for them.
+- Re-run `esdm lint` after any `MODEL GAP:` correction, before anything is
+  generated.
+
+If lint blocks, output `MODEL GAP: <file> — <what the model needs>` and stop.
 
 ### Step 1: Read the Spec File
 

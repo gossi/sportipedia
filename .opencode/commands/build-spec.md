@@ -1,6 +1,6 @@
 ---
 name: build-spec
-description: Build a given spec — extract its operations, build each feature slice (in parallel by default), converge, commit per feature
+description: Build a given spec — one spec is one aggregate, so it is one feature slice
 agent: builder
 ---
 
@@ -12,28 +12,15 @@ Parameters:
 
 - `${parameters.spec_path}` = `$1`
 
-## Optional Flags
-
-Parse these out of the invocation if present:
-
-- `--serial` → `parallel: false` (build feature slices one at a time)
-- `--max-concurrency <n>` → `max_concurrency: <n>`
-
-Defaults: `parallel: true`. Keep concurrency within the Postgres connection
-budget — `pool_size` is `schedulers * 2` per repo across two repos, so each
-concurrent slice consumes roughly `schedulers * 4` connections when it runs tests.
-Prefer letting slices run only their scoped tests and leaving the full suite to
-`converge`.
-
 ## What Runs
 
-1. You extract the operations yourself with the `parse-spec` skill — no subagent.
-2. You preflight: leftover files, `mix compile --warnings-as-errors`, `esdm lint`.
-3. One `domain-feature` slice per aggregate, in parallel. Each gets its own
-   `MIX_TEST_PARTITION`.
-4. You converge the shared registrations (`router.ex`, `application.ex`,
-   `supervisor.ex`) by re-running the generators, then run the gates once.
-5. One reviewer pass over the batch.
-6. Commits are per feature, from each slice's `FILES:` list. Never `git add -A`.
+The recipe delegates once to `domain-feature`, which runs five phases: design
+(software-architect), generate (backend-engineer), implement (one
+backend-engineer per operation, in parallel), review (software-architect), adjust
+and commit (backend-engineer).
 
-Report the per-slice outcome table when the loop completes.
+The design step lints the domain model and preflights the spec against it before
+anything is generated, and stops with `MODEL GAP:` where they disagree. That is
+the earliest and cheapest place a model defect can be caught.
+
+Report the slice outcome when it returns: operations built, review status, commit.

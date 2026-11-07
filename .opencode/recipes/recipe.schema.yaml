@@ -86,7 +86,7 @@ $defs:
         description: >-
           Name of the subagent that should execute this step. Required when no
           sub-recipe is referenced. One of: software-architect,
-          backend-engineer, reviewer.
+          backend-engineer, product-specialist.
         pattern: "^[a-z][a-z0-9-]*$"
       skill:
         type: string
@@ -110,15 +110,6 @@ $defs:
           sub-recipe's own steps declare their agents. Mutually exclusive with
           'skill' and 'skills'.
         pattern: "^[a-z][a-z0-9-]*$"
-      builder:
-        type: string
-        description: >-
-          Deterministic action executed by the builder itself, with no subagent
-          involved: extraction, gate commands, regeneration, git. Values:
-          'parse-operations', 'preflight', 'gates', 'converge', 'commit-feature',
-          'report'. Mutually exclusive with 'agent', 'skill', 'skills', 'recipe'.
-          The builder never implements domain logic on a subagent's behalf.
-        pattern: "^[a-z][a-z0-9-]*$"
       with:
         $ref: "#/$defs/with_bindings"
       exit-when:
@@ -139,7 +130,6 @@ $defs:
             - required: [skill]
             - required: [skills]
             - required: [recipe]
-            - required: [builder]
       - description: >-
           Single skill step: load one skill and delegate to the named agent.
         required: [agent, skill]
@@ -151,16 +141,6 @@ $defs:
           Sub-recipe step: load and execute a sub-recipe recursively. Agent
           not needed — sub-recipe declares its own.
         required: [recipe]
-      - description: >-
-          Builder step: deterministic action the orchestrator runs itself (grep,
-          gate commands, regeneration, git). No subagent, no judgement.
-        required: [builder]
-        not:
-          anyOf:
-            - required: [agent]
-            - required: [skill]
-            - required: [skills]
-            - required: [recipe]
       - description: >-
           Loop step: repeat child steps until exit condition or max
           iterations.

@@ -1,83 +1,83 @@
 ---
 $schema: ./recipe.schema.yaml
 name: domain-feature
-description: Build a complete feature slice — every operation of one aggregate, domain and web actors together, in a single implementer
+description: Build a complete feature slice — every operation of one aggregate, domain and web actors, through design, generation, parallel implementation, review, adjust and commit
 parameters:
   spec_path:
     type: string
     required: true
-    description: "Path to the spec markdown file governing this feature"
-  feature:
+    description: "Path to the spec markdown file governing this aggregate"
+  aggregate:
     type: string
-    required: true
-    description: "Constituent / aggregate name — the slice identity, e.g. 'position'"
+    required: false
+    description: "The aggregate / constituent name — the slice identity, e.g. 'position'. Derived from the spec's operations when omitted."
   composite:
     type: string
     required: false
-    description: "Composite the constituent lives in, e.g. 'athlete'"
+    description: "Composite the aggregate lives in, e.g. 'athlete'"
   operations:
     type: array
-    required: true
-    description: "Every operation of this aggregate, in build order"
-  partition:
-    type: string
     required: false
-    description: "MIX_TEST_PARTITION value for this slice. Defaults to the feature name."
+    description: "Operations in the slice. Derived by the design step when omitted."
 steps:
-  - id: plan
+  - id: design
     agent: software-architect
-    skill: plan-domain-feature
+    skills:
+      - parse-spec
+      - plan-domain-feature
     with:
       scope: feature
-      feature: ${parameters.feature}
-      composite: ${parameters.composite}
-      operations: ${parameters.operations}
-      spec_path: ${parameters.spec_path}
+      spec_path: "${parameters.spec_path}"
+      aggregate: "${parameters.aggregate}"
+      composite: "${parameters.composite}"
+
+  - id: generate
+    agent: backend-engineer
+    skill: use-blueprints
+    with:
+      phase: generate
+      aggregate: ${steps.design.result.aggregate}
+      design: ${steps.design.result}
+      spec_path: "${parameters.spec_path}"
 
   - id: implement
-    agent: backend-engineer
-    skills:
-      - tdd
-      - use-blueprints
-    with:
-      feature: ${parameters.feature}
-      composite: ${parameters.composite}
-      operations: ${parameters.operations}
-      plan: ${steps.plan.result}
-      spec_path: ${parameters.spec_path}
-      partition: ${parameters.partition}
-
-  - id: gates
-    builder: gates
-    with: { feature: "${parameters.feature}" }
-
-  - id: review-loop
     loop:
-      max: 3
+      over: ${steps.design.result.operations}
+      mode: parallel
       steps:
-        - agent: reviewer
-          with:
-            feature: ${parameters.feature}
-            operations: ${parameters.operations}
-            plan: ${steps.plan.result}
-            gates: ${steps.gates.result}
-            spec_path: ${parameters.spec_path}
-          exit-when: ${result.review.status} == "pass"
         - agent: backend-engineer
           skills:
             - tdd
             - use-blueprints
           with:
-            feature: ${parameters.feature}
-            operations: ${parameters.operations}
-            review: ${result}
-            spec_path: ${parameters.spec_path}
-            partition: ${parameters.partition}
+            phase: implement
+            operation: ${item}
+            aggregate: ${steps.design.result.aggregate}
+            design: ${steps.design.result}
+            generated_files: ${steps.generate.result}
+            spec_path: "${parameters.spec_path}"
 
-  - id: commit
-    builder: commit-feature
+  - id: review
+    agent: software-architect
     with:
-      feature: ${parameters.feature}
+      scope: constituent
+      aggregate: ${steps.design.result.aggregate}
+      operations: ${steps.design.result.operations}
+      design: ${steps.design.result}
+      files: ${steps.implement.result.files}
+      spec_path: "${parameters.spec_path}"
+
+  - id: adjust
+    agent: backend-engineer
+    skills:
+      - tdd
+      - use-blueprints
+    with:
+      phase: adjust
+      aggregate: ${steps.design.result.aggregate}
+      review: ${steps.review.result}
+      design: ${steps.design.result}
+      generated_files: ${steps.generate.result}
       files: ${steps.implement.result.files}
 approval: auto
 ---
@@ -85,149 +85,121 @@ approval: auto
 # Domain Feature Recipe
 
 Build one **feature slice**: every operation of a single aggregate, domain actor
-and web actor included.
-
-## Why One Slice Per Aggregate, Not One Call Per Operation
-
-Operations on the same aggregate share `public_api.ex`, `policy.ex`,
-`<object>_controller.ex`, `aggregate.ex`, `projector.ex`, `read_model.ex`, the
-JSON:API view and the router scope. Splitting them across agents means concurrent
-writes to the same files. Built by one agent, the shared scaffold — the aggregate,
-the read model, the migration, the view, the response schemas, the registrations —
-is created once by the first operation and extended by the rest, and the plan is
-read once instead of N times.
-
-Five operations under this recipe cost **3–4 subagent calls** instead of ~45.
+and web actor included. A spec describes one aggregate, so this recipe is the
+whole build of a spec.
 
 ## Structure
 
-1. **Plan** — one architect call for the whole slice. The plan carries decisions
-   only; no module table, no file paths, no generator order.
-2. **Implement** — one engineer builds all operations, test-first, looping the
-   generators internally.
-3. **Gates** *(builder)* — compile, format, `ApiSpec.spec()`, `--check`, scoped
-   tests. Deterministic, so the reviewer is never asked to rediscover a broken
-   build.
-4. **Review** — up to 3 attempts, exit on `pass`.
-5. **Commit** *(builder)* — the slice's file list only.
+| Step | Agent | Does |
+|---|---|---|
+| `design` | software-architect | lints the model, preflights spec against model, translates to technical design, emits the generator call sequence, work packages, deviation register, boundary |
+| `generate` | backend-engineer | runs the call sequence verbatim, writes no logic, reports every file touched |
+| `implement` | backend-engineer ×N, **parallel** | one operation each: fills residual bodies, writes the tests |
+| `review` | software-architect | reviews the constituent as a whole |
+| `adjust` | backend-engineer | applies findings, repairs lost registrations, **commits** |
 
-## The Implementer's Inner Loop
+Five calls per spec, plus one background worker per operation.
 
-For each operation, in the order the plan and `parse-spec` give:
+## Why one slice per aggregate
 
-```
-mix sp.gen.read_model <aggregate>          # first operation only
-mix sp.gen.event <event>
-mix sp.gen.aggregate <aggregate>            # first operation only
-mix sp.gen.command <operation>              # or sp.gen.query
-mix sp.gen.command_handler <operation>
-mix sp.gen.projector <event>
-mix sp.gen.policy <operation>
-mix sp.gen.public_api <operation>
-mix sp.gen.view <aggregate>                 # first operation only
-mix sp.gen.schema <aggregate>               # read model  → response schemas
-mix sp.gen.schema <operation>               # command     → request schema
-mix sp.gen.controller <operation>           # action + web route + endpoint test
-mix sp.gen.bruno <operation>
-```
+Operations on one aggregate share `public_api.ex`, `policy.ex`,
+`<object>_controller.ex`, `aggregate.ex`, `projector.ex`, `read_model.ex`, the
+JSON:API view, the response schemas and the router scope. The design step
+therefore loads the shared scaffold once, and generation creates it once, instead
+of every operation re-deriving the same files.
 
-Then the operator-residual work the plan names: handler bodies, scaffold
-validators, migration, `@moduledoc` TODOs, and the manual tests for cases the
-generators do not cover.
+## Why the generator runs before any logic is written
 
-Generators are append-only and idempotent — re-running them is the repair path
-for lost registrations, so never fight a merge by hand-editing a registry file.
+Generation is mechanical and idempotent; semantics are not. Splitting them means:
 
-## Slice Boundary
+- the shared files exist before the parallel workers start, so nobody generates a
+  file another worker is reading,
+- workers see exactly which citizens are scaffolded and which bodies are theirs,
+- a worker that dies mid-package loses only its own operation, and re-running the
+  generators restores the scaffold rather than corrupting it.
 
-The spec describes the whole feature; a slice contains **only** the operations it
-was given. The implementer must not pre-wire siblings: no controller action,
-router entry, policy clause, public-API function or projector clause for an
-operation outside the list. Half-wired siblings produce undefined-function
-warnings, break `--warnings-as-errors`, and make `ApiSpec.spec()` raise. When the
-generators append such units anyway, delete them and note the deletion as an
-authorized deviation.
+Generators are append-only and never rewrite existing nodes, so a re-run is safe
+over completed work. **Workers never run generators** — if one finds a citizen
+missing, it reports and `generate` or `adjust` runs it. That keeps generation
+single-writer.
 
-A policy clause for an operation outside the slice is a security problem, not just
-a build problem: an archive clause defaulting to `is_user? -> :ok` pre-wires a
-bypass of an admin-only rule that the later slice inherits silently.
+## Parallel implementation and first-come-first-served
 
-## FILES Contract
+Workers run concurrently, one per operation, and they will occasionally write the
+same shared file. That is accepted: these are one-line appends — a policy clause,
+a public API function, a controller action, an `apply/2` clause. The lost write is
+not silent: `adjust` re-runs `sp.gen … --check`, which detects the missing unit,
+and regenerates it.
 
-The implementer and every fixer end their response with:
+The one case FCFS does not survive is a **shared validator body** — a file with
+one body serving two rules, such as a cross-field invariant used by both create
+and update. The design step assigns each shared validator to exactly one owner in
+the work packages, so this is routed by the plan rather than raced.
 
-```
-FILES:
-  services/api/lib/sportipedia/catalog/athlete/position/public_api.ex
-  services/api/lib/sportipedia_web/catalog/athlete/position/position_controller.ex
-  services/api/lib/sportipedia_web/router.ex
-  ...
-```
+## Convergence, in the adjust step
 
-The builder unions this with the paths from spgen's run report and commits exactly
-that set. Subagents never run git.
+`adjust` verifies before it regenerates:
 
-## Handoff to the Reviewer
+1. Inspect the shared files — `web/router.ex`, `<subdomain>/application.ex`,
+   `<subdomain>/supervisor.ex`, `<subdomain>/<composite>/router.ex` — plus each
+   worker's `FILES:` list. Confirm every operation's route, dispatch entry,
+   projector child, policy clause and port function is present.
+2. Run `sp.gen … --check` over the slice's elements and classify each divergence
+   against the **authorized-deviation register** from the design: intentional, or
+   a lost registration.
+3. Re-run generators only for lost registrations, and only for purely additive
+   elements.
 
-Give the reviewer: the plan, the raw gate output, the file list, and the slice
-boundary. Do **not** ask it to re-run gates — it reviews naming, contract
-boundaries, authorization against the ESDM actors, invariant coverage, spec QA
-scenario coverage, and whether shared registrations survived.
+Re-running an element that carries an authorized deviation destroys work — it
+resurrects superseded validators, recreates deliberately deleted stubs, and moves
+validator pairs back to the field where Vex will drop them. `--check` exits 0 even
+when it reports `Outdated`, so classify from its output, never its status code. An
+empty or unrecognisable `--check` run is a failure to classify, not a pass.
 
-One dimension gates cannot see, and the reviewer must own it: **does the advertised
-API surface agree with what the pipeline actually accepts and emits?** A generated
-sort whitelist naming a field the read model does not have, or a sparse-fieldset
-enum publishing camelCase attributes that `JSONAPI.QueryParser` underscores before
-matching, both pass compile, format and tests while the documented contract is
-unusable — the first silently strips every `ORDER BY` from a paginated read, the
-second answers 500 to a client that follows the schema. Assertions about an
-advertised name must be traced to the schema module or library that consumes it.
+## Generators add; they never remove
 
-## Deviation Discipline
+`SpGen.Merge` is append-only, so **a deletion in the domain model does not
+propagate to code**. Removing a read-model field leaves the schema field, the
+migration column, the published JSON:API attribute and the OpenAPI response entry
+in place, and re-running the generator will not clean them up. Model deletions
+require an explicit hand-deletion pass, listed as such in the work package.
 
-When the implementer overrides the plan (a real case: the plan demanded HTTP 422
-via the atom `:not_found`, but `ErrorClassifier` intercepts `:not_found` and
-re-routes it to 404, so the atom had to become `:equipment_not_found`), it must
-report the override. The builder then routes the settled rule back to the
-documentation — a blueprint example or the spec — so the next slice inherits a
-decision instead of relitigating it.
+The consequence for review: `--check` reporting **in-sync** after a model deletion
+is not evidence of convergence. Verify absence in the code itself.
 
-`MODEL GAP:` findings route to the product-specialist to fix the ESDM files, then
-`esdm lint`. Do not let the implementer invent a payload to close a model gap.
+## Commit
 
-### A deviation that leaves generator-active prose behind is not finished
+`adjust` is the only agent that runs git, and it is the last step of the slice, so
+no two writers touch the index at once. Its pathspec is the union of the
+`generate` report and the workers' `FILES:` lists — both known from the flow,
+nothing inferred at commit time. Commit message: `Implement <aggregate>:
+<operations>`.
 
-Some model text is not description but **input to the generator**. A read model's
-projection `rule:` prose selects the generated projector clause, so prose that does
-not match the code being written silently re-derives the wrong clause on the next
-run. Observed on the `position` aggregate: the rule text "Mark position as archived"
-derived an update clause whose `get_changes/1` was empty — a permanent no-op — and
-after the code was hand-corrected to a delete, that stale prose kept threatening to
-undo the correction.
+## Handoff to review
 
-Rule: if you replace, delete or re-wire generator output, find the model text that
-drove it and correct it in the same batch, using the effect vocabulary the generator
-recognizes. If you cannot, say so explicitly rather than leaving a landmine for the
-next run.
+Give the architect the design artifact, the worker file lists, the spec path and
+the slice boundary. It reads the code itself — do not paraphrase what was built,
+because a paraphrase is how a finding becomes an instruction and an instruction
+propagates an error. One aggregate means one review sees the assembled constituent:
+the whole web surface, the policy set, and the shared files, which is where
+cross-operation contamination is visible.
 
-The reverse also holds: a deviation the model cannot express — a read-model field no
-event ever populates, an address key the command does not declare — is a `MODEL GAP`
-for the product-specialist, never a reason to invent code.
+## Definition of done
 
-### Generators add; they never remove
+`mix compile --force --warnings-as-errors` clean in dev and test, `ApiSpec.spec()`
+builds, `mix format --check-formatted` clean on the slice, no `TODO:` markers or
+raise-stubs in slice-owned files, `--check` reporting only registered deviations,
+the slice's tests green with every spec QA scenario executed, and the commit made.
 
-`SpGen.Merge` is append-only by design, so **a deletion in the domain model does not
-propagate to code**. Dropping a read-model field leaves the schema field, the migration
-column, the published JSON:API attribute and the OpenAPI response entry all in place, and
-re-running the generator will not clean them up. Model deletions therefore require an
-explicit hand-deletion pass, and must be listed as such in the slice report.
+## Parameters
 
-Practical consequence for review: an `--check` report that comes back **in-sync** after a
-model deletion is not evidence of convergence. Verify absence in the code itself.
+- `spec_path`: the governing spec.
+- `aggregate`: the constituent / aggregate name.
+- `composite`: optional, resolved from the spec's frontmatter when omitted.
+- `operations`: derived by `design` from the spec and ESDM when omitted; the design
+  step is where the list is validated, not assumed.
 
-## What Gets Built
+## Handoff
 
-Domain actor: public API function, command/query module, handler, events,
-aggregate, projector, read model, policy, validators, internal API, migration.
-Web actor: controller, router entry, JSON:API view, OpenAPI request and response
-schemas, Bruno documentation. All tests.
+The final artifact is a complete vertical slice: operation(s) + endpoint + tests
++ docs + Bruno, committed.
