@@ -96,7 +96,6 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Operation.ArchiveApparatusTest
     end
   end
 
-
   describe "Public API" do
     @describetag :integration
 
