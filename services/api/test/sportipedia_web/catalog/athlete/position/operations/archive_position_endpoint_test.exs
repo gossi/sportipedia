@@ -4,14 +4,19 @@ defmodule SportipediaWeb.Catalog.Athlete.Position.ArchivePositionEndpointTest do
   import SportipediaWeb.RequestHelpers
 
   alias Sportipedia.Catalog.Athlete.Position
+  alias Sportipedia.Catalog.Athlete.Position.Event.PositionArchived
+  alias Sportipedia.Catalog.Athlete.Position.Event.PositionCataloged
   alias Sportipedia.Catalog.Athlete.Position.PositionReadModel
+  alias Sportipedia.Support.Commanded.TypeProvider
 
   @admin %{id: UUID.uuid4(), role: "admin"}
 
   describe "POST /catalog/athlete/positions/archive-position" do
     test "archive-position returns 204 for an archived position", %{conn: conn} do
+      slug = "sample-slug-#{UUID.uuid4()}"
+
       {:ok, %{id: id}} =
-        Position.catalog_position(%{title: "sample-title", slug: "sample-slug-#{UUID.uuid4()}"})
+        Position.catalog_position(%{title: "sample-title", slug: slug})
 
       conn =
         conn
@@ -25,11 +30,23 @@ defmodule SportipediaWeb.Catalog.Athlete.Position.ArchivePositionEndpointTest do
       assert conn.status == 204
       assert conn.resp_body == ""
 
-      # Archived is deleted: the read model no longer holds the row, and the
-      # event stays in the store as the audit trail. Nothing in the API offers an
-      # unarchive.
+      # Archived is deleted: the read model no longer holds the row, and nothing
+      # in the API offers an unarchive.
       assert Repo.get(PositionReadModel, id) == nil
       assert {:error, :not_found} = Position.read_position(id)
+
+      # The event stays in the store as the audit trail — the endpoint that
+      # deletes the row never deletes the history.
+      events = Commanded.EventStore.stream_forward(Sportipedia.Catalog, "athlete/position/" <> id)
+
+      assert Enum.map(events, & &1.event_type) == [
+               TypeProvider.to_string(%PositionCataloged{
+                 id: id,
+                 slug: slug,
+                 title: "sample-title"
+               }),
+               TypeProvider.to_string(%PositionArchived{id: id})
+             ]
     end
 
     test "returns 404 for an unknown id", %{conn: conn} do

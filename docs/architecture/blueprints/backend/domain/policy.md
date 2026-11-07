@@ -24,16 +24,29 @@ creating the file with `@behaviour Bodyguard.Policy` and the `import
 Sportipedia.Auth.Roles` when missing:
 
 - `guest` among the actors → one open clause: `authorize(:op, _user, _params), do: :ok`.
+- `admin` as the **only** actor → guest denial, `is_admin?` allowance, and an
+  explicit denial of every other authenticated user:
+
+  ```elixir
+  def authorize(:op, user, _params) when is_guest?(user), do: :error
+  def authorize(:op, user, _params) when is_admin?(user), do: :ok
+  def authorize(:op, user, _params) when is_user?(user), do: :error
+  ```
+
 - otherwise the deny/allow pair: `is_guest?(user)` → `:error`,
   `is_user?(user)` → `:ok`.
 
-`is_user?/1` is "authenticated", so an `admin` actor needs no extra clause;
-`is_admin?/1` exists for the rare rule that is genuinely admin-only. Using the
-shared guards keeps the role checks identical everywhere — do not write a
-`user.role == …` comparison in a policy.
+`is_user?/1` is `not is_guest?/1` — "authenticated", *not* "an admin": an
+`admin`-only actor list generated from the deny/allow pair would admit every
+authenticated user, so the generator derives the `is_admin?` clause from the
+model instead (`SpGen.Blueprint.Policy.admin_only?/1`). Using the shared guards
+keeps the role checks identical everywhere — do not write a `user.role == …`
+comparison in a policy.
 
 ## Tests
 
 In the [operation test](./operation-test.md), under `describe "Policy"`: the
-guest denial and the user allowance, generated from the same actor list. An
-admin or param-dependent case is manual ([Known gaps](../../README.md#known-gaps)).
+guest denial and the user allowance, generated from the same actor list — for
+an `admin`-only list, all three answers (guest denied, non-admin user denied,
+admin allowed). A param-dependent case is manual
+([Known gaps](../../README.md#known-gaps)).

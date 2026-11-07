@@ -90,6 +90,26 @@ defmodule SportipediaWeb.Catalog.Athlete.Position.EditPositionEndpointTest do
       assert jsonapi_attr(body, "description") == "Stands, because null is not a clear"
     end
 
+    test "stores a slug sent in mixed case in its canonical form", %{conn: conn} do
+      slug = "mixed-#{UUID.uuid4()}"
+
+      {:ok, created} =
+        Position.catalog_position(%{title: "Mixed Case", slug: "origin-#{UUID.uuid4()}"})
+
+      conn =
+        conn
+        |> authenticate_conn()
+        |> api_conn()
+        |> post(
+          "/catalog/athlete/positions/edit-position",
+          Jason.encode!(jsonapi_body("position", %{slug: String.upcase(slug)}, created.id))
+        )
+
+      body = json_response(conn, 200)
+
+      assert jsonapi_attr(body, "slug") == slug
+    end
+
     test "returns 404 for a position that is not there", %{conn: conn} do
       conn =
         conn
@@ -114,6 +134,24 @@ defmodule SportipediaWeb.Catalog.Athlete.Position.EditPositionEndpointTest do
         |> post(
           "/catalog/athlete/positions/edit-position",
           Jason.encode!(jsonapi_body("position", %{title: "Nobody"}, "not-a-uuid"))
+        )
+
+      assert json_response(conn, 404)
+    end
+
+    test "returns 404 for a position that has left the catalog", %{conn: conn} do
+      {:ok, created} =
+        Position.catalog_position(%{title: "Lunge Position", slug: "lunge-#{UUID.uuid4()}"})
+
+      :ok = Position.archive_position(created.id)
+
+      conn =
+        conn
+        |> authenticate_conn()
+        |> api_conn()
+        |> post(
+          "/catalog/athlete/positions/edit-position",
+          Jason.encode!(jsonapi_body("position", %{title: "Renamed"}, created.id))
         )
 
       assert json_response(conn, 404)
@@ -186,8 +224,8 @@ defmodule SportipediaWeb.Catalog.Athlete.Position.EditPositionEndpointTest do
         })
 
       # The request itself is unambiguous: it names one instrument. Only the
-      # merged state shows the violation, and the handler is what rejects it.
-      # A bare handler error must still reach the client as 422, not as 500.
+      # effective state — the patch over what the position holds — shows the
+      # violation, and the command's validator is what sees it.
       conn =
         conn
         |> authenticate_conn()
@@ -200,7 +238,7 @@ defmodule SportipediaWeb.Catalog.Athlete.Position.EditPositionEndpointTest do
       assert %{"errors" => [error]} = json_response(conn, 422)
       assert error["status"] == "422"
       assert error["detail"] == "at_most_one_equipment"
-      assert error["source"] == %{"pointer" => "/data/attributes/instrumentId"}
+      assert error["source"] == %{"pointer" => "/data/attributes/apparatusId"}
 
       # Nothing was changed: the stored position keeps its apparatus.
       assert {:ok, unchanged} = Position.read_position(created.id)

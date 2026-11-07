@@ -30,7 +30,8 @@ defmodule SpGen.Blueprint.CommandTest do
     cmd = Context.render("<Command>", ctx)
 
     # the nil-id test is meaningful only when a validator looks the id up:
-    # `Repo.get(_, nil)` raises; a plain presence check would not
+    # it pins that the lookup never runs on an absent id — `presence` alone
+    # answers, and a 500 raise is what the unguarded shape used to answer
     nil_id = if exists_by_id?(ctx), do: id_nil_test(ctx, cmd), else: []
 
     tests =
@@ -70,9 +71,16 @@ defmodule SpGen.Blueprint.CommandTest do
       test "id cannot be nil" do
         cmd = %#{cmd}{#{literal}}
 
-        assert_raise ArgumentError, fn ->
-          Vex.validate(cmd)
-        end
+        # Rejected, not raised: the existence check used to hand the nil to
+        # `Repo.get/2`, which raises, and the command never got to answer.
+        # `allow_blank` on the `validates` line keeps the lookup off an absent
+        # address, so `presence` is the only rule that speaks for the id.
+        assert [:presence] ==
+                 cmd
+                 |> Vex.errors()
+                 |> Enum.flat_map(fn {_error, field, rule, _message} ->
+                   if field == :id, do: [rule], else: []
+                 end)
       end
       """
     ]

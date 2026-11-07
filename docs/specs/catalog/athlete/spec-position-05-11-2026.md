@@ -2,7 +2,7 @@
 feature: position
 subdomain: catalog
 composite: athlete
-constituent: athlete
+constituent: position
 scope: backend
 ---
 
@@ -75,6 +75,7 @@ The position aggregate enforces the following invariants:
 
 - Accept the position ID (required: it addresses the aggregate instance and is what the existence check reads) and any combination of: title, slug, description, equipment reference
 - Validate that the position exists before allowing edits; a deleted position is rejected as not found
+- A reference the patch re-supplies is checked like a new one; a reference the patch does not carry is left alone (no cascade)
 - Re-validate invariants after applying changes (unique-slug, at-most-one-equipment)
 - Emit a `position-edited` event on success
 - Only users with the `user` role can execute this command

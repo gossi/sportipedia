@@ -97,7 +97,7 @@ defmodule SportipediaWeb.Catalog.Athlete.Position.CatalogPositionEndpointTest do
       assert %{"errors" => [error]} = json_response(conn, 422)
       assert error["status"] == "422"
       assert error["detail"] == "at_most_one_equipment"
-      assert error["source"] == %{"pointer" => "/data/attributes/instrumentId"}
+      assert error["source"] == %{"pointer" => "/data/attributes/apparatusId"}
       assert Repo.aggregate(PositionReadModel, :count) == 0
     end
 
@@ -125,6 +125,31 @@ defmodule SportipediaWeb.Catalog.Athlete.Position.CatalogPositionEndpointTest do
       assert error["status"] == "422"
       assert error["detail"] == "equipment_not_found"
       assert error["source"] == %{"pointer" => "/data/attributes/apparatusId"}
+      assert Repo.aggregate(PositionReadModel, :count) == 0
+    end
+
+    test "returns 422 for an instrument reference that is not in the catalog", %{conn: conn} do
+      conn =
+        conn
+        |> authenticate_conn()
+        |> api_conn()
+        |> post(
+          "/catalog/athlete/positions/catalog-position",
+          Jason.encode!(
+            jsonapi_body("position", %{
+              title: "Phantom Shuttlecock",
+              slug: "phantom-shuttlecock-#{UUID.uuid4()}",
+              instrumentId: UUID.uuid4()
+            })
+          )
+        )
+
+      # One rule covers both equipment kinds, and each kind names the field the
+      # client can fix.
+      assert %{"errors" => [error]} = json_response(conn, 422)
+      assert error["status"] == "422"
+      assert error["detail"] == "equipment_not_found"
+      assert error["source"] == %{"pointer" => "/data/attributes/instrumentId"}
       assert Repo.aggregate(PositionReadModel, :count) == 0
     end
 

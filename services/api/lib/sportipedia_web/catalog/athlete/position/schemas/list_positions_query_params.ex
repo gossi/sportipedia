@@ -24,12 +24,10 @@ defmodule SportipediaWeb.Catalog.Athlete.Position.Schemas.ListPositionsQueryPara
         type: :string,
         description: """
         Comma-separated fields to sort by, each prefixed with `-` for a \
-        descending order. Only `id`, `title` and `slug` can be sorted on: a \
-        field this read does not publish is refused, not ignored.
+        descending order. Only `title` and `slug` can be sorted on: a \
+        field this read does not offer is refused, not ignored.
         """,
         enum: [
-          "id",
-          "-id",
           "title",
           "-title",
           "slug",

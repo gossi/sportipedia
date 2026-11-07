@@ -53,12 +53,15 @@ defmodule SpGen.TemplatesTest do
                "validates :slug, by: [function: &UniqueSlug.validate/2, allow_nil: true]"
     end
 
-    test "exists validator has no allow_nil" do
+    test "exists validator adds presence and allow_blank" do
       field = %{name: "id", required: true, internal: false}
       validators = [%{field: "id", kind: :exists, module: "ApparatusExists"}]
 
+      # `allow_blank` covers nil AND empty (`Vex.Blank.blank?/1`): the by-id
+      # lookup is `Repo.get/2`, which raises on both — and a `:not_found` for a
+      # blank id would collapse into a whole-command 404 instead of this 422
       assert Templates.validates_line(field, validators) ==
-               "validates :id, presence: true, by: [function: &ApparatusExists.validate/2]"
+               "validates :id, presence: true, by: [function: &ApparatusExists.validate/2, allow_blank: true]"
     end
 
     test "two validators on one field are two `by:` pairs in ONE call" do
@@ -69,10 +72,15 @@ defmodule SpGen.TemplatesTest do
         %{field: "apparatusId", kind: :rule, module: "EquipmentExists"}
       ]
 
+      # A generated rule pair carries `allow_nil: true` on a field the model
+      # does not require: the scaffold raises on any value — nil included — and
+      # an implemented rule body may inspect the value before the context. The
+      # operator who finishes the body into a pure cross-field check may drop
+      # the skip option again; the needle below does not read it.
       assert Templates.validates_line(field, validators) ==
                "validates :apparatusId, " <>
-                 "by: [function: &AtMostOneEquipment.validate/2], " <>
-                 "by: [function: &EquipmentExists.validate/2]"
+                 "by: [function: &AtMostOneEquipment.validate/2, allow_nil: true], " <>
+                 "by: [function: &EquipmentExists.validate/2, allow_nil: true]"
     end
 
     test "presence and two validators share the line" do
@@ -83,22 +91,37 @@ defmodule SpGen.TemplatesTest do
         %{field: "id", kind: :rule, module: "NotInUse"}
       ]
 
+      # `id` is required, so the rule pair gets no skip option: `enforce: true`
+      # means the struct cannot even be built without a value here.
       assert Templates.validates_line(field, validators) ==
-               "validates :id, presence: true, by: [function: &WidgetExists.validate/2], " <>
+               "validates :id, presence: true, by: [function: &WidgetExists.validate/2, allow_blank: true], " <>
                  "by: [function: &NotInUse.validate/2]"
     end
 
     test "the pair text and the needle a line must contain" do
       unique = %{field: "slug", kind: :unique, module: "UniqueSlug"}
       exists = %{field: "id", kind: :exists, module: "WidgetExists"}
+      rule = %{field: "coachId", kind: :rule, module: "AtMostOneOwner"}
 
-      assert Templates.validates_by_pair(unique) ==
+      assert Templates.validates_by_pair(unique, %{name: "slug", required: false, internal: false}) ==
                "by: [function: &UniqueSlug.validate/2, allow_nil: true]"
 
-      assert Templates.validates_by_pair(exists) == "by: [function: &WidgetExists.validate/2]"
+      assert Templates.validates_by_pair(exists, %{name: "id", required: true, internal: false}) ==
+               "by: [function: &WidgetExists.validate/2, allow_blank: true]"
+
+      assert Templates.validates_by_pair(rule, %{
+               name: "coachId",
+               required: false,
+               internal: false
+             }) ==
+               "by: [function: &AtMostOneOwner.validate/2, allow_nil: true]"
+
+      assert Templates.validates_by_pair(rule, %{name: "coachId", required: true, internal: false}) ==
+               "by: [function: &AtMostOneOwner.validate/2]"
+
       assert Templates.validates_needle(unique) == "&UniqueSlug.validate/2"
 
-      assert Templates.validators_for(%{name: "id"}, [unique, exists]) == [exists]
+      assert Templates.validators_for(%{name: "id"}, [exists]) == [exists]
       assert Templates.validates_presence?(%{required: true, internal: false})
       refute Templates.validates_presence?(%{required: true, internal: true})
       refute Templates.validates_presence?(%{required: false, internal: false})
@@ -127,20 +150,23 @@ defmodule SpGen.TemplatesTest do
              ]
     end
 
-    test "edit-apparatus (update) produces the exact real-world lines", %{model: model} do
+    # these are the shape the position reference commands carry; the committed
+    # apparatus commands predate the fix and still lack `allow_blank` (blast
+    # radius of the generator defect — the tool never rewrites them)
+    test "edit-apparatus (update) produces the guarded exists line", %{model: model} do
       c = ctx(model, "command.edit-apparatus", operation: :update)
 
       assert Templates.validates_lines(c) == [
-               "validates :id, presence: true, by: [function: &ApparatusExists.validate/2]",
+               "validates :id, presence: true, by: [function: &ApparatusExists.validate/2, allow_blank: true]",
                "validates :slug, by: [function: &UniqueSlug.validate/2, allow_nil: true]"
              ]
     end
 
-    test "archive-apparatus (delete) produces the exact real-world lines", %{model: model} do
+    test "archive-apparatus (delete) produces the guarded exists line", %{model: model} do
       c = ctx(model, "command.archive-apparatus", operation: :delete)
 
       assert Templates.validates_lines(c) == [
-               "validates :id, presence: true, by: [function: &ApparatusExists.validate/2]"
+               "validates :id, presence: true, by: [function: &ApparatusExists.validate/2, allow_blank: true]"
              ]
     end
 

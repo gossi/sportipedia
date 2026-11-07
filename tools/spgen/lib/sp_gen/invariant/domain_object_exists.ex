@@ -17,7 +17,7 @@ defmodule SpGen.Invariant.DomainObjectExists do
   @impl true
   def resolve(%{"name" => name} = rule, field_names, constituent) do
     if name == "#{constituent}-exists" and "id" in field_names do
-      Invariant.descriptor(rule, :exists, "id")
+      [Invariant.descriptor(rule, :exists, "id")]
     end
   end
 

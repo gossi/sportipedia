@@ -216,7 +216,11 @@ defmodule SpGenTest do
       element = Esdm.resolve!(model, "command.create-widget")
       {:ok, ctx} = Context.build(model, element, fs: repo.fs)
 
+      # One descriptor per field the rule names: `at-most-one-owner` speaks for
+      # `coachId` *and* `teamId`, so it registers twice and the instrument-side
+      # half can never disappear from a fresh build silently.
       assert Enum.map(ctx.validators, & &1.name) |> Enum.sort() == [
+               "at-most-one-owner",
                "at-most-one-owner",
                "unique-slug"
              ]
@@ -499,6 +503,98 @@ defmodule SpGenTest do
       assert actual == File.read!(recorded),
              "the generated tree moved off the recorded snapshot (SPGEN_UPDATE_SNAPSHOT=1 to re-record)"
     end
+
+    test "the guarded exists shape never rewrites a tree the old default produced", %{
+      repo: repo
+    } do
+      generate(repo)
+
+      validator_path =
+        "services/api/lib/sportipedia/catalog/equipment/widget/validators/widget_exists.ex"
+
+      command_path =
+        "services/api/lib/sportipedia/catalog/equipment/widget/operations/archive_widget/command.ex"
+
+      test_path =
+        "services/api/test/sportipedia/catalog/equipment/widget/operations/archive_widget_test.exs"
+
+      # roll the three files back to what the pre-fix generator emitted: the
+      # unguarded lookup, the line without a skip option, the test demanding
+      # the raise — the shapes that answered a blank id with a 500
+      FixtureRepo.write(repo, validator_path, """
+      defmodule Sportipedia.Catalog.Equipment.Widget.Validators.WidgetExists do
+        @moduledoc \"\"\"
+        Validates that a widget exists.
+        \"\"\"
+        use Vex.Validator
+        alias Sportipedia.Catalog.Equipment.Widget.WidgetInternal
+
+        @doc \"\"\"
+        Validates the given id value.
+        \"\"\"
+        @spec validate(String.t(), map()) :: :ok | {:error, term()}
+        def validate(id, _context) do
+          case WidgetInternal.widget_by_id(id) do
+            nil -> {:error, :not_found}
+            _ -> :ok
+          end
+        end
+      end
+      """)
+
+      exists_comment =
+        "# `allow_blank` keeps the existence check off an id the caller never sent:\n" <>
+          "# an absent address is `presence`'s to reject, and a `:not_found` for it would\n" <>
+          "# turn the 422 the client can act on into a 404 for a resource nobody named.\n"
+
+      new_nil_assert =
+        "      # Rejected, not raised: the existence check used to hand the nil to\n" <>
+          "      # `Repo.get/2`, which raises, and the command never got to answer.\n" <>
+          "      # `allow_blank` on the `validates` line keeps the lookup off an absent\n" <>
+          "      # address, so `presence` is the only rule that speaks for the id.\n" <>
+          "      assert [:presence] ==\n" <>
+          "               cmd\n" <>
+          "               |> Vex.errors()\n" <>
+          "               |> Enum.flat_map(fn {_error, field, rule, _message} ->\n" <>
+          "                 if field == :id, do: [rule], else: []\n" <>
+          "               end)\n"
+
+      old_nil_assert =
+        "      assert_raise ArgumentError, fn ->\n" <>
+          "        Vex.validate(cmd)\n" <> "      end\n"
+
+      FixtureRepo.write(
+        repo,
+        command_path,
+        read(repo, command_path)
+        |> String.replace(exists_comment, "")
+        |> String.replace(", allow_blank: true]", "]")
+      )
+
+      FixtureRepo.write(
+        repo,
+        test_path,
+        read(repo, test_path) |> String.replace(new_nil_assert, old_nil_assert)
+      )
+
+      # the rollback is real: each file carries the old shape again
+      assert read(repo, command_path) =~
+               "validates :id, presence: true, by: [function: &WidgetExists.validate/2]"
+
+      refute read(repo, command_path) =~ exists_comment
+      assert read(repo, test_path) =~ old_nil_assert
+      assert read(repo, validator_path) =~ "case WidgetInternal.widget_by_id(id) do"
+
+      # units check at presence granularity — moduledoc, use, alias (internal),
+      # def validate/2, the needle of the `validates` line, the `describe` block.
+      # The old files satisfy every one, so the new shapes defer to the operator:
+      # nothing is appended (no orphan `UuidValidator` alias breaking a
+      # warnings-as-errors compile) and nothing is rewritten
+      {:ok, results} =
+        FixtureRepo.check(repo, :command, ["archive-widget", "--template", "delete"])
+
+      assert writes(results) == [], inspect(results)
+    end
   end
 
   # --------------------------------------------------- rules beyond the tool
@@ -534,7 +630,7 @@ defmodule SpGenTest do
         repo,
         @archive_command,
         read(repo, @archive_command)
-        |> String.replace(", by: [function: &WidgetExists.validate/2]", "")
+        |> String.replace(", by: [function: &WidgetExists.validate/2, allow_blank: true]", "")
       )
 
       args = ["archive-widget", "--template", "delete"]
@@ -546,7 +642,8 @@ defmodule SpGenTest do
       assert {:checked, @archive_command, ids} =
                Enum.find(results, &match?({:checked, @archive_command, _}, &1))
 
-      assert {:stale, {:validates, "id"}, ["add by: [function: &WidgetExists.validate/2]"]} in ids
+      assert {:stale, {:validates, "id"},
+              ["add by: [function: &WidgetExists.validate/2, allow_blank: true]"]} in ids
 
       # the run reports the same gap and writes nothing: appending a second
       # `validates :id` line would *replace* the first in Vex, not extend it

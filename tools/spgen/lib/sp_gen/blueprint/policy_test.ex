@@ -32,18 +32,39 @@ defmodule SpGen.Blueprint.PolicyTest do
     action = Context.op_snake(ctx)
     guest = if guest_allowed?(ctx), do: ":ok", else: ":error"
 
-    tests = [
-      """
-      test "denies or allows guests for #{action}" do
-        assert #{policy}.authorize(:#{action}, nil, %{}) == #{guest}
+    tests =
+      if Policy.admin_only?(ctx) do
+        [
+          """
+          test "denies or allows guests for #{action}" do
+            assert #{policy}.authorize(:#{action}, nil, %{}) == #{guest}
+          end
+          """,
+          """
+          test "denies an authenticated user who is not an admin for #{action}" do
+            assert #{policy}.authorize(:#{action}, %{id: UUID.uuid4(), role: "user"}, %{}) == :error
+          end
+          """,
+          """
+          test "allows admins for #{action}" do
+            assert #{policy}.authorize(:#{action}, %{id: UUID.uuid4(), role: "admin"}, %{}) == :ok
+          end
+          """
+        ]
+      else
+        [
+          """
+          test "denies or allows guests for #{action}" do
+            assert #{policy}.authorize(:#{action}, nil, %{}) == #{guest}
+          end
+          """,
+          """
+          test "allows users for #{action}" do
+            assert #{policy}.authorize(:#{action}, %{id: UUID.uuid4(), role: "user"}, %{}) == :ok
+          end
+          """
+        ]
       end
-      """,
-      """
-      test "allows users for #{action}" do
-        assert #{policy}.authorize(:#{action}, %{id: UUID.uuid4(), role: "user"}, %{}) == :ok
-      end
-      """
-    ]
 
     """
     describe "#{subject}" do

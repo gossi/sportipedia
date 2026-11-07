@@ -35,6 +35,14 @@ file.
   compares the found row's `id` against `context.id`.
 - An absent value is not the validator's business — the command's
   `allow_nil: true` decides that.
+- The canonical form of a slug is **lowercase, stored by the write side**: the
+  command handler emits the fact with the value lowered, so the read model
+  holds one spelling per slug and the accessor's `String.downcase` only has to
+  meet the stored value. The lowercasing is the write side's, not a convention
+  the reader may skip — and it is what lets the database back uniqueness with a
+  **plain** unique index: no case-expression, no functional index, because the
+  indexed column already holds one spelling
+  ([migration](../migration.md)).
 - The database needs the matching unique index; see
   [migration](../migration.md).
 

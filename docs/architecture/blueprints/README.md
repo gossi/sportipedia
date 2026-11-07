@@ -280,14 +280,15 @@ nobody rediscovers them as "mysterious missing code":
   silently generates a create clause.
 - **`--template` on `projector`** is validated but the clause body follows the
   model regardless — the override has no effect there.
-- **Create endpoints**: this blueprint and `SpGen.Blueprint.Controller` answer
-  `200`; the equipment and instrument controllers answer `201`.
+- **Create endpoints**: decided — `200` is the standard this blueprint and
+  `SpGen.Blueprint.Controller` produce; the equipment and instrument
+  controllers that answer `201` are legacy to move
+  ([follow-up](../../follow-ups.md)).
 - **Test cases still manual**, each named where it belongs: the command's
   invariant cases (duplicate value, and for an edit the ownership cases), the
   handler's field-by-field mapping, an update event's `get_changes/1`, the
-  projector's idempotency and error cases, an admin or param-dependent policy
-  case, a successful read, the update cases of the public API, and endpoint
-  `422`.
+  projector's idempotency and error cases, a param-dependent policy case, a
+  successful read, the update cases of the public API, and endpoint `422`.
 
 ## Blueprints
 

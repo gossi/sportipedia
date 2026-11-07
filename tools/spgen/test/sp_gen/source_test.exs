@@ -95,8 +95,11 @@ defmodule SpGen.SourceTest do
                by: "[function: &UniqueSlug.validate/2, allow_nil: true]"
              ]
 
+      # A generated rule pair carries `allow_nil` on a field the model does not
+      # require (templates.ex): the coach reference is optional, and a rule body
+      # may read the value.
       assert Source.entry_kws(src, :validates, ":coachId") == [
-               by: "[function: &AtMostOneOwner.validate/2]"
+               by: "[function: &AtMostOneOwner.validate/2, allow_nil: true]"
              ]
 
       assert Source.entry_kws(src, :validates, ":description") == []

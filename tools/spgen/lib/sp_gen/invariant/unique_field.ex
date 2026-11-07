@@ -15,7 +15,7 @@ defmodule SpGen.Invariant.UniqueField do
 
   @impl true
   def resolve(%{"name" => "unique-" <> field} = rule, field_names, _constituent) do
-    if field in field_names, do: Invariant.descriptor(rule, :unique, field)
+    if field in field_names, do: [Invariant.descriptor(rule, :unique, field)]
   end
 
   def resolve(_rule, _field_names, _constituent), do: nil

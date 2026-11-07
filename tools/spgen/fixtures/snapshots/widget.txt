@@ -325,7 +325,10 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Command.ArchiveWidget do
   use ExConstructor
   use Vex.Struct
   alias Sportipedia.Catalog.Equipment.Widget.Validators.WidgetExists
-  validates :id, presence: true, by: [function: &WidgetExists.validate/2]
+  # `allow_blank` keeps the existence check off an id the caller never sent:
+  # an absent address is `presence`'s to reject, and a `:not_found` for it would
+  # turn the 422 the client can act on into a 404 for a resource nobody named.
+  validates :id, presence: true, by: [function: &WidgetExists.validate/2, allow_blank: true]
 
   typedstruct do
     field :id, String.t(), enforce: true
@@ -364,7 +367,8 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Command.CreateWidget do
   alias Sportipedia.Catalog.Equipment.Widget.Validators.UniqueSlug
   validates :title, presence: true
   validates :slug, presence: true, by: [function: &UniqueSlug.validate/2, allow_nil: true]
-  validates :coachId, by: [function: &AtMostOneOwner.validate/2]
+  validates :coachId, by: [function: &AtMostOneOwner.validate/2, allow_nil: true]
+  validates :teamId, by: [function: &AtMostOneOwner.validate/2, allow_nil: true]
 
   typedstruct do
     field :id, String.t(), enforce: true
@@ -407,9 +411,13 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Command.EditWidget do
   alias Sportipedia.Catalog.Equipment.Widget.Validators.AtMostOneOwner
   alias Sportipedia.Catalog.Equipment.Widget.Validators.UniqueSlug
   alias Sportipedia.Catalog.Equipment.Widget.Validators.WidgetExists
-  validates :id, presence: true, by: [function: &WidgetExists.validate/2]
-  validates :coachId, by: [function: &AtMostOneOwner.validate/2]
+  # `allow_blank` keeps the existence check off an id the caller never sent:
+  # an absent address is `presence`'s to reject, and a `:not_found` for it would
+  # turn the 422 the client can act on into a 404 for a resource nobody named.
+  validates :id, presence: true, by: [function: &WidgetExists.validate/2, allow_blank: true]
+  validates :coachId, by: [function: &AtMostOneOwner.validate/2, allow_nil: true]
   validates :slug, by: [function: &UniqueSlug.validate/2, allow_nil: true]
+  validates :teamId, by: [function: &AtMostOneOwner.validate/2, allow_nil: true]
 
   typedstruct do
     field :id, String.t(), enforce: true
@@ -800,18 +808,37 @@ end
 defmodule Sportipedia.Catalog.Equipment.Widget.Validators.WidgetExists do
   @moduledoc """
   Validates that a widget exists.
+
+  The rule is asked of an address: only a value that can denote a
+  widget is looked up. A malformed id addresses nothing, so no
+  widget can hold it, and the answer is the one the pattern gives
+  for an unknown id. An absent or blank id is not this rule's to answer —
+  `presence` owns it, and the command's `validates` line keeps this validator
+  off it.
   """
   use Vex.Validator
   alias Sportipedia.Catalog.Equipment.Widget.WidgetInternal
+  alias Sportipedia.Support.Validators.UuidValidator
 
   @doc """
   Validates the given id value.
   """
-  @spec validate(String.t(), map()) :: :ok | {:error, term()}
+  # `term()`, not `String.t()`: the value reaches here straight off the request,
+  # and a request can name an id with anything at all.
+  @spec validate(term(), map()) :: :ok | {:error, :not_found}
   def validate(id, _context) do
-    case WidgetInternal.widget_by_id(id) do
-      nil -> {:error, :not_found}
-      _ -> :ok
+    # The existence check is a round trip on the primary key, and `Repo.get/2`
+    # raises on a value it cannot put in that clause: nil, a blank string, an
+    # id of the wrong shape. A raise here reaches the client as 500. A
+    # value that cannot denote the resource denotes no resource — the pattern's
+    # own verdict for an unknown id, given without leaving the process.
+    if UuidValidator.valid_uuid?(id) do
+      case WidgetInternal.widget_by_id(id) do
+        nil -> {:error, :not_found}
+        _widget -> :ok
+      end
+    else
+      {:error, :not_found}
     end
   end
 end
@@ -1552,9 +1579,16 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Operation.ArchiveWidgetTest do
     test "id cannot be nil" do
       cmd = %ArchiveWidget{id: nil}
 
-      assert_raise ArgumentError, fn ->
-        Vex.validate(cmd)
-      end
+      # Rejected, not raised: the existence check used to hand the nil to
+      # `Repo.get/2`, which raises, and the command never got to answer.
+      # `allow_blank` on the `validates` line keeps the lookup off an absent
+      # address, so `presence` is the only rule that speaks for the id.
+      assert [:presence] ==
+               cmd
+               |> Vex.errors()
+               |> Enum.flat_map(fn {_error, field, rule, _message} ->
+                 if field == :id, do: [rule], else: []
+               end)
     end
   end
 
@@ -1707,9 +1741,16 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Operation.EditWidgetTest do
         id: nil
       }
 
-      assert_raise ArgumentError, fn ->
-        Vex.validate(cmd)
-      end
+      # Rejected, not raised: the existence check used to hand the nil to
+      # `Repo.get/2`, which raises, and the command never got to answer.
+      # `allow_blank` on the `validates` line keeps the lookup off an absent
+      # address, so `presence` is the only rule that speaks for the id.
+      assert [:presence] ==
+               cmd
+               |> Vex.errors()
+               |> Enum.flat_map(fn {_error, field, rule, _message} ->
+                 if field == :id, do: [rule], else: []
+               end)
     end
   end
 

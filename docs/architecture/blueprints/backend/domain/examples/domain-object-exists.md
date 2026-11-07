@@ -7,7 +7,9 @@ claims: "<domain-object>-exists, where <domain-object> is the citizen itself and
 # Domain Object Exists: Validator
 
 A command that addresses an existing domain object must fail when that object is
-not there. Existence is checked by `id` through the internal API.
+not there. Existence is checked by `id` through the internal API — behind a UUID
+guard, because the check is a `Repo.get/2` on the primary key and `Repo.get/2`
+raises on values it cannot put there.
 
 ## What this pattern claims — and what it does not
 
@@ -28,8 +30,23 @@ not there. Existence is checked by `id` through the internal API.
 
 ## Contract
 
-- Unknown id → `{:error, :not_found}`.
+- Unknown id → `{:error, :not_found}` → `404`.
 - Existing id → `:ok`.
+- Malformed id (`"not-a-uuid"`, `123`) → `{:error, :not_found}` too → `404`.
+  A value that cannot denote the resource denotes no resource — that is the
+  pattern's own verdict for an unknown id. It must not reach `Repo.get/2`,
+  which raises `Ecto.Query.CastError` on it: a raise in a validator reaches
+  the client as a `500`. The check is
+  `Sportipedia.Support.Validators.UuidValidator.valid_uuid?/1`, and the guard
+  itself cannot raise (`Ecto.UUID.dump/1` is total).
+- Absent or blank id (`nil`, `""`) → **not this validator's to answer**. The
+  command's `validates` line skips it (`allow_blank: true`) and `presence`
+  rejects → `422`. Handing a blank id to the lookup raises (`Repo.get/2` on
+  `nil` / `""`), and answering `:not_found` for it would be collapsed by
+  `Sportipedia.Support.ErrorClassifier` into a whole-command `404` for a
+  resource nobody named. `allow_blank` covers absent *and* empty
+  (`Vex.Blank.blank?/1` — nil, `""`, `[]`, `%{}`, `false`); `allow_nil` alone
+  would still run the lookup on `""`.
 - The internal API returns `nil` when the row is missing; the validator turns
   that into the error. No second lookup, no `Repo` call from the validator.
 
@@ -43,12 +60,25 @@ defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Validators.<DomainO
 
   use Vex.Validator
   alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Internal
+  alias Sportipedia.Support.Validators.UuidValidator
 
-  @spec validate(String.t(), map()) :: :ok | {:error, term()}
+  @doc """
+  Validates the given id value.
+  """
+  # `term()`, not `String.t()`: the value reaches here straight off the request,
+  # and a request can name an id with anything at all.
+  @spec validate(term(), map()) :: :ok | {:error, :not_found}
   def validate(id, _context) do
-    case <DomainObject>Internal.<domain_object>_by_id(id) do
-      nil -> {:error, :not_found}
-      _ -> :ok
+    # A value that cannot denote a <domain_object> denotes no <domain_object>:
+    # the pattern's verdict for an unknown id, given without leaving the
+    # process — `Repo.get/2` would raise on it instead.
+    if UuidValidator.valid_uuid?(id) do
+      case <DomainObject>Internal.<domain_object>_by_id(id) do
+        nil -> {:error, :not_found}
+        _<domain_object> -> :ok
+      end
+    else
+      {:error, :not_found}
     end
   end
 end
@@ -57,8 +87,20 @@ end
 Used from the [command](../command.md):
 
 ```elixir
-validates :id, presence: true, by: [function: &<DomainObject>Exists.validate/2]
+  # `allow_blank` keeps the existence check off an id the caller never sent: an
+  # absent address is `presence`'s to reject, and a `:not_found` for it would
+  # turn the 422 the client can act on into a 404 for a resource nobody named.
+  validates :id,
+    presence: true,
+    by: [function: &<DomainObject>Exists.validate/2, allow_blank: true]
 ```
+
+`allow_blank`, never a `def validate(nil, _), do: :ok` clause — see
+[validator](../validator.md#contracts): the skip option belongs to the command
+line, where the rule that owns optionality (`presence`) is visible next to it.
+And `allow_blank`, not `allow_nil`: `Vex.Skipping.skip?/2` checks
+`allow_blank` first and delegates to `Vex.Blank.blank?/1`; with `allow_nil`
+alone the lookup would still run on `""`.
 
 ## Cross-aggregate reference rules
 
@@ -79,6 +121,13 @@ what the next reference rule copies.
 - The lookup goes through the referenced constituent's **public API**
   (`Apparatus.read_apparatus/1`), not its internal API and not `Repo`: the check
   crosses a constituent boundary, so it asks the port, not the store.
+- A legal reference is an **id, never a slug**: the referenced read is polymorphic
+  (id *or* slug), so "some equipment exists under this text" is not "this value
+  is a legal reference". Guard with
+  `Sportipedia.Support.Validators.UuidValidator.valid_uuid?/1` and answer
+  `{:error, :<referenced-thing>_not_found}` for a value that cannot denote an id
+  — the reference column is `:binary_id`, and an unguarded slug passes validation
+  and poisons the projection.
 
 Why the atom is not `:not_found`, even though this pattern's own contract uses
 it, is in [the finding below](#finding-not_found-as-a-reference-rule-atom).
@@ -86,7 +135,16 @@ it, is in [the finding below](#finding-not_found-as-a-reference-rule-atom).
 ## Tests
 
 Asserted in the [command's tests](../command.md#tests): an id that is not in the
-database is rejected with `:not_found`, a cataloged one validates.
+database is rejected with `:not_found`, a cataloged one validates. Assert the
+rule that speaks, never a crash:
+
+- `nil` or `""` as id → `presence` is the only rule that speaks for it
+  (`[:presence]`). The shape to refuse is `assert_raise ArgumentError, fn ->
+  Vex.validate(cmd) end` — that test passes *only while the 500 bug exists*,
+  green against a command answering through its own exception.
+- malformed id (`"not-a-uuid"`) → the existence rule answers with the unknown-id
+  verdict (`[:by]`, classified `404`), and the lookup is not what delivers it —
+  the guard does, without touching the database.
 
 ## Learnings
 

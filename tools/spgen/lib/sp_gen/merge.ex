@@ -198,7 +198,26 @@ defmodule SpGen.Merge do
     end
   end
 
-  defp nodes(unit, ctx), do: parse_exprs(unit.render.(ctx))
+  defp nodes(unit, ctx), do: unit.render.(ctx) |> parse_exprs() |> Enum.map(&anchor_comments/1)
+
+  # A comment parsed from unit text carries lines relative to that text; when
+  # the node splices into a file, the printer re-associates comments by line
+  # and they drift to whatever sibling owns those numbers. Pinning the comment
+  # lines to the node's own line keeps the comment attached to the code it
+  # travels with.
+  defp anchor_comments({name, meta, args} = node)
+       when is_atom(name) and is_list(meta) do
+    case Keyword.get(meta, :leading_comments) do
+      cs when is_list(cs) and cs != [] ->
+        pinned = Enum.map(cs, &Map.put(&1, :line, meta[:line]))
+        {name, Keyword.put(meta, :leading_comments, pinned), args}
+
+      _other ->
+        node
+    end
+  end
+
+  defp anchor_comments(other), do: other
 
   @doc "Render a whole file from its (edited) AST: printer, project formatter, trailing newline."
   @spec render(ast(), keyword()) :: String.t()

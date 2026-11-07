@@ -68,6 +68,27 @@ field, so a second call for the same field *replaces* the first. Several
 validators on one field are several `by:` pairs inside the same call, which is
 why the generator reports an incomplete line as `Outdated` instead of appending.
 
+Each `by:` pair carries the skip option its kind demands, and the generator
+emits it (`SpGen.Templates.validates_by_pair/2`): an existence pair carries
+`allow_nil: true` when the reference is optional — the body reads the value,
+and an absent value claims nothing; a `:rule` pair on a field the model does
+not require carries `allow_nil: true` too, because the scaffold raises on any
+value (nil included) and a finished rule body may inspect the value before the
+context. A **cross-field rule** — one whose body ignores the value and compares
+context fields, like `at-most-one-equipment` — is attached to a field only as
+an *address*; once the operator has implemented it that way, the pair carries
+no skip option. The two idioms never copy onto each other's pair.
+
+A rule that names several fields of the citizen is *one validator module,
+registered on every field it names*: `SpGen.Invariant.FieldRule` yields one
+descriptor per named field, because the rule is a fact about the data shape
+and holds of every field it speaks for — registering only the first would let
+a fresh build drop the other half in silence. Which clause of the module each
+field calls is the operator's (a per-field second clause, like
+`EquipmentExists.validate_instrument/2`, is invisible to the generator's
+needle and is carried as an authorized deviation); the *registration* is the
+generator's.
+
 Validators are not "global": they belong to the constituent, in the module the
 rule names.
 

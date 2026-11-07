@@ -10,12 +10,11 @@ defmodule Sportipedia.Catalog.Athlete.Position do
   alias Sportipedia.Catalog.Athlete.Position.PositionInternal
   alias Sportipedia.Catalog.Athlete.Position.PositionReadModel
   alias Sportipedia.Catalog.Athlete.Position.Queries.ListPositions
+  alias Sportipedia.Catalog.Athlete.Position.Queries.ReadPosition
   alias Sportipedia.Catalog.Repo
   alias Sportipedia.Support.ErrorClassifier
 
   alias Sportipedia.Support.JSONAPI.QueryBuilder
-
-  alias Sportipedia.Support.Validators.UuidValidator
 
   @doc """
   Catalogs a new position. Returns the cataloged position.
@@ -62,17 +61,9 @@ defmodule Sportipedia.Catalog.Athlete.Position do
   """
   @spec read_position(String.t()) :: Architecture.public_api(PositionReadModel.t())
   def read_position(id_or_slug) do
-    case lookup_position(id_or_slug) do
+    case Repo.one(ReadPosition.new(id_or_slug)) do
       nil -> {:error, :not_found}
       read_model -> {:ok, read_model}
-    end
-  end
-
-  defp lookup_position(id_or_slug) do
-    if UuidValidator.valid_uuid?(id_or_slug) do
-      PositionInternal.position_by_id(id_or_slug)
-    else
-      PositionInternal.position_by_slug(id_or_slug)
     end
   end
 
@@ -91,17 +82,6 @@ defmodule Sportipedia.Catalog.Athlete.Position do
     case Catalog.dispatch(EditPosition.new(params), consistency: :strong) do
       :ok ->
         {:ok, PositionInternal.position_by_id(params[:id] || params["id"])}
-
-      # The handler decides `at-most-one-equipment` on the merged state, because
-      # a patch that supplies one side cannot see the side already stored. That
-      # rejection reaches `dispatch` as a bare handler error — and a bare error
-      # is not something the HTTP fallback can render as anything but 500. Here
-      # is the one place that knows which rule the error came from, so it is the
-      # place that puts it in the shape the client is owed: the same
-      # validation failure the command's own validator produces for the same
-      # violation.
-      {:error, :at_most_one_equipment} ->
-        {:error, {:validation_failure, %{instrumentId: [:at_most_one_equipment]}}}
 
       {:error, errors} ->
         ErrorClassifier.classify_error(errors)

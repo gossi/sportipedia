@@ -5,14 +5,16 @@ defmodule SpGen.Invariant.Pattern do
 
   A pattern recognizes the domain-model rules it implements from their
   `namedRule` (the stable `name` plus the prose `rule`) and yields the
-  validator descriptor `SpGen.Context` carries in `ctx.validators`.
+  validator descriptors `SpGen.Context` carries in `ctx.validators`.
 
-  * `resolve/3` — the descriptor for `rule`, or `nil` when this pattern does
-    not implement it (the next pattern is asked)
+  * `resolve/3` — the descriptors for `rule`: one per citizen field the rule
+    names (a rule is a fact about the data shape, and it speaks for every
+    field it names), or `nil` when this pattern does not implement it
+    (the next pattern is asked)
   """
 
   @callback resolve(rule :: map(), field_names :: [String.t()], constituent :: String.t()) ::
-              SpGen.Invariant.t() | nil
+              [SpGen.Invariant.t()] | nil
 end
 
 defmodule SpGen.Invariant do
@@ -71,29 +73,27 @@ defmodule SpGen.Invariant do
 
   @doc """
   Resolves one `namedRule` against the citizen's `field_names`; `nil` when no
-  pattern implements the rule.
+  pattern implements the rule. A rule naming several fields resolves to one
+  descriptor per named field.
   """
-  @spec resolve(map(), [String.t()], String.t()) :: t() | nil
+  @spec resolve(map(), [String.t()], String.t()) :: [t()] | nil
   def resolve(%{"name" => _name} = rule, field_names, constituent) when is_list(field_names) do
     Enum.find_value(@patterns, fn pattern -> pattern.resolve(rule, field_names, constituent) end)
   end
 
   @doc """
-  Splits `rules` into `{validators, unresolved}` in input order: the rules a
-  pattern implements and the rules none of them claims.
+  Splits `rules` into `{validators, unresolved}` in input order: the descriptors
+  the patterns implement and the rules none of them claims.
   """
   @spec resolve_all([map()], [String.t()], String.t()) :: {[t()], [map()]}
   def resolve_all(rules, field_names, constituent) do
-    rules
-    |> Enum.map(fn rule -> resolve(rule, field_names, constituent) end)
-    |> Enum.zip(rules)
-    |> Enum.reduce({[], []}, fn
-      {nil, rule}, {validators, unresolved} -> {validators, [rule | unresolved]}
-      {validator, _rule}, {validators, unresolved} -> {[validator | validators], unresolved}
+    Enum.reduce(rules, {[], []}, fn rule, {validators, unresolved} ->
+      case resolve(rule, field_names, constituent) do
+        nil -> {validators, [rule | unresolved]}
+        descriptors -> {validators ++ descriptors, unresolved}
+      end
     end)
-    |> then(fn {validators, unresolved} ->
-      {Enum.reverse(validators), Enum.reverse(unresolved)}
-    end)
+    |> then(fn {validators, unresolved} -> {validators, Enum.reverse(unresolved)} end)
   end
 
   @doc false

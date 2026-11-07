@@ -9,7 +9,10 @@ defmodule SpGen.Blueprint.Validator do
 
   * `unique-<field>` invariants → uniqueness against the internal API
     accessor, tolerating the object that already owns the value (edit case)
-  * `<domain_object>-exists` command constraints → existence check by id
+  * `<domain_object>-exists` command constraints → existence check by id,
+    guarded by `Sportipedia.Support.Validators.UuidValidator.valid_uuid?/1`
+    so no value that cannot denote the resource (nil, blank, malformed)
+    reaches `Repo.get/2` — those raise, and a raise answers the client a 500
   * any other rule naming a field of the citizen (cross-field or
     cross-aggregate) → a scaffold the operator implements
 
@@ -34,6 +37,8 @@ defmodule SpGen.Blueprint.Validator do
   @path "services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/validators/<_validator>.ex"
   @module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Validators.<Validator>"
   @internal_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Internal"
+  # the total UUID guard the exists shape puts in front of the by-id lookup
+  @uuid_validator "Sportipedia.Support.Validators.UuidValidator"
 
   def name, do: :validator
   def source_kinds, do: [:command]
@@ -49,7 +54,11 @@ defmodule SpGen.Blueprint.Validator do
   end
 
   def plans(%Context{} = ctx) do
-    Enum.map(ctx.validators, fn validator ->
+    # One rule is one validator module even when it names several fields: the
+    # descriptors multiply per field, the file does not.
+    ctx.validators
+    |> Enum.uniq_by(& &1.snake)
+    |> Enum.map(fn validator ->
       %FilePlan{
         path: Context.render(@path, ctx, %{"validator" => validator.snake}),
         module: Context.render(@module, ctx, %{"validator" => validator.module}),
@@ -64,11 +73,32 @@ defmodule SpGen.Blueprint.Validator do
   end
 
   defp doc(%{kind: :exists}, ctx) do
-    "Validates that a #{ctx.constituent} exists."
+    """
+    Validates that a #{ctx.constituent} exists.
+
+    The rule is asked of an address: only a value that can denote a
+    #{ctx.constituent} is looked up. A malformed id addresses nothing, so no
+    #{ctx.constituent} can hold it, and the answer is the one the pattern gives
+    for an unknown id. An absent or blank id is not this rule's to answer —
+    `presence` owns it, and the command's `validates` line keeps this validator
+    off it.
+    """
   end
 
   defp doc(%{kind: :rule} = v, _ctx) do
     "Validates the '#{v.name}' rule: #{v.rule}"
+  end
+
+  defp def_block(%{kind: :exists} = validator, ctx) do
+    """
+    @doc \"\"\"
+    Validates the given #{validator.field} value.
+    \"\"\"
+    # `term()`, not `String.t()`: the value reaches here straight off the request,
+    # and a request can name an id with anything at all.
+    @spec validate(term(), map()) :: :ok | {:error, :not_found}
+    #{body(validator, ctx) |> String.trim_trailing()}
+    """
   end
 
   defp def_block(validator, ctx) do
@@ -111,9 +141,18 @@ defmodule SpGen.Blueprint.Validator do
 
     """
     def validate(#{v.field}, _context) do
-      case #{internal}.#{do_}_by_#{v.field}(#{v.field}) do
-        nil -> {:error, :not_found}
-        _ -> :ok
+      # The existence check is a round trip on the primary key, and `Repo.get/2`
+      # raises on a value it cannot put in that clause: nil, a blank string, an
+      # id of the wrong shape. A raise here reaches the client as 500. A
+      # value that cannot denote the resource denotes no resource — the pattern's
+      # own verdict for an unknown id, given without leaving the process.
+      if UuidValidator.valid_uuid?(#{v.field}) do
+        case #{internal}.#{do_}_by_#{v.field}(#{v.field}) do
+          nil -> {:error, :not_found}
+          _#{do_} -> :ok
+        end
+      else
+        {:error, :not_found}
       end
     end
     """
@@ -143,7 +182,7 @@ defmodule SpGen.Blueprint.Validator do
           %Unit{
             id: {:alias, internal},
             check: fn src -> Source.has_alias?(src, internal) end,
-            render: fn c -> "alias #{Context.render(@internal_module, c)}" end,
+            render: fn c -> alias_lines(validator, c) end,
             requires: internal_gate(validator),
             place: Merge.alias_of(internal)
           }
@@ -156,7 +195,9 @@ defmodule SpGen.Blueprint.Validator do
       %Unit{
         id: :moduledoc,
         check: &Source.has_moduledoc?/1,
-        render: fn c -> "@moduledoc \"\"\"\n#{doc(validator, c)}\n\"\"\"" end,
+        render: fn c ->
+          "@moduledoc \"\"\"\n#{doc(validator, c) |> String.trim_trailing()}\n\"\"\""
+        end,
         requires: internal_gate(validator),
         place: Merge.head(:moduledoc)
       },
@@ -186,4 +227,15 @@ defmodule SpGen.Blueprint.Validator do
   defp internal_gate(_validator) do
     fn c -> [{InternalAPI.module_file(c), "internal API not generated (spgen internal_api)"}] end
   end
+
+  # The exists shape guards the lookup with `Sportipedia.Support.Validators.UuidValidator`,
+  # and that alias travels inside this unit on purpose: a validator file that predates
+  # the guard already carries the internal alias, so this unit counts as present and the
+  # old file stays untouched — as a unit of its own, the alias would be appended to every
+  # old file, unused by the unguarded body still sitting there.
+  defp alias_lines(%{kind: :exists}, ctx) do
+    "alias #{Context.render(@internal_module, ctx)}\nalias #{@uuid_validator}"
+  end
+
+  defp alias_lines(_validator, ctx), do: "alias #{Context.render(@internal_module, ctx)}"
 end

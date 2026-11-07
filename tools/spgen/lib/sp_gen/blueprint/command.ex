@@ -106,7 +106,10 @@ defmodule SpGen.Blueprint.Command do
   end
 
   defp alias_units(ctx) do
-    Enum.map(ctx.validators, fn v ->
+    # A rule naming several fields carries one descriptor per field and one
+    # module for all of them: the alias is that module's, stated once.
+    ctx.validators
+    |> Enum.map(fn v ->
       full = validator_module(ctx, v)
 
       %Unit{
@@ -117,6 +120,7 @@ defmodule SpGen.Blueprint.Command do
         place: Merge.alias_of(full)
       }
     end)
+    |> Enum.uniq_by(& &1.id)
   end
 
   defp field_units(ctx) do
@@ -147,7 +151,7 @@ defmodule SpGen.Blueprint.Command do
         id: {:validates, f.name},
         check: fn src -> validates_complete?(src, f, ctx.validators) end,
         stale: fn src, _c -> stale_validations(src, f, ctx.validators) end,
-        render: fn _ctx -> line end,
+        render: fn _ctx -> exists_comment(f, ctx.validators) <> line end,
         requires: fn c -> validator_gates(c, f) end,
         place:
           Merge.after_macro(
@@ -157,6 +161,23 @@ defmodule SpGen.Blueprint.Command do
           )
       }
     end)
+  end
+
+  # The reference comment of the domain-object-exists example, said at the line
+  # that carries the option: why `allow_blank` — and never a
+  # `def validate(nil, _), do: :ok` clause (validator.md's contract).
+  defp exists_comment(field, validators) do
+    guards = Templates.validators_for(field, validators)
+
+    if Enum.any?(guards, &(&1.kind == :exists)) do
+      """
+      # `allow_blank` keeps the existence check off an #{field.name} the caller never sent:
+      # an absent address is `presence`'s to reject, and a `:not_found` for it would
+      # turn the 422 the client can act on into a 404 for a resource nobody named.
+      """
+    else
+      ""
+    end
   end
 
   # every validator guarding the field gates the line: a `validates` line may
@@ -207,7 +228,7 @@ defmodule SpGen.Blueprint.Command do
         needle = Templates.validates_needle(v)
         Enum.any?(by_values, &String.contains?(&1, needle))
       end)
-      |> Enum.map(fn v -> "add " <> Templates.validates_by_pair(v) end)
+      |> Enum.map(fn v -> "add " <> Templates.validates_by_pair(v, field) end)
 
     presence ++ missing
   end

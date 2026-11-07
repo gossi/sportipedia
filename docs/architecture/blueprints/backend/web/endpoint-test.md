@@ -46,6 +46,7 @@ wrap it in another `assert`.
 | `403` | unauthenticated — `FallbackController` answers `{:error, :unauthorized}` with 403 |
 | `404` | unknown resource |
 | `422` | validation failure |
+| — | invalid query parameter (e.g. `?sort=id` outside the read's whitelist) — **no row yet**: `JSONAPI` raises `JSONAPI.Exceptions.InvalidQuery`, no `rescue`/`handle_exception` exists in `sportipedia_web`, and the `:api` pipeline runs no request-validation plug, so production answers `500`. A `400` handler is a [follow-up](../../../../follow-ups.md#invalid-query-parameters-answer-400); until it lands, a test that pins the refusal pins the raise (`assert_raise JSONAPI.Exceptions.InvalidQuery`), never a status the endpoint does not owe |
 
 `200` for a create is what this blueprint and the generator produce. The legacy
 equipment and instrument controllers answer `201` — see the finding in

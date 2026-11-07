@@ -162,6 +162,20 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.ListPositionsTest do
                })
              ) == ["title", "slug", "id"]
     end
+
+    test "lists only the positions that are still in the catalog" do
+      # Archive deletes: the read model holds no row for a position that left
+      # the catalog, so this read answers without one because there is nothing
+      # to filter out — no "exclude archived" condition exists here.
+      [alive_id, deleted_id] =
+        seed_positions([{"Handstand", "handstand"}, {"Lunge Position", "lunge"}])
+
+      assert :ok = Position.archive_position(deleted_id)
+
+      assert {:ok, positions} = Position.list_positions(%JSONAPI.Config{})
+
+      assert Enum.map(positions, & &1.id) == [alive_id]
+    end
   end
 
   describe "Public API" do

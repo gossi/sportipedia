@@ -4,13 +4,15 @@ defmodule Sportipedia.Catalog.Athlete.Position.Validators.AtMostOneEquipment do
   one piece of equipment (either apparatusId or instrumentId, not both).
 
   The value it is called with is irrelevant — the rule compares two fields of
-  the command, so it reads them off the context. Any map carrying `:apparatusId`
-  and `:instrumentId` can be checked.
+  the context. Any map carrying `:apparatusId` and `:instrumentId` can be checked.
 
-  That also makes this validator the single place the rule is stated:
-  `EditPositionHandler` calls it with the command's fields merged over the loaded
-  aggregate state, where a patch that supplies one side while the stored position
-  holds the other would otherwise go unnoticed.
+  This judges the command **as supplied**: it is the early rejection of a
+  request that names both kinds at once, on the field the rule is attached to.
+  An edit's *effective* state — the patch merged over what the position holds —
+  is the aggregate invariant's other half, and it belongs to
+  `Sportipedia.Catalog.Athlete.Position.Command.EditPositionHandler`: the
+  handler sees the state its own stream built, serialized, with nothing to read
+  from the projection and no window between reading and writing.
   """
 
   use Vex.Validator

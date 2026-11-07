@@ -2,12 +2,14 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.ReadPositionTest do
   use Sportipedia.CatalogTestCase
   alias Sportipedia.Catalog.Athlete.Position
   alias Sportipedia.Catalog.Athlete.Position.Policy
+  alias Sportipedia.Catalog.Athlete.Position.PositionReadModel
+  alias Sportipedia.Catalog.Athlete.Position.Queries.ReadPosition
   alias Sportipedia.Catalog.Equipment.Apparatus
 
-  # This read is served by the constituent's internal API through the public
-  # API's own lookup chain (`position_by_id/1` for an id, `position_by_slug/1`
-  # for a slug), so it has no Query module of its own — see
-  # docs/architecture/blueprints/backend/domain/internal-api.md.
+  # The port answers this read through the model's named query: `Repo.one/1` over
+  # `Queries.ReadPosition` — the id-or-slug branch lives once, in the query
+  # (docs/architecture/blueprints/backend/domain/public-api.md). The "Query"
+  # describe below is that query's own unit coverage.
   @moduletag :integration
 
   describe "Policy" do
@@ -75,6 +77,41 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.ReadPositionTest do
 
     test "read_position returns :not_found for an unknown slug" do
       assert {:error, :not_found} = Position.read_position("nobody-holds-this-#{UUID.uuid4()}")
+    end
+  end
+
+  describe "Query" do
+    test "selects the position that carries the given id" do
+      {:ok, created} =
+        Position.catalog_position(%{title: "Handstand", slug: "handstand-#{UUID.uuid4()}"})
+
+      expected_id = created.id
+
+      assert %PositionReadModel{id: ^expected_id, title: "Handstand"} =
+               created.id
+               |> ReadPosition.new()
+               |> Repo.one()
+    end
+
+    test "selects the position that carries the given slug, whatever case the caller uses" do
+      {:ok, created} = Position.catalog_position(%{title: "Lunge", slug: "lunge-#{UUID.uuid4()}"})
+
+      expected_id = created.id
+
+      assert %PositionReadModel{id: ^expected_id} =
+               created.slug
+               |> String.upcase()
+               |> ReadPosition.new()
+               |> Repo.one()
+    end
+
+    test "selects no position for an id or a slug nobody carries" do
+      # `not-found-when-absent` is an empty result for the query — and a slug is
+      # never handed to the uuid column, where Postgres would reject the literal
+      # instead of answering that no position carries it.
+      assert ReadPosition.new(UUID.uuid4()) |> Repo.one() == nil
+
+      assert ReadPosition.new("nobody-holds-this-#{UUID.uuid4()}") |> Repo.one() == nil
     end
   end
 end

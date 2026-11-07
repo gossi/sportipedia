@@ -23,10 +23,11 @@ defmodule SportipediaWeb.Catalog.Athlete.Position.PositionController do
 
   plug JSONAPI.QueryParser,
     filter: ~w(title),
-    # Only attributes the document publishes may be sorted on: `sort` names reach
-    # the query builder, which drops a name the read model does not have — and a
-    # dropped name leaves a paginated read with no ORDER BY at all.
-    sort: ~w(id title slug),
+    # Sortable fields are the ones the feature decision admits — `title` and
+    # `slug` — and every one of them is published by the view and held by the
+    # read model. A name outside this whitelist is refused by the parser; a
+    # dropped name would leave a paginated read with no ORDER BY at all.
+    sort: ~w(title slug),
     view: PositionView
 
   tags ["athlete"]

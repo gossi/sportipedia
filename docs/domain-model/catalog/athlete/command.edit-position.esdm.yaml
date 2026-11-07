@@ -34,6 +34,8 @@ data:
 constraints:
   - name: position-exists
     rule: A position needs to exist (check by id)
+  - name: equipment-exists
+    rule: If apparatusId or instrumentId is provided, the referenced equipment must exist
 publishes:
   - position-edited
 actors:

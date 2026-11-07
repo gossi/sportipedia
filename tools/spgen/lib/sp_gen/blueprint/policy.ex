@@ -7,7 +7,11 @@ defmodule SpGen.Blueprint.Policy do
   (created when missing). Clause shape follows the domain model's `actors`:
 
   * guests among the actors → one open clause (`_user`, `:ok`)
-  * guests not allowed → the deny/allow guard pair (`is_guest?` → `:error`,
+  * `admin` as the only actor → guest denial, `is_admin?` allowance, and the
+    explicit denial of every other authenticated user (`is_user?/1` is "not a
+    guest", never "not an admin" — allowing on it would admit every user to an
+    admin-only operation)
+  * otherwise → the deny/allow guard pair (`is_guest?` → `:error`,
     `is_user?` → `:ok`), using the shared guards from `Sportipedia.Auth`
   """
 
@@ -35,18 +39,35 @@ defmodule SpGen.Blueprint.Policy do
     ]
   end
 
+  @doc "The actor list is `admin` and nothing else."
+  def admin_only?(%Context{actors: actors}), do: actors == ["admin"]
+
   @doc false
   def clauses(ctx) do
     action = ":#{Context.op_snake(ctx)}"
 
-    if guest_allowed?(ctx) do
-      "def authorize(#{action}, _user, _params), do: :ok"
-    else
-      """
-      def authorize(#{action}, user, _params) when is_guest?(user), do: :error
-      def authorize(#{action}, user, _params) when is_user?(user), do: :ok
-      """
-      |> String.trim_trailing()
+    cond do
+      guest_allowed?(ctx) ->
+        "def authorize(#{action}, _user, _params), do: :ok"
+
+      admin_only?(ctx) ->
+        # `is_user?/1` is "not a guest" (`Sportipedia.Auth.Roles`), so an
+        # admin-only command must not be generated as an `is_user?` allowance —
+        # that is under-restricted. The allow is `is_admin?`, and every other
+        # authenticated actor is denied explicitly.
+        """
+        def authorize(#{action}, user, _params) when is_guest?(user), do: :error
+        def authorize(#{action}, user, _params) when is_admin?(user), do: :ok
+        def authorize(#{action}, user, _params) when is_user?(user), do: :error
+        """
+        |> String.trim_trailing()
+
+      true ->
+        """
+        def authorize(#{action}, user, _params) when is_guest?(user), do: :error
+        def authorize(#{action}, user, _params) when is_user?(user), do: :ok
+        """
+        |> String.trim_trailing()
     end
   end
 

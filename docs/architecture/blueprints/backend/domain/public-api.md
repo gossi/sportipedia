@@ -25,8 +25,10 @@ and the body by what the operation does:
   `consistency: :strong`, return the projected read model.
 - **update** — dispatch with the given id, return the read model.
 - **delete** — dispatch, return `:ok`; no read model follows.
-- **read** — [internal API](./internal-api.md) lookup; a `oneOf` parameter
-  becomes the `id_or_slug` chain in a private `lookup_<domain_object>/1`.
+- **read** — the model's named query through `Repo.one/1`; `nil` →
+  `{:error, :not_found}`. An `oneOf` id-or-slug parameter is realized **once**,
+  in the query. The internal API is the port's after-dispatch `by_id` lookup for
+  create and update.
 - **collection** — `Repo.all` with `Sportipedia.Support.JSONAPI.QueryBuilder`.
 
 Validation errors surface through `Sportipedia.Support.ErrorClassifier`: Vex runs

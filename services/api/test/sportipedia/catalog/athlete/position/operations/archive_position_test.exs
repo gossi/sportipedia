@@ -4,9 +4,11 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.ArchivePositionTest do
   alias Sportipedia.Catalog.Athlete.Position.Command.ArchivePosition
   alias Sportipedia.Catalog.Athlete.Position.Command.ArchivePositionHandler
   alias Sportipedia.Catalog.Athlete.Position.Event.PositionArchived
+  alias Sportipedia.Catalog.Athlete.Position.Event.PositionCataloged
   alias Sportipedia.Catalog.Athlete.Position.Policy
   alias Sportipedia.Catalog.Athlete.Position.PositionAggregate
   alias Sportipedia.Catalog.Athlete.Position.PositionReadModel
+  alias Sportipedia.Support.Commanded.TypeProvider
   @moduletag :integration
   describe "Command" do
     test "requires id" do
@@ -74,10 +76,27 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.ArchivePositionTest do
 
       # `position-archived` is a complete delete fact: the row is gone, the read
       # answers :not_found, and there is no unarchive to call — archiving a
-      # position is final. The event itself stays in the store as the audit trail.
+      # position is final.
       assert Repo.get(PositionReadModel, created.id) == nil
       assert {:error, :not_found} = Position.read_position(created.id)
       assert {:error, :not_found} = Position.read_position(slug)
+
+      # ...and the event stays in the event store: the delete removed the row,
+      # never the history. The aggregate's stream keeps both facts.
+      events =
+        Commanded.EventStore.stream_forward(
+          Sportipedia.Catalog,
+          "athlete/position/" <> created.id
+        )
+
+      assert Enum.map(events, & &1.event_type) == [
+               TypeProvider.to_string(%PositionCataloged{
+                 id: created.id,
+                 slug: slug,
+                 title: "To Archive"
+               }),
+               TypeProvider.to_string(%PositionArchived{id: created.id})
+             ]
     end
 
     test "archiving twice is answered by the position's own existence check" do

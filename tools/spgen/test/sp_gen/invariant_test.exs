@@ -35,7 +35,7 @@ defmodule SpGen.InvariantTest do
 
   describe "resolve/3 — unique-<field> (examples/unique-slug.md)" do
     test "the field is read from the rule's name" do
-      assert %{kind: :unique, field: "slug", module: "UniqueSlug", snake: "unique_slug"} =
+      assert [%{kind: :unique, field: "slug", module: "UniqueSlug", snake: "unique_slug"}] =
                Invariant.resolve(@slug, @fields, "apparatus")
     end
 
@@ -47,7 +47,7 @@ defmodule SpGen.InvariantTest do
 
   describe "resolve/3 — <domain_object>-exists (examples/domain-object-exists.md)" do
     test "existence is checked by id" do
-      assert %{kind: :exists, field: "id", module: "ApparatusExists"} =
+      assert [%{kind: :exists, field: "id", module: "ApparatusExists"}] =
                Invariant.resolve(@exists, @fields, "apparatus")
     end
 
@@ -66,11 +66,49 @@ defmodule SpGen.InvariantTest do
     test "naming a field becomes a scaffold the operator implements" do
       rule = %{
         "name" => "at-most-one-equipment",
-        "rule" => "A position can reference either apparatusId or instrumentId, not both"
+        "rule" => "A position can reference apparatusId, and nothing else of the sort"
       }
 
-      assert %{kind: :rule, field: "apparatusId", module: "AtMostOneEquipment"} =
+      assert [%{kind: :rule, field: "apparatusId", module: "AtMostOneEquipment"}] =
                Invariant.resolve(rule, ~w(id apparatusId instrumentId), "position")
+    end
+
+    test "naming several fields yields one descriptor per named field" do
+      # The model states a rule once, and the rule speaks for every field it
+      # names: `equipment-exists` guards the apparatus reference *and* the
+      # instrument reference. Yielding only the first named field leaves the
+      # other half of the rule unreachable for the generator, so a fresh build
+      # would silently drop it (a validator body can name per-field clauses the
+      # generator cannot know — the operator finishes them; the registration
+      # may never disappear).
+      rule = %{
+        "name" => "equipment-exists",
+        "rule" =>
+          "If apparatusId or instrumentId is provided, the referenced equipment must exist"
+      }
+
+      descriptors =
+        Invariant.resolve(rule, ~w(id title slug apparatusId instrumentId), "position")
+
+      assert Enum.map(descriptors, &{&1.kind, &1.field, &1.module}) == [
+               {:rule, "apparatusId", "EquipmentExists"},
+               {:rule, "instrumentId", "EquipmentExists"}
+             ]
+    end
+
+    test "a cross-field invariant registers on every field it merges" do
+      rule = %{
+        "name" => "at-most-one-equipment",
+        "rule" =>
+          "A position can reference at most one piece of equipment (either apparatusId or instrumentId, not both)"
+      }
+
+      descriptors = Invariant.resolve(rule, ~w(id apparatusId instrumentId), "position")
+
+      assert Enum.map(descriptors, &{&1.name, &1.field}) == [
+               {"at-most-one-equipment", "apparatusId"},
+               {"at-most-one-equipment", "instrumentId"}
+             ]
     end
 
     test "naming no field is no validator" do

@@ -33,6 +33,13 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.EditPositionTest do
       # answers — and it must not raise on the way to the database.
       assert id_rules_that_failed(%EditPosition{id: "not-a-uuid"}) == [:by]
     end
+
+    test "an id that is not in the catalog is unknown, never absent" do
+      # A well-formed address nobody holds is the existence rule's to answer:
+      # `[:by]`, which the client sees as 404 — not `[:presence]`, which would
+      # claim the caller never named a position at all.
+      assert id_rules_that_failed(%EditPosition{id: UUID.uuid4()}) == [:by]
+    end
   end
 
   describe "Policy" do
@@ -82,6 +89,19 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.EditPositionTest do
       assert read_back.description == "Unchanged description"
     end
 
+    test "stores a slug an edit supplies in mixed case in its canonical form" do
+      slug = "mixed-#{UUID.uuid4()}"
+
+      {:ok, created} =
+        Position.catalog_position(%{title: "Mixed Case", slug: "origin-#{UUID.uuid4()}"})
+
+      assert {:ok, edited} = Position.edit_position(%{id: created.id, slug: String.upcase(slug)})
+
+      assert edited.slug == slug
+      assert {:ok, read_back} = Position.read_position(slug)
+      assert read_back.id == created.id
+    end
+
     test "accepts the slug the position already owns" do
       slug = "keep-me-#{UUID.uuid4()}"
       {:ok, created} = Position.catalog_position(%{title: "Keep Me", slug: slug})
@@ -116,15 +136,91 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.EditPositionTest do
         })
 
       # The patch alone carries one reference; the stored position carries the
-      # other. Command-level Vex cannot see that, so the handler decides on the
-      # merged state — and the client is owed the same 422-shaped rejection.
+      # other. The rule is decided on the effective state — the patch merged over
+      # what the position holds — so the rejection is a validation failure, and
+      # the slug of the violation is the apparatus reference the store already
+      # holds.
       assert {:error, {:validation_failure, failures}} =
                Position.edit_position(%{id: created.id, instrumentId: instrument.id})
 
-      assert failures == %{instrumentId: [:at_most_one_equipment]}
+      assert failures == %{apparatusId: [:at_most_one_equipment]}
 
       assert {:ok, unchanged} = Position.read_position(created.id)
       assert unchanged.apparatusId == apparatus.id
+      assert unchanged.instrumentId == nil
+    end
+
+    test "rejects an apparatus reference that only the merged state makes ambiguous" do
+      {:ok, apparatus} = Apparatus.catalog_apparatus(%{title: "Pommel Horse", slug: "ph"})
+      {:ok, instrument} = Instrument.catalog_instrument(%{title: "Cymbal", slug: "cymbal"})
+
+      {:ok, created} =
+        Position.catalog_position(%{
+          title: "Crash",
+          slug: "crash-#{UUID.uuid4()}",
+          instrumentId: instrument.id
+        })
+
+      # The same rule seen from the other side: the patch carries the apparatus
+      # while the stored position carries the instrument.
+      assert {:error, {:validation_failure, failures}} =
+               Position.edit_position(%{id: created.id, apparatusId: apparatus.id})
+
+      assert failures == %{apparatusId: [:at_most_one_equipment]}
+    end
+
+    test "accepts a patch that re-supplies the reference the position already holds" do
+      {:ok, apparatus} = Apparatus.catalog_apparatus(%{title: "Beam", slug: "beam"})
+
+      {:ok, created} =
+        Position.catalog_position(%{
+          title: "Split",
+          slug: "split-#{UUID.uuid4()}",
+          apparatusId: apparatus.id
+        })
+
+      # Merging the patch over the stored state must not turn one reference into
+      # two: the effective state still holds the apparatus alone.
+      assert {:ok, edited} =
+               Position.edit_position(%{
+                 id: created.id,
+                 apparatusId: apparatus.id,
+                 title: "Split Scale"
+               })
+
+      assert edited.title == "Split Scale"
+      assert edited.apparatusId == apparatus.id
+      assert edited.instrumentId == nil
+
+      # The other side merges the same way.
+      {:ok, instrument} = Instrument.catalog_instrument(%{title: "Maracas", slug: "maracas"})
+
+      {:ok, with_instrument} =
+        Position.catalog_position(%{
+          title: "Roll",
+          slug: "roll-#{UUID.uuid4()}",
+          instrumentId: instrument.id
+        })
+
+      assert {:ok, edited} =
+               Position.edit_position(%{
+                 id: with_instrument.id,
+                 instrumentId: instrument.id,
+                 title: "Roll Up"
+               })
+
+      assert edited.title == "Roll Up"
+      assert edited.instrumentId == instrument.id
+      assert edited.apparatusId == nil
+    end
+
+    test "judges an unresolvable address by its existence rule alone" do
+      {:ok, instrument} = Instrument.catalog_instrument(%{title: "Triangle", slug: "triangle"})
+
+      # There is no stored position to merge with, and the address must not even
+      # be looked up: `Repo.get/2` raises on a value that cannot denote a row.
+      assert {:error, :not_found} =
+               Position.edit_position(%{id: "not-a-uuid", instrumentId: instrument.id})
     end
 
     test "rejects a patch that carries both equipment references" do
@@ -141,7 +237,37 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.EditPositionTest do
                  instrumentId: instrument.id
                })
 
-      assert failures == %{instrumentId: [:at_most_one_equipment]}
+      # The rule is one rule, so it speaks once, on the field the model names
+      # first: `at-most-one-equipment` is about the apparatus reference.
+      assert failures == %{apparatusId: [:at_most_one_equipment]}
+    end
+
+    test "rejects an equipment reference the patch re-supplies that is not in the catalog" do
+      # The same rule catalog-position enforces, seen from the patch: the
+      # instrument half answers on the field the patch carries, with the model's
+      # single equipment atom.
+      {:ok, created} =
+        Position.catalog_position(%{title: "Piano", slug: "piano-#{UUID.uuid4()}"})
+
+      assert {:error, {:validation_failure, failures}} =
+               Position.edit_position(%{id: created.id, instrumentId: UUID.uuid4()})
+
+      assert failures == %{instrumentId: [:equipment_not_found]}
+    end
+
+    test "rejects an apparatus slug where an apparatus id belongs on a patch" do
+      # A legal reference is an id: the existence rule guards the value before
+      # asking the equipment port, so the slug answers 422 instead of ever
+      # reaching the reference column.
+      {:ok, apparatus} = Apparatus.catalog_apparatus(%{title: "Parallel Bars", slug: "pb-ref"})
+
+      {:ok, created} =
+        Position.catalog_position(%{title: "Bar Hold", slug: "bar-hold-#{UUID.uuid4()}"})
+
+      assert {:error, {:validation_failure, failures}} =
+               Position.edit_position(%{id: created.id, apparatusId: apparatus.slug})
+
+      assert failures == %{apparatusId: [:equipment_not_found]}
     end
 
     test "does not re-validate an equipment reference the patch does not carry" do
@@ -172,12 +298,41 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.EditPositionTest do
     test "rejects editing a position that is not there" do
       assert {:error, :not_found} = Position.edit_position(%{id: UUID.uuid4(), title: "Nobody"})
     end
+
+    test "rejects editing a position that has left the catalog" do
+      {:ok, created} =
+        Position.catalog_position(%{title: "Lunge Position", slug: "lunge-#{UUID.uuid4()}"})
+
+      :ok = Position.archive_position(created.id)
+
+      # An archive is a delete: the position is not in a special state an edit
+      # could still reach, so the address resolves to nothing.
+      assert {:error, :not_found} = Position.edit_position(%{id: created.id, title: "Renamed"})
+    end
   end
 
   describe "Command Handler" do
+    test "judges the equipment rule on the merged state, inside the aggregate stream" do
+      # `at-most-one-equipment` is an aggregate invariant: the handler decides it
+      # over the patch merged onto the state the events built. Execution is
+      # serialized per stream, so no second writer can slip the other reference
+      # in between — and nothing here reads the projection.
+      stored = %PositionAggregate{
+        id: UUID.uuid4(),
+        title: "Support",
+        slug: "support",
+        apparatusId: UUID.uuid4()
+      }
+
+      cmd = %EditPosition{id: stored.id, instrumentId: UUID.uuid4()}
+
+      assert {:error, {:validation_failure, failures}} =
+               EditPositionHandler.handle(stored, cmd)
+
+      assert failures == %{apparatusId: [:at_most_one_equipment]}
+    end
+
     test "handles EditPosition command and returns PositionEdited event" do
-      # A patch that carries only one side of the equipment pair: a command with
-      # both references violates at-most-one-equipment and the handler rejects it.
       cmd = %EditPosition{
         id: UUID.uuid4(),
         apparatusId: UUID.uuid4(),
@@ -217,18 +372,15 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.EditPositionTest do
       assert event.instrumentId == nil
     end
 
-    test "rejects a patch that only the merged state makes ambiguous" do
-      stored = %PositionAggregate{
-        id: UUID.uuid4(),
-        title: "Support",
-        slug: "support",
-        apparatusId: UUID.uuid4(),
-        instrumentId: nil
-      }
+    test "emits the slug it is given in its canonical form" do
+      stored = %PositionAggregate{id: UUID.uuid4(), title: "Old Title", slug: "old-title"}
+      cmd = %EditPosition{id: stored.id, slug: "MiXeD-Case"}
 
-      cmd = %EditPosition{id: stored.id, instrumentId: UUID.uuid4()}
+      event = EditPositionHandler.handle(stored, cmd)
 
-      assert EditPositionHandler.handle(stored, cmd) == {:error, :at_most_one_equipment}
+      # The slug is stored lowercase, so the fact carries the canonical form;
+      # `unique-slug` compares against it the same way.
+      assert PositionEdited.get_changes(event) == %{slug: "mixed-case"}
     end
   end
 

@@ -36,9 +36,13 @@ defmodule SpGen.Templates do
   @doc """
   The `validates` line for one field, merging presence with validators.
 
-  Validators attached to the field add `by: [function: &Module.validate/2]`;
-  `:unique` validators also add `allow_nil: true` (a partial update may omit
-  the field), `:exists` validators do not.
+  Validators attached to the field add `by: [function: &Module.validate/2]`
+  with the skip option the pattern demands: `:unique` adds `allow_nil: true`
+  (a partial update may omit the field), `:exists` adds `allow_blank: true`
+  (the by-id lookup must never see an absent or empty id — see
+  `validates_by_pair/2`), and a `:rule` pair on a field the model does not
+  require adds `allow_nil: true` — a generated rule body reads the value, and
+  the scaffold raises on any value at all, nil included.
 
   Two validators on one field therefore produce **two `by:` pairs in one call**:
 
@@ -57,7 +61,7 @@ defmodule SpGen.Templates do
   def validates_line(field, validators) do
     parts =
       if(validates_presence?(field), do: ["presence: true"], else: []) ++
-        Enum.map(validators_for(field, validators), &validates_by_pair/1)
+        Enum.map(validators_for(field, validators), &validates_by_pair(&1, field))
 
     case parts do
       [] -> nil
@@ -73,11 +77,36 @@ defmodule SpGen.Templates do
 
   @doc """
   The `by:` pair for one validator — the exact text a `validates` line needs.
-  `allow_nil` belongs inside the pair: Vex skips the validator for nil.
+  The skip option belongs inside the pair: Vex does not run the validator for
+  a value the option covers (`Vex.Skipping.skip?/2`).
+
+  * `:unique` → `allow_nil: true`: a partial update may omit the field, and an
+    omitted value claims nothing on uniqueness.
+  * `:exists` → `allow_blank: true`: the check is a round trip on the primary
+    key and `Repo.get/2` raises on nil and on `""` — a 500 for a request the
+    command could answer. `allow_blank` covers absent *and* empty
+    (`Vex.Blank.blank?/1`); `allow_nil` alone would still run the lookup on
+    `""`, and a `:not_found` for a blank id is collapsed by the
+    `ErrorClassifier` into a whole-command 404 instead of the 422 `presence`
+    gives it.
+  * `:rule` on a field the model does not require → `allow_nil: true`: the
+    scaffold raises its `TODO:` on every value — nil included — and a finished
+    rule body may `String.downcase` the value before looking at the context,
+    which raises the same way. An absent optional field claims nothing. An
+    operator who finishes the body into a pure cross-field check — one that
+    ignores the value it is called with — may drop the skip option again; the
+    needle (`validates_needle/1`) does not read it.
+  * `:rule` on a required field → none: `enforce: true` means the struct
+    cannot be built without a value here, so there is no nil to skip.
   """
-  def validates_by_pair(%{kind: kind, module: module}) do
+  def validates_by_pair(%{kind: kind, module: module}, field) do
     base = "by: [function: &#{module}.validate/2"
-    if kind == :unique, do: base <> ", allow_nil: true]", else: base <> "]"
+
+    case kind do
+      :unique -> base <> ", allow_nil: true]"
+      :exists -> base <> ", allow_blank: true]"
+      :rule -> if(field.required, do: base <> "]", else: base <> ", allow_nil: true]")
+    end
   end
 
   @doc """

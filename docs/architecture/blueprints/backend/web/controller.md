@@ -67,9 +67,9 @@ equipment controllers and call it the standard.
 
 #### DO INSTEAD
 
-Know that this blueprint and `SpGen.Blueprint.Controller` answer `ok:` (`200`)
-for a create, while `catalog/equipment/apparatus` and `instrument` answer `201`.
-The divergence is real and undecided: either the blueprint moves to `201` (and
-the generator with it) or the legacy controllers move to `200`. Until then, a
-generated controller and its generated test agree with each other, and both
-disagree with the oldest code in the tree.
+`200` is the standard: this blueprint and `SpGen.Blueprint.Controller` answer
+`ok:` (`200`) for a create, and a generated controller and its generated test
+agree on it. `catalog/equipment/apparatus` and `instrument` answer `201` —
+legacy, decided against, not a pattern to copy or to re-litigate per slice;
+moving them is a
+[follow-up](../../../../follow-ups.md#equipment-create-endpoints-move-to-200).

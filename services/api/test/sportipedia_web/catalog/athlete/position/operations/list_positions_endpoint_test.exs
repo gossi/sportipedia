@@ -45,6 +45,18 @@ defmodule SportipediaWeb.Catalog.Athlete.Position.ListPositionsEndpointTest do
       assert Enum.sort(titles) == ["Ready Stance", "Standing Stance"]
     end
 
+    test "answers an empty collection when no title matches the filter", %{conn: conn} do
+      seed([{"Handstand", "hs"}])
+
+      body =
+        conn
+        |> api_conn()
+        |> get("/catalog/athlete/positions?filter[title]=stance")
+        |> json_response(200)
+
+      assert body["data"] == []
+    end
+
     test "sorts by a field, ascending or descending", %{conn: conn} do
       seed([{"Handstand", "hs"}, {"L-Sit", "ls"}, {"Mount", "mt"}])
 
@@ -75,6 +87,20 @@ defmodule SportipediaWeb.Catalog.Athlete.Position.ListPositionsEndpointTest do
         conn
         |> api_conn()
         |> get("/catalog/athlete/positions?sort=apparatusId")
+      end
+    end
+
+    test "refuses to sort by id, offering only title and slug", %{conn: conn} do
+      # The read orders by the primary key internally to keep pages stable, but it
+      # does not offer the key as a sort: the model's constraint exemplifies title,
+      # and the feature decision admits only `title` and `slug` into the whitelist.
+      # A name outside it is refused, not silently served.
+      for sort <- ["id", "-id"] do
+        assert_raise JSONAPI.Exceptions.InvalidQuery, fn ->
+          conn
+          |> api_conn()
+          |> get("/catalog/athlete/positions?sort=#{sort}")
+        end
       end
     end
 
@@ -148,25 +174,24 @@ defmodule SportipediaWeb.Catalog.Athlete.Position.ListPositionsEndpointTest do
         })
       end
 
-      first =
+      # The scenario says page 2 of size 10 returns positions 11-20. "11-20"
+      # is only meaningful in a known order, so the pages are taken sorted by
+      # slug: the slugs are zero-padded, and ordered by them the catalog reads
+      # 1, 2, ... 25.
+      page = fn number ->
         conn
         |> api_conn()
-        |> get("/catalog/athlete/positions?page[number]=1&page[size]=10")
+        |> get("/catalog/athlete/positions?page[number]=#{number}&page[size]=10&sort=slug")
         |> json_response(200)
+      end
 
-      second =
-        build_conn()
-        |> api_conn()
-        |> get("/catalog/athlete/positions?page[number]=2&page[size]=10")
-        |> json_response(200)
+      assert slug_stems(page.(1)) == stems(1..10)
+      assert slug_stems(page.(2)) == stems(11..20)
 
-      assert length(first["data"]) == 10
-      assert length(second["data"]) == 10
-
-      # Two pages of one stable order never show the same position twice.
-      first_ids = Enum.map(first["data"], & &1["id"])
-      second_ids = Enum.map(second["data"], & &1["id"])
-      assert MapSet.disjoint?(MapSet.new(first_ids), MapSet.new(second_ids))
+      # The 25 rows do not divide by 10: the last page holds what remains.
+      last = page.(3)
+      assert length(last["data"]) == 5
+      assert slug_stems(last) == stems(21..25)
     end
   end
 
@@ -177,6 +202,16 @@ defmodule SportipediaWeb.Catalog.Athlete.Position.ListPositionsEndpointTest do
   end
 
   defp titles_in_document(%{"data" => data}), do: Enum.map(data, & &1["attributes"]["title"])
+
+  defp slug_stems(%{"data" => data}) do
+    Enum.map(data, fn resource -> String.slice(resource["attributes"]["slug"], 0, 8) end)
+  end
+
+  defp stems(range) do
+    Enum.map(range, fn index ->
+      "paged-#{String.pad_leading("#{index}", 2, "0")}"
+    end)
+  end
 
   defp position_advertised_fields do
     ListPositionsQueryParams.schema().properties.fields.properties.position.enum
