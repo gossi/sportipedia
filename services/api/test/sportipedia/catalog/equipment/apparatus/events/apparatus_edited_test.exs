@@ -1,6 +1,7 @@
 defmodule Sportipedia.Catalog.Equipment.Apparatus.Operation.ApparatusEditedTest do
   use Sportipedia.CatalogTestCase
 
+  alias Sportipedia.Catalog.Equipment.Apparatus.Event.ApparatusCataloged
   alias Sportipedia.Catalog.Equipment.Apparatus.Event.ApparatusEdited
   alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusAggregate
   alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusReadModel
