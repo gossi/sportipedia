@@ -1,0 +1,21 @@
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: widget-archived
+description: "A widget was archived"
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: widget
+data:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier"
+    archivedAt:
+      type: string
+      format: date-time
+      description: "When the widget was archived"
+  required:
+    - id

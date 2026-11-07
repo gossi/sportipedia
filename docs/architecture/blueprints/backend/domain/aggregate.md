@@ -1,69 +1,37 @@
+---
+generator: "mix sp.gen.aggregate <element>"
+blueprints:
+  - SpGen.Blueprint.Aggregate
+  - SpGen.Blueprint.AggregateTest
+module: "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Aggregate"
+writes: [module, event test]
+---
+
 # Aggregate
 
-| Attribute | Value |
-| --- | --- |
-| Schema | [Core](../../../../schemas/core/v1.yaml) |
-| File Path | `/services/api/lib/sportipedia/<_subdomain>/<_composite>/<domain_object>/aggregate.ex` |
-| Module Name | `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Aggregate` |
-| Test | See [Operation Test](./operation-test.md) |
+The stream of events for one domain object, folded into state.
 
 ## Prerequisite
 
 - The [Domain Model](../../../../domain-model/README.md) contains the aggregate
+  and the events that change it.
 
-## Implementation
+The generator accepts an `aggregate`, `command` or `event` element and always
+resolves the aggregate's own element, so `mix sp.gen.aggregate position` and
+`mix sp.gen.aggregate catalog-position` write the same file.
 
-- Use `TypedStruct` (not `defstruct`) for the aggregate struct
+## What the generator does
 
-### Evolve State
+- `typedstruct` state from the aggregate's `state`.
+- One `apply/2` clause per event of the constituent, pattern-matching aggregate
+  and event: a create rebuilds the struct from the event's fields, an update
+  merges `Event.get_changes/1`, a delete returns `nil`.
+- The `@moduledoc`, which stays a `TODO:` marker until the model describes the
+  aggregate.
 
-- One `apply/2` function clause per event type
-  - Pattern match both aggregate and event in the function head
-- Return a new aggregate struct with updated fields
-- For events resulting in deleting the aggregate, return `nil`
+## Tests
 
-### Documentation
-
-Derive all documentation from the [Domain Model](../../../../domain-model/README.md):
-
-- **`@moduledoc`**: Describe the aggregate's purpose in the bounded context.
-
-Example:
-
-```elixir
-@moduledoc """
-Aggregate representing a sport in the catalog.
-"""
-```
-
-### Implementation Template
-
-```elixir
-defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Aggregate do
-  @moduledoc """
-  Aggregate representing a <domain_object> in the <bounded_context>.
-  """
-
-  use TypedStruct
-
-  typedstruct do
-    field :<field>, type
-  end
-
-  def apply(%__MODULE__{} = aggregate, %<Event>{} = event) do
-    # apply event to aggregate
-  end
-end
-```
-
-## Test
-
-Tests `Aggregate.apply/2` for the specific event.
-
-```elixir
-test "applies <-event> to aggregate state" do
-  event = %<Event>{...}
-  result = Aggregate.apply(%Aggregate{}, event)
-  assert result.field == value
-end
-```
+The aggregate's `describe "Aggregate"` lives in the
+[event test](./event-test.md), one `applies <event> to aggregate state` case per
+event: create starts from an empty struct, update seeds the id, delete asserts
+`nil`. Field-by-field assertions follow the event's data.

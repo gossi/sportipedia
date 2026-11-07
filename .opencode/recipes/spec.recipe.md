@@ -1,101 +1,60 @@
 ---
 $schema: ./recipe.schema.yaml
 name: spec
-description: Build everything described in a spec document — parse spec, loop over operations, build each with full domain-feature, commit after each
+description: Build everything described in a spec document — one spec is one aggregate, so it is one feature slice
 parameters:
   spec_path:
     type: string
     required: true
-    description: "Path to the spec markdown file (e.g., docs/specs/catalog/equipment/spec-manage-apparatuses-19-05-2026.md)"
+    description: "Path to the spec markdown file (e.g., docs/specs/catalog/athlete/spec-position-05-11-2026.md)"
 steps:
-  - id: parse
-    agent: product-specialist
-    skill: parse-spec
-    with: { spec_path: ${parameters.spec_path} }
-
-  - id: build-loop
-    loop:
-      over: ${steps.parse.result.operations}
-      steps:
-        - recipe: domain-feature
-          with: { operation: ${item} }
+  - id: build
+    recipe: domain-feature
+    with:
+      spec_path: "${parameters.spec_path}"
 approval: auto
 ---
 
 # Build Spec Recipe
 
-Build a complete spec: parse the document, extract all operations, and build
-each one using the `domain-feature` recipe.
+Build the complete contents of a spec document.
 
 ## Structure
 
-1. **Parse** — The Product Owner subagent loads the `parse-spec` skill, reads
-   the spec, and returns an ordered list of operation names (commands first in
-   spec order, then queries in spec order).
+A spec describes **one aggregate**. Its `## Domain Model` section lists the
+commands, queries, events and read model of a single constituent, so the whole
+document is one feature slice and the recipe is a single delegation to
+`domain-feature`.
 
-2. **Loop** — For each operation, the builder runs the `domain-feature`
-   sub-recipe (find → build-operation → build-endpoint → review-loop).
+There is no fan-out here, and no per-aggregate loop. Parallelism lives inside the
+slice — one backend-engineer per operation, concurrent — not between aggregates,
+because a spec has only one.
 
-## Builder Execution Rules
+## Resolution
 
-### Spec Context Injection
+`domain-feature` resolves its own identity: the design step lints the model, reads
+the spec, and groups every listed operation by `scope.aggregate` (queries by
+`readModel`), so the aggregate name is derived rather than assumed from the spec's
+frontmatter. Pass `aggregate` and `composite` explicitly only to override that.
 
-When delegating any step of `domain-feature` to a subagent, the builder MUST
-include the following additional context in the prompt:
+## Precondition
 
-- The full spec file content (read it after the `parse` step)
-- The PO task_id from the `parse` step, with instruction: "If you encounter
-  ambiguous business logic (e.g., 'implement logic here' in command handlers),
-  output `QUESTION: <your question>` and stop. The builder will route your
-  question to the Product Owner for clarification."
+The ESDM domain model files referenced in the spec's `## Domain Model` section must
+already exist and be populated. Domain modelling is complete before this recipe
+runs. The design step verifies it with `esdm lint` and raises `MODEL GAP:` where the
+model and the spec disagree; that is a stop, not a warning.
 
-### PO Question Round-Trip
+## Reporting
 
-If a subagent (typically the backend-engineer inside `domain-feature`) returns
-output containing `QUESTION:`:
-
-1. Extract the question text
-2. Resume the PO subagent using its `task_id`:
-   - Prompt: "The backend-engineer is implementing `{operation}` and asks: {question}. Answer based on the spec document."
-3. The PO returns its answer
-4. Resume the backend-engineer (spawn a fresh session or resume the task_id
-   if the mechanism supports it) with:
-   - The original operation context
-   - The PO's answer injected
-   - "The Product Owner says: {answer}. Continue with the implementation."
-5. Maximum one round-trip per iteration. If the backend-engineer outputs another
-   QUESTION after receiving the answer, abort that iteration (see below).
-
-### Git Commit After Each Iteration
-
-After each `domain-feature` sub-recipe completes (regardless of success or
-failure), run git commands directly:
+When the slice returns, report to the user:
 
 ```
-git add -A
-git commit -m "Implement <operation>"
+Build complete for {spec_path}
+  aggregate   {name} — {n} operations
+  design      {operations} · {deviations registered} · {MODEL GAPs raised}
+  review      {pass | warn | fail}
+  commit      {hash}
 ```
 
-The builder runs this directly — it is orchestration, not implementation code.
-Do not delegate to a subagent for this.
-
-### Error Handling
-
-- If an iteration succeeds: commit normally, proceed to next operation.
-- If an iteration fails (domain-feature errors out, review fails after 3
-  attempts, or a second QUESTION round-trip is needed): git-add and commit the
-  partial state as-is, then continue to the next operation.
-
-After the loop completes, report a summary to the user:
-
-```
-Build complete for {spec_path}:
-  ✓ Succeeded: catalog-apparatus, edit-apparatus, archive-apparatus
-  ✗ Failed: list-apparatuses, read-apparatus
-```
-
-### Precondition
-
-The ESDM domain model files referenced in the spec's `## Domain Model` section
-must already exist and be populated. The domain modelling phase is assumed
-complete before this recipe runs.
+On `fail`, report which work package it came from and what `must_change` is still
+open — do not retry the whole slice.

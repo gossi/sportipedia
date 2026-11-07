@@ -1,21 +1,43 @@
+---
+generator: "mix sp.gen.bruno <operation>"
+blueprints:
+  - SpGen.Blueprint.Bruno
+  - SpGen.Blueprint.BrunoFolder
+writes: [bruno]
+---
+
 # Bruno
 
-Document endpoints in bruno for direct usage.
+Runnable request documentation for one endpoint, in the Bruno collection at the
+repo root. Not a test: a thing you can click while developing the operation.
 
-File Location:
+## Prerequisite
 
-- Command: `/bruno/<Subdomain>/<Composite>/<Constituent>/<-command>.yml`
-- Query: `/bruno/<Subdomain>/<Composite>/<Constituent>/<-query>.yml`
+- The operation exists in the [Domain Model](../../../../domain-model/README.md);
+  the controller and route are generated, so the path and verb are real.
 
-Follow [bruno documentation](https://docs.usebruno.com/llms.txt) for storing
-them.
+## What the generator does
 
-Sorting the endpoints:
+One file per operation at
+`bruno/<Subdomain>/<Composite>/<Constituent>/<Operation Title>.yml`, title-cased
+like the rest of the collection, plus the constituent's `folder.yml` beside the
+first request it holds.
 
-1. Commands
-2. Queries
+- Verb by element kind: POST for a command, GET for a query — the same rule the
+  controller follows.
+- URL against `{{apiUrl}}`; collection variables live in `bruno/environments/`.
+- A JSON:API body mirroring the operation's data: `create` carries attributes
+  only (the id is generated), `update` and `delete` address the row by `id`.
+- `examples:` generated from the domain model's feature scenarios.
+- `seq:` orders commands before queries, so assignment order matches the run
+  order — run the command generators first.
+- Docs artifacts are **create-only**: an existing `.yml` is never rewritten, so
+  hand-tuned headers, saved responses and extra examples survive every run. An
+  API change is therefore not propagated — when the operation's shape changes,
+  update the file (or delete it and regenerate). See
+  [Ownership](../../README.md#ownership).
 
-Include:
+## Tests
 
-- variables
-- examples
+None. Bruno files are documentation, not code under test — the endpoint they
+describe is tested in the [endpoint test](./endpoint-test.md).

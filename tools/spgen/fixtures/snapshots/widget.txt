@@ -1,0 +1,2064 @@
+== bruno/Catalog/Equipment/Widget/Create Widget.yml ==
+info:
+  name: Create Widget
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: "{{apiUrl}}/catalog/equipment/widgets/create-widget"
+  body:
+    type: json
+    data: |-
+      {
+        "data": {
+          "type": "widget",
+          "attributes": {
+            "title": "Pommel Horse",
+            "slug": "pommel-horse",
+            "coachId": "sample-coachId",
+            "description": "sample-description",
+            "label": "Pommel",
+            "teamId": "sample-teamId"
+          }
+        }
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: Create Pommel Horse
+    request:
+      url: "{{apiUrl}}/catalog/equipment/widgets/create-widget"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "data": {
+              "type": "widget",
+              "attributes": {
+                "title": "Pommel Horse",
+                "slug": "pommel-horse",
+                "coachId": "sample-coachId",
+                "description": "sample-description",
+                "label": "Pommel",
+                "teamId": "sample-teamId"
+              }
+            }
+          }
+
+== bruno/Catalog/Equipment/Widget/List Widgets.yml ==
+info:
+  name: List Widgets
+  type: http
+  seq: 3
+
+http:
+  method: GET
+  url: "{{apiUrl}}/catalog/equipment/widgets"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: List Widgets
+    request:
+      url: "{{apiUrl}}/catalog/equipment/widgets"
+      method: GET
+
+== bruno/Catalog/Equipment/Widget/Read Widget.yml ==
+info:
+  name: Read Widget
+  type: http
+  seq: 2
+
+http:
+  method: GET
+  url: "{{apiUrl}}/catalog/equipment/widgets/:id_or_slug"
+  params:
+    - name: id_or_slug
+      value: d290f1ee-6c54-4b01-90e6-d701748f0851
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: Read Widget
+    request:
+      url: "{{apiUrl}}/catalog/equipment/widgets/d290f1ee-6c54-4b01-90e6-d701748f0851"
+      method: GET
+
+== bruno/Catalog/Equipment/Widget/folder.yml ==
+info:
+  name: Widget
+  type: folder
+  seq: 1
+
+request:
+  auth: inherit
+
+== services/api/lib/sportipedia/catalog/application.ex ==
+defmodule Sportipedia.Catalog do
+  use Commanded.Application, otp_app: :sportipedia
+  router Sportipedia.Catalog.Equipment.Router
+end
+
+== services/api/lib/sportipedia/catalog/equipment/widget/aggregate.ex ==
+defmodule Sportipedia.Catalog.Equipment.Widget.WidgetAggregate do
+  @moduledoc """
+  A piece of gym apparatus a coach catalogs for later reference
+  """
+  use TypedStruct
+  alias Sportipedia.Catalog.Equipment.Widget.Event.WidgetArchived
+  alias Sportipedia.Catalog.Equipment.Widget.Event.WidgetCreated
+  alias Sportipedia.Catalog.Equipment.Widget.Event.WidgetEdited
+  alias Sportipedia.Catalog.Equipment.Widget.Event.WidgetRelabelled
+  alias Sportipedia.Catalog.Equipment.Widget.Event.WidgetRenameLogged
+
+  typedstruct do
+    field :id, String.t()
+    field :title, String.t()
+    field :slug, String.t()
+    field :archivedAt, String.t()
+    field :coachId, String.t()
+    field :description, String.t()
+    field :label, String.t()
+    field :teamId, String.t()
+  end
+
+  def apply(%__MODULE__{} = _aggregate, %WidgetArchived{} = _event) do
+    nil
+  end
+
+  def apply(%__MODULE__{} = _aggregate, %WidgetCreated{} = event) do
+    %__MODULE__{
+      id: event.id,
+      title: event.title,
+      slug: event.slug,
+      archivedAt: event.archivedAt,
+      coachId: event.coachId,
+      description: event.description,
+      label: event.label,
+      teamId: event.teamId
+    }
+  end
+
+  def apply(%__MODULE__{} = aggregate, %WidgetEdited{} = event) do
+    changes = WidgetEdited.get_changes(event)
+
+    aggregate
+    |> Map.merge(changes)
+  end
+
+  def apply(%__MODULE__{} = aggregate, %WidgetRelabelled{} = event) do
+    changes = WidgetRelabelled.get_changes(event)
+
+    aggregate
+    |> Map.merge(changes)
+  end
+
+  def apply(%__MODULE__{} = _aggregate, %WidgetRenameLogged{} = event) do
+    %__MODULE__{
+      id: event.id,
+      title: event.title,
+      slug: event.slug,
+      archivedAt: event.archivedAt,
+      coachId: event.coachId,
+      description: event.description,
+      label: event.label,
+      teamId: event.teamId
+    }
+  end
+end
+
+== services/api/lib/sportipedia/catalog/equipment/widget/events/widget_archived.ex ==
+defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetArchived do
+  @moduledoc """
+  A widget was archived
+  """
+  use TypedStruct
+  use ExConstructor
+  @derive Jason.Encoder
+  typedstruct do
+    field :id, String.t(), enforce: true
+    field :archivedAt, String.t()
+  end
+end
+
+== services/api/lib/sportipedia/catalog/equipment/widget/events/widget_created.ex ==
+defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetCreated do
+  @moduledoc """
+  A widget was cataloged
+  """
+  use TypedStruct
+  use ExConstructor
+  @derive Jason.Encoder
+  typedstruct do
+    field :id, String.t(), enforce: true
+    field :title, String.t(), enforce: true
+    field :slug, String.t(), enforce: true
+    field :coachId, String.t()
+    field :description, String.t()
+    field :label, String.t()
+    field :teamId, String.t()
+  end
+end
+
+== services/api/lib/sportipedia/catalog/equipment/widget/events/widget_edited.ex ==
+defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetEdited do
+  @moduledoc """
+  A widget was edited
+  """
+  use TypedStruct
+  use ExConstructor
+  @derive Jason.Encoder
+  typedstruct do
+    field :id, String.t(), enforce: true
+    field :description, String.t()
+    field :label, String.t()
+    field :slug, String.t()
+    field :title, String.t()
+  end
+
+  @doc """
+  Returns a map of only the non-nil changed fields (excluding id).
+  """
+  @spec get_changes(t()) :: map()
+  def get_changes(%__MODULE__{} = event) do
+    event
+    |> Map.from_struct()
+    |> Map.drop([:id])
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Map.new()
+  end
+end
+
+== services/api/lib/sportipedia/catalog/equipment/widget/events/widget_relabelled.ex ==
+defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetRelabelled do
+  @moduledoc """
+  A widget's label was renamed
+  """
+  use TypedStruct
+  use ExConstructor
+  @derive Jason.Encoder
+  typedstruct do
+    field :id, String.t(), enforce: true
+    field :label, String.t(), enforce: true
+  end
+
+  @doc """
+  Returns a map of only the non-nil changed fields (excluding id).
+  """
+  @spec get_changes(t()) :: map()
+  def get_changes(%__MODULE__{} = event) do
+    event
+    |> Map.from_struct()
+    |> Map.drop([:id])
+    |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+    |> Map.new()
+  end
+end
+
+== services/api/lib/sportipedia/catalog/equipment/widget/events/widget_rename_logged.ex ==
+defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetRenameLogged do
+  @moduledoc """
+  The rename of a widget was written to the audit trail
+  """
+  use TypedStruct
+  use ExConstructor
+  @derive Jason.Encoder
+  typedstruct do
+    field :id, String.t(), enforce: true
+  end
+end
+
+== services/api/lib/sportipedia/catalog/equipment/widget/internal.ex ==
+defmodule Sportipedia.Catalog.Equipment.Widget.WidgetInternal do
+  @moduledoc """
+  Internal API for querying widget read models within the bounded context.
+  """
+  alias Sportipedia.Catalog.Equipment.Widget.Queries.WidgetBySlug
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetReadModel
+  alias Sportipedia.Catalog.Repo
+
+  @doc """
+  Fetches a widget by its ID. Returns nil if not found.
+  """
+  @spec widget_by_id(String.t()) :: WidgetReadModel.t() | nil
+  def widget_by_id(id) do
+    Repo.get(WidgetReadModel, id)
+  end
+
+  @doc """
+  Fetches a widget by its slug. Returns nil if not found.
+  """
+  @spec widget_by_slug(String.t()) :: WidgetReadModel.t() | nil
+  def widget_by_slug(slug) do
+    slug
+    |> String.downcase()
+    |> WidgetBySlug.new()
+    |> Repo.one()
+  end
+end
+
+== services/api/lib/sportipedia/catalog/equipment/widget/operations/archive_widget/command.ex ==
+defmodule Sportipedia.Catalog.Equipment.Widget.Command.ArchiveWidget do
+  @moduledoc """
+  Archives a widget that is no longer used
+  """
+  use TypedStruct
+  use ExConstructor
+  use Vex.Struct
+  alias Sportipedia.Catalog.Equipment.Widget.Validators.WidgetExists
+  # `allow_blank` keeps the existence check off an id the caller never sent:
+  # an absent address is `presence`'s to reject, and a `:not_found` for it would
+  # turn the 422 the client can act on into a 404 for a resource nobody named.
+  validates :id, presence: true, by: [function: &WidgetExists.validate/2, allow_blank: true]
+
+  typedstruct do
+    field :id, String.t(), enforce: true
+  end
+end
+
+== services/api/lib/sportipedia/catalog/equipment/widget/operations/archive_widget/handler.ex ==
+defmodule Sportipedia.Catalog.Equipment.Widget.Command.ArchiveWidgetHandler do
+  @moduledoc """
+  Handles the ArchiveWidget command.
+  """
+  alias Sportipedia.Catalog.Equipment.Widget.Command.ArchiveWidget
+  alias Sportipedia.Catalog.Equipment.Widget.Event.WidgetArchived
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetAggregate
+  @behaviour Commanded.Commands.Handler
+  @doc """
+  Handles the ArchiveWidget command and returns WidgetArchived event(s).
+  """
+  @spec handle(WidgetAggregate.t(), ArchiveWidget.t()) ::
+          WidgetArchived.t() | [WidgetArchived.t()]
+  def handle(%WidgetAggregate{} = aggregate, %ArchiveWidget{} = cmd) do
+    # implement logic here
+    # return events
+  end
+end
+
+== services/api/lib/sportipedia/catalog/equipment/widget/operations/create_widget/command.ex ==
+defmodule Sportipedia.Catalog.Equipment.Widget.Command.CreateWidget do
+  @moduledoc """
+  Catalogs a new widget in the equipment catalog
+  """
+  use TypedStruct
+  use ExConstructor
+  use Vex.Struct
+  alias Sportipedia.Catalog.Equipment.Widget.Validators.AtMostOneOwner
+  alias Sportipedia.Catalog.Equipment.Widget.Validators.UniqueSlug
+  validates :title, presence: true
+  validates :slug, presence: true, by: [function: &UniqueSlug.validate/2, allow_nil: true]
+  validates :coachId, by: [function: &AtMostOneOwner.validate/2, allow_nil: true]
+  validates :teamId, by: [function: &AtMostOneOwner.validate/2, allow_nil: true]
+
+  typedstruct do
+    field :id, String.t(), enforce: true
+    field :title, String.t(), enforce: true
+    field :slug, String.t(), enforce: true
+    field :coachId, String.t()
+    field :description, String.t()
+    field :label, String.t()
+    field :teamId, String.t()
+  end
+end
+
+== services/api/lib/sportipedia/catalog/equipment/widget/operations/create_widget/handler.ex ==
+defmodule Sportipedia.Catalog.Equipment.Widget.Command.CreateWidgetHandler do
+  @moduledoc """
+  Handles the CreateWidget command.
+  """
+  alias Sportipedia.Catalog.Equipment.Widget.Command.CreateWidget
+  alias Sportipedia.Catalog.Equipment.Widget.Event.WidgetCreated
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetAggregate
+  @behaviour Commanded.Commands.Handler
+  @doc """
+  Handles the CreateWidget command and returns WidgetCreated event(s).
+  """
+  @spec handle(WidgetAggregate.t(), CreateWidget.t()) :: WidgetCreated.t() | [WidgetCreated.t()]
+  def handle(%WidgetAggregate{} = aggregate, %CreateWidget{} = cmd) do
+    # implement logic here
+    # return events
+  end
+end
+
+== services/api/lib/sportipedia/catalog/equipment/widget/operations/edit_widget/command.ex ==
+defmodule Sportipedia.Catalog.Equipment.Widget.Command.EditWidget do
+  @moduledoc """
+  Edits an existing widget
+  """
+  use TypedStruct
+  use ExConstructor
+  use Vex.Struct
+  alias Sportipedia.Catalog.Equipment.Widget.Validators.AtMostOneOwner
+  alias Sportipedia.Catalog.Equipment.Widget.Validators.UniqueSlug
+  alias Sportipedia.Catalog.Equipment.Widget.Validators.WidgetExists
+  # `allow_blank` keeps the existence check off an id the caller never sent:
+  # an absent address is `presence`'s to reject, and a `:not_found` for it would
+  # turn the 422 the client can act on into a 404 for a resource nobody named.
+  validates :id, presence: true, by: [function: &WidgetExists.validate/2, allow_blank: true]
+  validates :coachId, by: [function: &AtMostOneOwner.validate/2, allow_nil: true]
+  validates :slug, by: [function: &UniqueSlug.validate/2, allow_nil: true]
+  validates :teamId, by: [function: &AtMostOneOwner.validate/2, allow_nil: true]
+
+  typedstruct do
+    field :id, String.t(), enforce: true
+    field :coachId, String.t()
+    field :description, String.t()
+    field :label, String.t()
+    field :slug, String.t()
+    field :teamId, String.t()
+    field :title, String.t()
+  end
+end
+
+== services/api/lib/sportipedia/catalog/equipment/widget/operations/edit_widget/handler.ex ==
+defmodule Sportipedia.Catalog.Equipment.Widget.Command.EditWidgetHandler do
+  @moduledoc """
+  Handles the EditWidget command.
+  """
+  alias Sportipedia.Catalog.Equipment.Widget.Command.EditWidget
+  alias Sportipedia.Catalog.Equipment.Widget.Event.WidgetEdited
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetAggregate
+  @behaviour Commanded.Commands.Handler
+  @doc """
+  Handles the EditWidget command and returns WidgetEdited event(s).
+  """
+  @spec handle(WidgetAggregate.t(), EditWidget.t()) :: WidgetEdited.t() | [WidgetEdited.t()]
+  def handle(%WidgetAggregate{} = aggregate, %EditWidget{} = cmd) do
+    # implement logic here
+    # return events
+  end
+end
+
+== services/api/lib/sportipedia/catalog/equipment/widget/policy.ex ==
+defmodule Sportipedia.Catalog.Equipment.Widget.Policy do
+  @moduledoc """
+  Authorizes widget operations based on user roles.
+  """
+  import Sportipedia.Auth.Roles
+  @behaviour Bodyguard.Policy
+  def authorize(:create_widget, user, _params) when is_guest?(user), do: :error
+  def authorize(:create_widget, user, _params) when is_user?(user), do: :ok
+  def authorize(:archive_widget, user, _params) when is_guest?(user), do: :error
+  def authorize(:archive_widget, user, _params) when is_user?(user), do: :ok
+  def authorize(:edit_widget, user, _params) when is_guest?(user), do: :error
+  def authorize(:edit_widget, user, _params) when is_user?(user), do: :ok
+  def authorize(:relabel_widget, user, _params) when is_guest?(user), do: :error
+  def authorize(:relabel_widget, user, _params) when is_user?(user), do: :ok
+  def authorize(:list_widgets, _user, _params), do: :ok
+  def authorize(:read_widget, _user, _params), do: :ok
+end
+
+== services/api/lib/sportipedia/catalog/equipment/widget/projector.ex ==
+defmodule Sportipedia.Catalog.Equipment.Widget.WidgetProjector do
+  @moduledoc """
+  Projects widget events to the widget read model.
+  """
+  use Commanded.Projections.Ecto,
+    application: Sportipedia.Catalog,
+    repo: Sportipedia.Catalog.Repo,
+    name: "equipment.widget_projection",
+    schema_prefix: "catalog",
+    consistency: :strong
+
+  alias Sportipedia.Catalog.Equipment.Widget.Event.WidgetArchived
+  alias Sportipedia.Catalog.Equipment.Widget.Event.WidgetCreated
+  alias Sportipedia.Catalog.Equipment.Widget.Event.WidgetEdited
+  alias Sportipedia.Catalog.Equipment.Widget.Event.WidgetRelabelled
+  alias Sportipedia.Catalog.Equipment.Widget.Event.WidgetRenameLogged
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetInternal
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetReadModel
+
+  @doc """
+  Projects an WidgetCreated event to the widget read model.
+  """
+  project %WidgetCreated{} = event, _metadata, fn multi ->
+    multi
+    |> Ecto.Multi.insert(
+      :widget_created,
+      WidgetReadModel.insert_changeset(%WidgetReadModel{}, Map.from_struct(event))
+    )
+  end
+
+  @doc """
+  Projects an WidgetArchived event to hard-delete the widget read model.
+  """
+  project %WidgetArchived{} = event, _metadata, fn multi ->
+    case WidgetInternal.widget_by_id(event.id) do
+      nil ->
+        multi
+
+      %WidgetReadModel{} = widget ->
+        multi
+        |> Ecto.Multi.delete(:widget_archived, widget)
+    end
+  end
+
+  @doc """
+  Projects an WidgetEdited event to update the widget read model.
+  """
+  project %WidgetEdited{} = event, _metadata, fn multi ->
+    case WidgetInternal.widget_by_id(event.id) do
+      nil ->
+        multi
+
+      %WidgetReadModel{} = widget ->
+        attrs = WidgetEdited.get_changes(event)
+
+        multi
+        |> Ecto.Multi.update(
+          :widget_edited,
+          WidgetReadModel.update_changeset(widget, attrs)
+        )
+    end
+  end
+
+  @doc """
+  Projects an WidgetRelabelled event to update the widget read model.
+  """
+  project %WidgetRelabelled{} = event, _metadata, fn multi ->
+    case WidgetInternal.widget_by_id(event.id) do
+      nil ->
+        multi
+
+      %WidgetReadModel{} = widget ->
+        attrs = WidgetRelabelled.get_changes(event)
+
+        multi
+        |> Ecto.Multi.update(
+          :widget_relabelled,
+          WidgetReadModel.update_changeset(widget, attrs)
+        )
+    end
+  end
+
+  @doc """
+  Projects an WidgetRenameLogged event to the widget read model.
+  """
+  project %WidgetRenameLogged{} = event, _metadata, fn multi ->
+    multi
+    |> Ecto.Multi.insert(
+      :widget_rename_logged,
+      WidgetReadModel.insert_changeset(%WidgetReadModel{}, Map.from_struct(event))
+    )
+  end
+end
+
+== services/api/lib/sportipedia/catalog/equipment/widget/public_api.ex ==
+defmodule Sportipedia.Catalog.Equipment.Widget do
+  @moduledoc """
+  Public API for managing widgets in the sport.
+  """
+  alias Sportipedia.Architecture
+  alias Sportipedia.Catalog
+  alias Sportipedia.Catalog.Equipment.Widget.Command.ArchiveWidget
+  alias Sportipedia.Catalog.Equipment.Widget.Command.CreateWidget
+  alias Sportipedia.Catalog.Equipment.Widget.Command.EditWidget
+  alias Sportipedia.Catalog.Equipment.Widget.Command.RelabelWidget
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetInternal
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetReadModel
+  alias Sportipedia.Catalog.Repo
+  alias Sportipedia.Support.ErrorClassifier
+
+  alias Sportipedia.Support.JSONAPI.QueryBuilder
+
+  alias Sportipedia.Support.Validators.UuidValidator
+
+  @doc """
+  Catalogs a new widget in the equipment catalog
+  """
+  @spec create_widget(%{
+          required(:title) => String.t(),
+          required(:slug) => String.t(),
+          optional(:coachId) => String.t() | nil,
+          optional(:description) => String.t() | nil,
+          optional(:label) => String.t() | nil,
+          optional(:teamId) => String.t() | nil
+        }) :: Architecture.public_api(WidgetReadModel.t())
+  def create_widget(params) do
+    id = UUID.uuid4()
+    cmd = CreateWidget.new(Map.put(params, "id", id))
+
+    case Catalog.dispatch(cmd, consistency: :strong) do
+      :ok ->
+        {:ok, WidgetInternal.widget_by_id(id)}
+
+      {:error, errors} ->
+        ErrorClassifier.classify_error(errors)
+    end
+  end
+
+  @doc """
+  Archives a widget that is no longer used
+  """
+  @spec archive_widget(String.t()) :: Architecture.public_api()
+  def archive_widget(id) do
+    case Catalog.dispatch(ArchiveWidget.new(id: id), consistency: :strong) do
+      :ok -> :ok
+      {:error, errors} -> ErrorClassifier.classify_error(errors)
+    end
+  end
+
+  @doc """
+  Edits an existing widget
+  """
+  @spec edit_widget(%{
+          required(:id) => String.t(),
+          optional(:coachId) => String.t() | nil,
+          optional(:description) => String.t() | nil,
+          optional(:label) => String.t() | nil,
+          optional(:slug) => String.t() | nil,
+          optional(:teamId) => String.t() | nil,
+          optional(:title) => String.t() | nil
+        }) :: Architecture.public_api(WidgetReadModel.t())
+  def edit_widget(params) do
+    case Catalog.dispatch(EditWidget.new(params), consistency: :strong) do
+      :ok ->
+        {:ok, WidgetInternal.widget_by_id(params[:id] || params["id"])}
+
+      {:error, errors} ->
+        ErrorClassifier.classify_error(errors)
+    end
+  end
+
+  @doc """
+  List all widgets with filtering, sorting, and pagination
+  """
+  @spec list_widgets(JSONAPI.Config.t()) :: Architecture.public_api([WidgetReadModel.t()])
+  def list_widgets(query) do
+    {:ok, Repo.all(QueryBuilder.build(query, WidgetReadModel))}
+  end
+
+  @doc """
+  Retrieve a single widget by its id or slug
+  """
+  @spec read_widget(String.t()) :: Architecture.public_api(WidgetReadModel.t())
+  def read_widget(id_or_slug) do
+    case lookup_widget(id_or_slug) do
+      nil -> {:error, :not_found}
+      read_model -> {:ok, read_model}
+    end
+  end
+
+  defp lookup_widget(id_or_slug) do
+    if UuidValidator.valid_uuid?(id_or_slug) do
+      WidgetInternal.widget_by_id(id_or_slug)
+    else
+      WidgetInternal.widget_by_slug(id_or_slug)
+    end
+  end
+end
+
+== services/api/lib/sportipedia/catalog/equipment/widget/queries/list_widgets.ex ==
+defmodule Sportipedia.Catalog.Equipment.Widget.Queries.ListWidgets do
+  @moduledoc """
+  List all widgets with filtering, sorting, and pagination
+  """
+  @doc """
+  Creates a new query to fetch widgets.
+  """
+  @spec new(map()) :: Ecto.Query.t()
+  def new(_params) do
+    # TODO: construct and return the query from the read model
+    raise "TODO: implement list-widgets query (see the feature spec)"
+  end
+end
+
+== services/api/lib/sportipedia/catalog/equipment/widget/queries/read_widget.ex ==
+defmodule Sportipedia.Catalog.Equipment.Widget.Queries.ReadWidget do
+  @moduledoc """
+  Retrieve a single widget by its id or slug
+  """
+  @doc """
+  Creates a new query to fetch widgets.
+  """
+  @spec new(String.t()) :: Ecto.Query.t()
+  def new(_params) do
+    # TODO: construct and return the query from the read model
+    raise "TODO: implement read-widget query (see the feature spec)"
+  end
+end
+
+== services/api/lib/sportipedia/catalog/equipment/widget/queries/widget_by_slug.ex ==
+defmodule Sportipedia.Catalog.Equipment.Widget.Queries.WidgetBySlug do
+  @moduledoc """
+  Query to fetch a widget by its slug.
+  """
+  import Ecto.Query
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetReadModel
+
+  @doc """
+  Creates a new query to fetch a widget by slug.
+  """
+  @spec new(String.t()) :: Ecto.Query.t()
+  def new(slug) do
+    from(r in WidgetReadModel,
+      where: r.slug == ^slug
+    )
+  end
+end
+
+== services/api/lib/sportipedia/catalog/equipment/widget/read_model.ex ==
+defmodule Sportipedia.Catalog.Equipment.Widget.WidgetReadModel do
+  @moduledoc """
+  A cataloged widget, projected from the widget aggregate
+  """
+  use TypedEctoSchema
+  import Ecto.Changeset
+  @primary_key {:id, :binary_id, autogenerate: false}
+  @timestamps_opts [type: :utc_datetime_usec]
+  @schema_prefix "catalog"
+  typed_schema "widget" do
+    field :title, :string
+
+    field :slug, :string
+    field :archivedAt, :utc_datetime_usec
+    field :coachId, :binary_id
+    field :description, :string
+    field :label, :string
+    field :teamId, :binary_id
+    timestamps()
+  end
+
+  @doc """
+  Validates and prepares the widget read model for insertion.
+  """
+  def insert_changeset(read_model, attrs) do
+    read_model
+    |> cast(attrs, [:id, :title, :slug, :archivedAt, :coachId, :description, :label, :teamId])
+    |> validate_required([:id, :title, :slug])
+    |> unique_constraint(:slug, name: :widget_slug_index)
+  end
+
+  @doc """
+  Validates and prepares the widget read model for update.
+  """
+  def update_changeset(read_model, attrs) do
+    read_model
+    |> cast(attrs, [:title, :slug, :archivedAt, :coachId, :description, :label, :teamId])
+    |> unique_constraint(:slug, name: :widget_slug_index)
+  end
+end
+
+== services/api/lib/sportipedia/catalog/equipment/widget/validators/at_most_one_owner.ex ==
+defmodule Sportipedia.Catalog.Equipment.Widget.Validators.AtMostOneOwner do
+  @moduledoc """
+  Validates the 'at-most-one-owner' rule: A widget is owned by at most one coach (either coachId or teamId, not both)
+  """
+  use Vex.Validator
+
+  @doc """
+  Validates the given coachId value.
+  """
+  @spec validate(String.t(), map()) :: :ok | {:error, term()}
+  def validate(_value, _context) do
+    raise "TODO: implement the at-most-one-owner validator (see the domain model rule)"
+  end
+end
+
+== services/api/lib/sportipedia/catalog/equipment/widget/validators/unique_slug.ex ==
+defmodule Sportipedia.Catalog.Equipment.Widget.Validators.UniqueSlug do
+  @moduledoc """
+  Validates that a widget slug is unique within the equipment.
+  """
+  use Vex.Validator
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetInternal
+
+  @doc """
+  Validates the given slug value.
+  """
+  @spec validate(String.t(), map()) :: :ok | {:error, term()}
+  def validate(value, context) do
+    with widget <- WidgetInternal.widget_by_slug(value),
+         false <- is_nil(widget),
+         false <- slug_belongs_to_widget?(widget, context) do
+      {:error, :slug_exists}
+    else
+      _ -> :ok
+    end
+  end
+
+  defp slug_belongs_to_widget?(widget, context) do
+    id = Map.get(context, :id)
+
+    id == widget.id
+  end
+end
+
+== services/api/lib/sportipedia/catalog/equipment/widget/validators/widget_exists.ex ==
+defmodule Sportipedia.Catalog.Equipment.Widget.Validators.WidgetExists do
+  @moduledoc """
+  Validates that a widget exists.
+
+  The rule is asked of an address: only a value that can denote a
+  widget is looked up. A malformed id addresses nothing, so no
+  widget can hold it, and the answer is the one the pattern gives
+  for an unknown id. An absent or blank id is not this rule's to answer —
+  `presence` owns it, and the command's `validates` line keeps this validator
+  off it.
+  """
+  use Vex.Validator
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetInternal
+  alias Sportipedia.Support.Validators.UuidValidator
+
+  @doc """
+  Validates the given id value.
+  """
+  # `term()`, not `String.t()`: the value reaches here straight off the request,
+  # and a request can name an id with anything at all.
+  @spec validate(term(), map()) :: :ok | {:error, :not_found}
+  def validate(id, _context) do
+    # The existence check is a round trip on the primary key, and `Repo.get/2`
+    # raises on a value it cannot put in that clause: nil, a blank string, an
+    # id of the wrong shape. A raise here reaches the client as 500. A
+    # value that cannot denote the resource denotes no resource — the pattern's
+    # own verdict for an unknown id, given without leaving the process.
+    if UuidValidator.valid_uuid?(id) do
+      case WidgetInternal.widget_by_id(id) do
+        nil -> {:error, :not_found}
+        _widget -> :ok
+      end
+    else
+      {:error, :not_found}
+    end
+  end
+end
+
+== services/api/lib/sportipedia_web/catalog/equipment/widget/schemas/create_widget_request.ex ==
+defmodule SportipediaWeb.Catalog.Equipment.Widget.Schemas.CreateWidgetRequest do
+  @moduledoc """
+  OpenAPI schema for documenting the create-widget request parameters.
+  """
+  require OpenApiSpex
+  require OpenApiSpex
+
+  @doc """
+  Returns the OpenAPI schema for the create-widget request.
+  """
+  OpenApiSpex.schema(%{
+    title: "equipment.CreateWidgetRequest",
+    type: :object,
+    properties: %{
+      title: %OpenApiSpex.Schema{type: :string, description: "Name of the widget"},
+      slug: %OpenApiSpex.Schema{type: :string, description: "URL-friendly unique identifier"},
+      coachId: %OpenApiSpex.Schema{
+        type: :string,
+        nullable: true,
+        description: "Owning coach (optional, mutually exclusive with teamId)"
+      },
+      description: %OpenApiSpex.Schema{
+        type: :string,
+        nullable: true,
+        description: "Optional description"
+      },
+      label: %OpenApiSpex.Schema{
+        type: :string,
+        nullable: true,
+        description: "Short label shown in lists"
+      },
+      teamId: %OpenApiSpex.Schema{
+        type: :string,
+        nullable: true,
+        description: "Owning team (optional, mutually exclusive with coachId)"
+      }
+    },
+    required: [:title, :slug]
+  })
+end
+
+== services/api/lib/sportipedia_web/catalog/equipment/widget/schemas/widget_collection_response.ex ==
+defmodule SportipediaWeb.Catalog.Equipment.Widget.Schemas.WidgetCollectionResponse do
+  @moduledoc """
+  OpenAPI schema for documenting widget collection endpoints.
+  """
+  alias Sportipedia.Support.JSONAPI.OpenApiSchema
+  alias SportipediaWeb.Catalog.Equipment.Widget.WidgetView
+  require OpenApiSpex
+  alias SportipediaWeb.Catalog.Equipment.Widget.WidgetView
+  alias Sportipedia.Support.JSONAPI.OpenApiSchema
+
+  require OpenApiSpex
+
+  @doc """
+  Returns the OpenAPI schema for the widget collection response.
+  """
+  OpenApiSpex.schema(OpenApiSchema.from_view(WidgetView, title: "equipment.Widgets", many: true))
+end
+
+== services/api/lib/sportipedia_web/catalog/equipment/widget/schemas/widget_response.ex ==
+defmodule SportipediaWeb.Catalog.Equipment.Widget.Schemas.WidgetResponse do
+  @moduledoc """
+  OpenAPI schema for documenting widget endpoints.
+  """
+  alias Sportipedia.Support.JSONAPI.OpenApiSchema
+  alias SportipediaWeb.Catalog.Equipment.Widget.WidgetView
+  require OpenApiSpex
+  alias SportipediaWeb.Catalog.Equipment.Widget.WidgetView
+  alias Sportipedia.Support.JSONAPI.OpenApiSchema
+
+  require OpenApiSpex
+
+  @doc """
+  Returns the OpenAPI schema for the widget response.
+  """
+  OpenApiSpex.schema(OpenApiSchema.from_view(WidgetView, title: "equipment.Widget"))
+end
+
+== services/api/lib/sportipedia_web/catalog/equipment/widget/widget_controller.ex ==
+defmodule SportipediaWeb.Catalog.Equipment.Widget.WidgetController do
+  @moduledoc """
+  Handles HTTP requests for widget operations.
+  """
+  use SportipediaWeb, :controller
+  use OpenApiSpex.ControllerSpecs
+  alias OpenApiSpex.Reference
+  alias Sportipedia.Catalog.Equipment.Widget
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetReadModel
+  alias SportipediaWeb.Catalog.Equipment.Widget.Schemas.CreateWidgetRequest
+  alias SportipediaWeb.Catalog.Equipment.Widget.Schemas.WidgetCollectionResponse
+  alias SportipediaWeb.Catalog.Equipment.Widget.Schemas.WidgetResponse
+  alias SportipediaWeb.Catalog.Equipment.Widget.WidgetView
+  alias SportipediaWeb.System.FallbackController
+
+  plug Bodyguard.Plug.Authorize,
+    policy: Sportipedia.Catalog.Equipment.Widget.Policy,
+    action: {Phoenix.Controller, :action_name},
+    user: {Sportipedia.Auth, :get_user_from_assigns},
+    fallback: FallbackController
+
+  plug JSONAPI.QueryParser,
+    filter: ~w(title),
+    sort: ~w(title),
+    view: WidgetView
+
+  tags ["equipment"]
+
+  @doc """
+  Handles the create-widget request.
+  """
+  operation :create_widget,
+    summary: "Catalogs a new widget in the equipment catalog",
+    request_body: {"The widget attributes", "application/json", CreateWidgetRequest},
+    responses: [
+      ok: {"The widget", "application/vnd.api+json", WidgetResponse},
+      unprocessable_entity: %Reference{"$ref": "#/components/responses/unprocessable_entity"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      forbidden: %Reference{"$ref": "#/components/responses/forbidden"}
+    ]
+
+  @spec create_widget(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def create_widget(conn, _) do
+    with {:ok, widget} <- Widget.create_widget(conn.params) do
+      conn
+      |> put_view(json: WidgetView)
+      |> render("show.json", %{data: widget})
+    end
+  end
+
+  @doc """
+  Handles the archive-widget request.
+  """
+  operation :archive_widget,
+    summary: "Archives a widget that is no longer used",
+    responses: [
+      no_content: "The widget has been archived",
+      not_found: %Reference{"$ref": "#/components/responses/not_found"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      forbidden: %Reference{"$ref": "#/components/responses/forbidden"}
+    ]
+
+  @spec archive_widget(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def archive_widget(conn, _) do
+    case Widget.archive_widget(conn.params["id"]) do
+      :ok ->
+        send_resp(conn, :no_content, "")
+
+      {:error, errors} ->
+        {:error, errors}
+    end
+  end
+
+  @doc """
+  Handles the edit-widget request.
+  """
+  operation :edit_widget,
+    summary: "Edits an existing widget",
+    request_body: {"The widget attributes", "application/json", EditWidgetRequest},
+    responses: [
+      ok: {"The widget", "application/vnd.api+json", WidgetResponse},
+      unprocessable_entity: %Reference{"$ref": "#/components/responses/unprocessable_entity"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      forbidden: %Reference{"$ref": "#/components/responses/forbidden"}
+    ]
+
+  @spec edit_widget(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def edit_widget(conn, _) do
+    with {:ok, widget} <- Widget.edit_widget(conn.params) do
+      conn
+      |> put_view(json: WidgetView)
+      |> render("show.json", %{data: widget})
+    end
+  end
+
+  @doc """
+  Handles the relabel-widget request.
+  """
+  operation :relabel_widget,
+    summary: "Renames a widget and records the rename for the audit trail",
+    request_body: {"The widget attributes", "application/json", RelabelWidgetRequest},
+    responses: [
+      ok: {"The widget", "application/vnd.api+json", WidgetResponse},
+      unprocessable_entity: %Reference{"$ref": "#/components/responses/unprocessable_entity"},
+      unauthorized: %Reference{"$ref": "#/components/responses/unauthorized"},
+      forbidden: %Reference{"$ref": "#/components/responses/forbidden"}
+    ]
+
+  @spec relabel_widget(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def relabel_widget(conn, _) do
+    with {:ok, widget} <- Widget.relabel_widget(conn.params) do
+      conn
+      |> put_view(json: WidgetView)
+      |> render("show.json", %{data: widget})
+    end
+  end
+
+  @doc """
+  Handles the list-widgets request.
+  """
+  operation :list_widgets,
+    summary: "List all widgets with filtering, sorting, and pagination",
+    parameters: [
+      query: [in: :query, schema: ListWidgetsQueryParams]
+    ],
+    responses: [
+      ok: {"Widget collection", "application/vnd.api+json", WidgetCollectionResponse}
+    ]
+
+  @spec list_widgets(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def list_widgets(conn, _) do
+    case Widget.list_widgets(conn.assigns.jsonapi_query) do
+      {:ok, data} ->
+        conn
+        |> put_view(json: WidgetView)
+        |> render("index.json", %{data: data})
+    end
+  end
+
+  @doc """
+  Handles the read-widget request.
+  """
+  operation :read_widget,
+    summary: "Retrieve a single widget by its id or slug",
+    parameters: [
+      id_or_slug: [in: :path, description: "The widget id or or or slug", type: :string]
+    ],
+    responses: [
+      ok: {"The widget", "application/vnd.api+json", WidgetResponse},
+      not_found: %Reference{"$ref": "#/components/responses/not_found"}
+    ]
+
+  @spec read_widget(Plug.Conn.t(), map()) :: Plug.Conn.t()
+  def read_widget(conn, _) do
+    case Widget.read_widget(conn.params["id_or_slug"]) do
+      {:ok, %WidgetReadModel{} = widget} ->
+        conn
+        |> put_view(json: WidgetView)
+        |> render("show.json", %{data: widget})
+
+      {:error, :not_found} ->
+        {:error, :not_found}
+    end
+  end
+end
+
+== services/api/lib/sportipedia_web/catalog/equipment/widget/widget_view.ex ==
+defmodule SportipediaWeb.Catalog.Equipment.Widget.WidgetView do
+  @moduledoc """
+  Renders widget resources in JSON:API format.
+  """
+  use JSONAPI.View, type: "widget"
+  def path, do: "catalog/equipment/widgets"
+  def fields, do: [:title, :slug, :archivedAt, :coachId, :description, :label, :teamId]
+end
+
+== services/api/test/sportipedia/catalog/equipment/widget/events/widget_archived_test.exs ==
+defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetArchivedTest do
+  use Sportipedia.CatalogTestCase
+  alias Sportipedia.Catalog.Equipment.Widget.Event.WidgetArchived
+  alias Sportipedia.Catalog.Equipment.Widget.Event.WidgetCreated
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetAggregate
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetProjector
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetReadModel
+  @moduletag :integration
+  describe "Event" do
+    test "creates WidgetArchived with required fields" do
+      event = struct!(WidgetArchived, %{id: UUID.uuid4(), archivedAt: DateTime.utc_now()})
+
+      assert event.id != nil
+    end
+
+    test "requires enforced fields" do
+      assert_raise ArgumentError, fn ->
+        struct!(WidgetArchived, %{})
+      end
+    end
+
+    test "serializes to JSON" do
+      event = struct!(WidgetArchived, %{id: UUID.uuid4(), archivedAt: DateTime.utc_now()})
+
+      assert {:ok, _json} = Jason.encode(event)
+    end
+  end
+
+  describe "Aggregate" do
+    test "applies widget-archived to aggregate state" do
+      event = %WidgetArchived{id: UUID.uuid4(), archivedAt: DateTime.utc_now()}
+
+      result = WidgetAggregate.apply(%WidgetAggregate{id: event.id}, event)
+
+      assert is_nil(result)
+    end
+  end
+
+  describe "Projector" do
+    test "projects WidgetArchived to the widget read model" do
+      create_event = %WidgetCreated{
+        id: UUID.uuid4(),
+        title: "sample-title",
+        slug: "sample-slug",
+        coachId: UUID.uuid4(),
+        description: "sample-description",
+        label: "sample-label",
+        teamId: UUID.uuid4()
+      }
+
+      create_metadata = %{
+        handler_name: "equipment.widget_projection",
+        event_number: 1,
+        event_id: UUID.uuid4(),
+        stream_id: "widget-#{create_event.id}",
+        stream_version: 1,
+        correlation_id: nil,
+        causation_id: nil,
+        created_at: DateTime.utc_now(),
+        application: Sportipedia.Catalog,
+        state: nil
+      }
+
+      assert :ok = WidgetProjector.handle(create_event, create_metadata)
+
+      event = %WidgetArchived{id: create_event.id, archivedAt: DateTime.utc_now()}
+
+      metadata = %{
+        handler_name: "equipment.widget_projection",
+        event_number: 2,
+        event_id: UUID.uuid4(),
+        stream_id: "widget-#{event.id}",
+        stream_version: 2,
+        correlation_id: nil,
+        causation_id: nil,
+        created_at: DateTime.utc_now(),
+        application: Sportipedia.Catalog,
+        state: nil
+      }
+
+      assert :ok = WidgetProjector.handle(event, metadata)
+
+      assert Repo.get(WidgetReadModel, event.id) == nil
+    end
+  end
+end
+
+== services/api/test/sportipedia/catalog/equipment/widget/events/widget_created_test.exs ==
+defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetCreatedTest do
+  use Sportipedia.CatalogTestCase
+  alias Sportipedia.Catalog.Equipment.Widget.Event.WidgetCreated
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetAggregate
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetProjector
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetReadModel
+  @moduletag :integration
+  describe "Event" do
+    test "creates WidgetCreated with required fields" do
+      event =
+        struct!(WidgetCreated, %{
+          id: UUID.uuid4(),
+          title: "sample-title",
+          slug: "sample-slug",
+          coachId: UUID.uuid4(),
+          description: "sample-description",
+          label: "sample-label",
+          teamId: UUID.uuid4()
+        })
+
+      assert event.id != nil
+    end
+
+    test "requires enforced fields" do
+      assert_raise ArgumentError, fn ->
+        struct!(WidgetCreated, %{})
+      end
+    end
+
+    test "serializes to JSON" do
+      event =
+        struct!(WidgetCreated, %{
+          id: UUID.uuid4(),
+          title: "sample-title",
+          slug: "sample-slug",
+          coachId: UUID.uuid4(),
+          description: "sample-description",
+          label: "sample-label",
+          teamId: UUID.uuid4()
+        })
+
+      assert {:ok, _json} = Jason.encode(event)
+    end
+  end
+
+  describe "Aggregate" do
+    test "applies widget-created to aggregate state" do
+      event = %WidgetCreated{
+        id: UUID.uuid4(),
+        title: "sample-title",
+        slug: "sample-slug",
+        coachId: UUID.uuid4(),
+        description: "sample-description",
+        label: "sample-label",
+        teamId: UUID.uuid4()
+      }
+
+      result = WidgetAggregate.apply(%WidgetAggregate{}, event)
+
+      assert result.id == event.id
+      assert result.title == event.title
+      assert result.slug == event.slug
+      assert result.coachId == event.coachId
+      assert result.description == event.description
+      assert result.label == event.label
+      assert result.teamId == event.teamId
+    end
+  end
+
+  describe "Projector" do
+    test "projects WidgetCreated to the widget read model" do
+      event = %WidgetCreated{
+        id: UUID.uuid4(),
+        title: "sample-title",
+        slug: "sample-slug",
+        coachId: UUID.uuid4(),
+        description: "sample-description",
+        label: "sample-label",
+        teamId: UUID.uuid4()
+      }
+
+      metadata = %{
+        handler_name: "equipment.widget_projection",
+        event_number: 1,
+        event_id: UUID.uuid4(),
+        stream_id: "widget-#{event.id}",
+        stream_version: 1,
+        correlation_id: nil,
+        causation_id: nil,
+        created_at: DateTime.utc_now(),
+        application: Sportipedia.Catalog,
+        state: nil
+      }
+
+      assert :ok = WidgetProjector.handle(event, metadata)
+
+      assert Repo.get(WidgetReadModel, event.id) != nil
+    end
+  end
+end
+
+== services/api/test/sportipedia/catalog/equipment/widget/events/widget_edited_test.exs ==
+defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetEditedTest do
+  use Sportipedia.CatalogTestCase
+  alias Sportipedia.Catalog.Equipment.Widget.Event.WidgetCreated
+  alias Sportipedia.Catalog.Equipment.Widget.Event.WidgetEdited
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetAggregate
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetProjector
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetReadModel
+  @moduletag :integration
+  describe "Event" do
+    test "creates WidgetEdited with required fields" do
+      event =
+        struct!(WidgetEdited, %{
+          id: UUID.uuid4(),
+          description: "sample-description",
+          label: "sample-label",
+          slug: "sample-slug",
+          title: "sample-title"
+        })
+
+      assert event.id != nil
+    end
+
+    test "requires enforced fields" do
+      assert_raise ArgumentError, fn ->
+        struct!(WidgetEdited, %{})
+      end
+    end
+
+    test "serializes to JSON" do
+      event =
+        struct!(WidgetEdited, %{
+          id: UUID.uuid4(),
+          description: "sample-description",
+          label: "sample-label",
+          slug: "sample-slug",
+          title: "sample-title"
+        })
+
+      assert {:ok, _json} = Jason.encode(event)
+    end
+  end
+
+  describe "Aggregate" do
+    test "applies widget-edited to aggregate state" do
+      event = %WidgetEdited{
+        id: UUID.uuid4(),
+        description: "sample-description",
+        label: "sample-label",
+        slug: "sample-slug",
+        title: "sample-title"
+      }
+
+      result = WidgetAggregate.apply(%WidgetAggregate{id: event.id}, event)
+
+      assert result.id == event.id
+      assert result.description == event.description
+      assert result.label == event.label
+      assert result.slug == event.slug
+      assert result.title == event.title
+    end
+  end
+
+  describe "Projector" do
+    test "projects WidgetEdited to the widget read model" do
+      create_event = %WidgetCreated{
+        id: UUID.uuid4(),
+        title: "sample-title",
+        slug: "sample-slug",
+        coachId: UUID.uuid4(),
+        description: "sample-description",
+        label: "sample-label",
+        teamId: UUID.uuid4()
+      }
+
+      create_metadata = %{
+        handler_name: "equipment.widget_projection",
+        event_number: 1,
+        event_id: UUID.uuid4(),
+        stream_id: "widget-#{create_event.id}",
+        stream_version: 1,
+        correlation_id: nil,
+        causation_id: nil,
+        created_at: DateTime.utc_now(),
+        application: Sportipedia.Catalog,
+        state: nil
+      }
+
+      assert :ok = WidgetProjector.handle(create_event, create_metadata)
+
+      event = %WidgetEdited{
+        id: create_event.id,
+        description: "sample-description",
+        label: "sample-label",
+        slug: "sample-slug",
+        title: "sample-title"
+      }
+
+      metadata = %{
+        handler_name: "equipment.widget_projection",
+        event_number: 2,
+        event_id: UUID.uuid4(),
+        stream_id: "widget-#{event.id}",
+        stream_version: 2,
+        correlation_id: nil,
+        causation_id: nil,
+        created_at: DateTime.utc_now(),
+        application: Sportipedia.Catalog,
+        state: nil
+      }
+
+      assert :ok = WidgetProjector.handle(event, metadata)
+
+      assert Repo.get(WidgetReadModel, event.id) != nil
+    end
+  end
+end
+
+== services/api/test/sportipedia/catalog/equipment/widget/events/widget_relabelled_test.exs ==
+defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetRelabelledTest do
+  use Sportipedia.CatalogTestCase
+  alias Sportipedia.Catalog.Equipment.Widget.Event.WidgetCreated
+  alias Sportipedia.Catalog.Equipment.Widget.Event.WidgetRelabelled
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetAggregate
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetProjector
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetReadModel
+  @moduletag :integration
+  describe "Event" do
+    test "creates WidgetRelabelled with required fields" do
+      event = struct!(WidgetRelabelled, %{id: UUID.uuid4(), label: "sample-label"})
+
+      assert event.id != nil
+    end
+
+    test "requires enforced fields" do
+      assert_raise ArgumentError, fn ->
+        struct!(WidgetRelabelled, %{})
+      end
+    end
+
+    test "serializes to JSON" do
+      event = struct!(WidgetRelabelled, %{id: UUID.uuid4(), label: "sample-label"})
+
+      assert {:ok, _json} = Jason.encode(event)
+    end
+  end
+
+  describe "Aggregate" do
+    test "applies widget-relabelled to aggregate state" do
+      event = %WidgetRelabelled{id: UUID.uuid4(), label: "sample-label"}
+
+      result = WidgetAggregate.apply(%WidgetAggregate{id: event.id}, event)
+
+      assert result.id == event.id
+      assert result.label == event.label
+    end
+  end
+
+  describe "Projector" do
+    test "projects WidgetRelabelled to the widget read model" do
+      create_event = %WidgetCreated{
+        id: UUID.uuid4(),
+        title: "sample-title",
+        slug: "sample-slug",
+        coachId: UUID.uuid4(),
+        description: "sample-description",
+        label: "sample-label",
+        teamId: UUID.uuid4()
+      }
+
+      create_metadata = %{
+        handler_name: "equipment.widget_projection",
+        event_number: 1,
+        event_id: UUID.uuid4(),
+        stream_id: "widget-#{create_event.id}",
+        stream_version: 1,
+        correlation_id: nil,
+        causation_id: nil,
+        created_at: DateTime.utc_now(),
+        application: Sportipedia.Catalog,
+        state: nil
+      }
+
+      assert :ok = WidgetProjector.handle(create_event, create_metadata)
+
+      event = %WidgetRelabelled{id: create_event.id, label: "sample-label"}
+
+      metadata = %{
+        handler_name: "equipment.widget_projection",
+        event_number: 2,
+        event_id: UUID.uuid4(),
+        stream_id: "widget-#{event.id}",
+        stream_version: 2,
+        correlation_id: nil,
+        causation_id: nil,
+        created_at: DateTime.utc_now(),
+        application: Sportipedia.Catalog,
+        state: nil
+      }
+
+      assert :ok = WidgetProjector.handle(event, metadata)
+
+      assert Repo.get(WidgetReadModel, event.id) != nil
+    end
+  end
+end
+
+== services/api/test/sportipedia/catalog/equipment/widget/events/widget_rename_logged_test.exs ==
+defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetRenameLoggedTest do
+  use Sportipedia.CatalogTestCase
+  alias Sportipedia.Catalog.Equipment.Widget.Event.WidgetRenameLogged
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetAggregate
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetProjector
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetReadModel
+  @moduletag :integration
+  describe "Event" do
+    test "creates WidgetRenameLogged with required fields" do
+      event = struct!(WidgetRenameLogged, %{id: UUID.uuid4()})
+
+      assert event.id != nil
+    end
+
+    test "requires enforced fields" do
+      assert_raise ArgumentError, fn ->
+        struct!(WidgetRenameLogged, %{})
+      end
+    end
+
+    test "serializes to JSON" do
+      event = struct!(WidgetRenameLogged, %{id: UUID.uuid4()})
+
+      assert {:ok, _json} = Jason.encode(event)
+    end
+  end
+
+  describe "Aggregate" do
+    test "applies widget-rename-logged to aggregate state" do
+      event = %WidgetRenameLogged{id: UUID.uuid4()}
+
+      result = WidgetAggregate.apply(%WidgetAggregate{}, event)
+
+      assert result.id == event.id
+    end
+  end
+
+  describe "Projector" do
+    test "projects WidgetRenameLogged to the widget read model" do
+      event = %WidgetRenameLogged{id: UUID.uuid4()}
+
+      metadata = %{
+        handler_name: "equipment.widget_projection",
+        event_number: 1,
+        event_id: UUID.uuid4(),
+        stream_id: "widget-#{event.id}",
+        stream_version: 1,
+        correlation_id: nil,
+        causation_id: nil,
+        created_at: DateTime.utc_now(),
+        application: Sportipedia.Catalog,
+        state: nil
+      }
+
+      assert :ok = WidgetProjector.handle(event, metadata)
+
+      assert Repo.get(WidgetReadModel, event.id) != nil
+    end
+  end
+end
+
+== services/api/test/sportipedia/catalog/equipment/widget/operations/archive_widget_test.exs ==
+defmodule Sportipedia.Catalog.Equipment.Widget.Operation.ArchiveWidgetTest do
+  use Sportipedia.CatalogTestCase
+  alias Sportipedia.Catalog.Equipment.Widget
+  alias Sportipedia.Catalog.Equipment.Widget.Command.ArchiveWidget
+  alias Sportipedia.Catalog.Equipment.Widget.Command.ArchiveWidgetHandler
+  alias Sportipedia.Catalog.Equipment.Widget.Event.WidgetArchived
+  alias Sportipedia.Catalog.Equipment.Widget.Policy
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetAggregate
+  @moduletag :integration
+  describe "Command" do
+    test "requires id" do
+      assert_raise ArgumentError, fn ->
+        struct!(ArchiveWidget, %{})
+      end
+    end
+
+    test "id cannot be nil" do
+      cmd = %ArchiveWidget{id: nil}
+
+      # Rejected, not raised: the existence check used to hand the nil to
+      # `Repo.get/2`, which raises, and the command never got to answer.
+      # `allow_blank` on the `validates` line keeps the lookup off an absent
+      # address, so `presence` is the only rule that speaks for the id.
+      assert [:presence] ==
+               cmd
+               |> Vex.errors()
+               |> Enum.flat_map(fn {_error, field, rule, _message} ->
+                 if field == :id, do: [rule], else: []
+               end)
+    end
+  end
+
+  describe "Command Handler" do
+    test "handles ArchiveWidget command and returns WidgetArchived event" do
+      cmd = %ArchiveWidget{id: UUID.uuid4()}
+
+      events = ArchiveWidgetHandler.handle(%WidgetAggregate{}, cmd)
+
+      assert %WidgetArchived{} = events
+    end
+  end
+
+  describe "Policy" do
+    test "denies or allows guests for archive_widget" do
+      assert Policy.authorize(:archive_widget, nil, %{}) == :error
+    end
+
+    test "allows users for archive_widget" do
+      assert Policy.authorize(:archive_widget, %{id: UUID.uuid4(), role: "user"}, %{}) == :ok
+    end
+  end
+
+  describe "Public API" do
+    test "archive_widget succeeds" do
+      assert {:ok, created} = Widget.create_widget(%{title: "sample-title", slug: "sample-slug"})
+
+      assert :ok = Widget.archive_widget(created.id)
+    end
+
+    test "archive_widget fails for an unknown widget" do
+      assert {:error, _} = Widget.archive_widget(UUID.uuid4())
+    end
+  end
+end
+
+== services/api/test/sportipedia/catalog/equipment/widget/operations/create_widget_test.exs ==
+defmodule Sportipedia.Catalog.Equipment.Widget.Operation.CreateWidgetTest do
+  use Sportipedia.CatalogTestCase
+  alias Sportipedia.Catalog.Equipment.Widget
+  alias Sportipedia.Catalog.Equipment.Widget.Command.CreateWidget
+  alias Sportipedia.Catalog.Equipment.Widget.Command.CreateWidgetHandler
+  alias Sportipedia.Catalog.Equipment.Widget.Event.WidgetCreated
+  alias Sportipedia.Catalog.Equipment.Widget.Policy
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetAggregate
+  @moduletag :integration
+  describe "Command" do
+    test "requires id" do
+      assert_raise ArgumentError, fn ->
+        struct!(CreateWidget, %{})
+      end
+    end
+
+    test "validates presence of title" do
+      cmd = %CreateWidget{
+        id: UUID.uuid4(),
+        slug: "pommel-horse",
+        coachId: UUID.uuid4(),
+        description: "sample-description",
+        label: "Pommel",
+        teamId: UUID.uuid4(),
+        title: nil
+      }
+
+      assert {:error, _errors} = Vex.validate(cmd)
+    end
+
+    test "validates presence of slug" do
+      cmd = %CreateWidget{
+        id: UUID.uuid4(),
+        title: "Pommel Horse",
+        coachId: UUID.uuid4(),
+        description: "sample-description",
+        label: "Pommel",
+        teamId: UUID.uuid4(),
+        slug: nil
+      }
+
+      assert {:error, _errors} = Vex.validate(cmd)
+    end
+  end
+
+  describe "Command Handler" do
+    test "handles CreateWidget command and returns WidgetCreated event" do
+      cmd = %CreateWidget{
+        id: UUID.uuid4(),
+        title: "Pommel Horse",
+        slug: "pommel-horse",
+        coachId: UUID.uuid4(),
+        description: "sample-description",
+        label: "Pommel",
+        teamId: UUID.uuid4()
+      }
+
+      events = CreateWidgetHandler.handle(%WidgetAggregate{}, cmd)
+
+      assert %WidgetCreated{} = events
+    end
+  end
+
+  describe "Policy" do
+    test "denies or allows guests for create_widget" do
+      assert Policy.authorize(:create_widget, nil, %{}) == :error
+    end
+
+    test "allows users for create_widget" do
+      assert Policy.authorize(:create_widget, %{id: UUID.uuid4(), role: "user"}, %{}) == :ok
+    end
+  end
+
+  describe "Public API" do
+    test "create_widget succeeds" do
+      assert {:ok, read_model} =
+               Widget.create_widget(%{title: "Pommel Horse", slug: "sample-slug-#{UUID.uuid4()}"})
+
+      assert read_model.id != nil
+    end
+
+    test "create_widget returns validation errors" do
+      assert {:error, {:validation_failure, _errors}} = Widget.create_widget(%{})
+    end
+  end
+end
+
+== services/api/test/sportipedia/catalog/equipment/widget/operations/edit_widget_test.exs ==
+defmodule Sportipedia.Catalog.Equipment.Widget.Operation.EditWidgetTest do
+  use Sportipedia.CatalogTestCase
+  alias Sportipedia.Catalog.Equipment.Widget
+  alias Sportipedia.Catalog.Equipment.Widget.Command.EditWidget
+  alias Sportipedia.Catalog.Equipment.Widget.Command.EditWidgetHandler
+  alias Sportipedia.Catalog.Equipment.Widget.Event.WidgetEdited
+  alias Sportipedia.Catalog.Equipment.Widget.Policy
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetAggregate
+  @moduletag :integration
+  describe "Command" do
+    test "requires id" do
+      assert_raise ArgumentError, fn ->
+        struct!(EditWidget, %{})
+      end
+    end
+
+    test "id cannot be nil" do
+      cmd = %EditWidget{
+        coachId: UUID.uuid4(),
+        description: "sample-description",
+        label: "Vaulting",
+        slug: "vaulting-table",
+        teamId: UUID.uuid4(),
+        title: "Vaulting Table",
+        id: nil
+      }
+
+      # Rejected, not raised: the existence check used to hand the nil to
+      # `Repo.get/2`, which raises, and the command never got to answer.
+      # `allow_blank` on the `validates` line keeps the lookup off an absent
+      # address, so `presence` is the only rule that speaks for the id.
+      assert [:presence] ==
+               cmd
+               |> Vex.errors()
+               |> Enum.flat_map(fn {_error, field, rule, _message} ->
+                 if field == :id, do: [rule], else: []
+               end)
+    end
+  end
+
+  describe "Command Handler" do
+    test "handles EditWidget command and returns WidgetEdited event" do
+      cmd = %EditWidget{
+        id: UUID.uuid4(),
+        coachId: UUID.uuid4(),
+        description: "sample-description",
+        label: "Vaulting",
+        slug: "vaulting-table",
+        teamId: UUID.uuid4(),
+        title: "Vaulting Table"
+      }
+
+      events = EditWidgetHandler.handle(%WidgetAggregate{}, cmd)
+
+      assert %WidgetEdited{} = events
+    end
+  end
+
+  describe "Policy" do
+    test "denies or allows guests for edit_widget" do
+      assert Policy.authorize(:edit_widget, nil, %{}) == :error
+    end
+
+    test "allows users for edit_widget" do
+      assert Policy.authorize(:edit_widget, %{id: UUID.uuid4(), role: "user"}, %{}) == :ok
+    end
+  end
+
+  describe "Public API" do
+    test "edit_widget succeeds" do
+      assert {:ok, created} =
+               Widget.create_widget(%{
+                 title: "Vaulting Table",
+                 slug: "sample-slug-#{UUID.uuid4()}"
+               })
+
+      assert {:ok, read_model} = Widget.edit_widget(%{id: created.id})
+
+      assert read_model.id == created.id
+    end
+  end
+end
+
+== services/api/test/sportipedia/catalog/equipment/widget/operations/list_widgets_test.exs ==
+defmodule Sportipedia.Catalog.Equipment.Widget.Operation.ListWidgetsTest do
+  use Sportipedia.CatalogTestCase
+  alias Sportipedia.Catalog.Equipment.Widget
+  alias Sportipedia.Catalog.Equipment.Widget.Policy
+  @moduletag :integration
+  describe "Query" do
+    test "is a work in progress until the spec fills it" do
+      # the query module body is the 1% the blueprint leaves to the spec
+      assert true
+    end
+  end
+
+  describe "Policy" do
+    test "denies or allows guests for list_widgets" do
+      assert Policy.authorize(:list_widgets, nil, %{}) == :ok
+    end
+
+    test "allows users for list_widgets" do
+      assert Policy.authorize(:list_widgets, %{id: UUID.uuid4(), role: "user"}, %{}) == :ok
+    end
+  end
+
+  describe "Public API" do
+    test "list_widgets lists read models" do
+      assert {:ok, data} = Widget.list_widgets(%JSONAPI.Config{})
+
+      assert is_list(data)
+    end
+  end
+end
+
+== services/api/test/sportipedia/catalog/equipment/widget/operations/read_widget_test.exs ==
+defmodule Sportipedia.Catalog.Equipment.Widget.Operation.ReadWidgetTest do
+  use Sportipedia.CatalogTestCase
+  alias Sportipedia.Catalog.Equipment.Widget
+  alias Sportipedia.Catalog.Equipment.Widget.Policy
+  @moduletag :integration
+  describe "Query" do
+    test "is a work in progress until the spec fills it" do
+      # the query module body is the 1% the blueprint leaves to the spec
+      assert true
+    end
+  end
+
+  describe "Policy" do
+    test "denies or allows guests for read_widget" do
+      assert Policy.authorize(:read_widget, nil, %{}) == :ok
+    end
+
+    test "allows users for read_widget" do
+      assert Policy.authorize(:read_widget, %{id: UUID.uuid4(), role: "user"}, %{}) == :ok
+    end
+  end
+
+  describe "Public API" do
+    test "read_widget returns :not_found for unknown widget" do
+      assert {:error, :not_found} = Widget.read_widget(UUID.uuid4())
+    end
+  end
+end
+
+== services/api/test/sportipedia_web/catalog/equipment/widget/operations/create_widget_endpoint_test.exs ==
+defmodule SportipediaWeb.Catalog.Equipment.Widget.CreateWidgetEndpointTest do
+  use SportipediaWeb.ConnCase
+
+  import SportipediaWeb.RequestHelpers
+
+  alias Sportipedia.Catalog.Equipment.Widget
+
+  describe "POST /catalog/equipment/widgets/create-widget" do
+    test "create-widget returns 200 with the widget", %{conn: conn} do
+      conn =
+        conn
+        |> authenticate_conn()
+        |> api_conn()
+        |> post(
+          "/catalog/equipment/widgets/create-widget",
+          Jason.encode!(
+            jsonapi_body("widget", %{label: "Pommel", slug: "pommel-horse", title: "Pommel Horse"})
+          )
+        )
+
+      body = json_response(conn, 200)
+
+      assert jsonapi_type(body) == "widget"
+    end
+
+    test "returns 403 when unauthenticated", %{conn: conn} do
+      conn =
+        conn
+        |> api_conn()
+        |> post(
+          "/catalog/equipment/widgets/create-widget",
+          Jason.encode!(jsonapi_body("widget", %{}))
+        )
+
+      assert json_response(conn, 403)
+    end
+  end
+end
+
+== services/api/test/sportipedia_web/catalog/equipment/widget/operations/list_widgets_endpoint_test.exs ==
+defmodule SportipediaWeb.Catalog.Equipment.Widget.ListWidgetsEndpointTest do
+  use SportipediaWeb.ConnCase
+
+  import SportipediaWeb.RequestHelpers
+
+  alias Sportipedia.Catalog.Equipment.Widget
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetReadModel
+
+  describe "GET /catalog/equipment/widgets (list-widgets)" do
+    test "returns 200 with a collection of widgets", %{conn: conn} do
+      {:ok, _} =
+        Widget.create_widget(%{label: "Pommel", slug: "pommel-horse", title: "Pommel Horse"})
+
+      conn =
+        conn
+        |> api_conn()
+        |> get("/catalog/equipment/widgets")
+
+      body = json_response(conn, 200)
+
+      assert is_list(body["data"])
+    end
+  end
+end
+
+== services/api/test/sportipedia_web/catalog/equipment/widget/operations/read_widget_endpoint_test.exs ==
+defmodule SportipediaWeb.Catalog.Equipment.Widget.ReadWidgetEndpointTest do
+  use SportipediaWeb.ConnCase
+
+  import SportipediaWeb.RequestHelpers
+
+  alias Sportipedia.Catalog.Equipment.Widget
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetReadModel
+
+  describe "GET /catalog/equipment/widgets/:id_or_slug (read-widget)" do
+    test "returns 200 with the widget when found", %{conn: conn} do
+      {:ok, %{id: id}} =
+        Widget.create_widget(%{label: "Pommel", slug: "pommel-horse", title: "Pommel Horse"})
+
+      conn =
+        conn
+        |> api_conn()
+        |> get("/catalog/equipment/widgets/#{id}")
+
+      body = json_response(conn, 200)
+
+      assert jsonapi_id(body) == id
+    end
+
+    test "returns 404 when the widget does not exist", %{conn: conn} do
+      conn =
+        conn
+        |> api_conn()
+        |> get("/catalog/equipment/widgets/#{UUID.uuid4()}")
+
+      assert json_response(conn, 404)
+    end
+  end
+end
+
+== services/api/test/sportipedia_web/catalog/equipment/widget/schemas/create_widget_request_test.exs ==
+defmodule SportipediaWeb.Catalog.Equipment.Widget.Schemas.CreateWidgetRequestTest do
+  use ExUnit.Case
+  alias SportipediaWeb.Catalog.Equipment.Widget.Schemas.CreateWidgetRequest
+
+  describe "CreateWidgetRequest" do
+    test "schema/0 has the correct title" do
+      assert %{title: "equipment.CreateWidgetRequest"} = CreateWidgetRequest.schema()
+    end
+
+    test "schema is an object" do
+      assert %{type: :object} = CreateWidgetRequest.schema()
+    end
+  end
+end
+
+== services/api/test/sportipedia_web/catalog/equipment/widget/schemas/widget_collection_response_test.exs ==
+defmodule SportipediaWeb.Catalog.Equipment.Widget.Schemas.WidgetCollectionResponseTest do
+  use ExUnit.Case
+  alias SportipediaWeb.Catalog.Equipment.Widget.Schemas.WidgetCollectionResponse
+
+  describe "WidgetCollectionResponse" do
+    test "schema/0 has the correct title" do
+      assert %{title: "equipment.Widgets"} = WidgetCollectionResponse.schema()
+    end
+
+    test "schema is an object" do
+      assert %{type: :object} = WidgetCollectionResponse.schema()
+    end
+  end
+end
+
+== services/api/test/sportipedia_web/catalog/equipment/widget/schemas/widget_response_test.exs ==
+defmodule SportipediaWeb.Catalog.Equipment.Widget.Schemas.WidgetResponseTest do
+  use ExUnit.Case
+  alias SportipediaWeb.Catalog.Equipment.Widget.Schemas.WidgetResponse
+
+  describe "WidgetResponse" do
+    test "schema/0 has the correct title" do
+      assert %{title: "equipment.Widget"} = WidgetResponse.schema()
+    end
+
+    test "schema is an object" do
+      assert %{type: :object} = WidgetResponse.schema()
+    end
+  end
+end
+
+== services/api/test/sportipedia_web/catalog/equipment/widget/widget_view_test.exs ==
+defmodule SportipediaWeb.Catalog.Equipment.Widget.WidgetViewTest do
+  use SportipediaWeb.ConnCase
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetReadModel
+  alias SportipediaWeb.Catalog.Equipment.Widget.WidgetView
+
+  describe "type/0" do
+    test "returns widget" do
+      assert WidgetView.type() == "widget"
+    end
+  end
+
+  describe "fields/0" do
+    test "returns the widget fields" do
+      assert WidgetView.fields() == [
+               :title,
+               :slug,
+               :archivedAt,
+               :coachId,
+               :description,
+               :label,
+               :teamId
+             ]
+    end
+  end
+
+  describe "path/0" do
+    test "returns the widget path" do
+      assert WidgetView.path() == "catalog/equipment/widgets"
+    end
+  end
+
+  describe "render show.json" do
+    test "produces JSON:API single document" do
+      widget = %WidgetReadModel{
+        id: "d290f1ee-6c54-4b01-90e6-d701748f0851",
+        title: "sample-title",
+        slug: "sample-slug",
+        archivedAt: DateTime.utc_now(),
+        coachId: UUID.uuid4(),
+        description: "sample-description",
+        label: "sample-label",
+        teamId: UUID.uuid4()
+      }
+
+      conn = build_conn() |> fetch_query_params()
+
+      result = WidgetView.render("show.json", %{data: widget, conn: conn})
+
+      assert %{data: %{id: "d290f1ee-6c54-4b01-90e6-d701748f0851", type: "widget"}} =
+               result
+    end
+  end
+end

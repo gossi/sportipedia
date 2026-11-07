@@ -66,7 +66,7 @@ These samples show how placeholders in templates resolve to actual code.
 All samples use these domain model values:
 
 | Variable | Value |
-|---|---|
+| --- | --- |
 | `<Subdomain>` / `<_subdomain>` / `<-subdomain>` / `<subdomain>` | `catalog` |
 | `<Composite>` | `equipment` |
 | `<DomainObject>` / `<domain-object>` / `<domain_object>` | `apparatus` |
@@ -76,7 +76,7 @@ All samples use these domain model values:
 ### Module Names
 
 | Template | Resolved |
-|---|---|
+| --- | --- |
 | `Sportipedia.<Subdomain>.<Composite>.<DomainObject>` | `Sportipedia.Catalog.Equipment.Apparatus` |
 | `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Aggregate` | `Sportipedia.Catalog.Equipment.Apparatus.ApparatusAggregate` |
 | `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<Command>` | `Sportipedia.Catalog.Equipment.Apparatus.Command.CatalogApparatus` |
@@ -88,18 +88,18 @@ All samples use these domain model values:
 ### File Paths
 
 | Template | Resolved |
-|---|---|
+| --- | --- |
 | `/services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/public_api.ex` | `/services/api/lib/sportipedia/catalog/equipment/apparatus/public_api.ex` |
-| `/services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/operation/<-command>/handler.ex` | `/services/api/lib/sportipedia/catalog/equipment/apparatus/operation/catalog-apparatus/handler.ex` |
+| `/services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/operations/<-command>/handler.ex` | `/services/api/lib/sportipedia/catalog/equipment/apparatus/operations/catalog-apparatus/handler.ex` |
 | `/services/api/lib/sportipedia_web/<_subdomain>/<composite>/<domain_object>_controller.ex` | `/services/api/lib/sportipedia_web/catalog/equipment/apparatus_controller.ex` |
 | `/services/api/lib/sportipedia_web/<_subdomain>/<composite>/schemas/<domain_object>_response.ex` | `/services/api/lib/sportipedia_web/catalog/equipment/schemas/apparatus_response.ex` |
-| `/services/api/test/sportipedia/<_subdomain>/<composite>/<domain_object>/operation/<_command>_test.exs` | `/services/api/test/sportipedia/catalog/equipment/apparatus/operation/catalog_apparatus_test.exs` |
+| `/services/api/test/sportipedia/<_subdomain>/<composite>/<domain_object>/operations/<_command>_test.exs` | `/services/api/test/sportipedia/catalog/equipment/apparatus/operations/catalog_apparatus_test.exs` |
 | `/services/api/test/sportipedia_web/<_subdomain>/<composite>/<_command>_request_test.exs` | `/services/api/test/sportipedia_web/catalog/equipment/catalog_apparatus_request_test.exs` |
 
 ### Function Names
 
 | Template | Resolved |
-|---|---|
+| --- | --- |
 | `def <_command>(conn, params)` | `def catalog_apparatus(conn, params)` |
 | `def authorize(:<_command>, user, params)` | `def authorize(:catalog_apparatus, user, params)` |
 | `<PublicAPI>.<_command>(params)` | `Apparatus.catalog_apparatus(params)` |
@@ -108,7 +108,7 @@ All samples use these domain model values:
 ### Routes
 
 | Template | Resolved |
-|---|---|
+| --- | --- |
 | `post "/<-command>", <DomainObject>Controller, :<_command>` | `post "/catalog-apparatus", ApparatusController, :catalog_apparatus` |
 | `get "/:<id>", <DomainObject>Controller, :read_<domain_object>` | `get "/:id", ApparatusController, :read_apparatus` |
 | `scope "/<-subdomain>", SportipediaWeb.<Subdomain>` | `scope "/catalog", SportipediaWeb.Catalog` |
@@ -118,7 +118,7 @@ All samples use these domain model values:
 ### JSON:API
 
 | Template | Resolved |
-|---|---|
+| --- | --- |
 | `type: "<domain-object>s"` | `type: "apparatuses"` |
 | `path: "<-subdomain>/<composite>/<domain-object>s"` | `path: "catalog/equipment/apparatuses"` |
 | `jsonapi_body("<domain-object>s", %{title: "Vault"})` | `jsonapi_body("apparatus", %{title: "Vault"})` |
@@ -126,7 +126,7 @@ All samples use these domain model values:
 ### OpenAPI / Schema
 
 | Template | Resolved |
-|---|---|
+| --- | --- |
 | `title: "<composite>.<DomainObject>"` | `title: "equipment.Apparatus"` |
 | `title: "<composite>.<DomainObject>s"` | `title: "equipment.Apparatuses"` |
 | `tags ["<composite>"]` | `tags ["equipment"]` |
@@ -134,6 +134,6 @@ All samples use these domain model values:
 ### Test Module Names
 
 | Template | Resolved |
-|---|---|
-| `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Operation.<_Command>Test` | `Sportipedia.Catalog.Equipment.Apparatus.Operation.CatalogApparatusTest` |
-| `SportipediaWeb.<Subdomain>.<Composite>.<_Command>RequestTest` | `SportipediaWeb.Catalog.Equipment.CatalogApparatusRequestTest` |
+| --- | --- |
+| `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Operation.<Command>Test` | `Sportipedia.Catalog.Equipment.Apparatus.Operation.CatalogApparatusTest` |
+| `SportipediaWeb.<Subdomain>.<Composite>.<Command>RequestTest` | `SportipediaWeb.Catalog.Equipment.CatalogApparatusRequestTest` |

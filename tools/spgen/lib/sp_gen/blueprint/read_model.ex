@@ -1,0 +1,162 @@
+defmodule SpGen.Blueprint.ReadModel do
+  @moduledoc """
+  Executable transfer of `docs/architecture/blueprints/backend/domain/read-model.md`.
+
+  Generates the shared read model (Ecto schema) and its changesets. Fixed
+  shape: `insert_changeset/2` and `update_changeset/2` always both exist.
+
+  Migrations are out of scope (Ecto's own generators handle them).
+  """
+
+  use SpGen.Blueprint
+
+  alias SpGen.Esdm
+
+  @path "services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/read_model.ex"
+  @module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>ReadModel"
+
+  def name, do: :read_model
+  def source_kinds, do: [:"read-model"]
+  def module_template, do: @module
+
+  @doc "The read model's file path (used as a `requires` gate)."
+  @spec module_file(Context.t()) :: String.t()
+  def module_file(%Context{} = ctx), do: Context.render(@path, ctx)
+
+  def plans(%Context{} = ctx) do
+    [
+      %FilePlan{
+        path: Context.render(@path, ctx),
+        module: Context.render(@module, ctx),
+        units: units(ctx),
+        unit_created: true
+      }
+    ]
+  end
+
+  defp moduledoc_text(ctx) do
+    case Esdm.describe(ctx.element) do
+      nil -> "Represents a #{ctx.constituent} in the #{ctx.composite}."
+      desc -> desc
+    end
+  end
+
+  defp schema_fields(ctx), do: Enum.reject(ctx.fields, &(&1.name == "id"))
+
+  defp all_field_atoms(ctx) do
+    [":id" | Enum.map(schema_fields(ctx), &":#{&1.name}")] |> Enum.join(", ")
+  end
+
+  defp required_field_atoms(ctx) do
+    ctx.fields |> Enum.filter(& &1.required) |> Enum.map(&":#{&1.name}") |> Enum.join(", ")
+  end
+
+  defp updatable_field_atoms(ctx), do: Enum.map_join(schema_fields(ctx), ", ", &":#{&1.name}")
+
+  # ------------------------------------------------------------------- units
+
+  defp units(ctx) do
+    base = [
+      %Unit{
+        id: :moduledoc,
+        check: &Source.has_moduledoc?/1,
+        render: fn c -> "@moduledoc \"\"\"\n#{moduledoc_text(c)}\n\"\"\"" end,
+        place: Merge.head(:moduledoc)
+      },
+      %Unit{
+        id: {:use, "TypedEctoSchema"},
+        check: fn src -> Source.has_use?(src, "TypedEctoSchema") end,
+        render: fn _ctx -> "use TypedEctoSchema" end,
+        place: Merge.head(:use)
+      },
+      %Unit{
+        id: {:import, "Ecto.Changeset"},
+        check: fn src -> Source.has_import?(src, "Ecto.Changeset") end,
+        render: fn _ctx -> "import Ecto.Changeset" end,
+        place: Merge.head(:import)
+      }
+    ]
+
+    base ++ attr_units() ++ field_units(ctx) ++ changeset_units(ctx)
+  end
+
+  defp attr_units do
+    attrs = [
+      {:primary_key, "@primary_key {:id, :binary_id, autogenerate: false}"},
+      {:timestamps_opts, "@timestamps_opts [type: :utc_datetime_usec]"},
+      {:schema_prefix, "@schema_prefix \"TODO-subdomain\""}
+    ]
+
+    Enum.map(attrs, fn {attr, text} ->
+      %Unit{
+        id: {:attribute, attr},
+        check: fn src -> Source.has_attribute?(src, attr) end,
+        render: fn c -> String.replace(text, "TODO-subdomain", c.subdomain) end,
+        place: Merge.head(:attribute)
+      }
+    end)
+  end
+
+  defp field_units(ctx) do
+    Enum.map(schema_fields(ctx), fn f ->
+      key = ":#{f.name}"
+
+      %Unit{
+        id: {:field, f.name},
+        check: fn src -> Source.entry?(src, :field, key) end,
+        render: fn _ctx -> "field :#{f.name}, #{Context.ecto_type(f)}" end,
+        place:
+          Merge.inside(
+            :typed_schema,
+            fn c, text ->
+              "typed_schema \"#{c.constituent}\" do\n#{text}\n\n  timestamps()\nend"
+            end,
+            before_trailing: :timestamps
+          )
+      }
+    end)
+  end
+
+  defp changeset_units(ctx) do
+    unique_lines = unique_constraint_lines(ctx)
+
+    for {name, atomize} <- [
+          {"insert_changeset", &all_field_atoms/1},
+          {"update_changeset", &updatable_field_atoms/1}
+        ] do
+      %Unit{
+        id: {:def, String.to_atom(name), 2},
+        check: fn src -> Source.has_def?(src, String.to_atom(name), 2) end,
+        render: fn c ->
+          """
+          @doc \"\"\"
+          Validates and prepares the #{c.constituent} read model for #{if name == "insert_changeset", do: "insertion", else: "update"}.
+          \"\"\"
+          def #{name}(read_model, attrs) do
+            read_model
+            |> cast(attrs, [#{atomize.(c)}])
+          #{if name == "insert_changeset" do
+            "    |> validate_required([#{required_field_atoms(c)}])"
+          end}#{unique_lines}
+          end
+          """
+        end,
+        place: Merge.body_end()
+      }
+    end
+  end
+
+  # fields declared unique by the aggregate's invariants / command constraints
+  # get a `unique_constraint` chain step; the exact name matches the default
+  # unique-index name migrations create (`<table>_<field>_index`)
+  defp unique_constraint_lines(%Context{} = ctx) do
+    ctx
+    |> Context.unique_fields()
+    |> Enum.uniq()
+    |> Enum.map(fn field ->
+      snake = Macro.underscore(field)
+      "    |> unique_constraint(:#{snake}, name: :#{ctx.constituent}_#{snake}_index)"
+    end)
+    |> Enum.join("\n")
+  end
+end

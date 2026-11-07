@@ -77,7 +77,14 @@ defmodule Sportipedia.MixProject do
       {:commanded_ecto_projections, "~> 1.4"},
       {:commanded_eventstore_adapter, "~> 1.4"},
       {:commanded_eventsourcingdb_adapter, "0.0.1"},
-      {:eventstore, "~> 1.4"}
+      {:eventstore, "~> 1.4"},
+
+      # Blueprint generators (`mix sp.gen.*`). A path dependency on purpose:
+      # Mix resolves tasks from dependencies without compiling this app first,
+      # so the generators work on a tree that does not compile yet — which is
+      # exactly when they are needed. Dev/test only, and `runtime: false`
+      # keeps the tool out of releases and out of the app's code path.
+      {:spgen, path: "../../tools/spgen", runtime: false, only: [:dev, :test]}
     ]
   end
 

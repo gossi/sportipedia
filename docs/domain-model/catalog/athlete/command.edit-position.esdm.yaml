@@ -8,6 +8,10 @@ scope:
 data:
   type: object
   properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier of the position to edit"
     title:
       type: string
       description: "Name of the position"
@@ -25,9 +29,13 @@ data:
       type: string
       format: uuid
       description: "Reference to instrument (optional, mutually exclusive with apparatusId)"
+  required:
+    - id
 constraints:
   - name: position-exists
     rule: A position needs to exist (check by id)
+  - name: equipment-exists
+    rule: If apparatusId or instrumentId is provided, the referenced equipment must exist
 publishes:
   - position-edited
 actors:

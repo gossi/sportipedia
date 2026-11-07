@@ -169,14 +169,15 @@ Special Naming Conventions:
 
 Directory Structure:
 
-- `/services/api/lib/sportipedia/catalog/<_composite>/<domain_object>/operation/<_operation>`
+- `/services/api/lib/sportipedia/catalog/<_composite>/<domain_object>/operations/<_operation>`
   - `/command.ex`: Command
   - `/handler.ex`: Command Handler
   - `/<_dto>.ex`: DTO
   - `/<value_object>.ex`: Value Objects
   - `/<_validation>_validator.ex`: Validators
   - `/<_query>_query.ex`: Queries
-- `/services/api/test/sportipedia/catalog/<_composite>/<domain_object>/operation/<_operation>_test.exs`
+- `/services/api/test/sportipedia/catalog/<_composite>/<domain_object>/operations/<_operation>_test.exs`
+- `/services/api/test/sportipedia/catalog/<_composite>/<domain_object>/events/<event_name>_test.exs`
 
 Special Naming Conventions:
 
@@ -220,7 +221,7 @@ Sample structure for a constituent:
 
 ```txt
 /services/api/lib/sportipedia/catalog/<_composite>/<domain_object>/
-|- operation/
+|- operations/
 |  `- <_operation>/
 |     |- command.ex
 |     |- event.ex

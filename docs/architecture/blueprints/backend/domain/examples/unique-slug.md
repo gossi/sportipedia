@@ -1,9 +1,52 @@
+---
+invariant: unique-field
+pattern: SpGen.Invariant.UniqueField
+claims: "unique-<field>, where <field> is a field of the citizen"
+---
+
 # Unique Slug: Validator and Queries
 
-This example covers a fairly common concept of checking for slug uniqueness.
-It explains where to locate the individual parts.
+A `unique-<field>` invariant: the value of `<field>` may belong to no other
+domain object. This is the canonical instance of the pattern; `<field>` is the
+parameter, `slug` the common case.
 
-Make a [query](../query.md) (ideally this is found in the domain model, too) and call it as part of implementation details:
+## Nothing here is hand-written
+
+Generating the command that carries the rule writes all of it, in one run:
+
+1. `Queries.<DomainObject>BySlug` — the lookup (executable:
+   `SpGen.Blueprint.LookupQuery`),
+2. `<DomainObject>Internal.<domain_object>_by_slug/1` — the accessor, lowering
+   the value before the query (`SpGen.Blueprint.InternalAPI`),
+3. `Validators.UniqueSlug` — the validator over that accessor
+   (`SpGen.Blueprint.Validator`),
+4. the read model with `unique_constraint(:slug)` in its changesets
+   (`SpGen.Blueprint.ReadModel`),
+5. `validates :slug, …, by: [function: &UniqueSlug.validate/2]` on the command.
+
+The code below is the reference for **review**, not a template to copy. If the
+generated file differs, the generator is wrong — fix `SpGen.Blueprint`, not the
+file.
+
+## Contract
+
+- Duplicate value → `{:error, :<field>_exists}`.
+- The record that already owns the value passes (the edit case): the validator
+  compares the found row's `id` against `context.id`.
+- An absent value is not the validator's business — the command's
+  `allow_nil: true` decides that.
+- The canonical form of a slug is **lowercase, stored by the write side**: the
+  command handler emits the fact with the value lowered, so the read model
+  holds one spelling per slug and the accessor's `String.downcase` only has to
+  meet the stored value. The lowercasing is the write side's, not a convention
+  the reader may skip — and it is what lets the database back uniqueness with a
+  **plain** unique index: no case-expression, no functional index, because the
+  indexed column already holds one spelling
+  ([migration](../migration.md)).
+- The database needs the matching unique index; see
+  [migration](../migration.md).
+
+## The pieces it realizes
 
 ```elixir
 defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Queries.<DomainObject>BySlug do
@@ -11,12 +54,9 @@ defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Queries.<DomainObje
   Query to fetch a <domain_object> by its slug.
   """
 
-  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>ReadModel
   import Ecto.Query
+  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>ReadModel
 
-  @doc """
-  Creates a new query to fetch a <domain_object> by slug.
-  """
   def new(slug) do
     from(r in <DomainObject>ReadModel,
       where: r.slug == ^slug
@@ -25,57 +65,47 @@ defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Queries.<DomainObje
 end
 ```
 
-Use that query in the [internal API](../internal-api.md)
-
 ```elixir
-defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Internal do
-  @moduledoc """
-  Internal API for querying <domain_object> read models within the bounded context.
-  """
-
-  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Queries.<DomainObject>BySlug
-
-  @doc """
-  Fetches a <domain_object> by its slug. Returns nil if not found.
-  """
-  def <domain_object>_by_slug(slug) do
-    slug
-    |> String.downcase()
-    |> <DomainObject>BySlug.new()
-    |> Repo.one()
-  end
+def <domain_object>_by_slug(slug) do
+  slug
+  |> String.downcase()
+  |> <DomainObject>BySlug.new()
+  |> Repo.one()
 end
 ```
 
-Use from [Validator](../validator.md)
-
 ```elixir
-defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Validators.UniqueSlug do
-  @moduledoc """
-  Validates that a <domain_object> slug is unique within the catalog.
-  """
-
-  use Vex.Validator
-
-  alias Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Internal
-
-  @doc """
-  Validates the given slug value for uniqueness.
-  """
-  @spec validate(String.t(), map()) :: :ok | {:error, String.t()}
-  def validate(value, context) do
-    with <domain_object> when not is_nil(<domain_object>) <- <DomainObject>Internal.<domain_object>_by_slug(value),
-         false <- slug_belongs_to_<domain_object>?(<domain_object>, context) do
-      {:error, :slug_exists}
-    else
-      _ -> :ok
-    end
-  end
-
-  defp slug_belongs_to_<domain_object>?(<domain_object>, context) do
-    id = Map.get(context, :id)
-
-    id == <domain_object>.id
+def validate(value, context) do
+  with <domain_object> <- <DomainObject>Internal.<domain_object>_by_slug(value),
+       false <- is_nil(<domain_object>),
+       false <- slug_belongs_to_<domain_object>?(<domain_object>, context) do
+    {:error, :slug_exists}
+  else
+    _ -> :ok
   end
 end
+
+defp slug_belongs_to_<domain_object>?(<domain_object>, context) do
+  Map.get(context, :id) == <domain_object>.id
+end
 ```
+
+## Tests
+
+Asserted in the [command's tests](../command.md#tests): duplicate rejected,
+unchanged value on edit accepted, a value owned by another record rejected.
+
+## Learnings
+
+### Finding: two error conventions for one rule
+
+#### DO NOT
+
+Return `{:error, "slug already exists"}` in one citizen and `{:error,
+:slug_exists}` in another.
+
+#### DO INSTEAD
+
+The atom the pattern defines, `{:error, :<field>_exists}`, and the same atom in
+the test assertion. Documentation and code that disagree about this are a bug in
+one of them.

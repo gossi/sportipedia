@@ -1,0 +1,39 @@
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: widget-created
+description: "A widget was cataloged"
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: widget
+data:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier"
+    title:
+      type: string
+      description: "Name of the widget"
+    slug:
+      type: string
+      description: "URL-friendly unique identifier"
+    label:
+      type: string
+      description: "Short label shown in lists"
+    description:
+      type: string
+      description: "Optional description"
+    coachId:
+      type: string
+      format: uuid
+      description: "Owning coach"
+    teamId:
+      type: string
+      format: uuid
+      description: "Owning team"
+  required:
+    - id
+    - title
+    - slug

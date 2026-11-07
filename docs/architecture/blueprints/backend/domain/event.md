@@ -1,75 +1,38 @@
+---
+generator: "mix sp.gen.event <event>"
+blueprints:
+  - SpGen.Blueprint.Event
+  - SpGen.Blueprint.EventTest
+module: "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Event.<Event>"
+writes: [module, event test]
+---
+
 # Event
 
-| Attribute | Value |
-| --- | --- |
-| Schema | [Core](../../../../schemas/core/v1.yaml) |
-| File Path | `/services/api/lib/sportipedia/<_subdomain>/<_composite>/<domain_object>/event.ex` |
-| Module Name | `Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Event.<Event>` |
-| Test | See [Operation Test](./operation-test.md) |
+A fact that happened. Events are the unit of behaviour that the aggregate, the
+projector and their tests are written against.
 
 ## Prerequisite
 
-- The [Domain Model](../../../../domain-model/README.md) contains the event
+- The [Domain Model](../../../../domain-model/README.md) contains the event and
+  its data.
 
-## Implementation
+## What the generator does
 
-Facts about the system
+`use TypedStruct`, `use ExConstructor`, `@derive Jason.Encoder`, and the payload
+by what the event does (derived from the read model's projection rule, so
+`--template` is usually omitted):
 
-- Struct creation with enforced fields
-  - use `TypedStruct`
-  - use `ExConstructor`
-- Add `@derive Jason.Encoder` before `typedstruct` to enable JSON serialization
-  (required for event serialization in tests and event store)
-- Use `typedstruct` (no `enforce: true` at struct level) — enforce only on
-  required fields individually. Optional fields must NOT have `enforce: true`.
+- **create** — every required field, `enforce: true` per field.
+- **update** — `id` enforced, payload optional, plus `get_changes/1`, which
+  returns only the non-nil changed fields without the id. That function is the
+  projector's partial-update source.
+- **delete** — `id` only.
 
-### Documentation
+Never `enforce: true` at struct level: optional fields have to stay omittable.
 
-Derive all documentation from the [Domain Model](../../../../domain-model/README.md):
+## Tests
 
-- **`@moduledoc`**: Describe what happened in the domain, using the event name.
-- **`@doc`**: Describe the `new/1` function (creates a new event instance).
-
-Example:
-
-```elixir
-@moduledoc """
-A sport was suggested to the catalog.
-"""
-
-@doc """
-Creates a new SportSuggested event.
-"""
-```
-
-### Implementation Template
-
-```elixir
-defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Event.<Event> do
-  @moduledoc """
-  <Describe what happened in the domain, derived from the event name.>
-  """
-
-  use TypedStruct
-  use ExConstructor
-
-  @derive Jason.Encoder
-  @doc """
-  Creates a new <Event> event.
-  """
-  typedstruct do
-    field :<_field>, <field type>, enforce: true/false
-  end
-end
-```
-
-## Test
-
-Tests events.
-
-- Struct creation with enforced fields
-  - When testing enforced fields, use `struct!(Event, %{})` which raises
-    `ArgumentError` if required fields are missing
-  - Optional fields (no `enforce: true`) can be omitted in struct literals
-    without raising — test this by creating events without optional fields
-- Serialization, via `Jason.encode!(event)`
+The event owns the [event test](./event-test.md): `describe "Event"` with the
+construction, enforced-field and JSON serialization cases. The `get_changes/1`
+semantics are still manual ([Known gaps](../../README.md#known-gaps)).

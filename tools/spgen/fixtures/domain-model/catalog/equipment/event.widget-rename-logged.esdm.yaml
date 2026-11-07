@@ -1,0 +1,17 @@
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: widget-rename-logged
+description: "The rename of a widget was written to the audit trail"
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: widget
+data:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier of the renamed widget"
+  required:
+    - id

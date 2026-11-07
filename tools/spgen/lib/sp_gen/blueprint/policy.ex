@@ -1,0 +1,111 @@
+defmodule SpGen.Blueprint.Policy do
+  @moduledoc """
+  Executable transfer of `docs/architecture/blueprints/backend/domain/policy.md`
+  — the policy file itself.
+
+  Adds the operation's `authorize/3` clause(s) to the constituent's policy
+  (created when missing). Clause shape follows the domain model's `actors`:
+
+  * guests among the actors → one open clause (`_user`, `:ok`)
+  * `admin` as the only actor → guest denial, `is_admin?` allowance, and the
+    explicit denial of every other authenticated user (`is_user?/1` is "not a
+    guest", never "not an admin" — allowing on it would admit every user to an
+    admin-only operation)
+  * otherwise → the deny/allow guard pair (`is_guest?` → `:error`,
+    `is_user?` → `:ok`), using the shared guards from `Sportipedia.Auth`
+  """
+
+  use SpGen.Blueprint
+
+  @path "services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/policy.ex"
+  @module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Policy"
+
+  def name, do: :policy
+  def source_kinds, do: [:command, :query]
+
+  @doc "The policy's file path (used as a `requires` gate)."
+  @spec module_file(Context.t()) :: String.t()
+  def module_file(%Context{} = ctx), do: Context.render(@path, ctx)
+  def module_template, do: @module
+
+  def plans(%Context{} = ctx) do
+    [
+      %FilePlan{
+        path: Context.render(@path, ctx),
+        module: Context.render(@module, ctx),
+        units: units(ctx),
+        unit_created: true
+      }
+    ]
+  end
+
+  @doc "The actor list is `admin` and nothing else."
+  def admin_only?(%Context{actors: actors}), do: actors == ["admin"]
+
+  @doc false
+  def clauses(ctx) do
+    action = ":#{Context.op_snake(ctx)}"
+
+    cond do
+      guest_allowed?(ctx) ->
+        "def authorize(#{action}, _user, _params), do: :ok"
+
+      admin_only?(ctx) ->
+        # `is_user?/1` is "not a guest" (`Sportipedia.Auth.Roles`), so an
+        # admin-only command must not be generated as an `is_user?` allowance —
+        # that is under-restricted. The allow is `is_admin?`, and every other
+        # authenticated actor is denied explicitly.
+        """
+        def authorize(#{action}, user, _params) when is_guest?(user), do: :error
+        def authorize(#{action}, user, _params) when is_admin?(user), do: :ok
+        def authorize(#{action}, user, _params) when is_user?(user), do: :error
+        """
+        |> String.trim_trailing()
+
+      true ->
+        """
+        def authorize(#{action}, user, _params) when is_guest?(user), do: :error
+        def authorize(#{action}, user, _params) when is_user?(user), do: :ok
+        """
+        |> String.trim_trailing()
+    end
+  end
+
+  defp guest_allowed?(%Context{element: %{kind: :query}} = ctx), do: "guest" in ctx.actors
+  defp guest_allowed?(ctx), do: "guest" in ctx.actors
+
+  # ------------------------------------------------------------------- units
+
+  defp units(ctx) do
+    action = ":#{Context.op_snake(ctx)}"
+
+    [
+      %Unit{
+        id: :moduledoc,
+        check: &Source.has_moduledoc?/1,
+        render: fn c ->
+          "@moduledoc \"\"\"\nAuthorizes #{c.constituent} operations based on user roles.\n\"\"\""
+        end,
+        place: Merge.head(:moduledoc)
+      },
+      %Unit{
+        id: {:behaviour, "Bodyguard.Policy"},
+        check: fn src -> Source.has_behaviour?(src, "Bodyguard.Policy") end,
+        render: fn _ctx -> "@behaviour Bodyguard.Policy" end,
+        place: Merge.head(:attribute)
+      },
+      %Unit{
+        id: {:import, "Sportipedia.Auth.Roles"},
+        check: fn src -> Source.has_import?(src, "Sportipedia.Auth.Roles") end,
+        render: fn _ctx -> "import Sportipedia.Auth.Roles" end,
+        place: Merge.head(:import)
+      },
+      %Unit{
+        id: {:authorize, action},
+        check: fn src -> Source.def_head_has?(src, :authorize, 3, action) end,
+        render: fn c -> clauses(c) end,
+        place: Merge.after_def(:authorize, 3)
+      }
+    ]
+  end
+end

@@ -1,0 +1,38 @@
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: edit-widget
+description: "Edits an existing widget"
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: widget
+data:
+  type: object
+  properties:
+    title:
+      type: string
+      description: "Name of the widget"
+    slug:
+      type: string
+      description: "URL-friendly unique identifier"
+    label:
+      type: string
+      description: "Short label shown in lists"
+    description:
+      type: string
+      description: "Optional description"
+    coachId:
+      type: string
+      format: uuid
+      description: "Owning coach (optional, mutually exclusive with teamId)"
+    teamId:
+      type: string
+      format: uuid
+      description: "Owning team (optional, mutually exclusive with coachId)"
+constraints:
+  - name: widget-exists
+    rule: A widget needs to exist (check by id)
+publishes:
+  - widget-edited
+actors:
+  - user
