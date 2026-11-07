@@ -1,6 +1,6 @@
-defmodule Sportipedia.Catalog.Athlete.Position.Validators.EquipmentExists do
+defmodule Sportipedia.Catalog.Athlete.Position.Validators.ApparatusExists do
   @moduledoc """
-  Validates the 'equipment-exists' rule: If apparatusId or instrumentId is
+  Validates the 'equipment-exists' rule for the apparatus: If apparatusId is
   provided, the referenced equipment must exist
 
   A cross-aggregate reference rule: existence is read through the apparatus and
@@ -12,7 +12,6 @@ defmodule Sportipedia.Catalog.Athlete.Position.Validators.EquipmentExists do
   use Vex.Validator
 
   alias Sportipedia.Catalog.Equipment.Apparatus
-  alias Sportipedia.Catalog.Equipment.Instrument
   alias Sportipedia.Support.Validators.UuidValidator
 
   @doc """
@@ -27,23 +26,7 @@ defmodule Sportipedia.Catalog.Athlete.Position.Validators.EquipmentExists do
     end
   end
 
-  @doc """
-  Validates that the referenced instrument exists (instrumentId clause).
-  """
-  @spec validate_instrument(term(), map()) :: :ok | {:error, :equipment_not_found}
-  def validate_instrument(value, _context) do
-    if UuidValidator.valid_uuid?(value) and instrument_exists?(value) do
-      :ok
-    else
-      {:error, :equipment_not_found}
-    end
-  end
-
   defp apparatus_exists?(id) do
     match?({:ok, _apparatus}, Apparatus.read_apparatus(id))
-  end
-
-  defp instrument_exists?(id) do
-    match?({:ok, _instrument}, Instrument.read_instrument(id))
   end
 end

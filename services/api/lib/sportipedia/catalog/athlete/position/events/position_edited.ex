@@ -6,6 +6,7 @@ defmodule Sportipedia.Catalog.Athlete.Position.Event.PositionEdited do
   """
   use TypedStruct
   use ExConstructor
+
   @derive Jason.Encoder
   typedstruct do
     field :id, String.t(), enforce: true

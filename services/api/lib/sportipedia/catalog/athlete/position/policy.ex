@@ -3,7 +3,9 @@ defmodule Sportipedia.Catalog.Athlete.Position.Policy do
   Authorizes position operations based on user roles.
   """
   import Sportipedia.Auth.Roles
+
   @behaviour Bodyguard.Policy
+
   def authorize(:catalog_position, user, _params) when is_guest?(user), do: :error
   def authorize(:catalog_position, user, _params) when is_user?(user), do: :ok
   def authorize(:archive_position, user, _params) when is_guest?(user), do: :error

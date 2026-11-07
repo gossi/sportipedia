@@ -2,7 +2,9 @@ defmodule Sportipedia.Catalog.Athlete.Position.PositionAggregate do
   @moduledoc """
   A body position or stance, optionally bound to a specific piece of equipment (apparatus or instrument)
   """
+
   use TypedStruct
+
   alias Sportipedia.Catalog.Athlete.Position.Event.PositionArchived
   alias Sportipedia.Catalog.Athlete.Position.Event.PositionCataloged
   alias Sportipedia.Catalog.Athlete.Position.Event.PositionEdited

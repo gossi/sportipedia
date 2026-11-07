@@ -2,6 +2,7 @@ defmodule Sportipedia.Catalog.Athlete.Position do
   @moduledoc """
   Public API for managing positions in the sport.
   """
+  alias Sportipedia.Catalog.Athlete.Position.Queries.ListPositions
   alias Sportipedia.Architecture
   alias Sportipedia.Catalog
   alias Sportipedia.Catalog.Athlete.Position.Command.ArchivePosition
@@ -12,8 +13,6 @@ defmodule Sportipedia.Catalog.Athlete.Position do
   alias Sportipedia.Catalog.Athlete.Position.Queries.ReadPosition
   alias Sportipedia.Catalog.Repo
   alias Sportipedia.Support.ErrorClassifier
-
-  alias Sportipedia.Support.JSONAPI.QueryBuilder
 
   @doc """
   Catalogs a new position: creates it from the command with a generated id,
@@ -81,7 +80,7 @@ defmodule Sportipedia.Catalog.Athlete.Position do
   """
   @spec list_positions(JSONAPI.Config.t()) :: Architecture.public_api([PositionReadModel.t()])
   def list_positions(query) do
-    {:ok, Repo.all(QueryBuilder.build(query, PositionReadModel))}
+    {:ok, Repo.all(ListPositions.new(query))}
   end
 
   @doc """

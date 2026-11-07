@@ -2,7 +2,9 @@ defmodule Sportipedia.Catalog.Athlete.Position.Queries.PositionBySlug do
   @moduledoc """
   Query to fetch a position by its slug.
   """
+
   import Ecto.Query
+
   alias Sportipedia.Catalog.Athlete.Position.PositionReadModel
 
   @doc """

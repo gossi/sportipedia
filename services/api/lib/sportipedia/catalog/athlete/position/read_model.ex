@@ -2,11 +2,14 @@ defmodule Sportipedia.Catalog.Athlete.Position.PositionReadModel do
   @moduledoc """
   Represents a position in the athlete.
   """
+
   use TypedEctoSchema
   import Ecto.Changeset
+
   @primary_key {:id, :binary_id, autogenerate: false}
   @timestamps_opts [type: :utc_datetime_usec]
   @schema_prefix "catalog"
+
   typed_schema "position" do
     field :title, :string
 

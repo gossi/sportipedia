@@ -18,7 +18,7 @@ defmodule Sportipedia.Catalog.Athlete.Position.Queries.ReadPosition do
     if UuidValidator.valid_uuid?(id_or_slug) do
       from(r in PositionReadModel, where: r.id == ^id_or_slug)
     else
-      id_or_slug |> String.downcase() |> PositionBySlug.new()
+      PositionBySlug.new(id_or_slug)
     end
   end
 end

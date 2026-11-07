@@ -10,21 +10,15 @@ defmodule Sportipedia.Catalog.Athlete.Position.Validators.PositionExists do
   off it.
   """
   use Vex.Validator
+
   alias Sportipedia.Catalog.Athlete.Position.PositionInternal
   alias Sportipedia.Support.Validators.UuidValidator
 
   @doc """
   Validates the given id value.
   """
-  # `term()`, not `String.t()`: the value reaches here straight off the request,
-  # and a request can name an id with anything at all.
   @spec validate(term(), map()) :: :ok | {:error, :not_found}
   def validate(id, _context) do
-    # The existence check is a round trip on the primary key, and `Repo.get/2`
-    # raises on a value it cannot put in that clause: nil, a blank string, an
-    # id of the wrong shape. A raise here reaches the client as 500. A
-    # value that cannot denote the resource denotes no resource — the pattern's
-    # own verdict for an unknown id, given without leaving the process.
     if UuidValidator.valid_uuid?(id) do
       case PositionInternal.position_by_id(id) do
         nil -> {:error, :not_found}
