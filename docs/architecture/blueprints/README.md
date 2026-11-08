@@ -115,11 +115,25 @@ mix sp.gen                          # generators by actor, in run order
 mix sp.gen.command catalog-apparatus
 mix sp.gen.event event.apparatus-cataloged
 mix sp.gen.aggregate esdm:domain=sport/bounded-context=sport/aggregate=apparatus
+mix sp.check                        # the model carries everything the generators need
+mix sp.check docs/domain-model/catalog/equipment
 ```
 
 An element is an `esdm:` reference, a `*.esdm.yaml` path, `kind.name`, or a bare
 name resolved among the kinds that generator produces. When a bare name is
 ambiguous, the error prints the `esdm:` references that disambiguate it.
+
+### Checking the model
+
+`mix sp.check` answers one question without generating anything: does the model
+carry all information the generators need? It enforces the generators' own
+contracts through the same code — the fixture contract (`schema.examples` keys,
+their home, schema-declared fields, reference shape; plus reference resolution
+across the whole model) and a non-empty `description` on commands, events and
+queries, whose absence would materialize `TODO:` prose slots. No arguments check
+the whole model; element addresses or directories scope it. Findings exit 1: a
+model that passes `sp.check` generates cleanly — the design step runs it in
+preflight beside `esdm lint`.
 
 ### Templates
 
@@ -142,18 +156,24 @@ Order never matters: a reference to a citizen that does not exist yet defers,
 and the closure pass of the run that creates it back-fills. The listing is the
 known-good sequence:
 
-`read_model → event → aggregate → query → internal_api → command →
+`read_model → test_support → event → aggregate → query → internal_api → command →
 command_handler → projector → policy → public_api`, then
 `view → schema → controller → bruno`.
 
 A generator also plans the blueprints its code calls — a validator with the
 internal API it uses and the lookup query and read model behind that accessor —
-so the explicit list is shorter than the number of files written.
+so the explicit list is shorter than the number of files written. A run whose
+blueprints declare `closure_scope: :none` (`test_support`) additionally skips
+the neighborhood sweep: it touches its own outputs and its declared
+dependencies, nothing else.
 
 ### Reading the report
 
 - `Created` — new file.
 - `Updated` — missing units appended to an existing file.
+- `Rewritten` — a projection (`fixtures/<plural>.ex`) differed from its model:
+  replaced whole. A model-owned file has no units to merge — drift there is
+  staleness, and the render is the truth.
 - `Ignored` — nothing missing. A line ending in `skipped: spgen <x>` is a
   deferred unit: run `<x>`. A deferral is guidance, not an error.
 - `Outdated` — a line exists but does not carry everything the model states now

@@ -36,6 +36,8 @@ If any answer is "no" or "unsure", STOP and ask.
 - [ ] Have I read every ESDM file for every operation in scope — the commands,
       the events, the aggregate, the read model, and the queries?
 - [ ] Did `esdm lint` pass for this constituent, or did I raise a `MODEL GAP`?
+- [ ] Did `mix sp.check` pass for this constituent (fixture contract, prose
+      slots), or did I stop on its findings?
 - [ ] Am I planning ONLY the named slice?
 - [ ] Do I have everything I need from documentation, with no code exploration?
 
@@ -106,10 +108,13 @@ Emit the ordered list of `mix sp.gen.*` invocations, with `--template` and any
 layout belongs to the generators, and restating it produces a plan that
 contradicts the tree it is supposed to produce.
 
-One element per call, in dependency order: read model → event → aggregate →
-command or query → command handler → projector → policy → public API → view →
-schema → controller → Bruno. Shared citizens (read model, aggregate, view,
-schemas) appear once, on the first operation that needs them.
+One element per call, in dependency order: read model → test-support (once per
+read model that declares `schema.examples`) → event → aggregate → command or
+query → command handler → projector → policy → public API → view → schema →
+controller → Bruno. Shared citizens (read model, aggregate, view, schemas)
+appear once, on the first operation that needs them. The test-support call goes
+directly after its `sp.gen.read_model`: fixtures are only useful to the tests
+the later calls generate.
 
 ## Step 4: Work Packages
 
@@ -152,7 +157,7 @@ process managers, multi-aggregate reads).
 
 If any answer is "no", you have padding, scope creep, or an unverified claim:
 
-- [ ] Did I run `esdm lint` before designing?
+- [ ] Did I run `esdm lint` and `mix sp.check` before designing?
 - [ ] Did I preflight spec against model, and raise every disagreement as a
       `MODEL GAP`?
 - [ ] Did I avoid naming any file path or module name?
