@@ -40,9 +40,13 @@ defmodule SpGen.ContextTest do
       assert {:error, {:unknown_location, :subdomain}} = Context.build(model, actor, [])
     end
 
-    test "unknown operation info errors, never guesses", %{model: model} do
+    test "a command without a declared operation stays undecided — nothing is guessed", %{
+      model: model
+    } do
+      # the real model's apparatus commands predate the operation annotations —
+      # the ctx keeps nil, and a *run* on such a command is refused by SpGen
       c = ctx(model, "command.catalog-apparatus")
-      assert c.operation == :create
+      assert c.operation == nil
     end
   end
 

@@ -19,24 +19,25 @@ defmodule SpGen.Report do
   @typedoc "One report line, in print order."
   @type line :: String.t()
 
-  @headings [:created, :updated, :ignored, :stale, :unresolved, :blocked, :failed]
+  @headings [:created, :updated, :rewritten, :ignored, :stale, :unresolved, :blocked, :failed]
   @labels %{
     created: "Created",
     updated: "Updated",
+    rewritten: "Rewritten",
     ignored: "Ignored",
     stale: "Outdated",
     unresolved: "Unresolved rules",
     blocked: "Blocked",
     failed: "Failed"
   }
-  @check_labels %{created: "Would create", updated: "Would update"}
+  @check_labels %{created: "Would create", updated: "Would update", rewritten: "Would rewrite"}
 
   # groups whose items state what to change, printed as detail lines
   @detail_groups [:stale, :unresolved]
 
   # a path is stated once per run; the furthest-along state of a file wins
   # and the `skipped:` notes of every row touching that file accumulate
-  @write_order [created: 0, updated: 1, ignored: 2]
+  @write_order [created: 0, updated: 1, rewritten: 2, ignored: 3]
   @write_groups Keyword.keys(@write_order)
 
   # project roots are noise in every line; the citizen path behind them is not
@@ -75,6 +76,8 @@ defmodule SpGen.Report do
   defp entries({:backfill, path, _ids}), do: [{:updated, path, []}]
   defp entries({:unchanged, path}), do: [{:ignored, path, []}]
 
+  defp entries({:rewritten, path}), do: [{:rewritten, path, []}]
+
   defp entries({:deferred, path, requests}),
     do: [{:ignored, path, Enum.map(requests, &elem(&1, 1))}]
 
@@ -86,6 +89,8 @@ defmodule SpGen.Report do
   defp entries({:unresolved, element, details}), do: [{:unresolved, element, details}]
 
   defp entries({:checked, path, [:whole_file]}), do: [{:created, path, []}]
+
+  defp entries({:checked, path, [:rewrite]}), do: [{:rewritten, path, []}]
 
   defp entries({:checked, path, ids}) do
     # a stale line is never written, so it is not part of "would update"

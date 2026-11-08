@@ -59,6 +59,7 @@ defmodule SpGen do
   # It is also the order `mix sp.gen` lists them in.
   @generator_order [
     :read_model,
+    :test_support,
     :event,
     :aggregate,
     :query,
@@ -106,6 +107,7 @@ defmodule SpGen do
       query: [B.Query, B.QueryTest],
       read_model: [B.ReadModel],
       schema: [B.Schema, B.SchemaTest],
+      test_support: [B.Fixtures, B.Factory],
       view: [B.View, B.ViewTest]
     }
   end
@@ -204,7 +206,9 @@ defmodule SpGen do
              context_opts(operation, opts)
              |> Keyword.put(:repo_root, repo_root)
              |> Keyword.put(:fs, fs)
-           ) do
+           ),
+         :ok <- Blueprint.validate_hook(blueprint, ctx),
+         :ok <- require_operation(element, ctx) do
       plans = plans_for(modules, ctx, model, opts)
       check? = Keyword.get(opts, :check, false)
       formatter_opts = Formatter.opts(formatter_cwd, fs)
@@ -212,7 +216,7 @@ defmodule SpGen do
       run = new_run(repo_root, formatter_opts, check?, fs)
 
       {run, seed} = apply_plans(plans, run)
-      created? = Enum.any?(seed, &match?({:created, _}, &1))
+      created? = Enum.any?(seed, &match?({:created, _}, &1)) and blueprint.closure_scope() == :all
 
       backfill =
         if created? and not check? do
@@ -231,7 +235,7 @@ defmodule SpGen do
           []
         end
 
-      {:ok, seed ++ backfill ++ unresolved_rows(ctx)}
+      {:ok, seed ++ backfill ++ unresolved_rows(ctx) ++ effect_gap_rows(ctx)}
     else
       {:error, {:unknown_location, var}} ->
         {:error,
@@ -309,6 +313,43 @@ defmodule SpGen do
 
   defp default_root(fs), do: fs |> cwd() |> find_root(fs)
 
+  # What a command does is a decision, not a reading exercise: a run that
+  # finds neither an annotation nor an explicit --template is refused here,
+  # where the message names both possible fixes.
+  defp require_operation(%Element{kind: :command, name: name, source: source}, %{operation: nil}) do
+    {:error,
+     "no operation declared for command #{name} — add metadata.annotations.spgen.operation " <>
+       "(create|update|delete|none) to #{source}, or pass --template"}
+  end
+
+  defp require_operation(_element, _ctx), do: :ok
+
+  # Effect-bearing runs report open questions instead of inventing answers:
+  # an event the read model never decided on generates no projector clause and
+  # no aggregate fold — the gap is stated until a declaration closes it.
+  defp effect_gap_rows(%Context{element: %Element{kind: :event} = e} = ctx) do
+    case Context.effect_for_event(ctx, e.name) do
+      nil -> [{:unresolved, e.address, [effect_gap_text(e.name)]}]
+      _ -> []
+    end
+  end
+
+  defp effect_gap_rows(%Context{element: %Element{kind: :aggregate} = agg, model: model} = ctx) do
+    details =
+      for e <- Esdm.events_of(model, agg.name),
+          is_nil(Context.effect_for_event(ctx, e.name)),
+          do: effect_gap_text(e.name)
+
+    if details == [], do: [], else: [{:unresolved, agg.address, details}]
+  end
+
+  defp effect_gap_rows(_ctx), do: []
+
+  defp effect_gap_text(event_name) do
+    "no operation declared by the read model for #{event_name} — metadata.annotations.spgen.operation.#{event_name} " <>
+      "(create|update|delete|none) decides materialization; projector clause and apply fold skipped"
+  end
+
   defp cwd({SpGen.FS.Local, nil}), do: File.cwd!()
   defp cwd(_fs), do: "/"
 
@@ -351,8 +392,11 @@ defmodule SpGen do
         disambiguates)
 
     Options:
-      --template       what the operation does: create | update | delete | read | collection
-                       (default: derived from the domain model)
+      --template       what the operation does: create | update | delete | none | read | collection
+                       (default: the operation DECLARED in the model —
+                       metadata.annotations."spgen.operation" on commands,
+                       "spgen.operation.<event>" on read models — or, for
+                       queries, the shape of the result)
       --subdomain      override the inferred subdomain
       --composite      override the inferred composite
       --constituent    override the inferred constituent (domain object)
@@ -371,6 +415,8 @@ defmodule SpGen do
   # * `{:backfill, path, [unit_id]}` — appended by the closure pass after this
   #   run created a citizen that the unit references
   # * `{:unchanged, path}` — everything the plan wants is already there
+  # * `{:rewritten, path}` — a projection's render differs from the file on
+  #   disk; the whole file is replaced (its model is the only author)
   # * `{:deferred, path, [{unit_id, reason}]}` — units waiting for a citizen
   #   that has not been generated yet (reported only — generation order is
   #   not an error, and the tree stays compilable)
@@ -392,6 +438,7 @@ defmodule SpGen do
           | {:merged, String.t(), [term()]}
           | {:backfill, String.t(), [term()]}
           | {:unchanged, String.t()}
+          | {:rewritten, String.t()}
           | {:deferred, String.t(), [{term(), String.t()}]}
           | {:stale, String.t(), [{term(), [String.t()]}]}
           | {:unresolved, String.t(), [String.t()]}
@@ -467,12 +514,58 @@ defmodule SpGen do
 
   @doc false
   @spec apply_plan(FilePlan.t(), Context.t(), map()) :: {[row()], map()}
+  def apply_plan(%FilePlan{projection: true, path: rel_path} = plan, ctx, run) do
+    abs_path = Path.join(run.repo_root, rel_path)
+    # a projection is gated, not merge-restricted: the closure pass that flips
+    # its gate may land the file wholesale — its content depends on nothing
+    # but the model, so a re-render of equal content is `Ignored`, never a
+    # rewrite, no matter which run triggered it
+    unmet = plan.requires.(ctx) |> Enum.reject(fn {path, _reason} -> existing_fn(run).(path) end)
+
+    if unmet != [] do
+      rows = [
+        {:deferred, rel_path, Enum.map(unmet, fn {_p, reason} -> {:whole_file, reason} end)}
+      ]
+
+      {rows, run}
+    else
+      rewrite_projection(plan, ctx, abs_path, rel_path, run)
+    end
+  end
+
   def apply_plan(%FilePlan{path: rel_path} = plan, ctx, run) do
     abs_path = Path.join(run.repo_root, rel_path)
 
     case FS.read(run.fs, abs_path) do
       {:error, :enoent} -> create(plan, ctx, abs_path, rel_path, run)
       {:ok, text} -> merge(plan, ctx, text, abs_path, rel_path, run)
+    end
+  end
+
+  # a projection is rendered whole and compared: an unchanged file is `Ignored`,
+  # a differing one is rewritten (or only reported, under `--check`)
+  defp rewrite_projection(%FilePlan{scaffold: scaffold}, ctx, abs_path, rel_path, run) do
+    content = Merge.render_new(scaffold.(ctx), run.formatter_opts)
+
+    case FS.read(run.fs, abs_path) do
+      {:ok, ^content} ->
+        {[{:unchanged, rel_path}], run}
+
+      {:ok, _stale_content} ->
+        if run.check? do
+          {[{:checked, rel_path, [:rewrite]}], run}
+        else
+          FS.write!(run.fs, abs_path, content)
+          {[{:rewritten, rel_path}], mark_planned(run, rel_path)}
+        end
+
+      {:error, :enoent} ->
+        if run.check? do
+          {[{:checked, rel_path, [:whole_file]}], run}
+        else
+          FS.write!(run.fs, abs_path, content)
+          {[{:created, rel_path}], mark_planned(run, rel_path)}
+        end
     end
   end
 

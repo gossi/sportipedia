@@ -26,7 +26,7 @@ defmodule SpGen.Blueprint.Controller do
   def name, do: :controller
   def source_kinds, do: [:command, :query]
   def actor, do: :web
-  def operations, do: [:create, :update, :delete, :read, :collection]
+  def operations, do: [:create, :update, :delete, :none, :read, :collection]
   def optional_template?, do: true
 
   @doc false
@@ -254,6 +254,9 @@ defmodule SpGen.Blueprint.Controller do
       {:command, :delete} ->
         []
 
+      {:command, :none} ->
+        [request]
+
       {:command, _} ->
         [view, response, request]
 
@@ -337,6 +340,15 @@ defmodule SpGen.Blueprint.Controller do
           ref("forbidden")
         ]
 
+      {:command, :none} ->
+        [
+          "no_content: \"The #{ctx.constituent} was processed without materialization\"",
+          ref("not_found"),
+          ref("unprocessable_entity"),
+          ref("unauthorized"),
+          ref("forbidden")
+        ]
+
       {:command, _} ->
         [
           ~s|ok: {"The #{ctx.constituent}", "application/vnd.api+json", #{response}}|,
@@ -371,6 +383,17 @@ defmodule SpGen.Blueprint.Controller do
       {:command, :delete} ->
         """
         case #{api}.#{op}(conn.params["id"]) do
+          :ok ->
+            send_resp(conn, :no_content, "")
+
+          {:error, errors} ->
+            {:error, errors}
+        end
+        """
+
+      {:command, :none} ->
+        """
+        case #{api}.#{op}(conn.params) do
           :ok ->
             send_resp(conn, :no_content, "")
 

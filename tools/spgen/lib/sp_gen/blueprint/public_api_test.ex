@@ -38,6 +38,7 @@ defmodule SpGen.Blueprint.PublicAPITest do
         :command ->
           case ctx.operation do
             :delete -> delete_tests(api, op, ctx)
+            :none -> none_tests(api, op, ctx, body)
             _ -> command_tests(api, op, ctx, body)
           end
 
@@ -145,6 +146,23 @@ defmodule SpGen.Blueprint.PublicAPITest do
           unknown
         ]
     end
+  end
+
+  # a `none` operation dispatches facts that materialize nothing — the answer
+  # is the dispatch result itself; no row to seed, none to read back
+  defp none_tests(api, op, ctx, body) do
+    [
+      """
+      test "#{op} succeeds" do
+        assert :ok = #{api}.#{op}(#{param_expr(ctx, body)})
+      end
+      """,
+      """
+      test "#{op} returns validation errors" do
+        assert {:error, {:validation_failure, _errors}} = #{api}.#{op}(%{})
+      end
+      """
+    ]
   end
 
   # the citizen's create operation: `{snake_name, params_literal}`

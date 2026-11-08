@@ -17,6 +17,9 @@ defmodule SpGen.Blueprint.AggregateTest do
   def plans(%Context{} = ctx) do
     ctx
     |> Context.aggregate_events()
+    # an event nobody declared has no generated apply clause — there is no
+    # fold to test, and the open question is reported by the run
+    |> Enum.reject(&is_nil(Context.effect_for_event(ctx, &1.name)))
     |> Enum.map(fn event -> plan_for_event(ctx, event) end)
   end
 
@@ -92,6 +95,14 @@ defmodule SpGen.Blueprint.AggregateTest do
         result = #{aggregate}.apply(#{seed}, event)
 
         assert is_nil(result)
+        """
+
+      # the declared-none fact flows through: the state leaves unchanged
+      :none ->
+        """
+        state = #{seed}
+
+        assert #{aggregate}.apply(state, event) == state
         """
 
       :update ->

@@ -5,8 +5,10 @@ defmodule SpGen.Blueprint.Aggregate do
 
   Generates the aggregate module (or appends to an existing one): state
   fields and one `apply/2` clause per event of the aggregate — body chosen by
-  what the event's projection does to the read model (`create` sets state,
-  `update` merges changes, `delete` terminates the aggregate with `nil`).
+  the operation the read model *declares* (`spgen.operation.<event>`): `create` sets state,
+  `update` merges changes, `delete` terminates the aggregate with `nil`, and a
+  declared `none` (an audit fact) folds to the unchanged state. Events without
+  any declaration generate no clause and are reported as a model gap.
 
   Fixed shape: the events drive everything, no `--template`.
   """
@@ -51,12 +53,6 @@ defmodule SpGen.Blueprint.Aggregate do
     end
   end
 
-  defp projection_for(ctx, event) do
-    if ctx.read_model do
-      Enum.find(Esdm.projections(ctx.read_model), fn p -> p["event"] == event.name end)
-    end
-  end
-
   # ------------------------------------------------------------------- units
 
   defp units(ctx) do
@@ -94,16 +90,22 @@ defmodule SpGen.Blueprint.Aggregate do
         }
       end) ++
       field_units(ctx) ++
-      Enum.map(events, fn e ->
-        %Unit{
-          id: {:apply, e.name},
-          check: fn src -> Source.def_head_has?(src, :apply, 2, event_key(ctx, e)) end,
-          render: fn c ->
-            apply_clause(c, e, Esdm.projection_effect(projection_for(c, e)))
-          end,
-          requires: event_gate(ctx, e),
-          place: Merge.after_def(:apply, 2)
-        }
+      Enum.flat_map(events, fn e ->
+        case Context.effect_for_event(ctx, e.name) do
+          nil ->
+            []
+
+          effect ->
+            [
+              %Unit{
+                id: {:apply, e.name},
+                check: fn src -> Source.def_head_has?(src, :apply, 2, event_key(ctx, e)) end,
+                render: fn c -> apply_clause(c, e, effect) end,
+                requires: event_gate(ctx, e),
+                place: Merge.after_def(:apply, 2)
+              }
+            ]
+        end
       end)
   end
 
@@ -156,6 +158,15 @@ defmodule SpGen.Blueprint.Aggregate do
         """
         def apply(%#{aggregate}{} = _aggregate, %#{event_pascal}{} = _event) do
           nil
+        end
+        """
+
+      # declared not to materialize — the fact still flows through the fold,
+      # it simply changes nothing
+      :none ->
+        """
+        def apply(%#{aggregate}{} = aggregate, %#{event_pascal}{} = _event) do
+          aggregate
         end
         """
 

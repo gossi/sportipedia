@@ -34,7 +34,7 @@ defmodule SpGen.Blueprint.PublicAPI do
   @spec module_file(Context.t()) :: String.t()
   def module_file(%Context{} = ctx), do: Context.render(@path, ctx)
   def module_template, do: @module
-  def operations, do: [:create, :update, :delete, :read, :collection]
+  def operations, do: [:create, :update, :delete, :none, :read, :collection]
   def optional_template?, do: true
 
   def plans(%Context{} = ctx) do
@@ -56,7 +56,7 @@ defmodule SpGen.Blueprint.PublicAPI do
     ]
 
     cond do
-      ctx.element.kind == :command and ctx.operation == :delete ->
+      ctx.element.kind == :command and ctx.operation in [:delete, :none] ->
         base ++
           [
             "alias #{Context.render(@command_module, ctx)}",
@@ -113,6 +113,9 @@ defmodule SpGen.Blueprint.PublicAPI do
 
       {:command, :delete} ->
         delete(ctx, op, doc)
+
+      {:command, :none} ->
+        none(ctx, op, doc)
 
       {:query, _} ->
         if Context.collection?(ctx), do: collection(ctx, op, doc), else: read(ctx, op, doc)
@@ -171,6 +174,24 @@ defmodule SpGen.Blueprint.PublicAPI do
     @spec #{op}(String.t()) :: Architecture.public_api()
     def #{op}(id) do
       case #{app(ctx)}.dispatch(#{command(ctx)}.new(id: id), consistency: :strong) do
+        :ok -> :ok
+        {:error, errors} -> ErrorClassifier.classify_error(errors)
+      end
+    end
+    """
+  end
+
+  # a command whose declared operation is `none` dispatches facts that
+  # materialize nothing: the dispatch result IS the answer — no read model is
+  # looked up, and none would be there to read
+  defp none(ctx, op, doc) do
+    """
+    @doc \"\"\"
+    #{doc}
+    \"\"\"
+    @spec #{op}(map()) :: Architecture.public_api()
+    def #{op}(params) do
+      case #{app(ctx)}.dispatch(#{command(ctx)}.new(params), consistency: :strong) do
         :ok -> :ok
         {:error, errors} -> ErrorClassifier.classify_error(errors)
       end
@@ -255,7 +276,7 @@ defmodule SpGen.Blueprint.PublicAPI do
   defp body_gate(%Context{element: %{kind: :command}} = c) do
     gates = [{Command.module_file(c), "command not generated (spgen command)"}]
 
-    if c.operation == :delete,
+    if c.operation in [:delete, :none],
       do: gates,
       else:
         gates ++ [{InternalAPI.module_file(c), "internal API not generated (spgen internal_api)"}]

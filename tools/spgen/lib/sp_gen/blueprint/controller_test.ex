@@ -87,7 +87,7 @@ defmodule SpGen.Blueprint.ControllerTest do
   end
 
   defp test_alias_templates(ctx) do
-    needs_read_model? = ctx.element.kind == :query or ctx.operation == :delete
+    needs_read_model? = ctx.element.kind == :query or ctx.operation in [:delete, :none]
 
     [Controller.public_api_template()] ++
       if needs_read_model?, do: [Controller.read_model_template()], else: []
@@ -117,6 +117,12 @@ defmodule SpGen.Blueprint.ControllerTest do
         [
           {"#{name} returns 204 for a cataloged #{ctx.constituent}", &delete_happy/2},
           {"returns 404 for an unknown id", &delete_missing/2},
+          {"returns 403 when unauthenticated", &unauthenticated/2}
+        ]
+
+      {:command, :none} ->
+        [
+          {"#{name} returns 204 for a valid payload", &none_happy/2},
           {"returns 403 when unauthenticated", &unauthenticated/2}
         ]
 
@@ -200,6 +206,23 @@ defmodule SpGen.Blueprint.ControllerTest do
         |> post("#{Controller.collection_path(ctx)}/#{ctx.element.name}", Jason.encode!(jsonapi_body("#{ctx.constituent}", %{})))
 
       assert json_response(conn, 403)
+    end
+    """
+  end
+
+  # a `none` endpoint answers 204 straight from the dispatch — the payload is
+  # the request, there is no row behind it
+  defp none_happy(ctx, name) do
+    """
+    test "#{name}", %{conn: conn} do
+      conn =
+        conn
+        |> authenticate_conn()
+        |> api_conn()
+        |> post("#{Controller.collection_path(ctx)}/#{ctx.element.name}", Jason.encode!(jsonapi_body("#{ctx.constituent}", #{data_literal(ctx, ctx.element)})))
+
+      assert conn.status == 204
+      assert conn.resp_body == ""
     end
     """
   end
@@ -341,13 +364,7 @@ defmodule SpGen.Blueprint.ControllerTest do
         false
 
       rm ->
-        rm
-        |> Esdm.projections()
-        |> Enum.find(&(&1["event"] == event_name))
-        |> case do
-          nil -> false
-          projection -> Esdm.projection_effect(projection) == :create
-        end
+        Map.get(Esdm.declared_effects(rm), event_name) == :create
     end
   end
 end

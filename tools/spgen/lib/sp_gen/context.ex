@@ -41,12 +41,12 @@ defmodule SpGen.Context do
     fs: SpGen.FS.default()
   ]
 
-  @type operation :: :create | :update | :delete | :read | :collection
-  @type effect :: :create | :update | :delete
+  @type operation :: :create | :update | :delete | :read | :collection | :none | nil
+  @type effect :: Esdm.effect() | nil
 
-  @operations ~w(create update delete read collection)a
+  @operations ~w(create update delete none read collection)a
 
-  @doc "The five operations a template-driven blueprint can render."
+  @doc "The operations a template-driven blueprint can render."
   def operations, do: @operations
 
   @doc """
@@ -93,44 +93,34 @@ defmodule SpGen.Context do
     end
   end
 
-  # What the element's operation does, read from the model:
+  # What the element's operation does — always *declared*, never guessed:
   #
-  # * command/event — the effect of the published event's projection rule on
-  #   the read model (`create` inserts a row, `update` merges, `delete`
-  #   removes it)
+  # * command — the document's `metadata.annotations."spgen.operation"`; `nil` when
+  #   nobody declared one (`--template` overrides; a run without either is
+  #   refused by `SpGen` — generation must not guess domain intent)
+  # * event — the effect its read model declares via `spgen.operation.<event>`;
+  #   `:none` is a decision (no materialization), `nil` is an open question
   # * query — `:collection` when the result is an array, `:read` otherwise
   # * anything else — `:create` (the template is irrelevant or fixed)
   @doc false
-  @spec derive_operation(Esdm.t(), Element.t()) :: __MODULE__.operation()
+  @spec derive_operation(Esdm.t(), Element.t()) :: __MODULE__.operation() | nil
   def derive_operation(model, %Element{} = element) do
     case element.kind do
       :command ->
-        # a command's own verb states what it does to the aggregate; the
-        # projection rule only describes the effect on the read model
-        verb_operation(element.name) ||
-          element |> Esdm.publishes() |> List.first() |> event_effect(model, element)
+        Esdm.declared_operation(element)
 
       :event ->
-        event_effect(element.name, model, element)
+        with {:ok, rm} <- Esdm.read_model_for(model, element) do
+          declared_effect(rm, element.name)
+        else
+          _ -> nil
+        end
 
       :query ->
         if get_in(element.doc, ["result", "type"]) == "array", do: :collection, else: :read
 
       _kind ->
         :create
-    end
-  end
-
-  defp event_effect(nil, _model, _element), do: :create
-
-  defp event_effect(event_name, model, element) do
-    with {:ok, rm} <- Esdm.read_model_for(model, element) do
-      case Enum.find(Esdm.projections(rm), fn p -> p["event"] == event_name end) do
-        nil -> :create
-        projection -> Esdm.projection_effect(projection)
-      end
-    else
-      _ -> :create
     end
   end
 
@@ -499,29 +489,20 @@ defmodule SpGen.Context do
   end
 
   @doc """
-  The operation an event performs on the read model (via its projection rule):
-  `:create` | `:update` | `:delete`, defaulting to `:create`.
+  The effect the read model declares for an event: a real operation, `:none`
+  (declared not to materialize), or `nil` — nobody has decided yet, which is
+  an open question, not a decision.
   """
-  def effect_for_event(%__MODULE__{read_model: rm}, event_name) when not is_nil(rm) do
-    rm
-    |> Esdm.projections()
-    |> Enum.find(&(&1["event"] == event_name))
-    |> case do
-      nil -> :create
-      projection -> Esdm.projection_effect(projection)
-    end
-  end
+  @spec effect_for_event(%__MODULE__{}, String.t()) :: Esdm.effect() | nil
+  def effect_for_event(%__MODULE__{read_model: rm}, event_name) when not is_nil(rm),
+    do: declared_effect(rm, event_name)
 
-  def effect_for_event(_ctx, _event_name), do: :create
+  def effect_for_event(_ctx, _event_name), do: nil
 
-  # `archive-position`, `edit-position`, `catalog-position`: the leading verb
-  # of the command's name is what it does to the aggregate
-  defp verb_operation(name) do
-    cond do
-      name =~ ~r/\A(archive|delete|remove|withdraw)(-|\z)/ -> :delete
-      name =~ ~r/\A(edit|update|amend|change)(-|\z)/ -> :update
-      name =~ ~r/\A(catalog|create|add|register)(-|\z)/ -> :create
-      true -> nil
+  defp declared_effect(%Element{} = rm, event_name) do
+    case Map.get(Esdm.declared_effects(rm), event_name) do
+      :invalid -> nil
+      other -> other
     end
   end
 

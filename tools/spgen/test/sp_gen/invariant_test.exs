@@ -18,9 +18,9 @@ defmodule SpGen.InvariantTest do
     %{model: model}
   end
 
-  defp ctx(model, name) do
+  defp ctx(model, name, opts \\ []) do
     element = Esdm.resolve!(model, name)
-    {:ok, ctx} = Context.build(model, element)
+    {:ok, ctx} = Context.build(model, element, opts)
     ctx
   end
 
@@ -136,7 +136,9 @@ defmodule SpGen.InvariantTest do
 
   describe "the domain model's own rules" do
     test "every invariant of the apparatus citizen resolves or stays visible", %{model: model} do
-      c = ctx(model, "command.edit-apparatus")
+      # the apparatus commands predate operation annotations — the run-time
+      # requirement is --template or metadata; a direct context asserts it
+      c = ctx(model, "command.edit-apparatus", operation: :update)
 
       assert Enum.map(c.validators, & &1.name) == ["apparatus-exists", "unique-slug"]
 

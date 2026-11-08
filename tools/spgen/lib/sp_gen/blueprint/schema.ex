@@ -37,7 +37,7 @@ defmodule SpGen.Blueprint.Schema do
     Context.render("#{@dir}/" <> n[:stem] <> ".ex", ctx)
   end
 
-  def operations, do: [:create, :update, :delete, :read, :collection]
+  def operations, do: [:create, :update, :delete, :none, :read, :collection]
   def optional_template?, do: true
 
   def plans(%Context{} = ctx) do
@@ -51,7 +51,7 @@ defmodule SpGen.Blueprint.Schema do
       {:"read-model", _} ->
         [:response, :collection_response]
 
-      {:command, op} when op in [:create, :update] ->
+      {:command, op} when op in [:create, :update, :none] ->
         [:request]
 
       {:query, _} ->

@@ -32,15 +32,19 @@ defmodule SpGenTest do
   @event_test "services/api/test/sportipedia/catalog/equipment/widget/events/widget_created_test.exs"
   @operation_test "services/api/test/sportipedia/catalog/equipment/widget/operations/create_widget_test.exs"
   @archive_command "services/api/lib/sportipedia/catalog/equipment/widget/operations/archive_widget/command.ex"
+  @support_fixture "services/api/test/support/catalog/equipment/fixtures/widgets.ex"
+  @support_ledger "services/api/test/support/catalog/equipment/equipment.ex"
 
   # every generator the widget citizen needs, in the order the tool documents
   @chain [
     {:read_model, ["read-model.widget"]},
+    {:test_support, ["read-model.widget"]},
     {:event, ["widget-created"]},
     {:event, ["widget-edited"]},
     {:event, ["widget-archived"]},
     {:event, ["widget-relabelled"]},
     {:event, ["widget-rename-logged"]},
+    {:event, ["widget-noted"]},
     {:aggregate, ["aggregate.widget"]},
     {:query, ["read-widget"]},
     {:query, ["list-widgets"]},
@@ -48,26 +52,33 @@ defmodule SpGenTest do
     {:command, ["create-widget", "--template", "create"]},
     {:command, ["edit-widget", "--template", "update"]},
     {:command, ["archive-widget", "--template", "delete"]},
+    {:command, ["note-widget", "--template", "none"]},
     {:command_handler, ["create-widget"]},
     {:command_handler, ["edit-widget"]},
     {:command_handler, ["archive-widget"]},
+    {:command_handler, ["note-widget"]},
     {:projector, ["widget-created"]},
     {:projector, ["widget-edited"]},
     {:policy, ["create-widget"]},
     {:policy, ["read-widget"]},
     {:policy, ["list-widgets"]},
+    {:policy, ["note-widget"]},
     {:public_api, ["create-widget"]},
     {:public_api, ["read-widget"]},
     {:public_api, ["list-widgets"]},
+    {:public_api, ["note-widget"]},
     {:view, ["read-model.widget"]},
     {:schema, ["read-model.widget"]},
     {:schema, ["create-widget"]},
+    {:schema, ["note-widget"]},
     {:controller, ["create-widget"]},
     {:controller, ["read-widget"]},
     {:controller, ["list-widgets"]},
+    {:controller, ["note-widget"]},
     {:bruno, ["create-widget"]},
     {:bruno, ["read-widget"]},
-    {:bruno, ["list-widgets"]}
+    {:bruno, ["list-widgets"]},
+    {:bruno, ["note-widget"]}
   ]
 
   defp generate(repo) do
@@ -654,6 +665,261 @@ defmodule SpGenTest do
       source = read(repo, @archive_command)
       assert length(Regex.scan(~r/validates :id/, source)) == 1
       assert source =~ "validates :id, presence: true\n"
+    end
+  end
+
+  # ------------------------------------------------------- test-support projection
+
+  describe "declared operations" do
+    setup do
+      %{repo: FixtureRepo.build()}
+    end
+
+    @edit_command "services/api/lib/sportipedia/catalog/equipment/widget/operations/edit_widget/command.ex"
+
+    test "a command run without --template resolves the declared operation", %{repo: repo} do
+      {:ok, _} = FixtureRepo.run(repo, :read_model, ["read-model.widget"])
+      {:ok, _} = FixtureRepo.run(repo, :command, ["edit-widget"])
+
+      declared = FixtureRepo.read(repo, @edit_command)
+      assert declared =~ "defmodule Sportipedia.Catalog.Equipment.Widget.Command.EditWidget do"
+
+      # and it is the very shape the explicit flag would have picked
+      flagged = FixtureRepo.build()
+      {:ok, _} = FixtureRepo.run(flagged, :read_model, ["read-model.widget"])
+      {:ok, _} = FixtureRepo.run(flagged, :command, ["edit-widget", "--template", "update"])
+
+      assert declared == FixtureRepo.read(flagged, @edit_command)
+    end
+
+    test "a command without a declaration is refused — naming it is a decision", %{repo: repo} do
+      {:ok, _} = FixtureRepo.run(repo, :read_model, ["read-model.widget"])
+
+      command_yaml = "docs/domain-model/catalog/equipment/command.edit-widget.esdm.yaml"
+
+      FixtureRepo.write(
+        repo,
+        command_yaml,
+        repo
+        |> FixtureRepo.read(command_yaml)
+        |> String.replace("    spgen.operation: update\n", "")
+      )
+
+      assert {:error, message} = FixtureRepo.run(repo, :command, ["edit-widget"])
+      assert message =~ "no operation declared for command edit-widget"
+      refute FixtureRepo.exists?(repo, @edit_command)
+    end
+  end
+
+  # --------------------------------------------- query bodies own their imports
+
+  describe "query bodies own their imports" do
+    setup do
+      %{repo: FixtureRepo.build()}
+    end
+
+    @list_query "services/api/lib/sportipedia/catalog/equipment/widget/queries/list_widgets.ex"
+
+    test "a delegating body is left untouched by creating runs — no import is added", %{
+      repo: repo
+    } do
+      {:ok, _} = FixtureRepo.run(repo, :read_model, ["read-model.widget"])
+      {:ok, _} = FixtureRepo.run(repo, :query, ["list-widgets"])
+
+      delegating = """
+      defmodule Sportipedia.Catalog.Equipment.Widget.Queries.ListWidgets do
+        @moduledoc "Delegates to the shared QueryBuilder — no query macros at all."
+
+        alias Sportipedia.Catalog.Equipment.Widget.WidgetReadModel
+        alias Sportipedia.Support.JSONAPI.QueryBuilder
+
+        def new(query) do
+          QueryBuilder.build(query, WidgetReadModel)
+        end
+      end
+      """
+
+      FixtureRepo.write(repo, @list_query, delegating)
+
+      # any creating run sweeps the neighborhood — none may touch this file
+      {:ok, _} = FixtureRepo.run(repo, :event, ["widget-created"])
+      {:ok, _} = FixtureRepo.run(repo, :query, ["list-widgets"])
+
+      assert FixtureRepo.read(repo, @list_query) == delegating
+    end
+  end
+
+  # ------------------------------------------------------- test-support projection
+
+  describe "test-support projections" do
+    setup do
+      %{repo: FixtureRepo.build()}
+    end
+
+    test "a created run lands both outputs", %{repo: repo} do
+      # the read model's closure already converges the test-support citizens —
+      # the explicit run confirms the fixed point and the content is what we
+      # actually promise
+      {:ok, _} = FixtureRepo.run(repo, :read_model, ["read-model.widget"])
+      {:ok, _} = FixtureRepo.run(repo, :test_support, ["read-model.widget"])
+
+      fixtures = FixtureRepo.read(repo, @support_fixture)
+      assert fixtures =~ "def classic_widget do"
+      assert fixtures =~ ~s|id: UUID.uuid5(:dns, "equipment:widget:classic-widget")|
+      assert fixtures =~ "def widgets, do: [classic_widget(), gadget_2000()]"
+
+      ledger = FixtureRepo.read(repo, @support_ledger)
+      assert ledger =~ "def new_widget(%WidgetReadModel{} = fixture) do"
+      assert ledger =~ "def new_widget(attributes) when is_map(attributes) do"
+      assert ledger =~ "def new_widgets(attribute_collection) do"
+    end
+
+    test "the projection rewrites a hand-edited file back to the model — twice is nothing", %{
+      repo: repo
+    } do
+      {:ok, _} = FixtureRepo.run(repo, :read_model, ["read-model.widget"])
+      {:ok, _} = FixtureRepo.run(repo, :test_support, ["read-model.widget"])
+      canonical = FixtureRepo.read(repo, @support_fixture)
+
+      FixtureRepo.write(
+        repo,
+        @support_fixture,
+        """
+        defmodule Sportipedia.TestSupport.Catalog.Equipment.WidgetFixtures do
+          def hand_added, do: :nope
+        end
+        """
+      )
+
+      {:ok, results} = FixtureRepo.run(repo, :test_support, ["read-model.widget"])
+
+      assert Enum.any?(results, fn
+               {:rewritten, path} -> path == @support_fixture
+               _ -> false
+             end)
+
+      assert FixtureRepo.read(repo, @support_fixture) == canonical
+
+      # fixed point: the re-run finds the projection equal to its render
+      {:ok, again} = FixtureRepo.run(repo, :test_support, ["read-model.widget"])
+
+      refute Enum.any?(again, fn
+               {:rewritten, path} -> path == @support_fixture
+               _ -> false
+             end)
+    end
+
+    test "--check reports the rewrite in future tense and writes nothing", %{repo: repo} do
+      {:ok, _} = FixtureRepo.run(repo, :read_model, ["read-model.widget"])
+      {:ok, _} = FixtureRepo.run(repo, :test_support, ["read-model.widget"])
+
+      FixtureRepo.write(repo, @support_fixture, "# hand edit, drift\n")
+
+      {:ok, results} = FixtureRepo.check(repo, :test_support, ["read-model.widget"])
+
+      assert Enum.any?(results, fn
+               {:checked, path, ids} -> path == @support_fixture and Enum.member?(ids, :rewrite)
+               _ -> false
+             end)
+
+      assert FixtureRepo.read(repo, @support_fixture) == "# hand edit, drift\n"
+
+      assert SpGen.Report.render([{:checked, @support_fixture, [:rewrite]}])
+             |> Enum.any?(&(&1 =~ "Would rewrite"))
+    end
+
+    test "the run is self-sufficient: its read-model dependency lands in the same run", %{
+      repo: _repo
+    } do
+      repo = FixtureRepo.build(only: ["domain-model"])
+      read_model = "services/api/lib/sportipedia/catalog/equipment/widget/read_model.ex"
+
+      {:ok, results} = FixtureRepo.run(repo, :test_support, ["read-model.widget"])
+
+      # nothing waits: the read model arrives as a dependency, fixtures and
+      # ledger land after it, in one run
+      refute Enum.any?(results, &match?({:deferred, _, _}, &1))
+      assert FixtureRepo.exists?(repo, read_model)
+      assert FixtureRepo.exists?(repo, @support_fixture)
+      assert FixtureRepo.exists?(repo, @support_ledger)
+
+      assert FixtureRepo.read(repo, @support_ledger) =~
+               "def new_widget(%WidgetReadModel{} = fixture)"
+    end
+
+    test "a creating test-support run leaves human deletions in neighbors alone — :all runs still backfill",
+         %{repo: repo} do
+      generate(repo)
+      event = "services/api/lib/sportipedia/catalog/equipment/widget/events/widget_created.ex"
+
+      stripped =
+        FixtureRepo.read(repo, event)
+        |> String.replace("    field :title, String.t(), enforce: true\n", "")
+
+      assert stripped != FixtureRepo.read(repo, event)
+      FixtureRepo.write(repo, event, stripped)
+
+      # force a *creating* test_support run: remove its projection
+      FixtureRepo.remove(repo, @support_fixture)
+      {:ok, _} = FixtureRepo.run(repo, :test_support, ["read-model.widget"])
+
+      assert FixtureRepo.exists?(repo, @support_fixture)
+      # its scope is :none — the foreign citizen keeps the human's deletion
+      refute FixtureRepo.read(repo, event) =~ "field :title"
+
+      # the mechanism survives where it is owed: an `:all` generator whose run
+      # creates a citizen still sweeps the neighborhood
+      handler =
+        "services/api/lib/sportipedia/catalog/equipment/widget/operations/create_widget/handler.ex"
+
+      FixtureRepo.remove(repo, handler)
+      {:ok, _} = FixtureRepo.run(repo, :command_handler, ["create-widget"])
+
+      assert FixtureRepo.read(repo, event) =~ "field :title"
+    end
+
+    test "a read model without examples generates the ledger only", %{repo: repo} do
+      text =
+        FixtureRepo.read(repo, "docs/domain-model/catalog/equipment/read-model.widget.esdm.yaml")
+
+      [without_examples | _] = String.split(text, "  examples:")
+
+      FixtureRepo.write(
+        repo,
+        "docs/domain-model/catalog/equipment/read-model.widget.esdm.yaml",
+        without_examples
+      )
+
+      {:ok, _} = FixtureRepo.run(repo, :read_model, ["read-model.widget"])
+      {:ok, _} = FixtureRepo.run(repo, :test_support, ["read-model.widget"])
+
+      refute FixtureRepo.exists?(repo, @support_fixture)
+      assert FixtureRepo.exists?(repo, @support_ledger)
+      assert FixtureRepo.read(repo, @support_ledger) =~ "def new_widgets(attribute_collection) do"
+    end
+
+    test "a model violating the fixture contract fails the run and writes nothing", %{repo: repo} do
+      {:ok, _} = FixtureRepo.run(repo, :read_model, ["read-model.widget"])
+      {:ok, _} = FixtureRepo.run(repo, :test_support, ["read-model.widget"])
+      canonical_fixtures = FixtureRepo.read(repo, @support_fixture)
+      canonical_ledger = FixtureRepo.read(repo, @support_ledger)
+
+      text =
+        FixtureRepo.read(repo, "docs/domain-model/catalog/equipment/read-model.widget.esdm.yaml")
+
+      FixtureRepo.write(
+        repo,
+        "docs/domain-model/catalog/equipment/read-model.widget.esdm.yaml",
+        String.replace(text, "equipment:widget:classic-widget", "equipment:widget:Classic Widget")
+      )
+
+      assert {:error, message} = FixtureRepo.run(repo, :test_support, ["read-model.widget"])
+      assert message =~ "is not a fixture key"
+
+      # the violation aborts before planning: what the model justified stands,
+      # nothing corrupt was added
+      assert FixtureRepo.read(repo, @support_fixture) == canonical_fixtures
+      assert FixtureRepo.read(repo, @support_ledger) == canonical_ledger
     end
   end
 

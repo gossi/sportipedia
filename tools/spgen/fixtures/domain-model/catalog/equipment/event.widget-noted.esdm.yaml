@@ -1,0 +1,21 @@
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: widget-noted
+description: "A note was taken of a widget, recorded for the record and nothing else"
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: widget
+data:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier of the widget the note concerns"
+    comment:
+      type: string
+      description: "What was observed"
+  required:
+    - id
+    - comment

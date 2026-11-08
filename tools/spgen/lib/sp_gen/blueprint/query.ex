@@ -3,10 +3,14 @@ defmodule SpGen.Blueprint.Query do
   Executable transfer of `docs/architecture/blueprints/backend/domain/query.md`
   — the query module file itself.
 
-  Generates a query module for an ESDM **query** element: `import Ecto.Query`
-  plus a `new/n` constructor. The concrete Ecto query depends on the feature
-  specification (the last 1% the blueprint leaves to the spec), so the body
-  carries a stable `TODO:` marker.
+  Generates a query module for an ESDM **query** element: the `new/n`
+  constructor and the module shell. The concrete Ecto query depends on the
+  feature specification (the last 1% the blueprint leaves to the spec), so
+  the body carries a stable `TODO:` marker. The `import Ecto.Query` is NOT
+  managed here: only the implementing body knows whether it speaks query
+  macros at all — a body delegating to the shared QueryBuilder needs none,
+  and an unused import is a compile warning this tool must not manufacture.
+  Whoever writes the body owns its imports; the compiler checks both ways.
 
   Fixed shape; tested via `SpGen.Blueprint.QueryTest`.
   """
@@ -57,8 +61,8 @@ defmodule SpGen.Blueprint.Query do
     """
   end
 
-  defp units(ctx) do
-    base = [
+  defp units(_ctx) do
+    [
       %Unit{
         id: :moduledoc,
         check: &Source.has_moduledoc?/1,
@@ -72,35 +76,5 @@ defmodule SpGen.Blueprint.Query do
         place: Merge.body_end()
       }
     ]
-
-    # the scaffold raises; `Ecto.Query` becomes an unused import until the
-    # query is written, so the import joins once the body implements it
-    if implemented?(ctx) do
-      import_unit() ++ base
-    else
-      base
-    end
-  end
-
-  defp import_unit do
-    [
-      %Unit{
-        id: {:import, "Ecto.Query"},
-        check: fn src -> Source.has_import?(src, "Ecto.Query") end,
-        render: fn _ctx -> "import Ecto.Query" end,
-        place: Merge.head(:import)
-      }
-    ]
-  end
-
-  # the query is implemented once the file exists without the `TODO:` marker
-  defp implemented?(%Context{} = ctx) do
-    file = module_file(ctx)
-    abs = if ctx.repo_root, do: Path.join(ctx.repo_root, file), else: file
-
-    case FS.read(ctx.fs, abs) do
-      {:ok, text} -> not (text =~ "TODO: implement")
-      _ -> false
-    end
   end
 end

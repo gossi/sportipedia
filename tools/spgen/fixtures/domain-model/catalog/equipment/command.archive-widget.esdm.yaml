@@ -2,6 +2,9 @@ apiVersion: schema.esdm.io/core/v1
 kind: command
 name: archive-widget
 description: "Archives a widget that is no longer used"
+metadata:
+  annotations:
+    spgen.operation: delete
 scope:
   domain: sport
   boundedContext: sport

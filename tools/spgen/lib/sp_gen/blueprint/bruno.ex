@@ -108,7 +108,9 @@ defmodule SpGen.Blueprint.Bruno do
     inner = ["    \"type\": \"#{ctx.constituent}\""]
 
     inner =
-      if ctx.element.kind == :command and ctx.operation in [:update, :delete] do
+      if ctx.element.kind == :command and
+           (ctx.operation in [:update, :delete] or
+              (ctx.operation == :none and Enum.any?(ctx.fields, &(&1.name == "id")))) do
         inner ++ ["    \"id\": \"#{Map.get(data, "id", @sample_id)}\""]
       else
         inner

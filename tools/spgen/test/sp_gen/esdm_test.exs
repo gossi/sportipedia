@@ -205,14 +205,62 @@ defmodule SpGen.EsdmTest do
     end
   end
 
-  describe "projections" do
-    test "read model effects per event", %{model: model} do
-      {:ok, rm} = Esdm.resolve(model, "read-model.apparatus")
-      effects = rm |> Esdm.projections() |> Enum.map(&{&1["event"], Esdm.projection_effect(&1)})
+  describe "declared operations (metadata.annotations)" do
+    defp annotated(annotations) do
+      %SpGen.Esdm.Element{
+        kind: :"read-model",
+        name: "widget",
+        scope: [{"domain", "sport"}, {"bounded-context", "sport"}],
+        doc: %{"metadata" => %{"annotations" => annotations}},
+        source: "docs/domain-model/catalog/equipment/read-model.widget.esdm.yaml",
+        address: "esdm:domain=sport/bounded-context=sport/read-model=widget"
+      }
+    end
 
-      assert {"apparatus-cataloged", :create} in effects
-      assert {"apparatus-edited", :update} in effects
-      assert {"apparatus-archived", :delete} in effects
+    test "operation.<event> keys become the decision map", %{model: _model} do
+      rm =
+        annotated(%{
+          "spgen.operation.widget-created" => "create",
+          "spgen.operation.widget-audited" => "none",
+          "spgen.operation.widget-edited" => "deleted?"
+        })
+
+      assert Esdm.declared_effects(rm) == %{
+               "widget-created" => :create,
+               "widget-audited" => :none,
+               "widget-edited" => :invalid
+             }
+    end
+
+    test "keys of other shapes are not effects", %{model: _model} do
+      rm =
+        annotated(%{
+          "spgen.operation" => "create",
+          "spgen.operation." => "update",
+          "author" => "someone"
+        })
+
+      assert Esdm.declared_effects(rm) == %{}
+    end
+
+    test "a command declares its operation, or declares nothing usable" do
+      command = fn value ->
+        %SpGen.Esdm.Element{
+          kind: :command,
+          name: "create-widget",
+          scope: [{"domain", "sport"}, {"bounded-context", "sport"}, {"aggregate", "widget"}],
+          doc: %{"metadata" => %{"annotations" => %{"spgen.operation" => value}}},
+          source: "docs/domain-model/catalog/equipment/command.create-widget.esdm.yaml",
+          address: "esdm:domain=sport/.../command=create-widget"
+        }
+      end
+
+      assert Esdm.declared_operation(command.("update")) == :update
+      # `none` is a decision everywhere: a command may dispatch facts that
+      # materialize nothing
+      assert Esdm.declared_operation(command.("none")) == :none
+      assert Esdm.declared_operation(command.("install")) == nil
+      assert Esdm.declared_operation(%{command.(nil) | doc: %{}}) == nil
     end
   end
 

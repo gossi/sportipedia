@@ -164,8 +164,9 @@ defmodule SpGen.SourceTest do
     end
 
     test "project calls found with line ranges", %{src: src} do
+      # four clauses: widget-rename-logged is declared `none` and materializes nothing
       entries = Source.calls(src, :project)
-      assert length(entries) == 5
+      assert length(entries) == 4
       [%Source.Entry{line: line, end_line: end_line} | _] = entries
       assert line < end_line
     end

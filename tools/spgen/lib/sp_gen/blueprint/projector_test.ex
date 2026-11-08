@@ -15,6 +15,22 @@ defmodule SpGen.Blueprint.ProjectorTest do
   @test_module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Event.<Event>Test"
 
   def plans(%Context{} = ctx) do
+    case Context.effect_for_event(ctx, ctx.element.name) do
+      # nothing materialized, nothing to project, nothing to test: an
+      # undeclared event reports its gap at the clause level, a declared
+      # `none` is a complete decision
+      nil ->
+        []
+
+      :none ->
+        []
+
+      _effect ->
+        projector_plan(ctx)
+    end
+  end
+
+  defp projector_plan(%Context{} = ctx) do
     plain = Context.render("<DomainObject>Projector", ctx)
 
     [

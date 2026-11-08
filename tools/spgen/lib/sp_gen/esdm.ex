@@ -71,7 +71,8 @@ defmodule SpGen.Esdm do
   an error listing the full `esdm:` references that disambiguate.
   * Neighborhood helpers: `aggregate_of/2`, `read_model_for/2`, `publishes/1`,
     `actors/1`, `fields/1`, `invariants/1`, `constraints/1`, `projections/1`,
-    `projection_effect/1`, `scenarios/2`.
+    `declared_effects/1` / `declared_operation/1` (the metadata-declared
+    operations), `scenarios/2`.
 
   YAML mappings lose key order, so `fields/1` canonicalizes deterministically:
   `id` first when present, then required fields in `required`-list order, then
@@ -425,35 +426,88 @@ defmodule SpGen.Esdm do
   @doc "Aggregate invariants as `%{name:, rule:}`."
   def invariants(%Element{doc: doc}), do: List.wrap(doc["invariants"])
 
+  # -- declared operations (metadata.annotations) --------------------------------
+  #
+  # The rule prose on a projection is for humans; what an event DOES to the
+  # read model is declared, machine-readable, in the element's metadata —
+  # namespaced under `spgen.` so the shared annotations bag stays collision
+  # free for every other tool:
+  #
+  #   command:     metadata.annotations."spgen.operation":
+  #                create | update | delete | none
+  #   read-model:  metadata.annotations."spgen.operation.<event>":
+  #                create | update | delete | none
+  #
+  # `none` is a decision — "somebody looked and nothing materializes" — which
+  # is not the same thing as the absence of any annotation. On a command it
+  # reads "dispatch facts, change no read model": the API answers `:ok`, the
+  # endpoint 204, and no row is read back.
+
+  @operations ~w(create update delete none)
+  @projection_operations @operations
+
+  @operation_key "spgen.operation"
+  @effect_prefix "spgen.operation."
+
+  @doc "The annotations key a command declares its operation under."
+  def operation_key, do: @operation_key
+
+  @doc "The annotations prefix read models declare per-event effects under."
+  def effect_prefix, do: @effect_prefix
+
+  @doc "The `metadata.annotations` map of an element (`%{}` when absent)."
+  @spec annotations(Element.t()) :: map()
+  def annotations(%Element{doc: doc}) do
+    get_in(doc, ["metadata", "annotations"]) || %{}
+  end
+
+  @doc """
+  The operation a **command** document declares: `:create | :update | :delete |
+  :none`, or `nil` when absent or not in the command vocabulary.
+  """
+  @spec declared_operation(Element.t()) :: :create | :update | :delete | :none | nil
+  def declared_operation(%Element{} = element) do
+    case annotations(element)[@operation_key] do
+      v when v in @operations -> String.to_atom(v)
+      _ -> nil
+    end
+  end
+
+  @typedoc "A declared effect on a read model: a real operation, or `:none`."
+  @type effect :: :create | :update | :delete | :none
+
+  @doc """
+  The declared effects of a **read model** as `%{event_name => effect}`,
+  from its `spgen.operation.<event>` annotation keys. Invalid or unknown
+  values are not silently dropped — they surface as `:invalid` so
+  `mix sp.check` and the generators can point at the exact mistake.
+  """
+  @spec declared_effects(Element.t()) :: %{String.t() => effect() | :invalid}
+  def declared_effects(%Element{} = element) do
+    for {key, value} <- annotations(element),
+        String.starts_with?(key, @effect_prefix),
+        event = String.replace_prefix(key, @effect_prefix, ""),
+        event != "",
+        into: %{} do
+      {event,
+       cond do
+         value in @operations -> String.to_atom(value)
+         true -> :invalid
+       end}
+    end
+  end
+
+  @doc "Vocabulary of the bare `spgen.operation` annotation (commands)."
+  def operations, do: @operations
+
+  @doc "Vocabulary of the `spgen.operation.<event>` annotations (read models)."
+  def projection_operations, do: @projection_operations
+
   @doc "Command constraints as `%{name:, rule:}`."
   def constraints(%Element{doc: doc}), do: List.wrap(doc["constraints"])
 
   @doc "Projection entries of a read model: `%{event:, aggregate:, rule:}`."
   def projections(%Element{doc: doc}), do: List.wrap(doc["projections"])
-
-  @doc """
-  The operation a projection performs on the database, read from its rule
-  prose: `:create` | `:update` | `:delete` | `:unknown`.
-
-  `nil` — an event no read model projects (an audit-only fact) — is `:unknown`.
-  """
-  def projection_effect(nil), do: :unknown
-
-  def projection_effect(projection) do
-    case projection["rule"] || Map.get(projection, :rule) do
-      rule when is_binary(rule) ->
-        cond do
-          # stems, so inflections match ("archived", "removed", ...)
-          rule =~ ~r/\b(remov|delet|withdraw)/i -> :delete
-          rule =~ ~r/\b(updat|chang|edit|amend|mark)/i -> :update
-          rule =~ ~r/\b(add|project|insert|creat|catalog)/i -> :create
-          true -> :unknown
-        end
-
-      _ ->
-        :unknown
-    end
-  end
 
   @doc """
   The feature scenarios that exercise the given operation (by its `when`

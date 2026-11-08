@@ -18,6 +18,16 @@ defmodule SpGen.FilePlan do
   `format: false` marks non-Elixir artifacts (YAML): created verbatim from
   `scaffold`, never merged into, never formatted.
 
+  `projection: true` marks a **model-owned whole-file output** — the fixture
+  file. Each run renders the scaffold and rewrites the file when the render
+  differs from what is on disk (reported as `Rewritten`); a merge never edits
+  it unit by unit, because its content is a function of the model alone and
+  drift there is staleness, not a missing unit. Projections are skipped by the
+  merge-only closure pass: they land on their own generator's run.
+
+  `requires` (projections only) gates the file itself: while a referenced
+  citizen's file is missing, the projection defers like a unit would.
+
   `requires_describe: true` marks a test file: creating it takes more than a
   placeable unit — at least one `describe` has to land, so no contributor ever
   writes a test module without tests. Such a file appears with whichever
@@ -33,7 +43,9 @@ defmodule SpGen.FilePlan do
     note: nil,
     format: true,
     unit_created: false,
-    requires_describe: false
+    requires_describe: false,
+    projection: false,
+    requires: &SpGen.Unit.no_requires/1
   ]
 
   @type t :: %__MODULE__{
@@ -48,7 +60,11 @@ defmodule SpGen.FilePlan do
           # create by applying units to a module shell instead of from scaffold
           unit_created: boolean(),
           # test file: creation waits for a `describe` to place
-          requires_describe: boolean()
+          requires_describe: boolean(),
+          # model-owned whole-file rewrite instead of unit merge
+          projection: boolean(),
+          # (ctx -> [{path, reason}]) — file-level gate for projections
+          requires: (SpGen.Context.t() -> [{String.t(), String.t()}])
         }
 end
 
@@ -102,6 +118,17 @@ defmodule SpGen.Blueprint do
   @callback actor() :: SpGen.actor()
 
   @doc """
+  Whether a run of this blueprint that *creates* a file re-sweeps the
+  constituent's neighborhood (merge-only) to back-fill gated units: `:all` is
+  the established behaviour — creating a citizen flips gates everywhere around
+  it — while `:none` is the honest declaration of a blueprint whose code
+  nothing else references (yet): its run then touches only its own plans and
+  its `dependencies/1`, and can never resurrect units a human deleted in a
+  foreign citizen.
+  """
+  @callback closure_scope() :: :all | :none
+
+  @doc """
   The blueprints whose code this blueprint's output calls, as
   `{module, element}`: `SpGen` plans them (and their own dependencies) before
   this one, each from its own element, in the same run. A dependency whose
@@ -130,6 +157,9 @@ defmodule SpGen.Blueprint do
       # which actor of the hexagon this blueprint serves
       def actor, do: :domain
 
+      # whether a creating run re-sweeps the neighborhood for gated units
+      def closure_scope, do: :all
+
       # what this blueprint's code calls: generated before it, in the same run
       def dependencies(_ctx), do: []
 
@@ -139,7 +169,35 @@ defmodule SpGen.Blueprint do
                      source_kinds: 0,
                      optional_template?: 0,
                      actor: 0,
+                     closure_scope: 0,
                      dependencies: 1
+    end
+  end
+
+  @doc """
+  Optional model-content gate. A blueprint may export `validate/1` to verify
+  the model carries what its code needs before anything is planned or written;
+  `:ok` continues, `{:error, messages}` aborts the run with every message
+  printed. A generator never writes code from a model that violates its
+  contract.
+  """
+  @spec validate_hook(module(), Context.t()) :: :ok | {:error, String.t()}
+  def validate_hook(blueprint, ctx) do
+    if function_exported?(blueprint, :validate, 1) do
+      case blueprint.validate(ctx) do
+        :ok ->
+          :ok
+
+        {:error, messages} ->
+          {:error,
+           "#{blueprint.name()} #{inspect(ctx.element.kind)}.#{ctx.element.name} cannot generate — the model needs fixing:\n" <>
+             Enum.join(messages, "\n")}
+
+        other ->
+          {:error, "validate/1 on #{inspect(blueprint)} returned #{inspect(other)}"}
+      end
+    else
+      :ok
     end
   end
 
@@ -189,7 +247,7 @@ defmodule SpGen.Blueprint do
   @spec operations_for(Element.kind()) :: [Context.operation()] | :any
   def operations_for(kind) do
     case kind do
-      k when k in [:command, :event] -> [:create, :update, :delete]
+      k when k in [:command, :event] -> [:create, :update, :delete, :none]
       :query -> [:read, :collection]
       _ -> :any
     end
