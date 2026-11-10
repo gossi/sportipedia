@@ -4,19 +4,32 @@ name: position
 scope:
   domain: sport
   boundedContext: sport
+metadata:
+  annotations:
+    spgen.operation.position-cataloged: create
+    spgen.operation.position-edited: update
+    spgen.operation.position-archived: delete
 projections:
   - boundedContext: sport
     aggregate: position
     event: position-cataloged
-    rule: "Project the position when it is cataloged"
+    rule: "Project the position when it is cataloged, storing the canonical slug"
   - boundedContext: sport
     aggregate: position
     event: position-edited
-    rule: "Update position details"
+    rule: "Update position details, re-deriving the canonical slug when the slug or the referenced equipment changes"
   - boundedContext: sport
     aggregate: position
     event: position-archived
     rule: "Archive the position"
+  - boundedContext: sport
+    aggregate: apparatus
+    event: apparatus-edited
+    rule: "Update the recorded apparatus slug and re-derive the canonical slugs of all positions bound to it"
+  - boundedContext: sport
+    aggregate: instrument
+    event: instrument-edited
+    rule: "Update the recorded instrument slug and re-derive the canonical slugs of all positions bound to it"
 schema:
   type: object
   properties:
@@ -45,3 +58,29 @@ schema:
     - id
     - title
     - slug
+  examples:
+    - id: "athlete:position:unicycle-riding"
+      title: "Riding"
+      description: "Riding on a unicycle"
+      slug: "unicycle-riding"
+      instrumentId: "equipment:instrument:unicycle"
+    - id: "athlete:position:unicycle-on-tire"
+      title: "On Tire"
+      description: "Feet are on the tire"
+      slug: "unicycle-on-tire"
+      instrumentId: "equipment:instrument:unicycle"
+    - id: "athlete:position:unicycle-seat-in-front"
+      title: "Seat in-front"
+      description: "Seat is hold in front of the body"
+      slug: "unicycle-seat-in-front"
+      instrumentId: "equipment:instrument:unicycle"
+    - id: "athlete:position:gymnastics-straight-arm-support"
+      title: "Straight-arm support"
+      description: "Athlete has their arms straight while supporting themselves onto the bar"
+      slug: "horizontal-bar-straight-arm-support"
+      instrumentId: "equipment:apparatus:horizontal-bar"
+    - id: "athlete:position:gymnastics-long-hang"
+      title: "Long Hang"
+      description: "Athlete has their arms straight while hanging on the bar"
+      slug: "horizontal-bar-long-hang"
+      instrumentId: "equipment:apparatus:horizontal-bar"

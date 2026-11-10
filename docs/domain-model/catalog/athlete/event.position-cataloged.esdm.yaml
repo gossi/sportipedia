@@ -1,6 +1,7 @@
 apiVersion: schema.esdm.io/core/v1
 kind: event
 name: position-cataloged
+description: "A new position has been cataloged"
 scope:
   domain: sport
   boundedContext: sport

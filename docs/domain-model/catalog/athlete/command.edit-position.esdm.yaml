@@ -1,10 +1,14 @@
 apiVersion: schema.esdm.io/core/v1
 kind: command
 name: edit-position
+description: "Edit properties of the position"
 scope:
   domain: sport
   boundedContext: sport
   aggregate: position
+metadata:
+  annotations:
+    spgen.operation: update
 data:
   type: object
   properties:

@@ -1,6 +1,7 @@
 apiVersion: schema.esdm.io/core/v1
 kind: event
 name: position-edited
+description: "A position has been edited"
 scope:
   domain: sport
   boundedContext: sport

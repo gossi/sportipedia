@@ -1,10 +1,14 @@
 apiVersion: schema.esdm.io/core/v1
 kind: command
 name: catalog-position
+description: "Catalogs a new position in the catalog: a body position or stance, optionally bound to one piece of equipment"
 scope:
   domain: sport
   boundedContext: sport
   aggregate: position
+metadata:
+  annotations:
+    spgen.operation: create
 data:
   type: object
   properties:

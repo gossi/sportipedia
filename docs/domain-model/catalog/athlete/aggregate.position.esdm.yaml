@@ -9,8 +9,11 @@ identifiedBy:
   source: generated
   generator: uuid
 invariants:
-  - name: unique-slug
-    rule: The slug for the position must be unique within the domain.
+  - name: unique-canonical-slug
+    rule: >-
+      The canonical slug of a position is its slug, prefixed with the slug of
+      its referenced equipment and a dash (`-`) when bound to equipment, and
+      its bare slug otherwise. No two positions may share the same canonical slug.
   - name: at-most-one-equipment
     rule: A position can reference at most one piece of equipment (either apparatusId or instrumentId, not both)
 state:
