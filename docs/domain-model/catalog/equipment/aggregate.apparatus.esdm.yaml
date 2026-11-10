@@ -9,8 +9,8 @@ identifiedBy:
   source: generated
   generator: uuid
 invariants:
-  - name: unique-slug
-    rule: The slug for the apparatus must be unique within the domain
+  - name: unique-equipment-slug
+    rule: The slug must be unique within the pool of all equipment slugs (apparatuses and instruments together)
   - name: no-archive-when-in-use
     rule: An apparatus can only be archived when no sport references it via use-apparatus
 state:
