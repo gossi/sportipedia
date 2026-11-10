@@ -1261,7 +1261,11 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetArchivedTest do
   @moduletag :integration
   describe "Event" do
     test "creates WidgetArchived with required fields" do
-      event = struct!(WidgetArchived, %{id: UUID.uuid4(), archivedAt: DateTime.utc_now()})
+      event =
+        struct!(WidgetArchived, %{
+          id: UUID.uuid5(:dns, "equipment:widget:classic-widget"),
+          archivedAt: DateTime.utc_now()
+        })
 
       assert event.id != nil
     end
@@ -1273,7 +1277,11 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetArchivedTest do
     end
 
     test "serializes to JSON" do
-      event = struct!(WidgetArchived, %{id: UUID.uuid4(), archivedAt: DateTime.utc_now()})
+      event =
+        struct!(WidgetArchived, %{
+          id: UUID.uuid5(:dns, "equipment:widget:classic-widget"),
+          archivedAt: DateTime.utc_now()
+        })
 
       assert {:ok, _json} = Jason.encode(event)
     end
@@ -1281,7 +1289,10 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetArchivedTest do
 
   describe "Aggregate" do
     test "applies widget-archived to aggregate state" do
-      event = %WidgetArchived{id: UUID.uuid4(), archivedAt: DateTime.utc_now()}
+      event = %WidgetArchived{
+        id: UUID.uuid5(:dns, "equipment:widget:classic-widget"),
+        archivedAt: DateTime.utc_now()
+      }
 
       result = WidgetAggregate.apply(%WidgetAggregate{id: event.id}, event)
 
@@ -1292,13 +1303,13 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetArchivedTest do
   describe "Projector" do
     test "projects WidgetArchived to the widget read model" do
       create_event = %WidgetCreated{
-        id: UUID.uuid4(),
-        title: "sample-title",
-        slug: "sample-slug",
-        coachId: UUID.uuid4(),
-        description: "sample-description",
-        label: "sample-label",
-        teamId: UUID.uuid4()
+        id: UUID.uuid5(:dns, "equipment:widget:classic-widget"),
+        title: "Classic Widget",
+        slug: "classic-widget",
+        coachId: UUID.uuid5(:dns, "equipment:coach:head-coach"),
+        description: "The original widget of the fixture world",
+        label: "classic",
+        teamId: UUID.uuid5(:dns, "equipment:team:first-team")
       }
 
       create_metadata = %{
@@ -1350,13 +1361,13 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetCreatedTest do
     test "creates WidgetCreated with required fields" do
       event =
         struct!(WidgetCreated, %{
-          id: UUID.uuid4(),
-          title: "sample-title",
-          slug: "sample-slug",
-          coachId: UUID.uuid4(),
-          description: "sample-description",
-          label: "sample-label",
-          teamId: UUID.uuid4()
+          id: UUID.uuid5(:dns, "equipment:widget:classic-widget"),
+          title: "Classic Widget",
+          slug: "classic-widget",
+          coachId: UUID.uuid5(:dns, "equipment:coach:head-coach"),
+          description: "The original widget of the fixture world",
+          label: "classic",
+          teamId: UUID.uuid5(:dns, "equipment:team:first-team")
         })
 
       assert event.id != nil
@@ -1371,13 +1382,13 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetCreatedTest do
     test "serializes to JSON" do
       event =
         struct!(WidgetCreated, %{
-          id: UUID.uuid4(),
-          title: "sample-title",
-          slug: "sample-slug",
-          coachId: UUID.uuid4(),
-          description: "sample-description",
-          label: "sample-label",
-          teamId: UUID.uuid4()
+          id: UUID.uuid5(:dns, "equipment:widget:classic-widget"),
+          title: "Classic Widget",
+          slug: "classic-widget",
+          coachId: UUID.uuid5(:dns, "equipment:coach:head-coach"),
+          description: "The original widget of the fixture world",
+          label: "classic",
+          teamId: UUID.uuid5(:dns, "equipment:team:first-team")
         })
 
       assert {:ok, _json} = Jason.encode(event)
@@ -1387,13 +1398,13 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetCreatedTest do
   describe "Aggregate" do
     test "applies widget-created to aggregate state" do
       event = %WidgetCreated{
-        id: UUID.uuid4(),
-        title: "sample-title",
-        slug: "sample-slug",
-        coachId: UUID.uuid4(),
-        description: "sample-description",
-        label: "sample-label",
-        teamId: UUID.uuid4()
+        id: UUID.uuid5(:dns, "equipment:widget:classic-widget"),
+        title: "Classic Widget",
+        slug: "classic-widget",
+        coachId: UUID.uuid5(:dns, "equipment:coach:head-coach"),
+        description: "The original widget of the fixture world",
+        label: "classic",
+        teamId: UUID.uuid5(:dns, "equipment:team:first-team")
       }
 
       result = WidgetAggregate.apply(%WidgetAggregate{}, event)
@@ -1411,13 +1422,13 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetCreatedTest do
   describe "Projector" do
     test "projects WidgetCreated to the widget read model" do
       event = %WidgetCreated{
-        id: UUID.uuid4(),
-        title: "sample-title",
-        slug: "sample-slug",
-        coachId: UUID.uuid4(),
-        description: "sample-description",
-        label: "sample-label",
-        teamId: UUID.uuid4()
+        id: UUID.uuid5(:dns, "equipment:widget:classic-widget"),
+        title: "Classic Widget",
+        slug: "classic-widget",
+        coachId: UUID.uuid5(:dns, "equipment:coach:head-coach"),
+        description: "The original widget of the fixture world",
+        label: "classic",
+        teamId: UUID.uuid5(:dns, "equipment:team:first-team")
       }
 
       metadata = %{
@@ -1453,11 +1464,11 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetEditedTest do
     test "creates WidgetEdited with required fields" do
       event =
         struct!(WidgetEdited, %{
-          id: UUID.uuid4(),
-          description: "sample-description",
-          label: "sample-label",
-          slug: "sample-slug",
-          title: "sample-title"
+          id: UUID.uuid5(:dns, "equipment:widget:classic-widget"),
+          description: "The original widget of the fixture world",
+          label: "classic",
+          slug: "classic-widget",
+          title: "Classic Widget"
         })
 
       assert event.id != nil
@@ -1472,11 +1483,11 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetEditedTest do
     test "serializes to JSON" do
       event =
         struct!(WidgetEdited, %{
-          id: UUID.uuid4(),
-          description: "sample-description",
-          label: "sample-label",
-          slug: "sample-slug",
-          title: "sample-title"
+          id: UUID.uuid5(:dns, "equipment:widget:classic-widget"),
+          description: "The original widget of the fixture world",
+          label: "classic",
+          slug: "classic-widget",
+          title: "Classic Widget"
         })
 
       assert {:ok, _json} = Jason.encode(event)
@@ -1486,11 +1497,11 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetEditedTest do
   describe "Aggregate" do
     test "applies widget-edited to aggregate state" do
       event = %WidgetEdited{
-        id: UUID.uuid4(),
-        description: "sample-description",
-        label: "sample-label",
-        slug: "sample-slug",
-        title: "sample-title"
+        id: UUID.uuid5(:dns, "equipment:widget:classic-widget"),
+        description: "The original widget of the fixture world",
+        label: "classic",
+        slug: "classic-widget",
+        title: "Classic Widget"
       }
 
       result = WidgetAggregate.apply(%WidgetAggregate{id: event.id}, event)
@@ -1506,13 +1517,13 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetEditedTest do
   describe "Projector" do
     test "projects WidgetEdited to the widget read model" do
       create_event = %WidgetCreated{
-        id: UUID.uuid4(),
-        title: "sample-title",
-        slug: "sample-slug",
-        coachId: UUID.uuid4(),
-        description: "sample-description",
-        label: "sample-label",
-        teamId: UUID.uuid4()
+        id: UUID.uuid5(:dns, "equipment:widget:classic-widget"),
+        title: "Classic Widget",
+        slug: "classic-widget",
+        coachId: UUID.uuid5(:dns, "equipment:coach:head-coach"),
+        description: "The original widget of the fixture world",
+        label: "classic",
+        teamId: UUID.uuid5(:dns, "equipment:team:first-team")
       }
 
       create_metadata = %{
@@ -1532,10 +1543,10 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetEditedTest do
 
       event = %WidgetEdited{
         id: create_event.id,
-        description: "sample-description",
-        label: "sample-label",
-        slug: "sample-slug",
-        title: "sample-title"
+        description: "The original widget of the fixture world",
+        label: "classic",
+        slug: "classic-widget",
+        title: "Classic Widget"
       }
 
       metadata = %{
@@ -1566,7 +1577,11 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetNotedTest do
   @moduletag :integration
   describe "Event" do
     test "creates WidgetNoted with required fields" do
-      event = struct!(WidgetNoted, %{id: UUID.uuid4(), comment: "sample-comment"})
+      event =
+        struct!(WidgetNoted, %{
+          id: UUID.uuid5(:dns, "equipment:widget:classic-widget"),
+          comment: "sample-comment"
+        })
 
       assert event.id != nil
     end
@@ -1578,7 +1593,11 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetNotedTest do
     end
 
     test "serializes to JSON" do
-      event = struct!(WidgetNoted, %{id: UUID.uuid4(), comment: "sample-comment"})
+      event =
+        struct!(WidgetNoted, %{
+          id: UUID.uuid5(:dns, "equipment:widget:classic-widget"),
+          comment: "sample-comment"
+        })
 
       assert {:ok, _json} = Jason.encode(event)
     end
@@ -1586,7 +1605,10 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetNotedTest do
 
   describe "Aggregate" do
     test "applies widget-noted to aggregate state" do
-      event = %WidgetNoted{id: UUID.uuid4(), comment: "sample-comment"}
+      event = %WidgetNoted{
+        id: UUID.uuid5(:dns, "equipment:widget:classic-widget"),
+        comment: "sample-comment"
+      }
 
       state = %WidgetAggregate{id: event.id}
 
@@ -1606,7 +1628,11 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetRelabelledTest do
   @moduletag :integration
   describe "Event" do
     test "creates WidgetRelabelled with required fields" do
-      event = struct!(WidgetRelabelled, %{id: UUID.uuid4(), label: "sample-label"})
+      event =
+        struct!(WidgetRelabelled, %{
+          id: UUID.uuid5(:dns, "equipment:widget:classic-widget"),
+          label: "classic"
+        })
 
       assert event.id != nil
     end
@@ -1618,7 +1644,11 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetRelabelledTest do
     end
 
     test "serializes to JSON" do
-      event = struct!(WidgetRelabelled, %{id: UUID.uuid4(), label: "sample-label"})
+      event =
+        struct!(WidgetRelabelled, %{
+          id: UUID.uuid5(:dns, "equipment:widget:classic-widget"),
+          label: "classic"
+        })
 
       assert {:ok, _json} = Jason.encode(event)
     end
@@ -1626,7 +1656,10 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetRelabelledTest do
 
   describe "Aggregate" do
     test "applies widget-relabelled to aggregate state" do
-      event = %WidgetRelabelled{id: UUID.uuid4(), label: "sample-label"}
+      event = %WidgetRelabelled{
+        id: UUID.uuid5(:dns, "equipment:widget:classic-widget"),
+        label: "classic"
+      }
 
       result = WidgetAggregate.apply(%WidgetAggregate{id: event.id}, event)
 
@@ -1638,13 +1671,13 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetRelabelledTest do
   describe "Projector" do
     test "projects WidgetRelabelled to the widget read model" do
       create_event = %WidgetCreated{
-        id: UUID.uuid4(),
-        title: "sample-title",
-        slug: "sample-slug",
-        coachId: UUID.uuid4(),
-        description: "sample-description",
-        label: "sample-label",
-        teamId: UUID.uuid4()
+        id: UUID.uuid5(:dns, "equipment:widget:classic-widget"),
+        title: "Classic Widget",
+        slug: "classic-widget",
+        coachId: UUID.uuid5(:dns, "equipment:coach:head-coach"),
+        description: "The original widget of the fixture world",
+        label: "classic",
+        teamId: UUID.uuid5(:dns, "equipment:team:first-team")
       }
 
       create_metadata = %{
@@ -1662,7 +1695,7 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetRelabelledTest do
 
       assert :ok = WidgetProjector.handle(create_event, create_metadata)
 
-      event = %WidgetRelabelled{id: create_event.id, label: "sample-label"}
+      event = %WidgetRelabelled{id: create_event.id, label: "classic"}
 
       metadata = %{
         handler_name: "equipment.widget_projection",
@@ -1692,7 +1725,8 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetRenameLoggedTest do
   @moduletag :integration
   describe "Event" do
     test "creates WidgetRenameLogged with required fields" do
-      event = struct!(WidgetRenameLogged, %{id: UUID.uuid4()})
+      event =
+        struct!(WidgetRenameLogged, %{id: UUID.uuid5(:dns, "equipment:widget:classic-widget")})
 
       assert event.id != nil
     end
@@ -1704,7 +1738,8 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetRenameLoggedTest do
     end
 
     test "serializes to JSON" do
-      event = struct!(WidgetRenameLogged, %{id: UUID.uuid4()})
+      event =
+        struct!(WidgetRenameLogged, %{id: UUID.uuid5(:dns, "equipment:widget:classic-widget")})
 
       assert {:ok, _json} = Jason.encode(event)
     end
@@ -1712,7 +1747,7 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetRenameLoggedTest do
 
   describe "Aggregate" do
     test "applies widget-rename-logged to aggregate state" do
-      event = %WidgetRenameLogged{id: UUID.uuid4()}
+      event = %WidgetRenameLogged{id: UUID.uuid5(:dns, "equipment:widget:classic-widget")}
 
       state = %WidgetAggregate{id: event.id}
 
@@ -1756,7 +1791,7 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Operation.ArchiveWidgetTest do
 
   describe "Command Handler" do
     test "handles ArchiveWidget command and returns WidgetArchived event" do
-      cmd = %ArchiveWidget{id: UUID.uuid4()}
+      cmd = %ArchiveWidget{id: UUID.uuid5(:dns, "equipment:widget:classic-widget")}
 
       events = ArchiveWidgetHandler.handle(%WidgetAggregate{}, cmd)
 
@@ -1776,7 +1811,8 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Operation.ArchiveWidgetTest do
 
   describe "Public API" do
     test "archive_widget succeeds" do
-      assert {:ok, created} = Widget.create_widget(%{title: "sample-title", slug: "sample-slug"})
+      assert {:ok, created} =
+               Widget.create_widget(%{title: "Classic Widget", slug: "classic-widget"})
 
       assert :ok = Widget.archive_widget(created.id)
     end
@@ -1806,12 +1842,12 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Operation.CreateWidgetTest do
 
     test "validates presence of title" do
       cmd = %CreateWidget{
-        id: UUID.uuid4(),
+        id: UUID.uuid5(:dns, "equipment:widget:classic-widget"),
         slug: "pommel-horse",
-        coachId: UUID.uuid4(),
-        description: "sample-description",
+        coachId: UUID.uuid5(:dns, "equipment:coach:head-coach"),
+        description: "The original widget of the fixture world",
         label: "Pommel",
-        teamId: UUID.uuid4(),
+        teamId: UUID.uuid5(:dns, "equipment:team:first-team"),
         title: nil
       }
 
@@ -1820,12 +1856,12 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Operation.CreateWidgetTest do
 
     test "validates presence of slug" do
       cmd = %CreateWidget{
-        id: UUID.uuid4(),
+        id: UUID.uuid5(:dns, "equipment:widget:classic-widget"),
         title: "Pommel Horse",
-        coachId: UUID.uuid4(),
-        description: "sample-description",
+        coachId: UUID.uuid5(:dns, "equipment:coach:head-coach"),
+        description: "The original widget of the fixture world",
         label: "Pommel",
-        teamId: UUID.uuid4(),
+        teamId: UUID.uuid5(:dns, "equipment:team:first-team"),
         slug: nil
       }
 
@@ -1836,13 +1872,13 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Operation.CreateWidgetTest do
   describe "Command Handler" do
     test "handles CreateWidget command and returns WidgetCreated event" do
       cmd = %CreateWidget{
-        id: UUID.uuid4(),
+        id: UUID.uuid5(:dns, "equipment:widget:classic-widget"),
         title: "Pommel Horse",
         slug: "pommel-horse",
-        coachId: UUID.uuid4(),
-        description: "sample-description",
+        coachId: UUID.uuid5(:dns, "equipment:coach:head-coach"),
+        description: "The original widget of the fixture world",
         label: "Pommel",
-        teamId: UUID.uuid4()
+        teamId: UUID.uuid5(:dns, "equipment:team:first-team")
       }
 
       events = CreateWidgetHandler.handle(%WidgetAggregate{}, cmd)
@@ -1894,11 +1930,11 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Operation.EditWidgetTest do
 
     test "id cannot be nil" do
       cmd = %EditWidget{
-        coachId: UUID.uuid4(),
-        description: "sample-description",
+        coachId: UUID.uuid5(:dns, "equipment:coach:head-coach"),
+        description: "The original widget of the fixture world",
         label: "Vaulting",
         slug: "vaulting-table",
-        teamId: UUID.uuid4(),
+        teamId: UUID.uuid5(:dns, "equipment:team:first-team"),
         title: "Vaulting Table",
         id: nil
       }
@@ -1919,12 +1955,12 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Operation.EditWidgetTest do
   describe "Command Handler" do
     test "handles EditWidget command and returns WidgetEdited event" do
       cmd = %EditWidget{
-        id: UUID.uuid4(),
-        coachId: UUID.uuid4(),
-        description: "sample-description",
+        id: UUID.uuid5(:dns, "equipment:widget:classic-widget"),
+        coachId: UUID.uuid5(:dns, "equipment:coach:head-coach"),
+        description: "The original widget of the fixture world",
         label: "Vaulting",
         slug: "vaulting-table",
-        teamId: UUID.uuid4(),
+        teamId: UUID.uuid5(:dns, "equipment:team:first-team"),
         title: "Vaulting Table"
       }
 
@@ -2024,7 +2060,7 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Operation.NoteWidgetTest do
     end
 
     test "validates presence of comment" do
-      cmd = %NoteWidget{id: UUID.uuid4(), comment: nil}
+      cmd = %NoteWidget{id: UUID.uuid5(:dns, "equipment:widget:classic-widget"), comment: nil}
 
       assert {:error, _errors} = Vex.validate(cmd)
     end
@@ -2032,7 +2068,10 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Operation.NoteWidgetTest do
 
   describe "Command Handler" do
     test "handles NoteWidget command and returns WidgetNoted event" do
-      cmd = %NoteWidget{id: UUID.uuid4(), comment: "sample-comment"}
+      cmd = %NoteWidget{
+        id: UUID.uuid5(:dns, "equipment:widget:classic-widget"),
+        comment: "sample-comment"
+      }
 
       events = NoteWidgetHandler.handle(%WidgetAggregate{}, cmd)
 
@@ -2139,11 +2178,12 @@ defmodule SportipediaWeb.Catalog.Equipment.Widget.ListWidgetsEndpointTest do
 
   alias Sportipedia.Catalog.Equipment.Widget
   alias Sportipedia.Catalog.Equipment.Widget.WidgetReadModel
+  alias Sportipedia.TestSupport.Catalog.Equipment
+  alias Sportipedia.TestSupport.Catalog.Equipment.WidgetFixtures
 
   describe "GET /catalog/equipment/widgets (list-widgets)" do
     test "returns 200 with a collection of widgets", %{conn: conn} do
-      {:ok, _} =
-        Widget.create_widget(%{label: "Pommel", slug: "pommel-horse", title: "Pommel Horse"})
+      {:ok, _} = Equipment.new_widgets(WidgetFixtures.widgets())
 
       conn =
         conn
@@ -2203,11 +2243,12 @@ defmodule SportipediaWeb.Catalog.Equipment.Widget.ReadWidgetEndpointTest do
 
   alias Sportipedia.Catalog.Equipment.Widget
   alias Sportipedia.Catalog.Equipment.Widget.WidgetReadModel
+  alias Sportipedia.TestSupport.Catalog.Equipment
+  alias Sportipedia.TestSupport.Catalog.Equipment.WidgetFixtures
 
   describe "GET /catalog/equipment/widgets/:id_or_slug (read-widget)" do
     test "returns 200 with the widget when found", %{conn: conn} do
-      {:ok, %{id: id}} =
-        Widget.create_widget(%{label: "Pommel", slug: "pommel-horse", title: "Pommel Horse"})
+      {:ok, %{id: id}} = Equipment.new_widget(WidgetFixtures.classic_widget())
 
       conn =
         conn
@@ -2330,13 +2371,13 @@ defmodule SportipediaWeb.Catalog.Equipment.Widget.WidgetViewTest do
     test "produces JSON:API single document" do
       widget = %WidgetReadModel{
         id: "d290f1ee-6c54-4b01-90e6-d701748f0851",
-        title: "sample-title",
-        slug: "sample-slug",
+        title: "Classic Widget",
+        slug: "classic-widget",
         archivedAt: DateTime.utc_now(),
-        coachId: UUID.uuid4(),
-        description: "sample-description",
-        label: "sample-label",
-        teamId: UUID.uuid4()
+        coachId: UUID.uuid5(:dns, "equipment:coach:head-coach"),
+        description: "The original widget of the fixture world",
+        label: "classic",
+        teamId: UUID.uuid5(:dns, "equipment:team:first-team")
       }
 
       conn = build_conn() |> fetch_query_params()

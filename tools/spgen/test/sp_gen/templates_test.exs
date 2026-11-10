@@ -183,9 +183,21 @@ defmodule SpGen.TemplatesTest do
   end
 
   describe "sample_value/2" do
-    test "id is a uuid expression" do
+    test "id is the fixture's deterministic uuid5, so a test row and its seed match" do
       c = ctx(setup_model(), "command.catalog-apparatus")
-      assert Templates.sample_value(c, %{name: "id"}) == "UUID.uuid4()"
+
+      assert Templates.sample_value(c, %{name: "id", format: "uuid"}) ==
+               ~S|UUID.uuid5(:dns, "equipment:apparatus:parallel-bars")|
+    end
+
+    test "id falls back to a uuid4 expression when the read model declares no example", %{
+      model: model
+    } do
+      # an element whose read model has no examples has nothing to match against
+      c = ctx(model, "command.catalog-apparatus")
+      c = %{c | read_model: nil}
+
+      assert Templates.sample_value(c, %{name: "id", format: "uuid"}) == "UUID.uuid4()"
     end
 
     test "scenario values are preferred and quoted", %{model: model} do
@@ -207,9 +219,9 @@ defmodule SpGen.TemplatesTest do
     test "lists fields in order with overrides" do
       c = ctx(setup_model(), "command.catalog-apparatus", operation: :create)
       body = Templates.struct_body(c, %{"title" => "nil"})
-      assert body =~ "id: UUID.uuid4()"
+      assert body =~ ~S|id: UUID.uuid5(:dns, "equipment:apparatus:parallel-bars")|
       assert body =~ "title: nil"
-      assert body =~ "slug: \"vaulting-table\""
+      assert body =~ ~S|slug: "vaulting-table"|
     end
   end
 

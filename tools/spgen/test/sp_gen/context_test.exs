@@ -193,4 +193,67 @@ defmodule SpGen.ContextTest do
                "services/api/test/sportipedia/catalog/equipment/apparatus/operation/catalog_apparatus_test.exs"
     end
   end
+
+  describe "generated fixtures (the read model's schema.examples)" do
+    test "the primary example names the fixture and factory for its constituent", %{
+      model: model
+    } do
+      c = ctx(model, "command.catalog-apparatus")
+      assert Context.fixtures?(c)
+
+      fixture = Context.fixture(c)
+      assert fixture.module == "Sportipedia.TestSupport.Catalog.Equipment.ApparatusFixtures"
+      assert fixture.local == "ApparatusFixtures"
+      assert fixture.function == "parallel_bars"
+      assert fixture.plural == "apparatuses"
+      assert fixture.seed_module == "Sportipedia.TestSupport.Catalog.Equipment"
+      assert fixture.seed_function == "new_apparatus"
+      assert fixture.seed_all_function == "new_apparatuses"
+      assert fixture.file =~ "test/support/catalog/equipment/fixtures/apparatuses.ex"
+      assert fixture.seed_file =~ "test/support/catalog/equipment/equipment.ex"
+    end
+
+    test "the same fixture is named from a command, an event and a query context", %{
+      model: model
+    } do
+      names =
+        for name <- [
+              "command.catalog-apparatus",
+              "event.apparatus-cataloged",
+              "query.read-apparatus"
+            ] do
+          model |> ctx(name) |> Context.fixture() |> Map.fetch!(:function)
+        end
+
+      assert names == ["parallel_bars", "parallel_bars", "parallel_bars"]
+    end
+
+    test "the seed expressions call the factory with the fixture", %{model: model} do
+      fixture = model |> ctx("command.catalog-apparatus") |> Context.fixture()
+
+      assert Context.seed_expr(fixture) ==
+               "Equipment.new_apparatus(ApparatusFixtures.parallel_bars())"
+
+      assert Context.seed_all_expr(fixture) ==
+               "Equipment.new_apparatuses(ApparatusFixtures.apparatuses())"
+    end
+
+    test "example values are materialized source; absent fields return nil", %{model: model} do
+      c = ctx(model, "command.catalog-apparatus")
+
+      assert Context.example_value(c, "id") ==
+               ~S|UUID.uuid5(:dns, "equipment:apparatus:parallel-bars")|
+
+      assert Context.example_value(c, "title") == ~S|"Parallel Bars"|
+      assert Context.example_value(c, "nonexistent") == nil
+    end
+
+    test "an element whose read model declares no examples reports none", %{model: model} do
+      c = %{ctx(model, "command.catalog-apparatus") | read_model: nil}
+
+      refute Context.fixtures?(c)
+      assert Context.fixture(c) == nil
+      assert Context.example_value(c, "id") == nil
+    end
+  end
 end

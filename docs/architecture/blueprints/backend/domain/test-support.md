@@ -56,9 +56,11 @@ Two rules keep this generator inside its own bounds. The read model is a
 create, and it arrives in-run so `ReadModel.t()` and the struct always resolve.
 And its **closure scope is `:none`**: creating its own files never triggers the
 neighborhood sweep — units a human deleted in events, queries or commands stay
-deleted. Generators whose code is referenced by others keep the `:all` sweep;
-when test scaffolds begin embedding fixture references, that is the change
-that flips this blueprint back to `:all`.
+deleted. Generators whose code is referenced by others keep the `:all` sweep.
+A test scaffold that seeds through the factory does reference these files, but
+its blueprint owns the whole file and creates it in one shot (gates only defer a
+merge into a file that already exists, by which time the fixtures are there), so
+`:none` stands: flipping to `:all` would resurrect seeds a human removed.
 
 ## Left to you
 

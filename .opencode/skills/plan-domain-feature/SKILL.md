@@ -125,6 +125,11 @@ these and nothing else, so be explicit:
 - manual tests the generators do not cover (invariant cases, handler field
   mapping, projector idempotency, public-API success cases, endpoint error
   statuses)
+- when such a test needs a read-model row, it seeds the **generated fixture**
+  through the composite factory (`<Composite>.new_<object>(<Object>Fixtures
+  .<mnemonic>())`) — the same source the generated tests use — not a hand-written
+  `%{title: "sample-title", …}` map; only a behaviour test that needs the
+  event-sourced aggregate dispatches the create command instead
 - the migration, when this is the first operation of the aggregate
 - shared-file units: name which operation owns each shared validator body, so two
   workers do not both fill one file

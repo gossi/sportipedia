@@ -197,7 +197,11 @@ cross-operation contamination is visible.
 `mix compile --force --warnings-as-errors` clean in dev and test, `ApiSpec.spec()`
 builds, `mix format --check-formatted` clean on the slice, no `TODO:` markers or
 raise-stubs in slice-owned files, `--check` reporting only registered deviations,
-the slice's tests green with every spec QA scenario executed, and the commit made.
+the slice's tests green with every spec QA scenario executed, no hand-written
+`sample-*` seed where the read model declares `schema.examples` (a test seeds a
+read-model row through the fixture factory — see
+[test-support](../../docs/architecture/blueprints/backend/domain/test-support.md)),
+and the commit made.
 
 ## Parameters
 

@@ -32,6 +32,22 @@ defmodule SpGen.Blueprint.Fixtures do
   def name, do: :fixtures
   def source_kinds, do: [:"read-model"]
 
+  # closure_scope/1 and the alias a consuming test emits both come from these
+  # dotted templates, so the fixture file and its module name have exactly one
+  # spelling in the tool.
+
+  @doc "The fixture module's dotted name template."
+  @spec module_template() :: String.t()
+  def module_template, do: @module
+
+  @doc "The fixtures file's path template."
+  @spec path_template() :: String.t()
+  def path_template, do: @path
+
+  @doc "Rendered fixture module name for `ctx`'s constituent."
+  @spec module_name(Context.t()) :: String.t()
+  def module_name(%Context{} = ctx), do: Context.render(@module, ctx)
+
   # fixtures reference nothing but their read model — and that citizen arrives
   # as a dependency of this very run, so a creating run sweeps nothing
   def closure_scope, do: :none

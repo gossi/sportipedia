@@ -35,6 +35,27 @@ defmodule SpGen.Blueprint.Factory do
   def name, do: :factory
   def source_kinds, do: [:"read-model"]
 
+  @doc "The composite factory module's dotted name template."
+  @spec module_template() :: String.t()
+  def module_template, do: @module
+
+  @doc "The factory file's path template."
+  @spec path_template() :: String.t()
+  def path_template, do: @path
+
+  @doc "Rendered composite factory module name for `ctx`'s composite."
+  @spec module_name(Context.t()) :: String.t()
+  def module_name(%Context{} = ctx), do: Context.render(@module, ctx)
+
+  @doc "The `new_<domain_object>` seed function for `ctx`'s constituent (snake)."
+  @spec seed_name(Context.t()) :: String.t()
+  def seed_name(%Context{} = ctx), do: "new_" <> String.replace(ctx.constituent, "-", "_")
+
+  @doc "The `new_<domain_object>s` plural seed for `ctx`'s constituent."
+  @spec seed_all_name(Context.t()) :: String.t()
+  def seed_all_name(%Context{} = ctx),
+    do: "new_" <> Context.render("<domain_object>s", ctx)
+
   # the ledger references read models and the Repo — never a citizen this run
   # would have to wake up by sweeping the neighborhood
   def closure_scope, do: :none
@@ -60,9 +81,6 @@ defmodule SpGen.Blueprint.Factory do
 
   defp rm_module(ctx), do: Context.render(@read_model_module, ctx)
   defp local(ctx), do: rm_module(ctx) |> String.split(".") |> List.last()
-
-  defp seed_name(ctx), do: "new_" <> String.replace(ctx.constituent, "-", "_")
-  defp seed_all_name(ctx), do: Context.render("<domain_object>s", ctx) |> then(&"new_#{&1}")
 
   defp repo_module(ctx), do: "Sportipedia.#{Context.pascal(ctx.subdomain)}.Repo"
   defp repo_alias(ctx), do: "alias #{repo_module(ctx)}"

@@ -923,6 +923,78 @@ defmodule SpGenTest do
     end
   end
 
+  # ------------------------------------------------ tests consume the fixtures
+
+  describe "generated tests consume the generated fixtures" do
+    setup do
+      repo = FixtureRepo.build()
+      generate(repo)
+      %{repo: repo}
+    end
+
+    @read_endpoint "test/sportipedia_web/catalog/equipment/widget/operations/read_widget_endpoint_test.exs"
+    @list_endpoint "test/sportipedia_web/catalog/equipment/widget/operations/list_widgets_endpoint_test.exs"
+    @create_endpoint "test/sportipedia_web/catalog/equipment/widget/operations/create_widget_endpoint_test.exs"
+    @created_event "test/sportipedia/catalog/equipment/widget/events/widget_created_test.exs"
+
+    test "a read seeds the model's fixture row, not a re-dispatched create command", %{repo: repo} do
+      test = read(repo, @read_endpoint)
+
+      assert test =~ ~s|{:ok, %{id: id}} = Equipment.new_widget(WidgetFixtures.classic_widget())|
+      assert test =~ "alias Sportipedia.TestSupport.Catalog.Equipment"
+      assert test =~ "alias Sportipedia.TestSupport.Catalog.Equipment.WidgetFixtures"
+      refute test =~ "Widget.create_widget("
+    end
+
+    test "a collection seeds every fixture through the plural", %{repo: repo} do
+      test = read(repo, @list_endpoint)
+
+      assert test =~ ~s|{:ok, _} = Equipment.new_widgets(WidgetFixtures.widgets())|
+    end
+
+    test "a command test dispatches through the public API and aliases no fixture", %{repo: repo} do
+      test = read(repo, @create_endpoint)
+
+      refute test =~ "Sportipedia.TestSupport"
+      refute test =~ "new_widget("
+    end
+
+    test "an event struct carries the fixture's id and the referenced fixture's id", %{
+      repo: repo
+    } do
+      test = read(repo, @created_event)
+
+      # the fact's own id is the fixture key's uuid5 — the projector writes the
+      # row under it, so `Repo.get(read_model, event.id)` finds the seeded row
+      assert test =~ ~S|id: UUID.uuid5(:dns, "equipment:widget:classic-widget")|
+      # a `*Id` reference matches the referenced fixture's id by construction
+      assert test =~ ~S|coachId: UUID.uuid5(:dns, "equipment:coach:head-coach")|
+      # the example data replaces the throwaway `sample-*` strings
+      refute test =~ "sample-title"
+    end
+
+    test "an example-less read model still seeds through the create command", %{repo: _repo} do
+      repo = FixtureRepo.build()
+
+      text =
+        FixtureRepo.read(repo, "docs/domain-model/catalog/equipment/read-model.widget.esdm.yaml")
+
+      [without_examples | _] = String.split(text, "  examples:")
+
+      FixtureRepo.write(
+        repo,
+        "docs/domain-model/catalog/equipment/read-model.widget.esdm.yaml",
+        without_examples
+      )
+
+      generate(repo)
+
+      read_test = read(repo, @read_endpoint)
+      refute read_test =~ "Sportipedia.TestSupport"
+      assert read_test =~ "Widget.create_widget("
+    end
+  end
+
   # ------------------------------------------------------------------ helpers
 
   # paths in these tests are either repo-rooted or relative to the API project

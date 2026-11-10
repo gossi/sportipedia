@@ -543,7 +543,112 @@ defmodule SpGen.Context do
 
   def collection?(_ctx), do: false
 
-  @doc "The module-name Pascal form of a kebab name (PublicAPI, ReadModel, …)."
+  # -- generated fixtures (the read model's `schema.examples`) -----------------
+  #
+  # `sp.gen.test_support` projects a read model's examples into a fixtures module
+  # and a composite factory. A test that needs a *real* row must call them rather
+  # than re-invent a `%{title: "sample-title"}` map or re-dispatch the create
+  # command — the fixture is the model-owned projection of that row, and its id
+  # (`UUID.uuid5(:dns, <key>)`) is the id every reference to it resolves to, so a
+  # foreign key in one fixture already equals the primary key of the fixture it
+  # points at. `fixture/1` hands a test blueprint everything it needs to name that
+  # row: the primary example for a single-row seed, the plural for a collection.
+
+  @typedoc "A generated fixture row, named from every angle a test needs."
+  @type fixture_ref :: %{
+          module: String.t(),
+          local: String.t(),
+          file: String.t(),
+          function: String.t(),
+          plural: String.t(),
+          seed_module: String.t(),
+          seed_local: String.t(),
+          seed_file: String.t(),
+          seed_function: String.t(),
+          seed_all_function: String.t(),
+          attrs: %{String.t() => String.t()}
+        }
+
+  @doc "The fixture specs of `ctx`'s read model, or `[]` when none/invalid."
+  @spec fixture_specs(%__MODULE__{}) :: [SpGen.Fixtures.spec()]
+  def fixture_specs(%__MODULE__{read_model: rm} = ctx) when not is_nil(rm) do
+    plural = render("<domain_object>s", ctx)
+
+    case SpGen.Fixtures.validate(rm, ctx.composite, plural) do
+      {:ok, specs} -> specs
+      {:error, _} -> []
+    end
+  end
+
+  def fixture_specs(_ctx), do: []
+
+  @doc "True when `ctx`'s read model declares usable fixture examples."
+  @spec fixtures?(%__MODULE__{}) :: boolean()
+  def fixtures?(ctx), do: fixture_specs(ctx) != []
+
+  @doc """
+  The generated-fixture reference for `ctx`'s constituent, from its **primary**
+  example (the first in model order) — or `nil` when the read model declares no
+  examples.
+  """
+  @spec fixture(%__MODULE__{}) :: fixture_ref() | nil
+  def fixture(%__MODULE__{} = ctx) do
+    case fixture_specs(ctx) do
+      [%{} = spec | _] -> build_fixture_ref(ctx, spec)
+      [] -> nil
+    end
+  end
+
+  defp build_fixture_ref(%__MODULE__{} = ctx, spec) do
+    fixtures_mod = SpGen.Blueprint.Fixtures.module_name(ctx)
+    factory_mod = SpGen.Blueprint.Factory.module_name(ctx)
+
+    %{
+      module: fixtures_mod,
+      local: fixtures_mod |> String.split(".") |> List.last(),
+      file: SpGen.Blueprint.Fixtures.module_file(ctx),
+      function: spec.fname,
+      plural: render("<domain_object>s", ctx),
+      seed_module: factory_mod,
+      seed_local: factory_mod |> String.split(".") |> List.last(),
+      seed_file: SpGen.Blueprint.Factory.module_file(ctx),
+      seed_function: SpGen.Blueprint.Factory.seed_name(ctx),
+      seed_all_function: SpGen.Blueprint.Factory.seed_all_name(ctx),
+      attrs: Map.new(spec.attrs)
+    }
+  end
+
+  @doc """
+  The seed expression a single-row test uses to place the primary fixture:
+  `<Composite>.new_<object>(<Object>Fixtures.<mnemonic>())`.
+  """
+  @spec seed_expr(fixture_ref()) :: String.t()
+  def seed_expr(%{} = f), do: "#{f.seed_local}.#{f.seed_function}(#{f.local}.#{f.function}())"
+
+  @doc """
+  The plural seed expression a collection test uses to place every fixture:
+  `<Composite>.new_<object>s(<Object>Fixtures.<plural>())`.
+  """
+  @spec seed_all_expr(fixture_ref()) :: String.t()
+  def seed_all_expr(%{} = f),
+    do: "#{f.seed_local}.#{f.seed_all_function}(#{f.local}.#{f.plural}())"
+
+  @doc """
+  The materialized source for one field of the primary example, or `nil`.
+
+  A `*Id` field materializes as `UUID.uuid5(:dns, <key>)` — the very id the
+  referenced fixture names itself with — so a reference in a generated test is a
+  correct identifier without the referenced row being seeded.
+  """
+  @spec example_value(%__MODULE__{}, String.t()) :: String.t() | nil
+  def example_value(%__MODULE__{} = ctx, name) do
+    case fixture(ctx) do
+      %{attrs: attrs} -> Map.get(attrs, name)
+      nil -> nil
+    end
+  end
+
+  @doc "The module Pascal form of a kebab name (PublicAPI, ReadModel, …)."
   def pascal(name) do
     name |> String.split("-") |> Enum.map(&String.capitalize/1) |> Enum.join()
   end

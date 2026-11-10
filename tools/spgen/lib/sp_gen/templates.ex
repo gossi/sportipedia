@@ -124,25 +124,65 @@ defmodule SpGen.Templates do
     |> Enum.reject(&is_nil/1)
   end
 
-  @doc "Sample source value for a field, preferring scenario data."
-  def sample_value(%Context{} = _ctx, %{name: "id"}), do: "UUID.uuid4()"
+  @doc """
+  Sample source value for a field.
 
-  # typed fields get type-correct literals: the DB would reject a
-  # `"sample-apparatusId"` for a `:binary_id` column
-  def sample_value(%Context{} = _ctx, %{format: "uuid"}), do: "UUID.uuid4()"
-  def sample_value(%Context{} = _ctx, %{format: "date-time"}), do: "DateTime.utc_now()"
-  def sample_value(%Context{} = _ctx, %{type: "integer"}), do: "1"
-  def sample_value(%Context{} = _ctx, %{type: "number"}), do: "1.0"
-  def sample_value(%Context{} = _ctx, %{type: "boolean"}), do: "true"
-  def sample_value(%Context{} = _ctx, %{type: "array"}), do: "[]"
-  def sample_value(%Context{} = _ctx, %{type: "object"}), do: "%{}"
+  * **plain fields** — the happy feature scenario's `when.data`, then the read
+    model's primary example, then a type-correct default, then `"sample-<field>"`.
+  * **ids and `*Id` references** — the primary example, then a type-correct
+    default. Never the scenario: a scenario's id is the `{{ generated }}`
+    sentinel, a placeholder for the system's own key, not a value to inject.
 
-  def sample_value(%Context{} = ctx, %{name: name} = field) do
-    case scenario_value(ctx, name) do
-      nil -> field |> default_value() |> inspect_value()
+  The example is the same fixture `sp.gen.test_support` projects, so a generated
+  test and a seeded row carry one value — and a `*Id` reference becomes the very
+  `UUID.uuid5(:dns, <key>)` the referenced fixture names itself with, so a
+  foreign key already points at the row it seeds. `example_value` is already
+  materialized source, returned verbatim.
+  """
+  def sample_value(%Context{} = ctx, %{name: _name} = field) do
+    if structural?(field) do
+      structural_source(ctx, field)
+    else
+      prose_source(ctx, field)
+    end
+  end
+
+  defp structural?(%{name: name} = field) do
+    name == "id" or field[:format] == "uuid" or SpGen.Fixtures.reference_field?(name)
+  end
+
+  defp structural_source(ctx, field) do
+    case Context.example_value(ctx, field.name) do
+      nil -> typed_default(field)
+      source -> source
+    end
+  end
+
+  defp prose_source(ctx, field) do
+    case scenario_value(ctx, field.name) do
+      nil -> prose_no_scenario(ctx, field)
       value -> inspect_value(value)
     end
   end
+
+  defp prose_no_scenario(ctx, field) do
+    case Context.example_value(ctx, field.name) do
+      nil -> typed_default(field)
+      source -> source
+    end
+  end
+
+  # typed fields get type-correct literals: the DB would reject a
+  # `"sample-apparatusId"` for a `:binary_id` column
+  defp typed_default(%{name: "id"}), do: "UUID.uuid4()"
+  defp typed_default(%{format: "uuid"}), do: "UUID.uuid4()"
+  defp typed_default(%{format: "date-time"}), do: "DateTime.utc_now()"
+  defp typed_default(%{type: "integer"}), do: "1"
+  defp typed_default(%{type: "number"}), do: "1.0"
+  defp typed_default(%{type: "boolean"}), do: "true"
+  defp typed_default(%{type: "array"}), do: "[]"
+  defp typed_default(%{type: "object"}), do: "%{}"
+  defp typed_default(%{name: name}), do: "sample-#{name}" |> inspect_value()
 
   defp scenario_value(%Context{scenarios: [first | _]}, name) do
     get_in(first, ["when", "data", name])
@@ -150,9 +190,6 @@ defmodule SpGen.Templates do
 
   defp scenario_value(_ctx, _name), do: nil
 
-  defp default_value(%{name: name}), do: "sample-#{name}"
-
-  defp inspect_value(value) when is_binary(value), do: inspect(value)
   defp inspect_value(value), do: inspect(value)
 
   @doc "Struct literal body `key: value, ...` for all of the context's fields."

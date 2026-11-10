@@ -45,11 +45,17 @@ the [event test](./event-test.md).
 
 ## Left to you
 
-Test helpers, when a case needs read-model state directly: a private
-`new_<domain_object>/1` inserting through
-`<DomainObject>ReadModel.insert_changeset/2` and `Sportipedia.<Subdomain>.Repo`,
-plus `new_<domain_object>s/1` for collections. Reach the same state through the
-public API when the test is about behaviour rather than a table row.
+Where a case needs read-model state directly, seed the model's **fixture** —
+`sp.gen.test_support` generates the `<Composite>.new_<domain_object>/1` (a fixture
+struct or an attribute map) and `new_<domain_object>s/1` into
+`test/support/<_subdomain>/<composite>/<composite>.ex`. A generated test already
+calls them for a direct read-model row; an added case should reuse the same
+fixture function rather than hand-write a `%{title: "sample-title", …}` map —
+the fixture is the single source of truth for that citizen's data, and its id is
+a stable `UUID.uuid5(:dns, <key>)` the rest of the graph refers to. Reach the
+same state through the **public API** when the test is about behaviour (the
+aggregate and its events), not a table row: only a command dispatch builds the
+event-sourced state an update or delete acts on.
 
 Everything else that is still yours is listed once in
 [Known gaps](../../README.md#known-gaps).

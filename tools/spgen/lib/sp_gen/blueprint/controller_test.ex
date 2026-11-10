@@ -41,6 +41,7 @@ defmodule SpGen.Blueprint.ControllerTest do
             id: {:describe, subject},
             check: fn src -> Source.has_describe?(src, subject) end,
             render: fn c -> endpoint_describe(c) end,
+            requires: &fixture_seed_gate/1,
             place: Merge.describe()
           }
         ]
@@ -64,6 +65,25 @@ defmodule SpGen.Blueprint.ControllerTest do
         end
     end
   end
+
+  # a fixture-seeded **query** test names the fixture and factory modules; it may
+  # not be written before `sp.gen.test_support` created them. A command test
+  # dispatches through the public API and references no fixture, so nothing gates.
+  defp fixture_seed_gate(%Context{element: %Element{kind: :query}} = ctx) do
+    case Context.fixture(ctx) do
+      nil ->
+        []
+
+      fixture ->
+        [
+          {fixture.file, "the #{ctx.constituent} fixtures do not exist (spgen test_support)"},
+          {fixture.seed_file,
+           "the #{ctx.composite} test-support factory does not exist (spgen test_support)"}
+        ]
+    end
+  end
+
+  defp fixture_seed_gate(_ctx), do: []
 
   defp test_scaffold(ctx) do
     aliases =
@@ -89,8 +109,31 @@ defmodule SpGen.Blueprint.ControllerTest do
   defp test_alias_templates(ctx) do
     needs_read_model? = ctx.element.kind == :query or ctx.operation in [:delete, :none]
 
-    [Controller.public_api_template()] ++
-      if needs_read_model?, do: [Controller.read_model_template()], else: []
+    base =
+      [Controller.public_api_template()] ++
+        if(needs_read_model?, do: [Controller.read_model_template()], else: [])
+
+    # only the query tests seed a row through the fixture factory; commands
+    # dispatch through the public API, so an unused alias there is a warning.
+    if ctx.element.kind == :query and Context.fixtures?(ctx) do
+      base ++ fixture_seed_aliases(ctx)
+    else
+      base
+    end
+  end
+
+  # the fixture + factory modules the persisted seed names, so the test file
+  # aliases every module its seed calls. Concrete dotted names — `test_scaffold`
+  # renders them through `Context.render`, the identity for a template carrying
+  # no placeholder.
+  defp fixture_seed_aliases(ctx) do
+    case Context.fixture(ctx) do
+      nil ->
+        []
+
+      fixture ->
+        [fixture.seed_module, fixture.module]
+    end
   end
 
   defp endpoint_describe(ctx) do
@@ -261,7 +304,7 @@ defmodule SpGen.Blueprint.ControllerTest do
   defp read_happy(ctx, name) do
     """
     test "#{name}", %{conn: conn} do
-      {:ok, %{id: id}} = #{seed_expr(ctx)}
+    #{Templates.indent(seed_block(ctx, "{:ok, %{id: id}}"), 6)}
 
       conn =
         conn
@@ -291,7 +334,7 @@ defmodule SpGen.Blueprint.ControllerTest do
   defp collection_happy(ctx, name) do
     """
     test "#{name}", %{conn: conn} do
-      {:ok, _} = #{seed_expr(ctx)}
+    #{Templates.indent(seed_block(ctx, "{:ok, _}", :all), 6)}
 
       conn =
         conn
@@ -335,7 +378,32 @@ defmodule SpGen.Blueprint.ControllerTest do
     end
   end
 
-  # seed through the constituent's create command, e.g.
+  # The seed that places a row the endpoint **reads**. A read model has no
+  # foreign-key enforcement, so fixture rows answer `read` and `collection` — the
+  # aggregate and its referenced equipment are not involved.
+  #
+  # When the read model declares examples the rows are the model's fixtures,
+  # seeded through the composite factory — the primary example for a single read
+  # (`Equipment.new_widget(WidgetFixtures.classic_widget())`), every example for a
+  # collection (`Equipment.new_widgets(WidgetFixtures.widgets())`), per the naming
+  # doc's plural rule. Their `*Id` values are the `UUID.uuid5(:dns, <key>)` the
+  # referenced fixture names itself with, so they are correct identifiers even
+  # without the referenced row. Without examples there is no fixture to name —
+  # seed through the create command, as before.
+  defp seed_block(%Context{} = ctx, binding, mode \\ :one) do
+    case Context.fixture(ctx) do
+      nil ->
+        "#{binding} = #{seed_expr(ctx)}"
+
+      fixture ->
+        seed =
+          if mode == :all, do: Context.seed_all_expr(fixture), else: Context.seed_expr(fixture)
+
+        "#{binding} = #{seed}"
+    end
+  end
+
+  # the legacy fallback seed: seed through the constituent's create command, e.g.
   # `Apparatus.catalog_apparatus(%{title: "Vaulting Table", ...})`
   defp seed_expr(ctx) do
     case create_command(ctx) do
