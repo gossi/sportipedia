@@ -1,4 +1,9 @@
 defmodule Sportipedia.Support.Validators.SlugValidator do
+  @moduledoc """
+  Validates slugs in canonical form: lower-case letters, digits and dashes,
+  and never starting with a dash. Slug input that is not canonical is
+  rejected at the command boundary — there is nothing to downcase.
+  """
   use Vex.Validator
 
   @slug_pattern ~r/^[a-z0-9][a-z0-9-]*$/
@@ -11,10 +16,6 @@ defmodule Sportipedia.Support.Validators.SlugValidator do
     end
   end
 
-  @doc """
-  A slug is canonical when it is already lower-case: lowercase letters, digits
-  and dashes, and it must not start with a dash. There is nothing to downcase.
-  """
   defp valid_slug?(maybe_slug) when is_binary(maybe_slug) do
     Regex.match?(@slug_pattern, maybe_slug)
   end

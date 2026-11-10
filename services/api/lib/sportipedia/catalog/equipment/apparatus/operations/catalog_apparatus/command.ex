@@ -6,7 +6,7 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Command.CatalogApparatus do
   use TypedStruct
   use ExConstructor
 
-  alias Sportipedia.Catalog.Equipment.Apparatus.Validators.UniqueSlug
+  alias Sportipedia.Catalog.Equipment.Validators.UniqueEquipmentSlug
   alias Sportipedia.Support.Validators.SlugValidator
 
   @doc """
@@ -26,5 +26,5 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Command.CatalogApparatus do
   validates :slug,
     presence: true,
     by: [function: &SlugValidator.validate/2],
-    by: [function: &UniqueSlug.validate/2, allow_nil: true]
+    by: [function: &UniqueEquipmentSlug.validate/2, allow_nil: true]
 end

@@ -7,8 +7,11 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Operation.CatalogApparatusTest
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.CatalogApparatusHandler
   alias Sportipedia.Catalog.Equipment.Apparatus.Event.ApparatusCataloged
   alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusAggregate
-  alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusReadModel
-  alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusProjector
+
+  import Sportipedia.TestSupport.Catalog.Equipment
+
+  alias Sportipedia.TestSupport.Catalog.Equipment.ApparatusFixtures
+  alias Sportipedia.TestSupport.Catalog.Equipment.InstrumentFixtures
 
   describe "Policy" do
     @describetag :unit
@@ -90,16 +93,25 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Operation.CatalogApparatusTest
     end
 
     test "rejects when slug is not unique" do
-      new_apparatus(%{
-        id: UUID.uuid4(),
-        title: "Beam",
-        slug: "beam"
-      })
+      new_apparatus(ApparatusFixtures.balance_beam())
 
       cmd = %CatalogApparatus{
         id: UUID.uuid4(),
         title: "Balance Beam",
-        slug: "beam"
+        slug: "balance-beam"
+      }
+
+      assert {:error, [{:error, :slug, :by, :slug_exists}]} =
+               Vex.validate(cmd)
+    end
+
+    test "rejects when the slug is already used by an instrument" do
+      new_instrument(InstrumentFixtures.unicycle())
+
+      cmd = %CatalogApparatus{
+        id: UUID.uuid4(),
+        title: "Unicycle Frame",
+        slug: "unicycle"
       }
 
       assert {:error, [{:error, :slug, :by, :slug_exists}]} =
@@ -191,12 +203,5 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Operation.CatalogApparatusTest
       assert {:ok, _} = Apparatus.catalog_apparatus(params)
       assert {:error, {:validation_failure, _errors}} = Apparatus.catalog_apparatus(params)
     end
-  end
-
-  @spec new_apparatus(ApparatusReadModel.t()) ::
-          {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
-  defp new_apparatus(attributes) do
-    ApparatusReadModel.insert_changeset(%ApparatusReadModel{}, attributes)
-    |> Repo.insert()
   end
 end

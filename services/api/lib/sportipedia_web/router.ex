@@ -23,7 +23,10 @@ defmodule SportipediaWeb.Router do
   end
 
   pipeline :catalog do
-    plug :introspect
+    if Application.compile_env(:sportipedia, :dev_routes) do
+      plug :introspect
+    end
+
     plug Sportipedia.Auth.Pipeline.Catalog
   end
 
@@ -31,17 +34,19 @@ defmodule SportipediaWeb.Router do
     plug Sportipedia.Auth.Plug.SystemAuth
   end
 
-  defp introspect(conn, _opts) do
-    IO.puts("""
-    ---
-    Verb: #{inspect(conn.method)}
-    Path: #{inspect(conn.request_path)}
-    Headers: #{inspect(conn.req_headers)}
-    Payload: #{inspect(conn.body_params)}
-    ---
-    """)
+  if Application.compile_env(:sportipedia, :dev_routes) do
+    defp introspect(conn, _opts) do
+      IO.puts("""
+      ---
+      Verb: #{inspect(conn.method)}
+      Path: #{inspect(conn.request_path)}
+      Headers: #{inspect(conn.req_headers)}
+      Payload: #{inspect(conn.body_params)}
+      ---
+      """)
 
-    conn
+      conn
+    end
   end
 
   scope "/accounts/mailer", SportipediaWeb.Accounts do

@@ -7,7 +7,7 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Command.EditInstrument do
   use ExConstructor
 
   alias Sportipedia.Catalog.Equipment.Instrument.Validators.InstrumentExists
-  alias Sportipedia.Catalog.Equipment.Instrument.Validators.UniqueSlug
+  alias Sportipedia.Catalog.Equipment.Validators.UniqueEquipmentSlug
   alias Sportipedia.Support.Validators.SlugValidator
 
   @doc """
@@ -27,5 +27,5 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Command.EditInstrument do
 
   validates :slug,
     by: [function: &SlugValidator.validate/2, allow_nil: true],
-    by: [function: &UniqueSlug.validate/2, allow_nil: true]
+    by: [function: &UniqueEquipmentSlug.validate/2, allow_nil: true]
 end

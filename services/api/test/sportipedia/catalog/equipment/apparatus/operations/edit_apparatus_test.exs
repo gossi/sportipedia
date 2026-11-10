@@ -6,10 +6,12 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Operation.EditApparatusTest do
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.EditApparatus
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.EditApparatusHandler
   alias Sportipedia.Catalog.Equipment.Apparatus.Event.ApparatusEdited
-  alias Sportipedia.Catalog.Equipment.Apparatus.Event.ApparatusCataloged
   alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusAggregate
-  alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusReadModel
-  alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusProjector
+
+  import Sportipedia.TestSupport.Catalog.Equipment
+
+  alias Sportipedia.TestSupport.Catalog.Equipment.ApparatusFixtures
+  alias Sportipedia.TestSupport.Catalog.Equipment.InstrumentFixtures
 
   describe "Policy" do
     @describetag :unit
@@ -131,28 +133,43 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Operation.EditApparatusTest do
 
     @tag :integration
     test "rejects when slug is not unique" do
-      id = UUID.uuid4()
+      own = ApparatusFixtures.parallel_bars()
+      other = ApparatusFixtures.still_rings()
 
-      new_apparatuses([
-        %{
-          id: UUID.uuid4(),
-          title: "Beam",
-          slug: "beam"
-        },
-        %{
-          id: id,
-          title: "Vaulting Table",
-          slug: "vaulting-table"
-        }
-      ])
+      new_apparatuses([own, other])
 
       cmd = %EditApparatus{
-        id: id,
-        slug: "beam"
+        id: own.id,
+        slug: other.slug
       }
 
       assert {:error, [{:error, :slug, :by, :slug_exists}]} =
                Vex.validate(cmd)
+    end
+
+    @tag :integration
+    test "rejects when the slug is already used by an instrument" do
+      own = ApparatusFixtures.parallel_bars()
+
+      new_apparatus(own)
+      new_instrument(InstrumentFixtures.unicycle())
+
+      cmd = %EditApparatus{
+        id: own.id,
+        slug: "unicycle"
+      }
+
+      assert {:error, [{:error, :slug, :by, :slug_exists}]} =
+               Vex.validate(cmd)
+    end
+
+    test "rejects a slug that is not lower-case" do
+      cmd = %EditApparatus{
+        id: UUID.uuid4(),
+        slug: "Vaulting-Table"
+      }
+
+      assert {:error, :slug, :by, :invalid_slug} in Vex.errors(cmd)
     end
 
     @tag :integration
@@ -319,16 +336,5 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Operation.EditApparatusTest do
       edit_params = %{id: created.id, slug: "apparatus-a"}
       assert {:error, {:validation_failure, _errors}} = Apparatus.edit_apparatus(edit_params)
     end
-  end
-
-  @spec new_apparatus(ApparatusReadModel.t()) ::
-          {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
-  defp new_apparatus(attributes) do
-    ApparatusReadModel.insert_changeset(%ApparatusReadModel{}, attributes)
-    |> Repo.insert()
-  end
-
-  defp new_apparatuses(attribute_collection) do
-    Enum.each(attribute_collection, fn elem -> new_apparatus(elem) end)
   end
 end

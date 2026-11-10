@@ -10,6 +10,11 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.EditInstrumentTest do
   alias Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel
   alias Sportipedia.Catalog.Repo
 
+  import Sportipedia.TestSupport.Catalog.Equipment
+
+  alias Sportipedia.TestSupport.Catalog.Equipment.ApparatusFixtures
+  alias Sportipedia.TestSupport.Catalog.Equipment.InstrumentFixtures
+
   describe "Policy" do
     @describetag :unit
 
@@ -124,28 +129,43 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.EditInstrumentTest do
 
     @tag :integration
     test "rejects when slug is not unique" do
-      id = UUID.uuid4()
+      own = InstrumentFixtures.unicycle()
+      other = InstrumentFixtures.skateboard()
 
-      new_instruments([
-        %{
-          id: UUID.uuid4(),
-          title: "Unicycle",
-          slug: "unicycle"
-        },
-        %{
-          id: id,
-          title: "Skateboard",
-          slug: "skateboard"
-        }
-      ])
+      new_instruments([own, other])
 
       cmd = %EditInstrument{
-        id: id,
-        slug: "unicycle"
+        id: own.id,
+        slug: other.slug
       }
 
       assert {:error, [{:error, :slug, :by, :slug_exists}]} =
                Vex.validate(cmd)
+    end
+
+    @tag :integration
+    test "rejects when the slug is already used by an apparatus" do
+      own = InstrumentFixtures.unicycle()
+
+      new_instrument(own)
+      new_apparatus(ApparatusFixtures.parallel_bars())
+
+      cmd = %EditInstrument{
+        id: own.id,
+        slug: "parallel-bars"
+      }
+
+      assert {:error, [{:error, :slug, :by, :slug_exists}]} =
+               Vex.validate(cmd)
+    end
+
+    test "rejects a slug that is not lower-case" do
+      cmd = %EditInstrument{
+        id: UUID.uuid4(),
+        slug: "Unicycle-Seat"
+      }
+
+      assert {:error, :slug, :by, :invalid_slug} in Vex.errors(cmd)
     end
 
     @tag :integration
@@ -222,7 +242,7 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.EditInstrumentTest do
     test "dispatches EditInstrument through the router" do
       id = UUID.uuid4()
 
-      Repo.insert!(%InstrumentReadModel{id: id, title: "Original", slug: "original"})
+      new_instrument(%{id: id, title: "Original", slug: "original"})
 
       cmd = EditInstrument.new(id: id, title: "Updated", slug: "updated")
 
@@ -233,7 +253,7 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.EditInstrumentTest do
     end
 
     test "validation failure is rejected before reaching the aggregate" do
-      Repo.insert!(%InstrumentReadModel{id: UUID.uuid4(), title: "Existing", slug: "taken"})
+      new_instrument(%{id: UUID.uuid4(), title: "Existing", slug: "taken"})
 
       cmd = EditInstrument.new(id: UUID.uuid4(), slug: "taken")
 
@@ -264,16 +284,5 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.EditInstrumentTest do
       assert updated.slug == "unicycle"
       assert updated.description == "New description"
     end
-  end
-
-  @spec new_instrument(InstrumentReadModel.t()) ::
-          {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
-  defp new_instrument(attributes) do
-    InstrumentReadModel.insert_changeset(%InstrumentReadModel{}, attributes)
-    |> Repo.insert()
-  end
-
-  defp new_instruments(attribute_collection) do
-    Enum.each(attribute_collection, fn elem -> new_instrument(elem) end)
   end
 end

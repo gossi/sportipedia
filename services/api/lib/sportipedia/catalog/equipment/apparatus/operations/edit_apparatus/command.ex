@@ -4,7 +4,7 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Command.EditApparatus do
   All fields except id are optional, allowing partial updates.
   """
   alias Sportipedia.Catalog.Equipment.Apparatus.Validators.ApparatusExists
-  alias Sportipedia.Catalog.Equipment.Apparatus.Validators.UniqueSlug
+  alias Sportipedia.Catalog.Equipment.Validators.UniqueEquipmentSlug
   alias Sportipedia.Support.Validators.SlugValidator
 
   use TypedStruct
@@ -26,5 +26,5 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Command.EditApparatus do
 
   validates :slug,
     by: [function: &SlugValidator.validate/2, allow_nil: true],
-    by: [function: &UniqueSlug.validate/2, allow_nil: true]
+    by: [function: &UniqueEquipmentSlug.validate/2, allow_nil: true]
 end
