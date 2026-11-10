@@ -9,11 +9,17 @@ identifiedBy:
   source: generated
   generator: uuid
 invariants:
-  - name: unique-canonical-slug
+  - name: unique-slug-by-equipment
     rule: >-
-      The canonical slug of a position is its slug, prefixed with the slug of
-      its referenced equipment and a dash (`-`) when bound to equipment, and
-      its bare slug otherwise. No two positions may share the same canonical slug.
+      A position's canonical lookup slug is its slug, namespaced by the slug of
+      its referenced equipment when bound and bare otherwise —
+      `<equipment-slug>/<position-slug>` for a bound position, `<position-slug>`
+      for an unbound one. No two positions in the catalog may share the same
+      lookup slug. Because equipment slugs are themselves unique across all
+      equipment (the `unique-equipment-slug` invariant on apparatus and
+      instrument), the equipment segment of the namespaced form is distinct per
+      piece of equipment, so it is the `<position-slug>` that must not repeat for
+      two positions bound to the same equipment.
   - name: at-most-one-equipment
     rule: A position can reference at most one piece of equipment (either apparatusId or instrumentId, not both)
 state:
@@ -28,7 +34,7 @@ state:
       description: "Name of the position"
     slug:
       type: string
-      description: "URL-friendly unique identifier"
+      description: "URL-friendly identifier of the position itself; unique within its equipment namespace (the canonical lookup slug is derived in the read model)"
     description:
       type: string
       description: "Optional description"

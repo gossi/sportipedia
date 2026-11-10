@@ -17,7 +17,7 @@ data:
       description: "Name of the position"
     slug:
       type: string
-      description: "URL-friendly unique identifier"
+      description: "URL-friendly identifier of the position itself (raw, not namespaced; the read model derives the globally unique lookup slug from it and the referenced equipment's slug)"
     description:
       type: string
       description: "Optional description"

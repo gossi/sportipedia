@@ -20,7 +20,7 @@ result:
         description: "Name of the position"
       slug:
         type: string
-        description: "URL-friendly unique identifier"
+        description: "The canonical, globally unique lookup path (`<equipment-slug>/<slug>` or bare `<slug>`)"
       description:
         type: string
         description: "Optional description"

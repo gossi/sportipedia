@@ -9,15 +9,17 @@ metadata:
     spgen.operation.position-cataloged: create
     spgen.operation.position-edited: update
     spgen.operation.position-archived: delete
+    spgen.operation.apparatus-edited: update
+    spgen.operation.instrument-edited: update
 projections:
   - boundedContext: sport
     aggregate: position
     event: position-cataloged
-    rule: "Project the position when it is cataloged, storing the canonical slug"
+    rule: "Project the position when it is cataloged, deriving lookup_slug from the referenced equipment's slug and the position slug"
   - boundedContext: sport
     aggregate: position
     event: position-edited
-    rule: "Update position details, re-deriving the canonical slug when the slug or the referenced equipment changes"
+    rule: "Update position details, re-deriving lookup_slug when the position slug or the referenced equipment changes"
   - boundedContext: sport
     aggregate: position
     event: position-archived
@@ -25,11 +27,11 @@ projections:
   - boundedContext: sport
     aggregate: apparatus
     event: apparatus-edited
-    rule: "Update the recorded apparatus slug and re-derive the canonical slugs of all positions bound to it"
+    rule: "Re-derive the lookup_slug of every position bound to this apparatus from the apparatus' new slug"
   - boundedContext: sport
     aggregate: instrument
     event: instrument-edited
-    rule: "Update the recorded instrument slug and re-derive the canonical slugs of all positions bound to it"
+    rule: "Re-derive the lookup_slug of every position bound to this instrument from the instrument's new slug"
 schema:
   type: object
   properties:
@@ -42,7 +44,10 @@ schema:
       description: "Name of the position"
     slug:
       type: string
-      description: "URL-friendly unique identifier"
+      description: "The position's own URL-friendly slug (raw, as supplied to the command)"
+    lookup_slug:
+      type: string
+      description: "The canonical, globally unique lookup path: `<equipment-slug>/<slug>` when bound, `<slug>` when unbound; derived by the projector from the referenced equipment's current slug"
     description:
       type: string
       description: "Optional description"
@@ -58,29 +63,35 @@ schema:
     - id
     - title
     - slug
+    - lookup_slug
   examples:
     - id: "athlete:position:unicycle-riding"
       title: "Riding"
       description: "Riding on a unicycle"
-      slug: "unicycle-riding"
+      slug: "riding"
+      lookup_slug: "unicycle/riding"
       instrumentId: "equipment:instrument:unicycle"
     - id: "athlete:position:unicycle-on-tire"
       title: "On Tire"
       description: "Feet are on the tire"
-      slug: "unicycle-on-tire"
+      slug: "on-tire"
+      lookup_slug: "unicycle/on-tire"
       instrumentId: "equipment:instrument:unicycle"
     - id: "athlete:position:unicycle-seat-in-front"
       title: "Seat in-front"
       description: "Seat is hold in front of the body"
-      slug: "unicycle-seat-in-front"
+      slug: "seat-in-front"
+      lookup_slug: "unicycle/seat-in-front"
       instrumentId: "equipment:instrument:unicycle"
     - id: "athlete:position:gymnastics-straight-arm-support"
       title: "Straight-arm support"
       description: "Athlete has their arms straight while supporting themselves onto the bar"
-      slug: "horizontal-bar-straight-arm-support"
+      slug: "straight-arm-support"
+      lookup_slug: "horizontal-bar/straight-arm-support"
       instrumentId: "equipment:apparatus:horizontal-bar"
     - id: "athlete:position:gymnastics-long-hang"
       title: "Long Hang"
       description: "Athlete has their arms straight while hanging on the bar"
-      slug: "horizontal-bar-long-hang"
+      slug: "long-hang"
+      lookup_slug: "horizontal-bar/long-hang"
       instrumentId: "equipment:apparatus:horizontal-bar"
