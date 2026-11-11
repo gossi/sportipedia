@@ -157,27 +157,61 @@ defmodule SpGen.FixtureRepo do
   end
 
   @doc """
-  Builds `fun` at most once per test session and gives every caller the result.
+  Builds `fun` once per test session and gives every caller the result.
 
   For state that is expensive to produce and immutable to read — a fully
   generated citizen, the fixture model. The memo lives in a process started by
-  `test_helper.exs`, so the work is shared across async test cases *and* stays
-  lazy: a run that never asks for the tree never pays for it. The building
-  happens inside the memo process, which serializes concurrent builders.
+  `test_helper.exs`, so the work is shared across test cases *and* stays lazy: a
+  run that never asks for the tree never pays for it.
+
+  **The build runs in the caller, never inside the memo.** Building is seconds of
+  work; holding a `GenServer.call` open for it makes every other caller wait on
+  the default 5s timeout, and CI (8 cores, a cold chain) failed the tests that
+  merely asked for the tree. So: read the cache, build outside the lock, store
+  with first-writer-wins. Concurrent callers can each build once — a duplicated
+  chain costs CPU a waiting caller would have burned anyway, and it cannot time
+  out, because every message the memo handles is a map lookup.
   """
   @spec shared(term(), (-> term())) :: term()
   def shared(key, fun) do
-    Agent.get_and_update(SpGen.TestMemo, fn state ->
-      case Map.fetch(state, key) do
-        {:ok, done} ->
-          {done, state}
+    case memo_fetch(key) do
+      {:ok, built} ->
+        built
 
-        :error ->
-          built = fun.()
-          {built, Map.put(state, key, built)}
-      end
-    end)
+      :error ->
+        value = fun.()
+        memo_store_first(key, value)
+        value
+    end
   end
+
+  # the memo is an optimization: with no memo process (a lone `iex -S mix`, the
+  # helper used outside the suite) the call still returns a correct value
+  defp memo_fetch(key) do
+    case memo_pid() do
+      nil -> :error
+      _ -> Agent.get(SpGen.TestMemo, &Map.fetch(&1, key))
+    end
+  rescue
+    _ -> :error
+  end
+
+  defp memo_store_first(key, value) do
+    unless is_nil(memo_pid()) do
+      # `get_and_update`, not `run`: the memo only ever answers map operations,
+      # and each one returns immediately — which is the whole point (see
+      # `shared/2`).
+      Agent.get_and_update(SpGen.TestMemo, fn state ->
+        {:ok, if(Map.has_key?(state, key), do: state, else: Map.put(state, key, value))}
+      end)
+    end
+
+    :ok
+  rescue
+    _ -> :ok
+  end
+
+  defp memo_pid, do: Process.whereis(SpGen.TestMemo)
 
   @doc "The generated code tree as `%{repo_relative_path => content}`."
   @spec snapshot(t()) :: %{String.t() => binary()}

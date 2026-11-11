@@ -44,7 +44,7 @@ test drives `SpGen.run/2,3` exactly as the CLI does. Nothing touches disk.
 | `FixtureRepo.check(repo, :generator, ["element"])` | the same report, writes nothing — this is how `Outdated` and `Deferred` are asserted |
 | `FixtureRepo.read/write/exists?/paths` | the repository's content, repo-relative |
 | `FixtureRepo.contents(repo)` + `FixtureRepo.restore(map)` | the tree as an immutable map, and a fresh repository per test from that map |
-| `FixtureRepo.shared(key, fun)` | expensive immutable state built at most once per session, on demand (the full chain, the fixture model) |
+| `FixtureRepo.shared(key, fun)` | expensive immutable state, built once per session on demand (the full chain). The build runs in the **caller**, never inside the memo — see *Cost* below |
 
 The acceptance tests are split by subject across `codegen_test.exs`,
 `codegen_creation_test.exs`, `codegen_chain_test.exs`, `codegen_query_test.exs`
@@ -172,6 +172,18 @@ Rules of thumb:
   to whoever asks. `setup_all` that generates is worse than a lazy shared build:
   it is paid even by a run selecting a single unrelated test. With the lazy
   version, `mix test <file>:<line>` costs 0.4s; behind `setup_all` it cost 2.6s.
+
+  **Build in the caller, never inside the memo.** Holding a `GenServer.call` open
+  for a seconds-long build makes every other caller wait, and `GenServer`'s
+  default is 5s — so on a busy runner they die with `** (EXIT) time out` on tests
+  that did nothing but ask for the tree. That is exactly what this looked like in
+  CI while passing locally: same code, fewer spare cores. `shared/2` therefore
+  reads the cache, builds outside the lock, and stores first-writer-wins; every
+  message the memo handles is a map operation. Two concurrent callers may each
+  build — cheaper than any waiting scheme, and it cannot time out.
+  `SpGen.FixtureRepoTest` pins this with a builder that parks until the test
+  releases it, so the old design fails the test (by timing out) rather than the
+  test failing by accident.
 - **Read a generated tree, don't rebuild it.** `FixtureRepo.contents/1` →
   `FixtureRepo.restore/1`: a test that only inspects output takes a private copy
   of the map, so its writes stay local to it.
