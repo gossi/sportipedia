@@ -19,12 +19,12 @@ for any position carrying this instrument's `id`. If one exists, reject
 position.
 
 **Why this matters to the position slice:** the position read model derives its
-globally unique `lookup_slug` from the referencing instrument's current slug
+globally unique `slug` from the referencing instrument's current slug
 (`<instrument-slug>/<position-slug>`). Archiving an instrument a position still
 names would leave that position bound to equipment that can no longer be
 maintained — and, under a "no cascade" policy, would strand the position's slug
 derivation. Forbidding the archive while a position references the instrument
-keeps every bound position's `lookup_slug` resolvable for the whole life of the
+keeps every bound position's `slug` resolvable for the whole life of the
 reference. This is the rule the athlete position spec relies on:
 [spec-position-05-11-2026.md](../catalog/athlete/spec-position-05-11-2026.md).
 

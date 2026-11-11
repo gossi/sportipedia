@@ -33,16 +33,17 @@ defmodule Sportipedia.Catalog.Athlete.Position.PositionProjector do
   Projects an PositionCataloged event to the position read model.
 
   The event carries the position's raw slug and its equipment reference; the
-  canonical `lookup_slug` is derived here — `<equipment-slug>/<position-slug>`
+  canonical `slug` is derived here — `<equipment-slug>/<position-slug>`
   for a bound position, the bare position slug for an unbound one.
   """
   project %PositionCataloged{} = event, _metadata, fn multi ->
     attrs =
       event
       |> Map.from_struct()
+      |> Map.put(:raw_slug, event.slug)
       |> Map.put(
-        :lookup_slug,
-        derive_lookup_slug(event.slug, event.apparatusId, event.instrumentId)
+        :slug,
+        derive_slug(event.slug, event.apparatusId, event.instrumentId)
       )
 
     multi
@@ -71,7 +72,7 @@ defmodule Sportipedia.Catalog.Athlete.Position.PositionProjector do
 
   The fact is a patch — `PositionEdited.get_changes/1` carries the fields the edit
   supplied and drops the ones it did not — so an equipment reference the patch
-  omits is left alone, not cascaded. The canonical `lookup_slug` is derived, never
+  omits is left alone, not cascaded. The canonical `slug` is derived, never
   supplied: it moves when the raw slug or the binding moved, and stays where it is
   for every other patch. When the raw slug moved alone, the namespace comes from
   the stored binding.
@@ -82,13 +83,25 @@ defmodule Sportipedia.Catalog.Athlete.Position.PositionProjector do
         multi
 
       %PositionReadModel{} = position ->
-        attrs = PositionEdited.get_changes(event)
+        attrs =
+          event
+          |> PositionEdited.get_changes()
+          |> move_raw_slug()
 
         multi
         |> Ecto.Multi.update(
           :position_edited,
-          PositionReadModel.update_changeset(position, rederive_lookup_slug(position, attrs))
+          PositionReadModel.update_changeset(position, rederive_slug(position, attrs))
         )
+    end
+  end
+
+  # The fact names the position's own slug `slug`; the read model stores it as
+  # `raw_slug` and keeps `slug` for the derived canonical path.
+  defp move_raw_slug(attrs) do
+    case Map.pop(attrs, :slug) do
+      {nil, attrs} -> attrs
+      {raw_slug, attrs} -> Map.put(attrs, :raw_slug, raw_slug)
     end
   end
 
@@ -96,24 +109,24 @@ defmodule Sportipedia.Catalog.Athlete.Position.PositionProjector do
   # dropped the nils. So the derived path is recomputed exactly for the patches
   # that moved one of its two inputs — the raw slug, and the equipment binding
   # taken from the patch when it carries one, from the row otherwise.
-  defp rederive_lookup_slug(%PositionReadModel{} = position, attrs) do
-    if Enum.any?([:slug, :apparatusId, :instrumentId], &Map.has_key?(attrs, &1)) do
-      Map.put(attrs, :lookup_slug, derived_lookup_slug(position, attrs))
+  defp rederive_slug(%PositionReadModel{} = position, attrs) do
+    if Enum.any?([:raw_slug, :apparatusId, :instrumentId], &Map.has_key?(attrs, &1)) do
+      Map.put(attrs, :slug, derived_slug(position, attrs))
     else
       attrs
     end
   end
 
-  defp derived_lookup_slug(%PositionReadModel{} = position, attrs) do
-    derive_lookup_slug(
-      Map.get(attrs, :slug, position.slug),
+  defp derived_slug(%PositionReadModel{} = position, attrs) do
+    derive_slug(
+      Map.get(attrs, :raw_slug, position.raw_slug),
       Map.get(attrs, :apparatusId, position.apparatusId),
       Map.get(attrs, :instrumentId, position.instrumentId)
     )
   end
 
   @doc """
-  Projects an ApparatusEdited event to re-derive the lookup slug of every
+  Projects an ApparatusEdited event to re-derive the slug of every
   position bound to the renamed apparatus.
 
   No generator call owns these two clauses: `sp.gen.projector` resolves a read
@@ -126,7 +139,7 @@ defmodule Sportipedia.Catalog.Athlete.Position.PositionProjector do
   end
 
   @doc """
-  Projects an InstrumentEdited event to re-derive the lookup slug of every
+  Projects an InstrumentEdited event to re-derive the slug of every
   position bound to the renamed instrument.
   """
   project %InstrumentEdited{} = event, _metadata, fn multi ->
@@ -135,12 +148,12 @@ defmodule Sportipedia.Catalog.Athlete.Position.PositionProjector do
 
   # ── catalog-position: the canonical path ─────────────────────────────────
   #
-  # `lookup_slug` is the one column the read model does not get from an event:
+  # `slug` is the one column the read model does not get from an event:
   # it is derived, from the position's own raw slug and the *current* slug of
   # the equipment it is bound to. Both the position clauses and the equipment
   # rename clauses below read it through this helper, so the canonical form is
   # stated exactly once.
-  defp derive_lookup_slug(slug, apparatus_id, instrument_id) do
+  defp derive_slug(slug, apparatus_id, instrument_id) do
     canonical_path(slug, equipment_slug(apparatus_id, instrument_id))
   end
 
@@ -201,7 +214,7 @@ defmodule Sportipedia.Catalog.Athlete.Position.PositionProjector do
   end
 
   defp under_new_namespace(%PositionReadModel{} = position, equipment_slug) do
-    attrs = %{lookup_slug: canonical_path(position.slug, equipment_slug)}
+    attrs = %{slug: canonical_path(position.raw_slug, equipment_slug)}
 
     PositionReadModel.update_changeset(position, attrs)
   end

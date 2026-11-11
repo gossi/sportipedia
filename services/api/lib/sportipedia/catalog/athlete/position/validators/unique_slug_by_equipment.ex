@@ -1,6 +1,6 @@
 defmodule Sportipedia.Catalog.Athlete.Position.Validators.UniqueSlugByEquipment do
   @moduledoc """
-  Validates the 'unique-slug-by-equipment' rule: A position's canonical lookup slug is its slug, namespaced by the slug of its referenced equipment when bound and bare otherwise — `<equipment-slug>/<position-slug>` for a bound position, `<position-slug>` for an unbound one. No two positions in the catalog may share the same lookup slug. Because equipment slugs are themselves unique across all equipment (the `unique-equipment-slug` invariant on apparatus and instrument), the equipment segment of the namespaced form is distinct per piece of equipment, so it is the `<position-slug>` that must not repeat for two positions bound to the same equipment.
+  Validates the 'unique-slug-by-equipment' rule: A position's canonical slug is its raw slug, namespaced by the slug of its referenced equipment when bound and bare otherwise — `<equipment-slug>/<position-slug>` for a bound position, `<position-slug>` for an unbound one. No two positions in the catalog may share the same slug. Because equipment slugs are themselves unique across all equipment (the `unique-equipment-slug` invariant on apparatus and instrument), the equipment segment of the namespaced form is distinct per piece of equipment, so it is the `<position-slug>` that must not repeat for two positions bound to the same equipment.
 
   The rule is asked of the raw slug, so the check is the invariant's own
   reduction: a live row with the same raw slug **inside the same equipment
@@ -12,7 +12,7 @@ defmodule Sportipedia.Catalog.Athlete.Position.Validators.UniqueSlugByEquipment 
   equipment's — a false acceptance the unique index then turns into a projection
   failure, and a false rejection when the bare slug is taken by an unbound
   position. Namespace equality is enough either way: equipment slugs are globally
-  unique, so two positions in one namespace derive the same lookup slug, and a
+  unique, so two positions in one namespace derive the same slug, and a
   bound and an unbound position can never derive it (the namespaced form carries
   a `/`).
 
@@ -48,7 +48,7 @@ defmodule Sportipedia.Catalog.Athlete.Position.Validators.UniqueSlugByEquipment 
   reference and no slug still moves the position's **stored** raw slug into the
   patch's namespace, so that slug must be re-checked there before dispatch.
   Without this, the accepted patch ends in the projector colliding with the
-  `lookup_slug` unique index — a 500 where the client's 422 belongs.
+  `slug` unique index — a 500 where the client's 422 belongs.
 
   It abstains when the patch carries no reference (its `allow_nil: true` pair
   never runs), and when the patch carries a slug — then `validate/2` on the
@@ -65,8 +65,8 @@ defmodule Sportipedia.Catalog.Athlete.Position.Validators.UniqueSlugByEquipment 
         with id when not is_nil(id) <- Map.get(context, :id),
              true <- UuidValidator.valid_uuid?(id),
              stored when not is_nil(stored) <- PositionInternal.position_by_id(id),
-             true <- non_blank_slug?(stored.slug) do
-          check_slug_in_effective_namespace(stored.slug, context)
+             true <- non_blank_slug?(stored.raw_slug) do
+          check_slug_in_effective_namespace(stored.raw_slug, context)
         else
           _ -> :ok
         end

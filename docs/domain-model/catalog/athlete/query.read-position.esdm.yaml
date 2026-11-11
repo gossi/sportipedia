@@ -48,7 +48,7 @@ parameters:
       properties:
         slug:
           type: string
-          description: "Canonical lookup slug of the position (`<equipment-slug>/<slug>` or bare `<slug>`)"
+          description: "The position's canonical slug (`<equipment-slug>/<slug>` or bare `<slug>`)"
       required:
         - slug
 actors:
@@ -59,6 +59,6 @@ constraints:
   - name: read-by-id-or-slug
     rule: "Take the parameter as the position's `id` when it is a UUID and as its `slug` otherwise."
   - name: slug-match-is-canonical
-    rule: "Match the `lookup_slug` exactly as stored — the reader sends the canonical path (`<equipment-slug>/<slug>`, or the bare slug when the position is unbound) and no case folding is applied. The lookup slug is globally unique, so the read answers at most one position; it has no sort and no pages, so no ordering rule applies to it."
+    rule: "Match the `slug` exactly as stored — the reader sends the canonical path (`<equipment-slug>/<slug>`, or the bare slug when the position is unbound) and no case folding is applied. The canonical slug is globally unique, so the read answers at most one position; it has no sort and no pages, so no ordering rule applies to it."
   - name: not-found-when-absent
     rule: "Answer not-found when no position carries the given id or slug."

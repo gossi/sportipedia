@@ -14,8 +14,6 @@ defmodule Sportipedia.Catalog.Athlete.Position do
   alias Sportipedia.Catalog.Repo
   alias Sportipedia.Support.ErrorClassifier
 
-  alias Sportipedia.Support.JSONAPI.QueryBuilder
-
   @doc """
   Catalogs a new position in the catalog: a body position or stance, optionally bound to one piece of equipment
   """
@@ -76,7 +74,7 @@ defmodule Sportipedia.Catalog.Athlete.Position do
   """
   @spec list_positions(JSONAPI.Config.t()) :: Architecture.public_api([PositionReadModel.t()])
   def list_positions(query) do
-    {:ok, Repo.all(QueryBuilder.build(query, ListPositions.new(query), PositionReadModel))}
+    {:ok, Repo.all(ListPositions.new(query))}
   end
 
   @doc """

@@ -13,7 +13,7 @@ defmodule Sportipedia.Catalog.Athlete.Position.Command.EditPositionHandler do
   the fact, so `PositionEdited.get_changes/1` leaves the stored value alone —
   an omitted equipment reference is not a cascade. The raw slug is emitted in
   its canonical (lower-cased) form, so the read model holds one spelling and
-  the derived `lookup_slug` inherits it.
+  the derived `slug` inherits it.
   """
   @spec handle(PositionAggregate.t(), EditPosition.t()) ::
           PositionEdited.t() | [PositionEdited.t()]

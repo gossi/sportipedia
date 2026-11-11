@@ -10,8 +10,8 @@ defmodule Sportipedia.Catalog.Athlete.Position.PositionReadModel do
   typed_schema "position" do
     field :title, :string
 
+    field :raw_slug, :string
     field :slug, :string
-    field :lookup_slug, :string
     field :apparatusId, :binary_id
     field :description, :string
     field :instrumentId, :binary_id
@@ -23,9 +23,9 @@ defmodule Sportipedia.Catalog.Athlete.Position.PositionReadModel do
   """
   def insert_changeset(read_model, attrs) do
     read_model
-    |> cast(attrs, [:id, :title, :slug, :lookup_slug, :apparatusId, :description, :instrumentId])
-    |> validate_required([:id, :title, :slug, :lookup_slug])
-    |> unique_constraint(:lookup_slug)
+    |> cast(attrs, [:id, :title, :raw_slug, :slug, :apparatusId, :description, :instrumentId])
+    |> validate_required([:id, :title, :raw_slug, :slug])
+    |> unique_constraint(:slug)
   end
 
   @doc """
@@ -33,7 +33,7 @@ defmodule Sportipedia.Catalog.Athlete.Position.PositionReadModel do
   """
   def update_changeset(read_model, attrs) do
     read_model
-    |> cast(attrs, [:title, :slug, :lookup_slug, :apparatusId, :description, :instrumentId])
-    |> unique_constraint(:lookup_slug)
+    |> cast(attrs, [:title, :raw_slug, :slug, :apparatusId, :description, :instrumentId])
+    |> unique_constraint(:slug)
   end
 end

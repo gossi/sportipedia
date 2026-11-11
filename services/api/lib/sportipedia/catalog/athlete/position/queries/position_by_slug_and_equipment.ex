@@ -6,7 +6,7 @@ defmodule Sportipedia.Catalog.Athlete.Position.Queries.PositionBySlugAndEquipmen
   The namespace is the `unique-slug-by-equipment` invariant's own reduction:
   positions bound to the same apparatus, positions bound to the same
   instrument, and the unbound positions — a namespace of its own, since no
-  bound lookup slug can ever equal a bare one.
+  bound slug can ever equal a bare one.
   """
 
   import Ecto.Query
@@ -18,7 +18,7 @@ defmodule Sportipedia.Catalog.Athlete.Position.Queries.PositionBySlugAndEquipmen
   namespace.
   """
   @spec new(String.t(), String.t() | nil, String.t() | nil) :: Ecto.Query.t()
-  def new(slug, apparatus_id, instrument_id) do
+  def new(raw_slug, apparatus_id, instrument_id) do
     namespace =
       cond do
         not is_nil(apparatus_id) -> dynamic([p], p.apparatusId == ^apparatus_id)
@@ -27,7 +27,7 @@ defmodule Sportipedia.Catalog.Athlete.Position.Queries.PositionBySlugAndEquipmen
       end
 
     from p in PositionReadModel,
-      where: p.slug == ^slug,
+      where: p.raw_slug == ^raw_slug,
       where: ^namespace
   end
 end

@@ -12,7 +12,7 @@ defmodule Sportipedia.Catalog.Athlete.Position.Queries.ReadPosition do
   """
   @spec new(String.t()) :: Ecto.Query.t()
   def new(id_or_slug) do
-    lookup_field = if UuidValidator.valid_uuid?(id_or_slug), do: :id, else: :lookup_slug
+    lookup_field = if UuidValidator.valid_uuid?(id_or_slug), do: :id, else: :slug
 
     from(position in PositionReadModel, where: field(position, ^lookup_field) == ^id_or_slug)
   end
