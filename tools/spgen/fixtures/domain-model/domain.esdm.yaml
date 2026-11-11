@@ -1,0 +1,23 @@
+apiVersion: schema.esdm.io/core/v1
+kind: domain
+name: sport
+description: "Movement Skills and Technical Training — the fixture world"
+---
+apiVersion: schema.esdm.io/core/v1
+kind: bounded-context
+name: sport
+description: >
+  The fixture bounded context: everything a generated citizen needs to resolve
+  a reference, and nothing a test has to borrow from the live domain model.
+scope:
+  domain: sport
+---
+apiVersion: schema.esdm.io/core/v1
+kind: subdomain
+name: catalog
+description: "The catalog holds the equipment and athletes a training is built from"
+scope:
+  domain: sport
+type: core
+boundedContexts:
+  - sport
