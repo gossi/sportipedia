@@ -1,13 +1,13 @@
 defmodule SpGen.TemplatesTest do
   use ExUnit.Case, async: true
 
-  alias SpGen.{Context, Esdm, Templates}
+  alias SpGen.{Context, Esdm, FixtureRepo, Templates}
 
-  @model_root Path.expand("../../docs/domain-model")
-
+  # the fixture model, never the live `docs/domain-model` (see `contributions.md`):
+  # these are the exact lines the blueprint promises, and the fixtures state them
+  # in their own domain — a model edit outside this tool must not read here
   setup_all do
-    {:ok, model} = Esdm.load(@model_root)
-    %{model: model}
+    %{model: FixtureRepo.model()}
   end
 
   defp ctx(model, name, opts \\ []) do
@@ -140,76 +140,100 @@ defmodule SpGen.TemplatesTest do
     end
   end
 
-  describe "against the real apparatus model" do
-    test "catalog-apparatus (create) produces the exact real-world lines", %{model: model} do
-      c = ctx(model, "command.catalog-apparatus", operation: :create)
+  describe "against the fixture model" do
+    test "create-widget (create) produces the exact lines the blueprint promises", %{
+      model: model
+    } do
+      c = ctx(model, "command.create-widget")
 
       assert Templates.validates_lines(c) == [
                "validates :title, presence: true",
-               "validates :slug, presence: true, by: [function: &UniqueSlug.validate/2, allow_nil: true]"
+               "validates :slug, presence: true, by: [function: &UniqueSlug.validate/2, allow_nil: true]",
+               "validates :coachId, by: [function: &AtMostOneOwner.validate/2, allow_nil: true]",
+               "validates :teamId, by: [function: &AtMostOneOwner.validate/2, allow_nil: true]"
              ]
     end
 
-    # these are the shape the position reference commands carry; the committed
-    # apparatus commands predate the fix and still lack `allow_blank` (blast
-    # radius of the generator defect — the tool never rewrites them)
-    test "edit-apparatus (update) produces the guarded exists line", %{model: model} do
-      c = ctx(model, "command.edit-apparatus", operation: :update)
+    test "edit-widget (update) produces the guarded exists line", %{model: model} do
+      c = ctx(model, "command.edit-widget")
+
+      # `allow_blank` covers nil AND empty, and an optional slug keeps presence
+      # off while its unique guard stays on — the shape the reference commands
+      # carry and the generator must never lose
+      assert Templates.validates_lines(c) == [
+               "validates :id, presence: true, by: [function: &WidgetExists.validate/2, allow_blank: true]",
+               "validates :coachId, by: [function: &AtMostOneOwner.validate/2, allow_nil: true]",
+               "validates :slug, by: [function: &UniqueSlug.validate/2, allow_nil: true]",
+               "validates :teamId, by: [function: &AtMostOneOwner.validate/2, allow_nil: true]"
+             ]
+    end
+
+    test "archive-widget (delete) carries nothing but the exists guard", %{model: model} do
+      c = ctx(model, "command.archive-widget")
 
       assert Templates.validates_lines(c) == [
-               "validates :id, presence: true, by: [function: &ApparatusExists.validate/2, allow_blank: true]",
-               "validates :slug, by: [function: &UniqueSlug.validate/2, allow_nil: true]"
+               "validates :id, presence: true, by: [function: &WidgetExists.validate/2, allow_blank: true]"
              ]
     end
 
-    test "archive-apparatus (delete) produces the guarded exists line", %{model: model} do
-      c = ctx(model, "command.archive-apparatus", operation: :delete)
-
-      assert Templates.validates_lines(c) == [
-               "validates :id, presence: true, by: [function: &ApparatusExists.validate/2, allow_blank: true]"
-             ]
-    end
-
-    test "field lines match the real command structs", %{model: model} do
-      c = ctx(model, "command.catalog-apparatus", operation: :create)
+    test "field lines match the command's data fields, in the model's order", %{model: model} do
+      c = ctx(model, "command.create-widget")
 
       assert Enum.map(c.fields, &Templates.field_line/1) == [
                "field :id, String.t(), enforce: true",
                "field :title, String.t(), enforce: true",
                "field :slug, String.t(), enforce: true",
-               "field :description, String.t()"
+               "field :coachId, String.t()",
+               "field :description, String.t()",
+               "field :label, String.t()",
+               "field :teamId, String.t()"
              ]
     end
   end
 
   describe "sample_value/2" do
-    test "id is a uuid expression" do
-      c = ctx(setup_model(), "command.catalog-apparatus")
-      assert Templates.sample_value(c, %{name: "id"}) == "UUID.uuid4()"
+    test "id is the fixture's deterministic uuid5, so a test row and its seed match", %{
+      model: model
+    } do
+      c = ctx(model, "command.create-widget")
+
+      assert Templates.sample_value(c, %{name: "id", format: "uuid"}) ==
+               ~S|UUID.uuid5(:dns, "equipment:widget:classic-widget")|
+    end
+
+    test "id falls back to a uuid4 expression when the read model declares no example", %{
+      model: model
+    } do
+      # an element whose read model has no examples has nothing to match against
+      c = ctx(model, "command.create-widget")
+      c = %{c | read_model: nil}
+
+      assert Templates.sample_value(c, %{name: "id", format: "uuid"}) == "UUID.uuid4()"
     end
 
     test "scenario values are preferred and quoted", %{model: model} do
-      c = ctx(model, "command.catalog-apparatus", operation: :create)
+      c = ctx(model, "command.create-widget")
 
       assert Templates.sample_value(c, %{name: "title", type: "string", required: true}) ==
-               ~S|"Vaulting Table"|
+               ~S|"Pommel Horse"|
     end
 
     test "falls back to quoted sample strings", %{model: model} do
-      c = ctx(model, "command.catalog-apparatus", operation: :create)
+      # `note-widget` is a fact no scenario tells and no example carries
+      c = ctx(model, "command.note-widget")
 
-      assert Templates.sample_value(c, %{name: "label", type: "string", required: true}) ==
-               ~S|"sample-label"|
+      assert Templates.sample_value(c, %{name: "comment", type: "string", required: true}) ==
+               ~S|"sample-comment"|
     end
   end
 
   describe "struct_body/2" do
     test "lists fields in order with overrides" do
-      c = ctx(setup_model(), "command.catalog-apparatus", operation: :create)
+      c = ctx(FixtureRepo.model(), "command.create-widget")
       body = Templates.struct_body(c, %{"title" => "nil"})
-      assert body =~ "id: UUID.uuid4()"
+      assert body =~ ~S|id: UUID.uuid5(:dns, "equipment:widget:classic-widget")|
       assert body =~ "title: nil"
-      assert body =~ "slug: \"vaulting-table\""
+      assert body =~ ~S|slug: "pommel-horse"|
     end
   end
 
@@ -217,10 +241,5 @@ defmodule SpGen.TemplatesTest do
     test "pads non-empty lines only" do
       assert Templates.indent("a\n\nb", 2) == "  a\n\n  b"
     end
-  end
-
-  defp setup_model do
-    {:ok, model} = Esdm.load(@model_root)
-    model
   end
 end

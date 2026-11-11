@@ -1,6 +1,7 @@
 apiVersion: schema.esdm.io/core/v1
 kind: event
 name: position-edited
+description: "A position has been edited"
 scope:
   domain: sport
   boundedContext: sport
@@ -17,7 +18,7 @@ data:
       description: "Name of the position"
     slug:
       type: string
-      description: "URL-friendly unique identifier"
+      description: "URL-friendly identifier of the position itself (raw, not namespaced)"
     description:
       type: string
       description: "Optional description"

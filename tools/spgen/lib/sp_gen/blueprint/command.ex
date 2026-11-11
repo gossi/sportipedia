@@ -33,7 +33,7 @@ defmodule SpGen.Blueprint.Command do
 
   def name, do: :command
   def source_kinds, do: [:command]
-  def operations, do: [:create, :update, :delete]
+  def operations, do: [:create, :update, :delete, :none]
   def optional_template?, do: true
 
   def dependencies(%Context{} = ctx) do

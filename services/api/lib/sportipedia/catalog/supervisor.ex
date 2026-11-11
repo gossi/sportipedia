@@ -9,7 +9,8 @@ defmodule Sportipedia.Catalog.Supervisor do
     children = [
       Sportipedia.Catalog,
       Sportipedia.Catalog.Equipment.Apparatus.ApparatusProjector,
-      Sportipedia.Catalog.Equipment.Instrument.InstrumentProjector
+      Sportipedia.Catalog.Equipment.Instrument.InstrumentProjector,
+      Sportipedia.Catalog.Athlete.Position.PositionProjector
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

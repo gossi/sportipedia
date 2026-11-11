@@ -10,8 +10,10 @@ defmodule SpGen.Blueprint.Schema do
   * **command** (`create`/`update`) → `<Command>Request` derived from the
     command's data fields (the generated id is excluded; `delete` carries no
     request schema — its id rides in the body as `data.id`)
-  * **query** (collection) → `<Operation>QueryParams` derived from the query's
-    `parameters` (filter fields, sort, standard JSON:API page/fields)
+  * **query** (collection) → `<Operation>QueryParams`, derived from the view and
+    the query's declared filterable/sortable fields via
+    `OpenApiSchema.query_params/2` — the request-side sibling of `from_view/2`,
+    so a JSON:API parameter list is stated once and transcribed nowhere
 
   Every schema module is paired with its own ExUnit test file
   (`SpGen.Blueprint.SchemaTest`).
@@ -37,7 +39,7 @@ defmodule SpGen.Blueprint.Schema do
     Context.render("#{@dir}/" <> n[:stem] <> ".ex", ctx)
   end
 
-  def operations, do: [:create, :update, :delete, :read, :collection]
+  def operations, do: [:create, :update, :delete, :none, :read, :collection]
   def optional_template?, do: true
 
   def plans(%Context{} = ctx) do
@@ -51,7 +53,7 @@ defmodule SpGen.Blueprint.Schema do
       {:"read-model", _} ->
         [:response, :collection_response]
 
-      {:command, op} when op in [:create, :update] ->
+      {:command, op} when op in [:create, :update, :none] ->
         [:request]
 
       {:query, _} ->
@@ -131,18 +133,15 @@ defmodule SpGen.Blueprint.Schema do
 
   # ------------------------------------------------------------------ bodies
 
+  # A body renders its own code and nothing else: the `require` and the `alias`
+  # lines are units of this plan, and repeating them inside the body would make
+  # every created schema file carry its header twice.
   defp body(ctx, which, n) when which in [:response, :collection_response] do
-    view_full = Context.render(@view_module, ctx)
     view_short = Context.pascal(ctx.constituent) <> "View"
     many = if which == :collection_response, do: ", many: true", else: ""
     what = if which == :response, do: "response", else: "collection response"
 
     """
-    alias #{view_full}
-    alias #{@open_api_schema}
-
-    require OpenApiSpex
-
     @doc \"\"\"
     Returns the OpenAPI schema for the #{ctx.constituent} #{what}.
     \"\"\"
@@ -174,8 +173,6 @@ defmodule SpGen.Blueprint.Schema do
       if required == [], do: "", else: ",\n      required: [#{Enum.join(required, ", ")}]"
 
     """
-    require OpenApiSpex
-
     @doc \"\"\"
     Returns the OpenAPI schema for the #{ctx.element.name} request.
     \"\"\"
@@ -190,64 +187,49 @@ defmodule SpGen.Blueprint.Schema do
   end
 
   defp body(ctx, :query_params, n) do
-    params = Context.query_parameters(ctx)
-    filter_props = get_in(params, ["filter", "properties"]) || %{}
-    sortables = Map.keys(filter_props) |> Enum.sort()
-    fields = View.view_fields(ctx) |> Enum.map(&String.trim_leading(&1, ":"))
+    view_short = Context.pascal(ctx.constituent) <> "View"
 
-    filter_body =
-      filter_props
-      |> Enum.map(fn {name, spec} ->
-        desc = spec["description"] || "Filter #{ctx.constituent} by #{name} (partial match)"
-
-        ~s|          #{name}: %OpenApiSpex.Schema{type: :string, description: #{inspect(desc)}}|
-      end)
-      |> Enum.join(",\n")
-
-    sort_enum = sortables |> Enum.flat_map(&[&1, "-" <> &1]) |> Enum.map_join(", ", &inspect/1)
-    fields_enum = Enum.map_join(fields, ", ", &inspect/1)
+    options =
+      [
+        "      title: #{inspect(n[:title])}"
+      ] ++
+        filter_option(ctx) ++
+        sort_option(ctx) ++
+        ["      page: :#{Context.page_style(ctx)}"]
 
     """
-    require OpenApiSpex
-
     @doc \"\"\"
     Returns the OpenAPI schema for the #{ctx.element.name} collection query parameters.
     \"\"\"
-    OpenApiSpex.schema(%{
-      title: "#{n[:title]}",
-      type: :object,
-      properties: %{
-        filter: %OpenApiSpex.Schema{
-          type: :object,
-          properties: %{
-    #{filter_body}
-          }
-        },
-        sort: %OpenApiSpex.Schema{
-          type: :string,
-          description: "Comma-separated fields to sort by. Prefix with `-` for descending.",
-          enum: [#{sort_enum}]
-        },
-        page: %OpenApiSpex.Schema{
-          type: :object,
-          properties: %{
-            number: %OpenApiSpex.Schema{type: :integer, default: 1},
-            size: %OpenApiSpex.Schema{type: :integer, default: 20}
-          }
-        },
-        fields: %OpenApiSpex.Schema{
-          type: :object,
-          properties: %{
-            #{ctx.constituent}: %OpenApiSpex.Schema{
-              type: :string,
-              description: "Comma-separated fields to include in the response",
-              enum: [#{fields_enum}]
-            }
-          }
-        }
-      }
-    })
+    OpenApiSpex.schema(
+      OpenApiSchema.query_params(#{view_short},
+    #{Enum.join(options, ",\n")}
+      )
+    )
     """
+  end
+
+  # the members the model names nothing for are not documented — a collection
+  # that filters by nothing has no `filter` parameter to promise
+  defp filter_option(%Context{} = ctx) do
+    filters =
+      ctx
+      |> Context.query_parameters()
+      |> get_in(["filter", "properties"])
+      |> Kernel.||(%{})
+      |> Enum.map(fn {name, spec} ->
+        desc = spec["description"] || "Filter #{ctx.constituent} by #{name} (partial match)"
+        "#{name}: #{inspect(desc)}"
+      end)
+
+    if filters == [], do: [], else: ["      filter: [#{Enum.join(filters, ", ")}]"]
+  end
+
+  defp sort_option(%Context{} = ctx) do
+    case Context.sortable_fields(ctx) do
+      [] -> []
+      fields -> ["      sort: ~w(#{Enum.join(fields, " ")})"]
+    end
   end
 
   defp openapi_type(%{type: "string"}), do: ":string"
@@ -279,22 +261,62 @@ defmodule SpGen.Blueprint.Schema do
       [
         %Unit{
           id: :schema_body,
-          check: fn src -> src.text =~ "OpenApiSpex.schema(" end,
+          check: fn src -> derived_body_present?(src, which) end,
+          stale: fn src, c -> stale_derivation(src, c, which) end,
           render: fn c -> body(c, which, n) |> String.trim_trailing() end,
+          # every derived body names the view: the response builds its document
+          # from it, a collection's parameters are keyed by its type and fields
           requires:
-            if(which in [:response, :collection_response], do: view_gate, else: fn _c -> [] end),
+            if(which in [:response, :collection_response, :query_params],
+              do: view_gate,
+              else: fn _c -> [] end
+            ),
           place: Merge.body_end()
         }
       ]
   end
 
-  defp alias_units(ctx, which) when which in [:response, :collection_response] do
-    [alias_unit(Context.render(@view_module, ctx)), alias_unit(@open_api_schema)]
+  # A derived schema is present only when it *derives*: a hand-written literal
+  # that spells out the members reads as the same line to the merge, and would
+  # then go unreported forever. A transcribed body counts as missing so it
+  # reaches `stale`, which reports it and never appends a second call.
+  defp derived_body_present?(%Source{text: text}, which) do
+    text =~ "OpenApiSpex.schema(" and
+      (which not in [:query_params, :response, :collection_response] or
+         text =~ derived_call(which))
+  end
+
+  # A schema of this blueprint is *derived*: the view owns the resource shape,
+  # the model owns the parameter names. A file that transcribes them instead
+  # carries the line, so the merge appends nothing — and the report says so,
+  # because a transcription is where a field list starts drifting away from the
+  # API that validates it. The operator decides who is wrong: the builder, or
+  # the model.
+  defp stale_derivation(%Source{text: text}, _ctx, which) do
+    derived = derived_call(which)
+
+    cond do
+      which not in [:query_params, :response, :collection_response] -> []
+      not (text =~ "OpenApiSpex.schema(") -> []
+      text =~ derived -> []
+      true -> ["the schema transcribes what `#{derived}` derives — call the builder"]
+    end
+  end
+
+  # the aliases a derived body names; a transcribed body names none, and an
+  # unused alias is a compile warning this tool must not manufacture
+  defp alias_units(ctx, which) when which in [:response, :collection_response, :query_params] do
+    derived = derived_call(which)
+
+    [
+      alias_unit(Context.render(@view_module, ctx), derived),
+      alias_unit(@open_api_schema, derived)
+    ]
   end
 
   defp alias_units(_ctx, _which), do: []
 
-  defp alias_unit(module) do
+  defp alias_unit(module, derived) do
     gate =
       if module == "Sportipedia.Support.JSONAPI.OpenApiSchema" do
         fn _c -> [] end
@@ -304,10 +326,18 @@ defmodule SpGen.Blueprint.Schema do
 
     %Unit{
       id: {:alias, module},
-      check: fn src -> Source.has_alias?(src, module) end,
+      check: fn src -> Source.has_alias?(src, module) or transcribed?(src, derived) end,
       render: fn _ctx -> "alias #{module}" end,
       requires: gate,
       place: Merge.alias_of(module)
     }
   end
+
+  # a body that spells its schema out by hand: the line is there, the call the
+  # aliases belong to is not — `stale_derivation/3` is what reports it
+  defp transcribed?(%Source{text: text}, derived),
+    do: text =~ "OpenApiSpex.schema(" and not (text =~ derived)
+
+  defp derived_call(:query_params), do: "OpenApiSchema.query_params("
+  defp derived_call(_which), do: "OpenApiSchema.from_view("
 end

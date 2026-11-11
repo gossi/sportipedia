@@ -10,6 +10,11 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.CatalogInstrumentTest
   alias Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel
   alias Sportipedia.Catalog.Repo
 
+  import Sportipedia.TestSupport.Catalog.Equipment
+
+  alias Sportipedia.TestSupport.Catalog.Equipment.ApparatusFixtures
+  alias Sportipedia.TestSupport.Catalog.Equipment.InstrumentFixtures
+
   describe "Policy" do
     @describetag :unit
 
@@ -51,6 +56,13 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.CatalogInstrumentTest
       assert Enum.any?(Vex.errors(cmd), &match?({:error, :slug, _, _}, &1))
     end
 
+    test "is invalid when the slug is not lower-case" do
+      cmd = CatalogInstrument.new(id: UUID.uuid4(), title: "Tennis Racket", slug: "Tennis-Racket")
+
+      refute Vex.valid?(cmd)
+      assert {:error, :slug, :by, :invalid_slug} in Vex.errors(cmd)
+    end
+
     test "is valid when description is omitted" do
       cmd = CatalogInstrument.new(id: UUID.uuid4(), title: "Tennis Racket", slug: "tennis-racket")
 
@@ -59,12 +71,19 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.CatalogInstrumentTest
 
     @tag :integration
     test "is invalid with duplicate slug" do
-      slug = "tennis-racket"
+      new_instrument(InstrumentFixtures.unicycle())
 
-      InstrumentReadModel.insert_changeset(%{id: UUID.uuid4(), title: "Existing", slug: slug})
-      |> Repo.insert!()
+      cmd = CatalogInstrument.new(id: UUID.uuid4(), title: "Tennis Racket", slug: "unicycle")
 
-      cmd = CatalogInstrument.new(id: UUID.uuid4(), title: "Tennis Racket", slug: slug)
+      assert {:error, [{:error, :slug, :by, :slug_exists}]} =
+               Vex.validate(cmd)
+    end
+
+    @tag :integration
+    test "is invalid with a slug already used by an apparatus" do
+      new_apparatus(ApparatusFixtures.balance_beam())
+
+      cmd = CatalogInstrument.new(id: UUID.uuid4(), title: "Tennis Racket", slug: "balance-beam")
 
       assert {:error, [{:error, :slug, :by, :slug_exists}]} =
                Vex.validate(cmd)

@@ -2,6 +2,15 @@ apiVersion: schema.esdm.io/core/v1
 kind: read-model
 name: widget
 description: "A cataloged widget, projected from the widget aggregate"
+metadata:
+  annotations:
+    spgen.operation.widget-created: create
+    spgen.operation.widget-edited: update
+    spgen.operation.widget-archived: delete
+    spgen.operation.widget-relabelled: update
+    # an audit fact: the decision is deliberately "nothing materializes"
+    spgen.operation.widget-rename-logged: none
+    spgen.operation.widget-noted: none
 scope:
   domain: sport
   boundedContext: sport
@@ -57,3 +66,15 @@ schema:
     - id
     - title
     - slug
+  examples:
+    - id: "equipment:widget:classic-widget"
+      title: "Classic Widget"
+      slug: "classic-widget"
+      label: "classic"
+      description: "The original widget of the fixture world"
+      coachId: "equipment:coach:head-coach"
+      teamId: "equipment:team:first-team"
+    - id: "equipment:widget:gadget-2000"
+      title: "Gadget 2000"
+      slug: "gadget-2000"
+      description: "A newer widget, unlabeled and unassigned"

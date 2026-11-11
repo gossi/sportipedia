@@ -7,6 +7,10 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.InstrumentCatalogedTe
   alias Sportipedia.Catalog.Equipment.Instrument.InstrumentProjector
   alias Sportipedia.Catalog.Repo
 
+  import Sportipedia.TestSupport.Catalog.Equipment
+
+  alias Sportipedia.TestSupport.Catalog.Equipment.InstrumentFixtures
+
   describe "Event" do
     @describetag :unit
 
@@ -119,14 +123,12 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.InstrumentCatalogedTe
     end
 
     test "rejects duplicate slug" do
-      slug = "unicycle"
-
-      Repo.insert!(%InstrumentReadModel{id: UUID.uuid4(), title: "Existing", slug: slug})
+      new_instrument(InstrumentFixtures.unicycle())
 
       event = %InstrumentCataloged{
         id: UUID.uuid4(),
         title: "Unicycle",
-        slug: slug
+        slug: "unicycle"
       }
 
       metadata = %{

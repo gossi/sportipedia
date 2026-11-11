@@ -5,7 +5,6 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.CatalogApparatusEndpointTes
 
   alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusReadModel
   alias Sportipedia.Catalog.Repo
-  alias SportipediaWeb.Catalog.Equipment.ApparatusView
 
   describe "POST /catalog/equipment/apparatuses/catalog-apparatus" do
     test "catalog-apparatus returns 201 with the cataloged apparatus", %{conn: conn} do

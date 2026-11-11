@@ -59,9 +59,14 @@ an error — the policy is what denies.
 
 ## Generated
 
-`describe "<VERB> <path>"` per operation, with the happy path (including the
-create-then-act seeding an update or delete needs), the 403 case for commands,
-and the 404 case for delete and read.
+`describe "<VERB> <path>"` per operation, with the happy path, the 403 case for
+commands, and the 404 case for delete and read. A read or collection seeds the
+row it fetches through the **fixture factory** (`Equipment.new_apparatus
+(ApparatusFixtures.parallel_bars())`, the plural `new_apparatuses(...)` for a
+collection) when the read model declares examples, and through the create
+command otherwise. A create, update, delete or archive dispatches through the
+public API — an update or delete needs the event-sourced aggregate, which a
+fixture row does not create.
 
 ## Learnings
 

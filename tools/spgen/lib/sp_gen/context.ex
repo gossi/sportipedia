@@ -41,12 +41,12 @@ defmodule SpGen.Context do
     fs: SpGen.FS.default()
   ]
 
-  @type operation :: :create | :update | :delete | :read | :collection
-  @type effect :: :create | :update | :delete
+  @type operation :: :create | :update | :delete | :read | :collection | :none | nil
+  @type effect :: Esdm.effect() | nil
 
-  @operations ~w(create update delete read collection)a
+  @operations ~w(create update delete none read collection)a
 
-  @doc "The five operations a template-driven blueprint can render."
+  @doc "The operations a template-driven blueprint can render."
   def operations, do: @operations
 
   @doc """
@@ -93,44 +93,40 @@ defmodule SpGen.Context do
     end
   end
 
-  # What the element's operation does, read from the model:
+  # What the element's operation does — always *declared*, never guessed:
   #
-  # * command/event — the effect of the published event's projection rule on
-  #   the read model (`create` inserts a row, `update` merges, `delete`
-  #   removes it)
-  # * query — `:collection` when the result is an array, `:read` otherwise
+  # * command — the document's `metadata.annotations."spgen.operation"`; `nil` when
+  #   nobody declared one (`--template` overrides; a run without either is
+  #   refused by `SpGen` — generation must not guess domain intent)
+  # * event — the effect its read model declares via `spgen.operation.<event>`;
+  #   `:none` is a decision (no materialization), `nil` is an open question
+  # * query — its `metadata.annotations."spgen.operation"` (`read | collection`).
+  #   The annotation is optional: a query that declares none falls back to its
+  #   `result` shape, because `result.type: array` *is* a collection read. The
+  #   declaration says more than the shape does — it names the JSON:API
+  #   parameters as the whole of the query's contract, which is what
+  #   `SpGen.Blueprint.Query` generates its body from.
   # * anything else — `:create` (the template is irrelevant or fixed)
   @doc false
-  @spec derive_operation(Esdm.t(), Element.t()) :: __MODULE__.operation()
+  @spec derive_operation(Esdm.t(), Element.t()) :: __MODULE__.operation() | nil
   def derive_operation(model, %Element{} = element) do
     case element.kind do
       :command ->
-        # a command's own verb states what it does to the aggregate; the
-        # projection rule only describes the effect on the read model
-        verb_operation(element.name) ||
-          element |> Esdm.publishes() |> List.first() |> event_effect(model, element)
+        Esdm.declared_operation(element)
 
       :event ->
-        event_effect(element.name, model, element)
+        with {:ok, rm} <- Esdm.read_model_for(model, element) do
+          declared_effect(rm, element.name)
+        else
+          _ -> nil
+        end
 
       :query ->
-        if get_in(element.doc, ["result", "type"]) == "array", do: :collection, else: :read
+        Esdm.declared_query_operation(element) ||
+          if(get_in(element.doc, ["result", "type"]) == "array", do: :collection, else: :read)
 
       _kind ->
         :create
-    end
-  end
-
-  defp event_effect(nil, _model, _element), do: :create
-
-  defp event_effect(event_name, model, element) do
-    with {:ok, rm} <- Esdm.read_model_for(model, element) do
-      case Enum.find(Esdm.projections(rm), fn p -> p["event"] == event_name end) do
-        nil -> :create
-        projection -> Esdm.projection_effect(projection)
-      end
-    else
-      _ -> :create
     end
   end
 
@@ -499,29 +495,20 @@ defmodule SpGen.Context do
   end
 
   @doc """
-  The operation an event performs on the read model (via its projection rule):
-  `:create` | `:update` | `:delete`, defaulting to `:create`.
+  The effect the read model declares for an event: a real operation, `:none`
+  (declared not to materialize), or `nil` — nobody has decided yet, which is
+  an open question, not a decision.
   """
-  def effect_for_event(%__MODULE__{read_model: rm}, event_name) when not is_nil(rm) do
-    rm
-    |> Esdm.projections()
-    |> Enum.find(&(&1["event"] == event_name))
-    |> case do
-      nil -> :create
-      projection -> Esdm.projection_effect(projection)
-    end
-  end
+  @spec effect_for_event(%__MODULE__{}, String.t()) :: Esdm.effect() | nil
+  def effect_for_event(%__MODULE__{read_model: rm}, event_name) when not is_nil(rm),
+    do: declared_effect(rm, event_name)
 
-  def effect_for_event(_ctx, _event_name), do: :create
+  def effect_for_event(_ctx, _event_name), do: nil
 
-  # `archive-position`, `edit-position`, `catalog-position`: the leading verb
-  # of the command's name is what it does to the aggregate
-  defp verb_operation(name) do
-    cond do
-      name =~ ~r/\A(archive|delete|remove|withdraw)(-|\z)/ -> :delete
-      name =~ ~r/\A(edit|update|amend|change)(-|\z)/ -> :update
-      name =~ ~r/\A(catalog|create|add|register)(-|\z)/ -> :create
-      true -> nil
+  defp declared_effect(%Element{} = rm, event_name) do
+    case Map.get(Esdm.declared_effects(rm), event_name) do
+      :invalid -> nil
+      other -> other
     end
   end
 
@@ -551,18 +538,164 @@ defmodule SpGen.Context do
 
   def query_parameters(_ctx), do: %{}
 
+  @doc """
+  The fields a collection query may be filtered by — the names its
+  `parameters.filter.properties` declares, in the model's own order of
+  appearance (sorted, so a regenerated file is stable).
+  """
+  @spec filterable_fields(%__MODULE__{}) :: [String.t()]
+  def filterable_fields(%__MODULE__{} = ctx) do
+    ctx
+    |> query_parameters()
+    |> get_in(["filter", "properties"])
+    |> Kernel.||(%{})
+    |> Map.keys()
+    |> Enum.sort()
+  end
+
+  @doc """
+  The fields a collection query may be sorted by: the model's `sort.properties`
+  when it declares them, its filterable fields when it does not — sorting is
+  never wider than the model allows, and a model that lists sort fields only
+  says so on purpose.
+  """
+  @spec sortable_fields(%__MODULE__{}) :: [String.t()]
+  def sortable_fields(%__MODULE__{element: %{kind: :query} = element} = ctx) do
+    case Esdm.sortable_fields(element) do
+      [] -> filterable_fields(ctx)
+      fields -> fields
+    end
+  end
+
+  def sortable_fields(_ctx), do: []
+
+  @doc "How a collection query paginates: `:numbered | :offset | :none`."
+  @spec page_style(%__MODULE__{}) :: :numbered | :offset | :none
+  def page_style(%__MODULE__{element: %{kind: :query} = element}), do: Esdm.page_style(element)
+  def page_style(_ctx), do: :none
+
   @doc "Read-model fields rendered for schema/view purposes (ecto-typed)."
   def read_model_fields(%__MODULE__{read_model: rm}) when not is_nil(rm), do: Esdm.fields(rm)
   def read_model_fields(_ctx), do: []
 
-  @doc "True for queries returning a collection (`result.type: array`)."
-  def collection?(%__MODULE__{element: %{kind: :query, doc: doc}}) do
-    get_in(doc, ["result", "type"]) == "array"
-  end
+  @doc """
+  True for queries whose operation is a collection read.
+
+  The context's `operation` is the ONE representation of that fact: declared by
+  `metadata.annotations."spgen.operation"` when the model declares it, else
+  derived from `result.type: array` (see `derive_operation/2`). Asking the shape
+  here would make a declaration and a shape two sources for one decision.
+  """
+  def collection?(%__MODULE__{element: %{kind: :query}} = ctx), do: ctx.operation == :collection
 
   def collection?(_ctx), do: false
 
-  @doc "The module-name Pascal form of a kebab name (PublicAPI, ReadModel, …)."
+  # -- generated fixtures (the read model's `schema.examples`) -----------------
+  #
+  # `sp.gen.test_support` projects a read model's examples into a fixtures module
+  # and a composite factory. A test that needs a *real* row must call them rather
+  # than re-invent a `%{title: "sample-title"}` map or re-dispatch the create
+  # command — the fixture is the model-owned projection of that row, and its id
+  # (`UUID.uuid5(:dns, <key>)`) is the id every reference to it resolves to, so a
+  # foreign key in one fixture already equals the primary key of the fixture it
+  # points at. `fixture/1` hands a test blueprint everything it needs to name that
+  # row: the primary example for a single-row seed, the plural for a collection.
+
+  @typedoc "A generated fixture row, named from every angle a test needs."
+  @type fixture_ref :: %{
+          module: String.t(),
+          local: String.t(),
+          file: String.t(),
+          function: String.t(),
+          plural: String.t(),
+          seed_module: String.t(),
+          seed_local: String.t(),
+          seed_file: String.t(),
+          seed_function: String.t(),
+          seed_all_function: String.t(),
+          attrs: %{String.t() => String.t()}
+        }
+
+  @doc "The fixture specs of `ctx`'s read model, or `[]` when none/invalid."
+  @spec fixture_specs(%__MODULE__{}) :: [SpGen.Fixtures.spec()]
+  def fixture_specs(%__MODULE__{read_model: rm} = ctx) when not is_nil(rm) do
+    plural = render("<domain_object>s", ctx)
+
+    case SpGen.Fixtures.validate(rm, ctx.composite, plural) do
+      {:ok, specs} -> specs
+      {:error, _} -> []
+    end
+  end
+
+  def fixture_specs(_ctx), do: []
+
+  @doc "True when `ctx`'s read model declares usable fixture examples."
+  @spec fixtures?(%__MODULE__{}) :: boolean()
+  def fixtures?(ctx), do: fixture_specs(ctx) != []
+
+  @doc """
+  The generated-fixture reference for `ctx`'s constituent, from its **primary**
+  example (the first in model order) — or `nil` when the read model declares no
+  examples.
+  """
+  @spec fixture(%__MODULE__{}) :: fixture_ref() | nil
+  def fixture(%__MODULE__{} = ctx) do
+    case fixture_specs(ctx) do
+      [%{} = spec | _] -> build_fixture_ref(ctx, spec)
+      [] -> nil
+    end
+  end
+
+  defp build_fixture_ref(%__MODULE__{} = ctx, spec) do
+    fixtures_mod = SpGen.Blueprint.Fixtures.module_name(ctx)
+    factory_mod = SpGen.Blueprint.Factory.module_name(ctx)
+
+    %{
+      module: fixtures_mod,
+      local: fixtures_mod |> String.split(".") |> List.last(),
+      file: SpGen.Blueprint.Fixtures.module_file(ctx),
+      function: spec.fname,
+      plural: render("<domain_object>s", ctx),
+      seed_module: factory_mod,
+      seed_local: factory_mod |> String.split(".") |> List.last(),
+      seed_file: SpGen.Blueprint.Factory.module_file(ctx),
+      seed_function: SpGen.Blueprint.Factory.seed_name(ctx),
+      seed_all_function: SpGen.Blueprint.Factory.seed_all_name(ctx),
+      attrs: Map.new(spec.attrs)
+    }
+  end
+
+  @doc """
+  The seed expression a single-row test uses to place the primary fixture:
+  `<Composite>.new_<object>(<Object>Fixtures.<mnemonic>())`.
+  """
+  @spec seed_expr(fixture_ref()) :: String.t()
+  def seed_expr(%{} = f), do: "#{f.seed_local}.#{f.seed_function}(#{f.local}.#{f.function}())"
+
+  @doc """
+  The plural seed expression a collection test uses to place every fixture:
+  `<Composite>.new_<object>s(<Object>Fixtures.<plural>())`.
+  """
+  @spec seed_all_expr(fixture_ref()) :: String.t()
+  def seed_all_expr(%{} = f),
+    do: "#{f.seed_local}.#{f.seed_all_function}(#{f.local}.#{f.plural}())"
+
+  @doc """
+  The materialized source for one field of the primary example, or `nil`.
+
+  A `*Id` field materializes as `UUID.uuid5(:dns, <key>)` — the very id the
+  referenced fixture names itself with — so a reference in a generated test is a
+  correct identifier without the referenced row being seeded.
+  """
+  @spec example_value(%__MODULE__{}, String.t()) :: String.t() | nil
+  def example_value(%__MODULE__{} = ctx, name) do
+    case fixture(ctx) do
+      %{attrs: attrs} -> Map.get(attrs, name)
+      nil -> nil
+    end
+  end
+
+  @doc "The module Pascal form of a kebab name (PublicAPI, ReadModel, …)."
   def pascal(name) do
     name |> String.split("-") |> Enum.map(&String.capitalize/1) |> Enum.join()
   end

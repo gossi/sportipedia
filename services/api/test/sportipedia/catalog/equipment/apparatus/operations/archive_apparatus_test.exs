@@ -8,7 +8,10 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Operation.ArchiveApparatusTest
   alias Sportipedia.Catalog.Equipment.Apparatus.Event.ApparatusArchived
   alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusAggregate
   alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusReadModel
-  alias Sportipedia.Catalog.Equipment.Apparatus.ApparatusProjector
+
+  import Sportipedia.TestSupport.Catalog.Equipment
+
+  alias Sportipedia.TestSupport.Catalog.Equipment.ApparatusFixtures
 
   describe "Policy" do
     @describetag :unit
@@ -61,16 +64,10 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus.Operation.ArchiveApparatusTest
 
     @tag :integration
     test "validates id must exist" do
-      id = UUID.uuid4()
+      apparatus = ApparatusFixtures.parallel_bars()
+      new_apparatus(apparatus)
 
-      ApparatusReadModel.insert_changeset(%ApparatusReadModel{}, %{
-        id: id,
-        title: "Vaulting Table",
-        slug: "vaulting-table"
-      })
-      |> Repo.insert()
-
-      cmd = %ArchiveApparatus{id: id}
+      cmd = %ArchiveApparatus{id: apparatus.id}
 
       assert {:ok, _} = Vex.validate(cmd)
     end

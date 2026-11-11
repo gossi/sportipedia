@@ -29,7 +29,10 @@ and the body by what the operation does:
   `{:error, :not_found}`. An `oneOf` id-or-slug parameter is realized **once**,
   in the query. The internal API is the port's after-dispatch `by_id` lookup for
   create and update.
-- **collection** — `Repo.all` with `Sportipedia.Support.JSONAPI.QueryBuilder`.
+- **collection** — `Repo.all` over the query citizen
+  (`Queries.<Query>.new(query)`). The port names the query, never the builder:
+  which read model a collection reads and how a `JSONAPI.Config` becomes an Ecto
+  query is the query's own contract ([Query](./query.md)).
 
 Validation errors surface through `Sportipedia.Support.ErrorClassifier`: Vex runs
 as commanded middleware, so there is no `try`/`rescue` and no param matching —

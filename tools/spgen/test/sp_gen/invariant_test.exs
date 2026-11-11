@@ -9,18 +9,17 @@ defmodule SpGen.InvariantTest do
   """
   use ExUnit.Case, async: true
 
-  alias SpGen.{Context, Esdm, Invariant}
+  alias SpGen.{Context, Esdm, FixtureRepo, Invariant}
 
-  @model_root Path.expand("../../docs/domain-model")
-
+  # the fixture model, never the live `docs/domain-model`: the domain moves,
+  # this tool's contracts do not (see `contributions.md`)
   setup_all do
-    {:ok, model} = Esdm.load(@model_root)
-    %{model: model}
+    %{model: FixtureRepo.model()}
   end
 
-  defp ctx(model, name) do
+  defp ctx(model, name, opts \\ []) do
     element = Esdm.resolve!(model, name)
-    {:ok, ctx} = Context.build(model, element)
+    {:ok, ctx} = Context.build(model, element, opts)
     ctx
   end
 
@@ -134,21 +133,64 @@ defmodule SpGen.InvariantTest do
     end
   end
 
-  describe "the domain model's own rules" do
-    test "every invariant of the apparatus citizen resolves or stays visible", %{model: model} do
-      c = ctx(model, "command.edit-apparatus")
+  # What the model's own rules resolve to, on the fixture citizen: three patterns
+  # claimed, one rule left visible because it guards no field of this citizen.
+  describe "the fixture model's own rules" do
+    test "every invariant of the widget citizen resolves or stays visible", %{model: model} do
+      c = ctx(model, "command.edit-widget")
 
-      assert Enum.map(c.validators, & &1.name) == ["apparatus-exists", "unique-slug"]
+      assert c.validators |> Enum.map(&{&1.kind, &1.field}) |> Enum.sort() == [
+               {:exists, "id"},
+               {:rule, "coachId"},
+               {:rule, "teamId"},
+               {:unique, "slug"}
+             ]
 
       # the cross-aggregate precondition guards no field of this citizen
       assert Enum.map(c.unresolved, & &1["name"]) == ["no-archive-when-in-use"]
     end
 
-    test "an aggregate-driven context sees its commands' constraints", %{model: model} do
-      c = ctx(model, "aggregate.apparatus")
+    test "a command that states no constraint still carries the aggregate's invariant", %{
+      model: model
+    } do
+      c = ctx(model, "command.create-widget")
 
-      assert c.validators |> Enum.map(& &1.kind) |> Enum.sort() == [:exists, :unique]
+      assert c.validators |> Enum.map(& &1.name) |> Enum.uniq() |> Enum.sort() == [
+               "at-most-one-owner",
+               "unique-slug"
+             ]
+
+      refute Enum.any?(c.validators, &(&1.kind == :exists))
+    end
+
+    test "one rule for two fields registers on both", %{model: model} do
+      # `at-most-one-owner` is stated once and speaks for `coachId` *and*
+      # `teamId`: dropping either half would silently lose a validation
+      owners =
+        ctx(model, "command.edit-widget").validators
+        |> Enum.filter(&(&1.name == "at-most-one-owner"))
+        |> Enum.map(& &1.field)
+
+      assert owners == ["coachId", "teamId"]
+    end
+
+    test "an aggregate-driven context sees its commands' constraints", %{model: model} do
+      c = ctx(model, "aggregate.widget")
+
+      assert c.validators |> Enum.map(& &1.kind) |> Enum.uniq() |> Enum.sort() == [
+               :exists,
+               :rule,
+               :unique
+             ]
+
       assert Context.unique_fields(c) == ["slug"]
+    end
+
+    test "a delete addresses an id, so the slug invariant is not its guard", %{model: model} do
+      c = ctx(model, "command.archive-widget")
+
+      assert Enum.map(c.validators, & &1.name) == ["widget-exists"]
+      assert Context.unique_fields(c) == []
     end
   end
 end

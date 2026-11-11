@@ -9,8 +9,17 @@ identifiedBy:
   source: generated
   generator: uuid
 invariants:
-  - name: unique-slug
-    rule: The slug for the position must be unique within the domain.
+  - name: unique-slug-by-equipment
+    rule: >-
+      A position's canonical slug is its own slug, namespaced by the slug of
+      its referenced equipment when bound and bare otherwise —
+      `<equipment-slug>/<position-slug>` for a bound position, `<position-slug>`
+      for an unbound one. No two positions in the catalog may share the same
+      canonical slug. Because equipment slugs are themselves unique across all
+      equipment (the `unique-equipment-slug` invariant on apparatus and
+      instrument), the equipment segment of the namespaced form is distinct per
+      piece of equipment, so it is the `<position-slug>` that must not repeat for
+      two positions bound to the same equipment.
   - name: at-most-one-equipment
     rule: A position can reference at most one piece of equipment (either apparatusId or instrumentId, not both)
 state:
@@ -25,7 +34,7 @@ state:
       description: "Name of the position"
     slug:
       type: string
-      description: "URL-friendly unique identifier"
+      description: "URL-friendly identifier of the position itself; unique within its equipment namespace (the read model's canonical `slug` is derived from it)"
     description:
       type: string
       description: "Optional description"

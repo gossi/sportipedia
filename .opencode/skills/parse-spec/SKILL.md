@@ -28,22 +28,31 @@ You receive a `spec_path` parameter — the path to the spec markdown file.
 
 ## Steps
 
-### Step 0: Lint the Domain Model
+### Step 0: Lint and Check the Domain Model
 
 Run `esdm lint` before reading the spec. This is the first integrity check of the
 flow, not a last-minute review finding: a model error silently changes what the
 generators emit.
 
+Then run `mix sp.check docs/domain-model/<subdomain>` for the subdomain in
+scope: it answers the question lint cannot — does the model carry everything the
+generators need (fixture keys and example consistency, non-empty descriptions
+where docs and operation summaries come from)? It is mechanical, not
+interpretive: findings are model defects to fix, never design decisions.
+
 - **Block** on any error under `docs/domain-model/**` for the constituent you
   are about to plan. A missing required field or unknown key in an aggregate,
   command, event or read model means the design step would be planning against a
   file the generators cannot read.
+- **Block** on any `sp.check` finding for the constituent: the generator would
+  refuse the same content later — refuse it here, where nothing has run.
 - **Note** errors in unrelated subdomains or fixtures and pass them through as a
   known-baseline — do not stop the slice for them.
-- Re-run `esdm lint` after any `MODEL GAP:` correction, before anything is
-  generated.
+- Re-run `esdm lint` (and `mix sp.check`, if its findings touched this
+  constituent) after any `MODEL GAP:` correction, before anything is generated.
 
-If lint blocks, output `MODEL GAP: <file> — <what the model needs>` and stop.
+If lint or check blocks, output `MODEL GAP: <file> — <what the model needs>` and
+stop.
 
 ### Step 1: Read the Spec File
 

@@ -71,7 +71,8 @@ defmodule SpGen.Esdm do
   an error listing the full `esdm:` references that disambiguate.
   * Neighborhood helpers: `aggregate_of/2`, `read_model_for/2`, `publishes/1`,
     `actors/1`, `fields/1`, `invariants/1`, `constraints/1`, `projections/1`,
-    `projection_effect/1`, `scenarios/2`.
+    `declared_effects/1` / `declared_operation/1` (the metadata-declared
+    operations), `scenarios/2`.
 
   YAML mappings lose key order, so `fields/1` canonicalizes deterministically:
   `id` first when present, then required fields in `required`-list order, then
@@ -425,35 +426,183 @@ defmodule SpGen.Esdm do
   @doc "Aggregate invariants as `%{name:, rule:}`."
   def invariants(%Element{doc: doc}), do: List.wrap(doc["invariants"])
 
+  # -- declared operations (metadata.annotations) --------------------------------
+  #
+  # The rule prose on a projection is for humans; what an event DOES to the
+  # read model is declared, machine-readable, in the element's metadata —
+  # namespaced under `spgen.` so the shared annotations bag stays collision
+  # free for every other tool:
+  #
+  #   command:     metadata.annotations."spgen.operation":
+  #                create | update | delete | none
+  #   query:       metadata.annotations."spgen.operation":
+  #                read | collection      (optional — see below)
+  #   read-model:  metadata.annotations."spgen.operation.<event>":
+  #                create | update | delete | none
+  #
+  # `none` is a decision — "somebody looked and nothing materializes" — which
+  # is not the same thing as the absence of any annotation. On a command it
+  # reads "dispatch facts, change no read model": the API answers `:ok`, the
+  # endpoint 204, and no row is read back.
+  #
+  # A query may declare which read it is: `collection` says the parameters are
+  # the JSON:API set (`filter`/`sort`/`page`/`fields`) and the answer is the
+  # live read-model table, which is what `SpGen.Blueprint.Query` generates
+  # against the shared `QueryBuilder`. It is OPTIONAL: a query that declares
+  # nothing falls back to its `result` shape, so a model written before the
+  # annotation stays valid.
+  #
+  # The vocabulary differs per kind, which is why `declared_operation/1` and
+  # `declared_query_operation/1` are separate reads of one key.
+
+  @operations ~w(create update delete none)
+  @projection_operations @operations
+  @query_operations ~w(read collection)
+
+  @operation_key "spgen.operation"
+  @effect_prefix "spgen.operation."
+
+  @doc "The annotations key a command declares its operation under."
+  def operation_key, do: @operation_key
+
+  @doc "The annotations prefix read models declare per-event effects under."
+  def effect_prefix, do: @effect_prefix
+
+  @doc "The `metadata.annotations` map of an element (`%{}` when absent)."
+  @spec annotations(Element.t()) :: map()
+  def annotations(%Element{doc: doc}) do
+    get_in(doc, ["metadata", "annotations"]) || %{}
+  end
+
+  @doc """
+  The operation a **command** document declares: `:create | :update | :delete |
+  :none`, or `nil` when absent or not in the command vocabulary.
+  """
+  @spec declared_operation(Element.t()) :: :create | :update | :delete | :none | nil
+  def declared_operation(%Element{} = element) do
+    case annotations(element)[@operation_key] do
+      v when v in @operations -> String.to_atom(v)
+      _ -> nil
+    end
+  end
+
+  @doc """
+  The operation a **query** document declares: `:read | :collection`, or `nil`
+  when it declares none (or names something outside the query vocabulary —
+  `mix sp.check` reports the bad value, generation must not read meaning from
+  a typo).
+  """
+  @spec declared_query_operation(Element.t()) :: :read | :collection | nil
+  def declared_query_operation(%Element{} = element) do
+    case annotations(element)[@operation_key] do
+      v when v in @query_operations -> String.to_atom(v)
+      _ -> nil
+    end
+  end
+
+  @typedoc "A declared effect on a read model: a real operation, or `:none`."
+  @type effect :: :create | :update | :delete | :none
+
+  @doc """
+  The declared effects of a **read model** as `%{event_name => effect}`,
+  from its `spgen.operation.<event>` annotation keys. Invalid or unknown
+  values are not silently dropped — they surface as `:invalid` so
+  `mix sp.check` and the generators can point at the exact mistake.
+  """
+  @spec declared_effects(Element.t()) :: %{String.t() => effect() | :invalid}
+  def declared_effects(%Element{} = element) do
+    for {key, value} <- annotations(element),
+        String.starts_with?(key, @effect_prefix),
+        event = String.replace_prefix(key, @effect_prefix, ""),
+        event != "",
+        into: %{} do
+      {event,
+       cond do
+         value in @operations -> String.to_atom(value)
+         true -> :invalid
+       end}
+    end
+  end
+
+  @doc "Vocabulary of the bare `spgen.operation` annotation (commands)."
+  def operations, do: @operations
+
+  @doc "Vocabulary of the `spgen.operation.<event>` annotations (read models)."
+  def projection_operations, do: @projection_operations
+
+  @doc "Vocabulary of the bare `spgen.operation` annotation (queries)."
+  def query_operations, do: @query_operations
+
+  @doc """
+  The parameter names a query's `parameters.properties` declares (`filter`,
+  `sort`, `page`, `fields` …).
+  """
+  @spec query_parameter_names(Element.t()) :: [String.t()]
+  def query_parameter_names(%Element{} = element) do
+    element |> param_properties([]) |> Map.keys() |> Enum.sort()
+  end
+
+  @doc """
+  The fields a query declares sortable: the `sortableFields` list on its
+  `parameters.properties.sort` entry. JSON:API `sort` is a comma-separated
+  *string*, so the names are not nested `properties` the way `filter`'s are —
+  the field list is a fact about the string, not an object shape. A model that
+  lists none leaves sorting to whatever its `filter` names.
+  """
+  @spec sortable_fields(Element.t()) :: [String.t()]
+  def sortable_fields(%Element{doc: doc}) do
+    doc
+    |> get_in(["parameters", "properties", "sort", "sortableFields"])
+    |> List.wrap()
+    |> Enum.map(&to_string/1)
+  end
+
+  @doc """
+  How a query paginates, from its `parameters.properties.page`: `:none` when the
+  model declares no `page` parameter at all, `:offset` when it names
+  `limit`/`offset`, and `:numbered` (`number`/`size`) otherwise — including a
+  bare `page` that states no properties, since `number`/`size` is the house
+  style `Sportipedia.Support.JSONAPI.QueryBuilder` defaults to.
+  """
+  @spec page_style(Element.t()) :: :numbered | :offset | :none
+  def page_style(%Element{doc: doc}) do
+    case get_in(doc, ["parameters", "properties"]) do
+      props when is_map(props) ->
+        case Map.get(props, "page") do
+          page when is_map(page) -> page_style_of(Map.get(page, "properties"))
+          nil -> :none
+        end
+
+      _ ->
+        :none
+    end
+  end
+
+  defp page_style_of(props) when is_map(props) do
+    keys = Map.keys(props)
+
+    cond do
+      Enum.any?(keys, &(&1 in ["number", "size"])) -> :numbered
+      Enum.any?(keys, &(&1 in ["limit", "offset"])) -> :offset
+      true -> :numbered
+    end
+  end
+
+  defp page_style_of(_), do: :numbered
+
+  # `parameters.properties.<path>` as a map, `%{}` when the model says nothing
+  defp param_properties(%Element{doc: doc}, path) do
+    case get_in(doc, ["parameters", "properties"] ++ path) do
+      map when is_map(map) -> map
+      _ -> %{}
+    end
+  end
+
   @doc "Command constraints as `%{name:, rule:}`."
   def constraints(%Element{doc: doc}), do: List.wrap(doc["constraints"])
 
   @doc "Projection entries of a read model: `%{event:, aggregate:, rule:}`."
   def projections(%Element{doc: doc}), do: List.wrap(doc["projections"])
-
-  @doc """
-  The operation a projection performs on the database, read from its rule
-  prose: `:create` | `:update` | `:delete` | `:unknown`.
-
-  `nil` — an event no read model projects (an audit-only fact) — is `:unknown`.
-  """
-  def projection_effect(nil), do: :unknown
-
-  def projection_effect(projection) do
-    case projection["rule"] || Map.get(projection, :rule) do
-      rule when is_binary(rule) ->
-        cond do
-          # stems, so inflections match ("archived", "removed", ...)
-          rule =~ ~r/\b(remov|delet|withdraw)/i -> :delete
-          rule =~ ~r/\b(updat|chang|edit|amend|mark)/i -> :update
-          rule =~ ~r/\b(add|project|insert|creat|catalog)/i -> :create
-          true -> :unknown
-        end
-
-      _ ->
-        :unknown
-    end
-  end
 
   @doc """
   The feature scenarios that exercise the given operation (by its `when`

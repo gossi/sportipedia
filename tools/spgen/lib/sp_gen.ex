@@ -51,6 +51,11 @@ defmodule SpGen do
 
   @max_closure_rounds 3
   @actors [:domain, :web]
+  # the only run options a closure sweep depends on: the location overrides
+  # `closure_ctx/4` and `dependency_ctx/4` pass through to the context
+  @closure_opts [:subdomain, :composite, :constituent]
+  # process-owned memo table for closure sweeps (see `closure_sweep/4`)
+  @memo :spgen_closure_memo
 
   # The order generators are meant to run in: what a generator writes is gated
   # on the citizens before it, so this pass needs no deferral round-trips.
@@ -59,6 +64,7 @@ defmodule SpGen do
   # It is also the order `mix sp.gen` lists them in.
   @generator_order [
     :read_model,
+    :test_support,
     :event,
     :aggregate,
     :query,
@@ -106,6 +112,7 @@ defmodule SpGen do
       query: [B.Query, B.QueryTest],
       read_model: [B.ReadModel],
       schema: [B.Schema, B.SchemaTest],
+      test_support: [B.Fixtures, B.Factory],
       view: [B.View, B.ViewTest]
     }
   end
@@ -204,7 +211,9 @@ defmodule SpGen do
              context_opts(operation, opts)
              |> Keyword.put(:repo_root, repo_root)
              |> Keyword.put(:fs, fs)
-           ) do
+           ),
+         :ok <- Blueprint.validate_hook(blueprint, ctx),
+         :ok <- require_operation(element, ctx) do
       plans = plans_for(modules, ctx, model, opts)
       check? = Keyword.get(opts, :check, false)
       formatter_opts = Formatter.opts(formatter_cwd, fs)
@@ -212,7 +221,7 @@ defmodule SpGen do
       run = new_run(repo_root, formatter_opts, check?, fs)
 
       {run, seed} = apply_plans(plans, run)
-      created? = Enum.any?(seed, &match?({:created, _}, &1))
+      created? = Enum.any?(seed, &match?({:created, _}, &1)) and blueprint.closure_scope() == :all
 
       backfill =
         if created? and not check? do
@@ -231,7 +240,7 @@ defmodule SpGen do
           []
         end
 
-      {:ok, seed ++ backfill ++ unresolved_rows(ctx)}
+      {:ok, seed ++ backfill ++ unresolved_rows(ctx) ++ effect_gap_rows(ctx)}
     else
       {:error, {:unknown_location, var}} ->
         {:error,
@@ -266,7 +275,13 @@ defmodule SpGen do
       check?: check?,
       merge_only: false,
       creating: false,
-      planned: MapSet.new()
+      planned: MapSet.new(),
+      # `Source.parse` results by the exact text they were parsed from. A closure
+      # round applies ~243 plans over ~25 files, so without this the same file is
+      # tokenized once per plan that mentions it — the dominant cost of a round.
+      # Keyed by content rather than path because a write changes the content and
+      # must never be answered with the previous parse.
+      parses: %{}
     }
   end
 
@@ -308,6 +323,43 @@ defmodule SpGen do
   end
 
   defp default_root(fs), do: fs |> cwd() |> find_root(fs)
+
+  # What a command does is a decision, not a reading exercise: a run that
+  # finds neither an annotation nor an explicit --template is refused here,
+  # where the message names both possible fixes.
+  defp require_operation(%Element{kind: :command, name: name, source: source}, %{operation: nil}) do
+    {:error,
+     "no operation declared for command #{name} — add metadata.annotations.spgen.operation " <>
+       "(create|update|delete|none) to #{source}, or pass --template"}
+  end
+
+  defp require_operation(_element, _ctx), do: :ok
+
+  # Effect-bearing runs report open questions instead of inventing answers:
+  # an event the read model never decided on generates no projector clause and
+  # no aggregate fold — the gap is stated until a declaration closes it.
+  defp effect_gap_rows(%Context{element: %Element{kind: :event} = e} = ctx) do
+    case Context.effect_for_event(ctx, e.name) do
+      nil -> [{:unresolved, e.address, [effect_gap_text(e.name)]}]
+      _ -> []
+    end
+  end
+
+  defp effect_gap_rows(%Context{element: %Element{kind: :aggregate} = agg, model: model} = ctx) do
+    details =
+      for e <- Esdm.events_of(model, agg.name),
+          is_nil(Context.effect_for_event(ctx, e.name)),
+          do: effect_gap_text(e.name)
+
+    if details == [], do: [], else: [{:unresolved, agg.address, details}]
+  end
+
+  defp effect_gap_rows(_ctx), do: []
+
+  defp effect_gap_text(event_name) do
+    "no operation declared by the read model for #{event_name} — metadata.annotations.spgen.operation.#{event_name} " <>
+      "(create|update|delete|none) decides materialization; projector clause and apply fold skipped"
+  end
 
   defp cwd({SpGen.FS.Local, nil}), do: File.cwd!()
   defp cwd(_fs), do: "/"
@@ -351,8 +403,11 @@ defmodule SpGen do
         disambiguates)
 
     Options:
-      --template       what the operation does: create | update | delete | read | collection
-                       (default: derived from the domain model)
+      --template       what the operation does: create | update | delete | none | read | collection
+                       (default: the operation DECLARED in the model —
+                       metadata.annotations."spgen.operation" on commands,
+                       "spgen.operation.<event>" on read models — or, for
+                       queries, the shape of the result)
       --subdomain      override the inferred subdomain
       --composite      override the inferred composite
       --constituent    override the inferred constituent (domain object)
@@ -371,6 +426,8 @@ defmodule SpGen do
   # * `{:backfill, path, [unit_id]}` — appended by the closure pass after this
   #   run created a citizen that the unit references
   # * `{:unchanged, path}` — everything the plan wants is already there
+  # * `{:rewritten, path}` — a projection's render differs from the file on
+  #   disk; the whole file is replaced (its model is the only author)
   # * `{:deferred, path, [{unit_id, reason}]}` — units waiting for a citizen
   #   that has not been generated yet (reported only — generation order is
   #   not an error, and the tree stays compilable)
@@ -392,6 +449,7 @@ defmodule SpGen do
           | {:merged, String.t(), [term()]}
           | {:backfill, String.t(), [term()]}
           | {:unchanged, String.t()}
+          | {:rewritten, String.t()}
           | {:deferred, String.t(), [{term(), String.t()}]}
           | {:stale, String.t(), [{term(), [String.t()]}]}
           | {:unresolved, String.t(), [String.t()]}
@@ -467,12 +525,58 @@ defmodule SpGen do
 
   @doc false
   @spec apply_plan(FilePlan.t(), Context.t(), map()) :: {[row()], map()}
+  def apply_plan(%FilePlan{projection: true, path: rel_path} = plan, ctx, run) do
+    abs_path = Path.join(run.repo_root, rel_path)
+    # a projection is gated, not merge-restricted: the closure pass that flips
+    # its gate may land the file wholesale — its content depends on nothing
+    # but the model, so a re-render of equal content is `Ignored`, never a
+    # rewrite, no matter which run triggered it
+    unmet = plan.requires.(ctx) |> Enum.reject(fn {path, _reason} -> existing_fn(run).(path) end)
+
+    if unmet != [] do
+      rows = [
+        {:deferred, rel_path, Enum.map(unmet, fn {_p, reason} -> {:whole_file, reason} end)}
+      ]
+
+      {rows, run}
+    else
+      rewrite_projection(plan, ctx, abs_path, rel_path, run)
+    end
+  end
+
   def apply_plan(%FilePlan{path: rel_path} = plan, ctx, run) do
     abs_path = Path.join(run.repo_root, rel_path)
 
     case FS.read(run.fs, abs_path) do
       {:error, :enoent} -> create(plan, ctx, abs_path, rel_path, run)
       {:ok, text} -> merge(plan, ctx, text, abs_path, rel_path, run)
+    end
+  end
+
+  # a projection is rendered whole and compared: an unchanged file is `Ignored`,
+  # a differing one is rewritten (or only reported, under `--check`)
+  defp rewrite_projection(%FilePlan{scaffold: scaffold}, ctx, abs_path, rel_path, run) do
+    content = Merge.render_new(scaffold.(ctx), run.formatter_opts)
+
+    case FS.read(run.fs, abs_path) do
+      {:ok, ^content} ->
+        {[{:unchanged, rel_path}], run}
+
+      {:ok, _stale_content} ->
+        if run.check? do
+          {[{:checked, rel_path, [:rewrite]}], run}
+        else
+          FS.write!(run.fs, abs_path, content)
+          {[{:rewritten, rel_path}], mark_planned(run, rel_path)}
+        end
+
+      {:error, :enoent} ->
+        if run.check? do
+          {[{:checked, rel_path, [:whole_file]}], run}
+        else
+          FS.write!(run.fs, abs_path, content)
+          {[{:created, rel_path}], mark_planned(run, rel_path)}
+        end
     end
   end
 
@@ -523,7 +627,7 @@ defmodule SpGen do
       # text artifacts are create-only: existing docs are never rewritten
       {[{:unchanged, rel_path}], run}
     else
-      source = Source.parse(text)
+      {source, run} = parse_cached(run, text)
 
       cond do
         is_nil(source.ast) ->
@@ -535,6 +639,17 @@ defmodule SpGen do
         true ->
           place_units(plan, ctx, source, abs, rel_path, run)
       end
+    end
+  end
+
+  defp parse_cached(%{parses: parses} = run, text) do
+    case Map.fetch(parses, text) do
+      {:ok, source} ->
+        {source, run}
+
+      :error ->
+        source = Source.parse(text)
+        {source, %{run | parses: Map.put(parses, text, source)}}
     end
   end
 
@@ -681,47 +796,185 @@ defmodule SpGen do
   # Creating a citizen flips `requires` gates across its constituent:
   # re-apply every neighborhood generator's plans merge-only (existing files
   # only) until a round places nothing.
+  #
+  # Rounds differ only in the tree they meet, so the sweep is resolved ONCE,
+  # before them: a `Context` and a generator's plans — dependency expansion
+  # included — are pure functions of model, element and options and read no
+  # file. Rebuilding the sweep's ~90 plan groups (243 plans) per round was the
+  # pass, not the merging: a creating run cost ~190ms of which the merging was
+  # the smaller part.
+  #
+  # The first round is a full pass, which is what keeps `pickup` honest: a tree
+  # a human edited by hand gets every deferred unit re-checked, everywhere. After
+  # it, a unit can only have become placeable because a file it watches was
+  # written by the previous round, so the remaining rounds re-apply the plan
+  # groups watching those paths — a cascade still converges, a confirming round
+  # costs what it looks at instead of the whole neighbourhood.
   defp closure_rounds(model, seed_ctx, opts, run) do
-    elements = neighborhood(model, seed_ctx)
+    sweep = closure_sweep(model, seed_ctx, opts, run)
+    mrun = %{run | merge_only: true}
 
-    Enum.reduce_while(1..@max_closure_rounds, {run, []}, fn _round, {run, acc} ->
-      {run, rows} =
-        Enum.reduce(elements, {run, []}, fn element, {run, rows} ->
-          apply_generator_neighborhood(model, element, opts, run, rows)
+    # rows accumulate in reverse: appending to a list per plan group is O(n²)
+    # over 243 groups, and the report order does not matter (the CLI groups by
+    # file and prints the furthest-along state per path)
+    Enum.reduce_while(1..@max_closure_rounds, {mrun, [], :all}, fn _round, {mrun, acc, touched} ->
+      {mrun, rows, changed} =
+        Enum.reduce(round_candidates(sweep, touched), {mrun, [], MapSet.new()}, fn
+          {plans, _watches}, {mrun, rows, ch} ->
+            {mrun, new_rows} = apply_plans(plans, mrun)
+            reported = Enum.reject(new_rows, &match?({:unchanged, _}, &1))
+
+            {mrun, reported ++ rows, Enum.reduce(reported, ch, &row_paths(&2, &1))}
         end)
 
-      changed? =
-        Enum.any?(rows, fn
-          {:backfill, _, ids} -> ids != []
-          {:created, _} -> true
-          _ -> false
-        end)
+      rows = Enum.reverse(rows)
 
-      if changed?, do: {:cont, {run, acc ++ rows}}, else: {:halt, {run, acc}}
+      if MapSet.size(changed) == 0 do
+        {:halt, {mrun, acc}}
+      else
+        {:cont, {mrun, acc ++ rows, changed}}
+      end
     end)
   end
 
-  defp apply_generator_neighborhood(model, element, opts, run, rows_acc) do
-    Enum.reduce(generators(), {run, rows_acc}, fn {_generator, modules}, {run, rows} ->
-      primary = hd(modules)
+  defp round_candidates(sweep, :all), do: sweep
 
-      if primary.accepts?(element) do
-        case closure_ctx(model, element, opts, run) do
-          {:ok, ctx} ->
-            # the same dependency expansion as a real run, so a blueprint that
-            # is only ever generated as a dependency (the validator) back-fills
-            # too — merge-only, so nothing here creates a file
-            plans = plans_for(modules, ctx, model, opts)
-            {run, new_rows} = apply_plans(plans, %{run | merge_only: true})
-            {run, rows ++ Enum.reject(new_rows, &match?({:unchanged, _}, &1))}
+  defp round_candidates(sweep, touched) do
+    for {plans, watches} <- sweep, MapSet.disjoint?(watches, touched) == false do
+      {plans, watches}
+    end
+  end
 
-          _ ->
-            {run, rows}
-        end
-      else
-        {run, rows}
-      end
+  # the paths of a row that says this plan group wrote something
+  defp row_paths(changed, row) do
+    case row do
+      {:backfill, path, ids} when ids != [] -> MapSet.put(changed, path)
+      {:created, path} -> MapSet.put(changed, path)
+      {:updated, path} -> MapSet.put(changed, path)
+      {:rewritten, path} -> MapSet.put(changed, path)
+      _ -> changed
+    end
+  end
+
+  # every generator that accepts a neighbourhood element, with its plans already
+  # expanded — the list a round used to recompute from the model.
+  #
+  # Cached per process: the sweep is a pure function of the model, the run
+  # options and the repository it plans into, and a build sequence runs thirty
+  # generators over the same constituent, so recomputing 90 `plans/1` calls per
+  # run was 87ms of arithmetic on an answer the process had already produced.
+  # The key carries a fingerprint of the model itself, so a test that edits a
+  # model file and re-runs gets a fresh sweep — a stale plan list is never
+  # possible, and the `fs` handle pins the repository.
+  defp closure_sweep(model, seed_ctx, opts, run) do
+    key = {seed_ctx.constituent, model_key(model), opts_key(opts), run.repo_root, run.fs}
+
+    case memo_fetch(key) do
+      :miss ->
+        sweep = build_sweep(model, seed_ctx, opts, run)
+        memo_put(key, sweep)
+        sweep
+
+      sweep ->
+        sweep
+    end
+  end
+
+  defp build_sweep(model, seed_ctx, opts, run) do
+    for element <- neighborhood(model, seed_ctx),
+        modules <- Map.values(generators()),
+        primary = hd(modules),
+        primary.accepts?(element),
+        # a context the element cannot support (no location to infer) has no
+        # plans: its gates defer as they always did
+        {:ok, ctx} <- [closure_ctx(model, element, opts, run)] do
+      # the same dependency expansion as a real run, so a blueprint that is only
+      # ever generated as a dependency (the validator) back-fills too —
+      # merge-only, so nothing here creates a file
+      plans = plans_for(modules, ctx, model, opts) |> freeze_gates()
+      {plans, watched_paths(plans)}
+    end
+  end
+
+  # A unit's `requires` is a function of its context and nothing else — it
+  # renders the citizen paths it mentions — yet every round of every run called
+  # it again for all ~1300 units of the neighbourhood: 42ms of the ~100ms a
+  # creating run took, answering a question whose answer had not changed. The
+  # sweep is memoized per context, so the paths are computed once here and the
+  # unit is handed back a function that already knows them.
+  defp freeze_gates(plans) do
+    Enum.map(plans, fn {plan, ctx} ->
+      units =
+        Enum.map(plan.units, fn unit ->
+          paths = unit.requires.(ctx)
+          %{unit | requires: fn _ -> paths end}
+        end)
+
+      {%{plan | units: units}, ctx}
     end)
+  end
+
+  # every file this plan group reads a gate from, plus the files it writes: the
+  # narrow question a later round asks is "did any of these change?"
+  defp watched_paths(plans) do
+    plans
+    |> Enum.flat_map(fn {%FilePlan{} = plan, ctx} ->
+      [plan.path | plan_gates(plan, ctx)]
+    end)
+    |> Enum.reject(&is_nil/1)
+    |> MapSet.new()
+  end
+
+  # the files a plan group reads a verdict from: every unit's `requires`, plus a
+  # projection's own file-level gate
+  defp plan_gates(%FilePlan{units: units} = plan, ctx) do
+    units
+    |> Enum.flat_map(fn unit -> unit.requires.(ctx) end)
+    |> Enum.map(fn {path, _reason} -> path end)
+    |> Kernel.++(projection_gates(plan, ctx))
+  end
+
+  defp projection_gates(%FilePlan{projection: true, requires: requires}, ctx) do
+    requires.(ctx) |> Enum.map(fn {path, _reason} -> path end)
+  end
+
+  defp projection_gates(%FilePlan{}, _ctx), do: []
+
+  defp model_key(model), do: :erlang.phash2(model)
+
+  defp opts_key(opts), do: opts |> Keyword.take(@closure_opts) |> Enum.sort()
+
+  # -- closure memo: private to the calling process ----------------------------
+  #
+  # A named table would be owned by whichever process created it and vanish when
+  # that process exits, silently costing every other caller its cached sweeps —
+  # and a `whereis` on every lookup is a global registry hit per plan group.
+  # The caller's own process is the right lifetime: a build sequence runs its
+  # generators in one process (so they share the memo), a test's memo dies with
+  # the test, and the CLI — one run per process — never allocates more than the
+  # sweep it is about to use.
+  defp memo_fetch(key) do
+    case Process.get(@memo) do
+      nil -> :miss
+      table -> :ets.lookup_element(table, key, 2, :miss)
+    end
+  end
+
+  defp memo_put(key, value) do
+    :ets.insert(memo_table(), {key, value})
+    :ok
+  end
+
+  defp memo_table do
+    case Process.get(@memo) do
+      nil ->
+        table = :ets.new(@memo, [:set, read_concurrency: true])
+        Process.put(@memo, table)
+        table
+
+      table ->
+        table
+    end
   end
 
   defp closure_ctx(model, element, opts, run) do

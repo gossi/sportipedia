@@ -6,6 +6,9 @@ scope:
   domain: sport
   boundedContext: sport
 readModel: position
+metadata:
+  annotations:
+    spgen.operation: collection
 result:
   type: array
   items:
@@ -20,7 +23,7 @@ result:
         description: "Name of the position"
       slug:
         type: string
-        description: "URL-friendly unique identifier"
+        description: "The canonical, globally unique lookup path (`<equipment-slug>/<slug>` or bare `<slug>`)"
       description:
         type: string
         description: "Optional description"
@@ -48,6 +51,7 @@ parameters:
     sort:
       type: string
       description: "Sort field(s) following JSON:API sort syntax"
+      sortableFields: [title, slug]
     page:
       type: object
       description: "Pagination following JSON:API pagination"

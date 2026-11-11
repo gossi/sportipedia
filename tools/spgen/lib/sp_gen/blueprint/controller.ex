@@ -26,7 +26,7 @@ defmodule SpGen.Blueprint.Controller do
   def name, do: :controller
   def source_kinds, do: [:command, :query]
   def actor, do: :web
-  def operations, do: [:create, :update, :delete, :read, :collection]
+  def operations, do: [:create, :update, :delete, :none, :read, :collection]
   def optional_template?, do: true
 
   @doc false
@@ -59,18 +59,17 @@ defmodule SpGen.Blueprint.Controller do
       "    fallback: FallbackController\n"
   end
 
-  defp query_parser_plug(ctx) do
+  # The parser is the request's gate: it admits exactly the names the model
+  # declares, and the same lists document them (`SpGen.Blueprint.Schema`) — one
+  # fact, stated twice because one is a validation and one is a contract.
+  defp query_parser_plug(%Context{} = ctx) do
     if Context.collection?(ctx) do
-      fields =
-        ctx
-        |> Context.query_parameters()
-        |> get_in(["filter", "properties"])
-        |> Kernel.||(%{})
-        |> Map.keys()
+      filters = Context.filterable_fields(ctx)
+      sorts = Context.sortable_fields(ctx)
 
       "  plug JSONAPI.QueryParser,\n" <>
-        "    filter: ~w(#{Enum.join(fields, " ")}),\n" <>
-        "    sort: ~w(#{Enum.join(fields, " ")}),\n" <>
+        "    filter: ~w(#{Enum.join(filters, " ")}),\n" <>
+        "    sort: ~w(#{Enum.join(sorts, " ")}),\n" <>
         "    view: #{Context.pascal(ctx.constituent)}View\n"
     else
       ""
@@ -254,6 +253,9 @@ defmodule SpGen.Blueprint.Controller do
       {:command, :delete} ->
         []
 
+      {:command, :none} ->
+        [request]
+
       {:command, _} ->
         [view, response, request]
 
@@ -337,6 +339,15 @@ defmodule SpGen.Blueprint.Controller do
           ref("forbidden")
         ]
 
+      {:command, :none} ->
+        [
+          "no_content: \"The #{ctx.constituent} was processed without materialization\"",
+          ref("not_found"),
+          ref("unprocessable_entity"),
+          ref("unauthorized"),
+          ref("forbidden")
+        ]
+
       {:command, _} ->
         [
           ~s|ok: {"The #{ctx.constituent}", "application/vnd.api+json", #{response}}|,
@@ -371,6 +382,17 @@ defmodule SpGen.Blueprint.Controller do
       {:command, :delete} ->
         """
         case #{api}.#{op}(conn.params["id"]) do
+          :ok ->
+            send_resp(conn, :no_content, "")
+
+          {:error, errors} ->
+            {:error, errors}
+        end
+        """
+
+      {:command, :none} ->
+        """
+        case #{api}.#{op}(conn.params) do
           :ok ->
             send_resp(conn, :no_content, "")
 

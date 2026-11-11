@@ -5,8 +5,11 @@ defmodule SpGen.Blueprint.Projector do
 
   Generated from an ESDM **event**: adds its `project` clause to the
   constituent's projector (the file is created with this clause when missing).
-  The clause body is chosen by what the event's projection does to the read
-  model: `create` inserts, `update` merges changes, `delete` removes the row.
+  The clause body is chosen by the operation the read model *declares* for the
+  event (`metadata.annotations."spgen.operation.<event>"`): `create` inserts, `update`
+  merges changes, `delete` removes the row. A declared `none` means the event
+  materializes nothing — no clause; an *undeclared* event is skipped and
+  reported as a model gap (`mix sp.check` enforces the ledger).
   """
 
   use SpGen.Blueprint
@@ -22,7 +25,7 @@ defmodule SpGen.Blueprint.Projector do
 
   def name, do: :projector
   def source_kinds, do: [:event]
-  def operations, do: [:create, :update, :delete]
+  def operations, do: [:create, :update, :delete, :none]
   def optional_template?, do: true
 
   @doc false
@@ -64,8 +67,9 @@ defmodule SpGen.Blueprint.Projector do
 
   defp units(ctx) do
     event_pascal = Context.pascal(ctx.element.name)
+    effect = Context.effect_for_event(ctx, ctx.element.name)
 
-    [
+    base = [
       %Unit{
         id: :moduledoc,
         check: &Source.has_moduledoc?/1,
@@ -88,22 +92,32 @@ defmodule SpGen.Blueprint.Projector do
       end),
       alias_unit(Context.render(@event_module, ctx), fn c ->
         [{Event.module_file(c), "event not generated (spgen event)"}]
-      end),
-      %Unit{
-        id: {:project, ctx.element.name},
-        check: fn src -> Source.entry?(src, :project, event_pascal <> "{}") end,
-        render: fn c ->
-          clause(c, Context.effect_for_event(c, c.element.name), Context.pascal(c.element.name))
-        end,
-        requires: fn c ->
-          [
-            {ReadModel.module_file(c), "read model not generated (spgen read_model)"},
-            {InternalAPI.module_file(c), "internal API not generated (spgen internal_api)"}
-          ]
-        end,
-        place: Merge.after_macro(:project, fn _ -> true end)
-      }
+      end)
     ]
+
+    # an effect the read model never declared (nil) or declared away (`none`)
+    # generates no clause — the first is reported as an open model question,
+    # the second is a decision, complete on its own
+    case effect do
+      nil -> base
+      :none -> base
+      effect -> base ++ [clause_unit(ctx, event_pascal, effect)]
+    end
+  end
+
+  defp clause_unit(ctx, event_pascal, effect) do
+    %Unit{
+      id: {:project, ctx.element.name},
+      check: fn src -> Source.entry?(src, :project, event_pascal <> "{}") end,
+      render: fn _c -> clause(ctx, effect, event_pascal) end,
+      requires: fn c ->
+        [
+          {ReadModel.module_file(c), "read model not generated (spgen read_model)"},
+          {InternalAPI.module_file(c), "internal API not generated (spgen internal_api)"}
+        ]
+      end,
+      place: Merge.after_macro(:project, fn _ -> true end)
+    }
   end
 
   defp alias_unit(module, gate) do

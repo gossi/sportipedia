@@ -12,6 +12,11 @@ defmodule Mix.Tasks.Sp.Gen.Schema do
   * command (`create`/`update`) → `<Command>Request` (`delete` carries none)
   * query (collection) → `<Operation>QueryParams`
 
+  Both JSON:API halves are derived from the view — `OpenApiSchema.from_view/2`
+  for the response, `OpenApiSchema.query_params/2` for the request parameters
+  the model declares filterable and sortable — so no schema file transcribes a
+  field list the controller already validates.
+
       mix sp.gen.schema read-model.apparatus
       mix sp.gen.schema catalog-apparatus --template create
       mix sp.gen.schema list-apparatuses --template collection

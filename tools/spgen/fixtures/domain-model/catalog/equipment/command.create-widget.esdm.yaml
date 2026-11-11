@@ -2,6 +2,9 @@ apiVersion: schema.esdm.io/core/v1
 kind: command
 name: create-widget
 description: "Catalogs a new widget in the equipment catalog"
+metadata:
+  annotations:
+    spgen.operation: create
 scope:
   domain: sport
   boundedContext: sport

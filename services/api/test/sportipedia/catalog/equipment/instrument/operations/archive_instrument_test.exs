@@ -10,6 +10,10 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Operation.ArchiveInstrumentTe
   alias Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel
   alias Sportipedia.Catalog.Repo
 
+  import Sportipedia.TestSupport.Catalog.Equipment
+
+  alias Sportipedia.TestSupport.Catalog.Equipment.InstrumentFixtures
+
   describe "Policy" do
     @describetag :unit
 
@@ -34,11 +38,11 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Operation.ArchiveInstrumentTe
 
     @tag :integration
     test "is valid with id" do
-      id = UUID.uuid4()
+      instrument = InstrumentFixtures.unicycle()
 
-      Repo.insert!(%InstrumentReadModel{id: id, title: "Unicycle", slug: "unicycle"})
+      new_instrument(instrument)
 
-      cmd = %ArchiveInstrument{id: id}
+      cmd = %ArchiveInstrument{id: instrument.id}
 
       assert Vex.valid?(cmd)
     end
@@ -65,16 +69,11 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Operation.ArchiveInstrumentTe
 
     @tag :integration
     test "is valid when id exists" do
-      id = UUID.uuid4()
+      instrument = InstrumentFixtures.unicycle()
 
-      InstrumentReadModel.insert_changeset(%{
-        id: id,
-        title: "Unicycle",
-        slug: "unicycle"
-      })
-      |> Repo.insert!()
+      new_instrument(instrument)
 
-      cmd = %ArchiveInstrument{id: id}
+      cmd = %ArchiveInstrument{id: instrument.id}
 
       assert {:ok, _} = Vex.validate(cmd)
     end
@@ -103,14 +102,14 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Operation.ArchiveInstrumentTe
     @describetag :integration
 
     test "dispatches ArchiveInstrument through the router" do
-      id = UUID.uuid4()
+      instrument = InstrumentFixtures.unicycle()
 
-      Repo.insert!(%InstrumentReadModel{id: id, title: "Unicycle", slug: "unicycle"})
+      new_instrument(instrument)
 
-      cmd = ArchiveInstrument.new(id: id)
+      cmd = ArchiveInstrument.new(id: instrument.id)
 
       assert :ok = Sportipedia.Catalog.dispatch(cmd, consistency: :strong)
-      refute Repo.get(InstrumentReadModel, id)
+      refute Repo.get(InstrumentReadModel, instrument.id)
     end
 
     test "archive_instrument/1 archives through the public API" do

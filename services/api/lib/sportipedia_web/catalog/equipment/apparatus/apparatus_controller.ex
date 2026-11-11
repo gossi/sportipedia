@@ -25,7 +25,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.ApparatusController do
 
   plug JSONAPI.QueryParser,
     filter: ~w(title),
-    sort: ~w(title),
+    sort: ~w(title slug),
     view: ApparatusView
 
   tags ["equipment"]

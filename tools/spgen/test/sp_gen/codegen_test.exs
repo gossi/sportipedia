@@ -1,80 +1,15 @@
 defmodule SpGenTest do
   @moduledoc """
-  End-to-end acceptance of the blueprint generators.
-
-  Everything runs against `SpGen.FixtureRepo`: the domain model of
-  `fixtures/domain-model` and the hand-owned host files of
-  `fixtures/repo`, mounted on an in-memory `SpGen.FS` handle. Nothing is
-  read from or written to the real tree, so the repository under test is pure
-  data and the suite can run in parallel.
-
-  The widget citizen is the subject: a `unique-slug` invariant, a cross-field
-  invariant, an exists-constraint, a multi-event command, create/update/delete
-  projections and two queries — enough model to drive every generator.
-
-  What is asserted:
-
-  1. **generation** — a run writes the artifacts its element implies, and the
-     invariant dependencies of the code it writes;
-  2. **fixed point** — the same run again changes nothing;
-  3. **order independence** — forward and reversed generation converge to the
-     same tree;
-  4. **the snapshot** — the canonical citizen matches
-     `fixtures/snapshots/widget.txt`, the recorded expected outcome.
-
-  Generators are driven through `SpGen.run/3`, the black-box interface the CLI
-  uses.
+  The fixture model's own contracts, and what the model states that the tool
+  cannot realize. The generation acceptance themes live in their own modules —
+  exunit only schedules async MODULES in parallel, so one big file would be one
+  serial lane. See `tools/spgen/contributions.md`.
   """
   use ExUnit.Case, async: true
 
-  alias SpGen.{Context, Esdm, FixtureRepo}
+  import SpGen.Acceptance
 
-  @event_test "services/api/test/sportipedia/catalog/equipment/widget/events/widget_created_test.exs"
-  @operation_test "services/api/test/sportipedia/catalog/equipment/widget/operations/create_widget_test.exs"
-  @archive_command "services/api/lib/sportipedia/catalog/equipment/widget/operations/archive_widget/command.ex"
-
-  # every generator the widget citizen needs, in the order the tool documents
-  @chain [
-    {:read_model, ["read-model.widget"]},
-    {:event, ["widget-created"]},
-    {:event, ["widget-edited"]},
-    {:event, ["widget-archived"]},
-    {:event, ["widget-relabelled"]},
-    {:event, ["widget-rename-logged"]},
-    {:aggregate, ["aggregate.widget"]},
-    {:query, ["read-widget"]},
-    {:query, ["list-widgets"]},
-    {:internal_api, ["read-model.widget"]},
-    {:command, ["create-widget", "--template", "create"]},
-    {:command, ["edit-widget", "--template", "update"]},
-    {:command, ["archive-widget", "--template", "delete"]},
-    {:command_handler, ["create-widget"]},
-    {:command_handler, ["edit-widget"]},
-    {:command_handler, ["archive-widget"]},
-    {:projector, ["widget-created"]},
-    {:projector, ["widget-edited"]},
-    {:policy, ["create-widget"]},
-    {:policy, ["read-widget"]},
-    {:policy, ["list-widgets"]},
-    {:public_api, ["create-widget"]},
-    {:public_api, ["read-widget"]},
-    {:public_api, ["list-widgets"]},
-    {:view, ["read-model.widget"]},
-    {:schema, ["read-model.widget"]},
-    {:schema, ["create-widget"]},
-    {:controller, ["create-widget"]},
-    {:controller, ["read-widget"]},
-    {:controller, ["list-widgets"]},
-    {:bruno, ["create-widget"]},
-    {:bruno, ["read-widget"]},
-    {:bruno, ["list-widgets"]}
-  ]
-
-  defp generate(repo) do
-    for {generator, args} <- @chain do
-      assert {:ok, _} = FixtureRepo.run(repo, generator, args), "#{generator} #{inspect(args)}"
-    end
-  end
+  alias SpGen.{Esdm, FixtureRepo}
 
   # ------------------------------------------------------------------ model
 
@@ -86,12 +21,50 @@ defmodule SpGenTest do
     test "loads through the virtual filesystem", %{repo: repo} do
       {:ok, model} = Esdm.load(Path.join(repo.root, "docs/domain-model"), fs: repo.fs)
 
-      assert Enum.map(model.elements, & &1.name) |> Enum.sort() |> Enum.take(4) == [
-               "admin",
-               "archive-widget",
-               "create-widget",
-               "edit-widget"
-             ]
+      # every kind the fixture model states arrives, and by name — the point is
+      # that the VFS backend reads the whole model, not which names sort first
+      kinds = model.elements |> Enum.map(& &1.kind) |> Enum.uniq() |> Enum.sort()
+
+      for kind <- [
+            :domain,
+            :"bounded-context",
+            :subdomain,
+            :actor,
+            :aggregate,
+            :command,
+            :event,
+            :"read-model",
+            :query,
+            :feature
+          ] do
+        assert kind in kinds
+      end
+
+      assert Enum.map(model.elements, & &1.name) |> Enum.sort() ==
+               Enum.sort([
+                 "sport",
+                 "sport",
+                 "catalog",
+                 "user",
+                 "admin",
+                 "guest",
+                 "widget",
+                 "widget",
+                 "create-widget",
+                 "edit-widget",
+                 "archive-widget",
+                 "note-widget",
+                 "relabel-widget",
+                 "widget-created",
+                 "widget-edited",
+                 "widget-archived",
+                 "widget-noted",
+                 "widget-relabelled",
+                 "widget-rename-logged",
+                 "manage-widgets",
+                 "list-widgets",
+                 "read-widget"
+               ])
     end
 
     test "resolves by bare name, kind.name, file and esdm reference", %{repo: repo} do
@@ -125,478 +98,6 @@ defmodule SpGenTest do
 
   # ------------------------------------------------------------- generation
 
-  describe "generation into an empty repository" do
-    setup do
-      %{repo: FixtureRepo.build()}
-    end
-
-    test "the command run creates its own files and the invariant closure it validates with", %{
-      repo: repo
-    } do
-      {:ok, results} = FixtureRepo.run(repo, :command, ["edit-widget", "--template", "update"])
-      created = results |> Enum.filter(&match?({:created, _}, &1)) |> Enum.map(&elem(&1, 1))
-
-      # the command's own artifacts
-      for rel <- [
-            "widget/operations/edit_widget/command.ex",
-            "widget/operations/edit_widget_test.exs"
-          ] do
-        assert Enum.any?(created, &String.ends_with?(&1, rel)), inspect(created)
-      end
-
-      # what its validators delegate to, planned ahead of them in the same run
-      for rel <- [
-            "widget/read_model.ex",
-            "widget/queries/widget_by_slug.ex",
-            "widget/internal.ex",
-            "widget/validators/unique_slug.ex",
-            "widget/validators/widget_exists.ex"
-          ] do
-        assert Enum.any?(created, &String.ends_with?(&1, rel)),
-               "#{rel} was not created by the command run: #{inspect(created)}"
-      end
-
-      # the run wrote no reference that is not there: nothing waits on a
-      # citizen the command itself just produced
-      refute Enum.any?(results, fn
-               {:deferred, path, waiting} ->
-                 String.contains?(path, "widget/operations/edit_widget/") and
-                   Enum.any?(waiting, fn {_id, reason} -> reason =~ "spgen command" end)
-
-               _ ->
-                 false
-             end),
-             inspect(results)
-    end
-
-    test "the unique invariant generates the whole example slice", %{repo: repo} do
-      {:ok, _} = FixtureRepo.run(repo, :command, ["create-widget", "--template", "create"])
-
-      query =
-        read(repo, "lib/sportipedia/catalog/equipment/widget/queries/widget_by_slug.ex")
-
-      assert query =~
-               "defmodule Sportipedia.Catalog.Equipment.Widget.Queries.WidgetBySlug do"
-
-      assert query =~ "alias Sportipedia.Catalog.Equipment.Widget.WidgetReadModel"
-      assert query =~ "import Ecto.Query"
-      assert query =~ "where: r.slug == ^slug"
-
-      internal = read(repo, "lib/sportipedia/catalog/equipment/widget/internal.ex")
-      assert internal =~ "def widget_by_id(id) do"
-      assert internal =~ "def widget_by_slug(slug) do"
-
-      validator = read(repo, "lib/sportipedia/catalog/equipment/widget/validators/unique_slug.ex")
-      assert validator =~ "use Vex.Validator"
-      assert validator =~ "alias Sportipedia.Catalog.Equipment.Widget.WidgetInternal"
-      assert validator =~ "WidgetInternal.widget_by_slug(value)"
-      assert validator =~ "defp slug_belongs_to_widget?"
-
-      command =
-        read(repo, "lib/sportipedia/catalog/equipment/widget/operations/create_widget/command.ex")
-
-      assert command =~ "alias Sportipedia.Catalog.Equipment.Widget.Validators.UniqueSlug"
-
-      assert command =~
-               "validates :slug, presence: true, by: [function: &UniqueSlug.validate/2, allow_nil: true]"
-    end
-
-    test "a rule no pattern claims generates a scaffold, not a guess", %{repo: repo} do
-      {:ok, _} = FixtureRepo.run(repo, :command, ["create-widget", "--template", "create"])
-
-      scaffold =
-        read(repo, "lib/sportipedia/catalog/equipment/widget/validators/at_most_one_owner.ex")
-
-      assert scaffold =~ "def validate(_value, _context) do"
-      assert scaffold =~ ~s|raise "TODO: implement the at-most-one-owner validator|
-
-      # `no-archive-when-in-use` guards no field of the citizen: it resolves to
-      # nothing, and that is recorded rather than dropped
-      {:ok, model} = Esdm.load(Path.join(repo.root, "docs/domain-model"), fs: repo.fs)
-      element = Esdm.resolve!(model, "command.create-widget")
-      {:ok, ctx} = Context.build(model, element, fs: repo.fs)
-
-      # One descriptor per field the rule names: `at-most-one-owner` speaks for
-      # `coachId` *and* `teamId`, so it registers twice and the instrument-side
-      # half can never disappear from a fresh build silently.
-      assert Enum.map(ctx.validators, & &1.name) |> Enum.sort() == [
-               "at-most-one-owner",
-               "at-most-one-owner",
-               "unique-slug"
-             ]
-
-      assert Enum.map(ctx.unresolved, & &1["name"]) == ["no-archive-when-in-use"]
-    end
-
-    test "the event, aggregate and projector tests live in the event's own file", %{repo: repo} do
-      {:ok, _} = FixtureRepo.run(repo, :event, ["widget-created"])
-      {:ok, _} = FixtureRepo.run(repo, :aggregate, ["aggregate.widget"])
-      {:ok, _} = FixtureRepo.run(repo, :command_handler, ["create-widget"])
-      {:ok, _} = FixtureRepo.run(repo, :command, ["create-widget", "--template", "create"])
-      {:ok, _} = FixtureRepo.run(repo, :projector, ["widget-created"])
-
-      event_test =
-        read(repo, "test/sportipedia/catalog/equipment/widget/events/widget_created_test.exs")
-
-      assert event_test =~
-               "defmodule Sportipedia.Catalog.Equipment.Widget.Event.WidgetCreatedTest do"
-
-      assert event_test =~ "use Sportipedia.CatalogTestCase"
-      assert event_test =~ "@moduletag :integration"
-      assert event_test =~ ~s|describe "Event" do|
-      assert event_test =~ ~s|describe "Aggregate" do|
-      assert event_test =~ ~s|describe "Projector" do|
-      assert event_test =~ "test \"applies widget-created to aggregate state\" do"
-      assert event_test =~ "WidgetProjector.handle(event, metadata)"
-
-      # the operation test holds the operation's own blocks — not the fact's
-      operation = read(repo, @operation_test)
-
-      assert operation =~ ~s|describe "Command" do|
-      assert operation =~ ~s|describe "Command Handler" do|
-      refute operation =~ ~s|describe "Event"|
-      refute operation =~ ~s|describe "Aggregate"|
-    end
-
-    test "one file per event: a multi-event command splits its facts", %{repo: repo} do
-      {:ok, _} = FixtureRepo.run(repo, :event, ["widget-relabelled"])
-      {:ok, _} = FixtureRepo.run(repo, :event, ["widget-rename-logged"])
-      {:ok, _} = FixtureRepo.run(repo, :aggregate, ["aggregate.widget"])
-
-      for name <- ["widget_relabelled", "widget_rename_logged"] do
-        rel = "test/sportipedia/catalog/equipment/widget/events/#{name}_test.exs"
-        assert FixtureRepo.exists?(repo, "services/api/" <> rel), "#{name} has no test file"
-        assert read(repo, rel) =~ ~s|describe "Event" do|
-      end
-
-      # the aggregate contributes its apply test to each of them
-      assert read(
-               repo,
-               "test/sportipedia/catalog/equipment/widget/events/widget_relabelled_test.exs"
-             ) =~
-               "test \"applies widget-relabelled to aggregate state\" do"
-    end
-
-    test "the projector run registers into the subdomain supervisor it finds", %{repo: repo} do
-      {:ok, _} = FixtureRepo.run(repo, :event, ["widget-created"])
-      {:ok, _} = FixtureRepo.run(repo, :read_model, ["read-model.widget"])
-      {:ok, _} = FixtureRepo.run(repo, :projector, ["widget-created"])
-
-      supervisor = read(repo, "lib/sportipedia/catalog/supervisor.ex")
-      assert supervisor =~ "Sportipedia.Catalog.Equipment.Widget.WidgetProjector"
-    end
-
-    test "a registration host the run needs is created when absent", %{repo: repo} do
-      FixtureRepo.remove(repo, "services/api/lib/sportipedia/catalog/equipment/router.ex")
-
-      {:ok, _} = FixtureRepo.run(repo, :event, ["widget-created"])
-      {:ok, _} = FixtureRepo.run(repo, :command_handler, ["create-widget"])
-      {:ok, _} = FixtureRepo.run(repo, :command, ["create-widget", "--template", "create"])
-      {:ok, _} = FixtureRepo.run(repo, :aggregate, ["aggregate.widget"])
-
-      router = read(repo, "lib/sportipedia/catalog/equipment/router.ex")
-      assert router =~ "defmodule Sportipedia.Catalog.Equipment.Router do"
-      assert router =~ "use Commanded.Commands.Router"
-      assert router =~ "middleware Identity"
-      assert router =~ ~s|identify WidgetAggregate, by: :id, prefix: "equipment/widget/"|
-
-      assert router =~
-               "dispatch CreateWidget, to: CreateWidgetHandler, aggregate: WidgetAggregate"
-
-      app = read(repo, "lib/sportipedia/catalog/application.ex")
-      assert app =~ "use Commanded.Application, otp_app: :sportipedia"
-      assert app =~ "router Sportipedia.Catalog.Equipment.Router"
-    end
-
-    test "a test file appears with the first test written into it", %{repo: repo} do
-      # the aggregate's contribution waits on its events: nothing may be written
-      {:ok, results} = FixtureRepo.run(repo, :aggregate, ["aggregate.widget"])
-      refute FixtureRepo.exists?(repo, @event_test), "an empty test file was created"
-
-      assert Enum.any?(results, fn
-               {:deferred, path, _} -> String.contains?(path, "events/widget_created_test.exs")
-               _ -> false
-             end),
-             inspect(results)
-
-      # the event has a test to write, so it creates the file
-      {:ok, _} = FixtureRepo.run(repo, :event, ["widget-created"])
-      assert FixtureRepo.exists?(repo, @event_test)
-      assert read(repo, @event_test) =~ ~s|describe "Event"|
-
-      # the aggregate merges into the file that exists now, and the event run's
-      # closure already back-filled it
-      {:ok, _} = FixtureRepo.run(repo, :aggregate, ["aggregate.widget"])
-      content = read(repo, @event_test)
-      assert content =~ ~s|describe "Event"|
-      assert content =~ ~s|describe "Aggregate"|
-
-      # fixed point for that file: the other events are not generated yet, so
-      # the aggregate still defers on them — but the file it wrote is final
-      {:ok, again} = FixtureRepo.check(repo, :aggregate, ["aggregate.widget"])
-      assert {:unchanged, @event_test} in again, inspect(again)
-    end
-
-    test "--check promises a test file only if a test would be written", %{repo: repo} do
-      {:ok, results} = FixtureRepo.check(repo, :aggregate, ["aggregate.widget"])
-
-      refute Enum.any?(results, fn
-               {:checked, @event_test, ids} -> :whole_file in ids
-               _ -> false
-             end),
-             "check promised a file the run would not write: #{inspect(results)}"
-
-      {:ok, results} = FixtureRepo.check(repo, :event, ["widget-created"])
-
-      assert Enum.any?(results, fn
-               {:checked, @event_test, ids} -> :whole_file in ids
-               _ -> false
-             end),
-             "the event has a test to write: #{inspect(results)}"
-    end
-
-    test "args override inference", %{repo: repo} do
-      {:ok, results} =
-        FixtureRepo.run(repo, :command, [
-          "create-widget",
-          "--template",
-          "create",
-          "--constituent",
-          "gadget"
-        ])
-
-      assert Enum.any?(results, fn
-               {:created, path} -> String.contains?(path, "gadget")
-               _ -> false
-             end)
-    end
-
-    test "an unknown option and a missing element are usage errors", %{repo: repo} do
-      assert {:error, message} = FixtureRepo.run(repo, :command, ["--wat"])
-      assert message =~ "unknown option"
-
-      assert {:error, message} = FixtureRepo.run(repo, :command, [])
-      assert message =~ "usage: mix sp.gen.command"
-    end
-
-    test "a template that does not fit the element or the blueprint is refused", %{repo: repo} do
-      assert {:error, message} =
-               FixtureRepo.run(repo, :controller, ["read-widget", "--template", "create"])
-
-      assert message =~ "does not fit a query"
-
-      assert {:error, message} =
-               FixtureRepo.run(repo, :command, ["create-widget", "--template", "read"])
-
-      assert message =~ "not supported"
-
-      assert {:error, message} =
-               FixtureRepo.run(repo, :command_handler, ["create-widget", "--template", "create"])
-
-      assert message =~ "fixed"
-    end
-
-    test "an element of the wrong kind is refused", %{repo: repo} do
-      assert {:error, message} =
-               FixtureRepo.run(repo, :command, ["widget-created", "--template", "create"])
-
-      assert message =~ "command"
-      assert message =~ "event"
-    end
-
-    test "a model file holding several elements is refused", %{repo: repo} do
-      assert {:error, message} =
-               FixtureRepo.run(repo, :command, [
-                 "docs/domain-model/actors.esdm.yaml",
-                 "--template",
-                 "create"
-               ])
-
-      assert message =~ "more than one element"
-    end
-  end
-
-  # ------------------------------------------------------------ fixed point
-
-  describe "the full chain" do
-    setup do
-      %{repo: FixtureRepo.build()}
-    end
-
-    test "every generated file parses, is formatted, and a second run changes nothing", %{
-      repo: repo
-    } do
-      generate(repo)
-
-      for path <- FixtureRepo.generated_paths(repo) do
-        source = FixtureRepo.read(repo, path)
-        assert String.ends_with?(source, "\n"), "missing trailing newline: #{path}"
-
-        if String.ends_with?(path, [".ex", ".exs"]) do
-          assert {:ok, _} = Code.string_to_quoted(source), "invalid syntax in #{path}"
-        end
-      end
-
-      # the registration hosts picked everything up
-      web_router = read(repo, "lib/sportipedia_web/router.ex")
-      assert web_router =~ "scope \"/widgets\", Widget do"
-      assert web_router =~ "post \"/create-widget\", WidgetController, :create_widget"
-      assert web_router =~ "get \"/:id_or_slug\", WidgetController, :read_widget"
-      assert web_router =~ "get \"/\", WidgetController, :list_widgets"
-
-      # second pass of the whole chain: absolutely nothing changes
-      for {generator, args} <- @chain do
-        {:ok, results} = FixtureRepo.check(repo, generator, args)
-
-        assert writes(results) == [],
-               "#{generator} #{inspect(args)} wanted changes: #{inspect(results)}"
-      end
-    end
-
-    test "order independence: the reversed chain converges to the same tree" do
-      forward = FixtureRepo.build()
-      reversed = FixtureRepo.build()
-
-      generate(forward)
-
-      for {generator, args} <- Enum.reverse(@chain) do
-        assert {:ok, _} = FixtureRepo.run(reversed, generator, args),
-               "#{generator} #{inspect(args)}"
-      end
-
-      assert FixtureRepo.generated_paths(forward) == FixtureRepo.generated_paths(reversed)
-
-      for rel <- FixtureRepo.generated_paths(forward) do
-        if String.ends_with?(rel, [".ex", ".exs"]) do
-          # sibling order (describe blocks, routes) is an insertion history
-          # question, the code is the answer — compare canonically. Non-Elixir
-          # artifacts (bruno YAML) carry sequence numbers derived from the tree
-          # as it was built, so they are compared by presence, not content.
-          assert canon_sort(FixtureRepo.read(forward, rel)) ==
-                   canon_sort(FixtureRepo.read(reversed, rel)),
-                 "AST mismatch in #{rel}"
-        end
-      end
-
-      # the reversed tree is a fixed point: a forward sweep changes nothing
-      for {generator, args} <- @chain do
-        {:ok, results} = FixtureRepo.check(reversed, generator, args)
-
-        assert writes(results) == [],
-               "#{generator} reversed drift: #{inspect(results)}"
-      end
-    end
-
-    test "the canonical citizen matches the recorded snapshot", %{repo: repo} do
-      generate(repo)
-      actual = snapshot_text(repo)
-      recorded = expected_snapshot_path()
-
-      if System.get_env("SPGEN_UPDATE_SNAPSHOT") == "1" do
-        File.mkdir_p!(Path.dirname(recorded))
-        File.write!(recorded, actual)
-      end
-
-      assert File.exists?(recorded),
-             "no snapshot recorded — run SPGEN_UPDATE_SNAPSHOT=1 mix test"
-
-      assert actual == File.read!(recorded),
-             "the generated tree moved off the recorded snapshot (SPGEN_UPDATE_SNAPSHOT=1 to re-record)"
-    end
-
-    test "the guarded exists shape never rewrites a tree the old default produced", %{
-      repo: repo
-    } do
-      generate(repo)
-
-      validator_path =
-        "services/api/lib/sportipedia/catalog/equipment/widget/validators/widget_exists.ex"
-
-      command_path =
-        "services/api/lib/sportipedia/catalog/equipment/widget/operations/archive_widget/command.ex"
-
-      test_path =
-        "services/api/test/sportipedia/catalog/equipment/widget/operations/archive_widget_test.exs"
-
-      # roll the three files back to what the pre-fix generator emitted: the
-      # unguarded lookup, the line without a skip option, the test demanding
-      # the raise — the shapes that answered a blank id with a 500
-      FixtureRepo.write(repo, validator_path, """
-      defmodule Sportipedia.Catalog.Equipment.Widget.Validators.WidgetExists do
-        @moduledoc \"\"\"
-        Validates that a widget exists.
-        \"\"\"
-        use Vex.Validator
-        alias Sportipedia.Catalog.Equipment.Widget.WidgetInternal
-
-        @doc \"\"\"
-        Validates the given id value.
-        \"\"\"
-        @spec validate(String.t(), map()) :: :ok | {:error, term()}
-        def validate(id, _context) do
-          case WidgetInternal.widget_by_id(id) do
-            nil -> {:error, :not_found}
-            _ -> :ok
-          end
-        end
-      end
-      """)
-
-      exists_comment =
-        "# `allow_blank` keeps the existence check off an id the caller never sent:\n" <>
-          "# an absent address is `presence`'s to reject, and a `:not_found` for it would\n" <>
-          "# turn the 422 the client can act on into a 404 for a resource nobody named.\n"
-
-      new_nil_assert =
-        "      # Rejected, not raised: the existence check used to hand the nil to\n" <>
-          "      # `Repo.get/2`, which raises, and the command never got to answer.\n" <>
-          "      # `allow_blank` on the `validates` line keeps the lookup off an absent\n" <>
-          "      # address, so `presence` is the only rule that speaks for the id.\n" <>
-          "      assert [:presence] ==\n" <>
-          "               cmd\n" <>
-          "               |> Vex.errors()\n" <>
-          "               |> Enum.flat_map(fn {_error, field, rule, _message} ->\n" <>
-          "                 if field == :id, do: [rule], else: []\n" <>
-          "               end)\n"
-
-      old_nil_assert =
-        "      assert_raise ArgumentError, fn ->\n" <>
-          "        Vex.validate(cmd)\n" <> "      end\n"
-
-      FixtureRepo.write(
-        repo,
-        command_path,
-        read(repo, command_path)
-        |> String.replace(exists_comment, "")
-        |> String.replace(", allow_blank: true]", "]")
-      )
-
-      FixtureRepo.write(
-        repo,
-        test_path,
-        read(repo, test_path) |> String.replace(new_nil_assert, old_nil_assert)
-      )
-
-      # the rollback is real: each file carries the old shape again
-      assert read(repo, command_path) =~
-               "validates :id, presence: true, by: [function: &WidgetExists.validate/2]"
-
-      refute read(repo, command_path) =~ exists_comment
-      assert read(repo, test_path) =~ old_nil_assert
-      assert read(repo, validator_path) =~ "case WidgetInternal.widget_by_id(id) do"
-
-      # units check at presence granularity — moduledoc, use, alias (internal),
-      # def validate/2, the needle of the `validates` line, the `describe` block.
-      # The old files satisfy every one, so the new shapes defer to the operator:
-      # nothing is appended (no orphan `UuidValidator` alias breaking a
-      # warnings-as-errors compile) and nothing is rewritten
-      {:ok, results} =
-        FixtureRepo.check(repo, :command, ["archive-widget", "--template", "delete"])
-
-      assert writes(results) == [], inspect(results)
-    end
-  end
-
   # --------------------------------------------------- rules beyond the tool
 
   describe "what the model states that the tool cannot realize" do
@@ -621,15 +122,15 @@ defmodule SpGenTest do
       refute detail =~ "at-most-one-owner"
     end
 
-    test "a validates line that lost its rule is reported, never appended twice", %{repo: repo} do
-      generate(repo)
+    test "a validates line that lost its rule is reported, never appended twice", %{} do
+      repo = generated_repo()
 
       # what a hand edit leaves behind: the presence check without the
       # constraint the model states for the same field
       FixtureRepo.write(
         repo,
-        @archive_command,
-        read(repo, @archive_command)
+        archive_command(),
+        read(repo, archive_command())
         |> String.replace(", by: [function: &WidgetExists.validate/2, allow_blank: true]", "")
       )
 
@@ -639,8 +140,8 @@ defmodule SpGenTest do
 
       # in check mode the gap rides inside the row for that file, like a
       # deferred or unplaceable unit does
-      assert {:checked, @archive_command, ids} =
-               Enum.find(results, &match?({:checked, @archive_command, _}, &1))
+      assert {:checked, archive_command(), ids} =
+               Enum.find(results, &match?({:checked, archive_command(), _}, &1))
 
       assert {:stale, {:validates, "id"},
               ["add by: [function: &WidgetExists.validate/2, allow_blank: true]"]} in ids
@@ -649,60 +150,54 @@ defmodule SpGenTest do
       # `validates :id` line would *replace* the first in Vex, not extend it
       {:ok, results} = FixtureRepo.run(repo, :command, args)
 
-      assert {:stale, @archive_command, _} = Enum.find(results, &match?({:stale, _, _}, &1))
+      assert {:stale, archive_command(), _} = Enum.find(results, &match?({:stale, _, _}, &1))
 
-      source = read(repo, @archive_command)
+      source = read(repo, archive_command())
       assert length(Regex.scan(~r/validates :id/, source)) == 1
       assert source =~ "validates :id, presence: true\n"
     end
   end
 
-  # ------------------------------------------------------------------ helpers
+  # ------------------------------------------------------- test-support projection
 
-  # paths in these tests are either repo-rooted or relative to the API project
-  defp read(repo, rel), do: FixtureRepo.read(repo, rooted(rel))
-  defp rooted("services/" <> _ = rel), do: rel
-  defp rooted(rel), do: "services/api/" <> rel
+  describe "declared operations" do
+    setup do
+      %{repo: FixtureRepo.build()}
+    end
 
-  # The rows of a `--check` sweep that would change the tree. `{:unresolved, _,
-  # _}` rows name model rules no invariant pattern realizes — the run writes
-  # nothing for them — so they are not drift and a fixed point keeps reporting
-  # them.
-  defp writes(results) do
-    results
-    |> Enum.reject(&match?({:unchanged, _}, &1))
-    |> Enum.reject(&match?({:unresolved, _, _}, &1))
-  end
+    @edit_command "services/api/lib/sportipedia/catalog/equipment/widget/operations/edit_widget/command.ex"
 
-  # The generated tree as one reviewable text: every generated file, in path
-  # order, as `== <path> ==` followed by its content.
-  defp snapshot_text(repo) do
-    repo
-    |> FixtureRepo.generated_paths()
-    |> Enum.map(fn rel -> "== " <> rel <> " ==\n" <> FixtureRepo.read(repo, rel) end)
-    |> Enum.join("\n")
-  end
+    test "a command run without --template resolves the declared operation", %{repo: repo} do
+      {:ok, _} = FixtureRepo.run(repo, :read_model, ["read-model.widget"])
+      {:ok, _} = FixtureRepo.run(repo, :command, ["edit-widget"])
 
-  defp expected_snapshot_path do
-    Path.expand("../../fixtures/snapshots/widget.txt", __DIR__)
-  end
+      declared = FixtureRepo.read(repo, @edit_command)
+      assert declared =~ "defmodule Sportipedia.Catalog.Equipment.Widget.Command.EditWidget do"
 
-  # Canonical structure: every __block__ (module bodies, do-blocks) is replaced
-  # by the sorted Macro.to_string of its expressions, so two trees with the
-  # same code in any sibling order compare equal.
-  defp canon_sort(text) do
-    {:ok, ast} = Code.string_to_quoted(text)
+      # and it is the very shape the explicit flag would have picked
+      flagged = FixtureRepo.build()
+      {:ok, _} = FixtureRepo.run(flagged, :read_model, ["read-model.widget"])
+      {:ok, _} = FixtureRepo.run(flagged, :command, ["edit-widget", "--template", "update"])
 
-    {ast, _} =
-      Macro.postwalk(ast, nil, fn
-        {:__block__, meta, exprs}, acc ->
-          sorted = exprs |> Enum.map(&Macro.to_string/1) |> Enum.sort()
-          {{:__block__, meta, sorted}, acc}
+      assert declared == FixtureRepo.read(flagged, @edit_command)
+    end
 
-        other, acc ->
-          {other, acc}
-      end)
+    test "a command without a declaration is refused — naming it is a decision", %{repo: repo} do
+      {:ok, _} = FixtureRepo.run(repo, :read_model, ["read-model.widget"])
 
-    Macro.to_string(ast)
+      command_yaml = "docs/domain-model/catalog/equipment/command.edit-widget.esdm.yaml"
+
+      FixtureRepo.write(
+        repo,
+        command_yaml,
+        repo
+        |> FixtureRepo.read(command_yaml)
+        |> String.replace("    spgen.operation: update\n", "")
+      )
+
+      assert {:error, message} = FixtureRepo.run(repo, :command, ["edit-widget"])
+      assert message =~ "no operation declared for command edit-widget"
+      refute FixtureRepo.exists?(repo, @edit_command)
+    end
   end
 end

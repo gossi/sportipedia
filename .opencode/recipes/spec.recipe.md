@@ -41,8 +41,10 @@ frontmatter. Pass `aggregate` and `composite` explicitly only to override that.
 
 The ESDM domain model files referenced in the spec's `## Domain Model` section must
 already exist and be populated. Domain modelling is complete before this recipe
-runs. The design step verifies it with `esdm lint` and raises `MODEL GAP:` where the
-model and the spec disagree; that is a stop, not a warning.
+runs. The design step verifies it with `esdm lint` (is the model well-formed?) and
+`mix sp.check` (does it carry everything the generators need — fixture contract,
+prose slots), and raises `MODEL GAP:` where the model and the spec disagree; that
+is a stop, not a warning.
 
 ## Reporting
 

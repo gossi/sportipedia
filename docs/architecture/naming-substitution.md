@@ -59,6 +59,24 @@ case, the value is then found in the `name` attribute.
 | `<Field>` | ESDM | `data` attribute keys | Generic usage for property or field in data structures in various technologies |
 | `<Validator>` | ESDM | `invariant` | Used for checking the invariant/rules |
 | `<Object>` | OOUX | `object` | Relates to [ESDM: `read-model`](https://www.esdm.io/reference/core-schema/read-model/), `<DomainObject>` |
+| `<FixtureName>` | ESDM | `read-model` — last segment of a `schema.examples` id | The mnemonic of a fixture key, snake_cased for code |
+
+## Fixture Keys
+
+The domain model declares fixtures as `schema.examples` on a read model. Each
+example names itself with a **fixture key**: three kebab-case segments, the
+composite, the read model, and a mnemonic owned by the fixture world (not a
+domain field — every model can have fixtures, with or without a slug):
+
+| Template | Resolved |
+| --- | --- |
+| `<-composite>:<domain-object>:<fixture-name>` | `equipment:apparatus:parallel-bars` |
+
+The key's segments carry the location; its mnemonic is the name: code renders
+it snake_cased as the fixture function (`parallel_bars()`). Ids materialize
+the same way everywhere — `UUID.uuid5(:dns, "<key>")` — so one mnemonic names
+one thing, forever, in every language that hashes v5 UUIDs (`mix sp.check`
+verifies the grammar, the self-home, and that references resolve).
 
 ## Substitution Samples
 
@@ -84,6 +102,8 @@ All samples use these domain model values:
 | `SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>Controller` | `SportipediaWeb.Catalog.Equipment.ApparatusController` |
 | `SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>View` | `SportipediaWeb.Catalog.Equipment.ApparatusView` |
 | `SportipediaWeb.<Subdomain>.<Composite>.Schemas.<DomainObject>Response` | `SportipediaWeb.Catalog.Equipment.Schemas.ApparatusResponse` |
+| `Sportipedia.TestSupport.<Subdomain>.<Composite>.<DomainObject>Fixtures` | `Sportipedia.TestSupport.Catalog.Equipment.ApparatusFixtures` |
+| `Sportipedia.TestSupport.<Subdomain>.<Composite>` | `Sportipedia.TestSupport.Catalog.Equipment` |
 
 ### File Paths
 
@@ -95,6 +115,8 @@ All samples use these domain model values:
 | `/services/api/lib/sportipedia_web/<_subdomain>/<composite>/schemas/<domain_object>_response.ex` | `/services/api/lib/sportipedia_web/catalog/equipment/schemas/apparatus_response.ex` |
 | `/services/api/test/sportipedia/<_subdomain>/<composite>/<domain_object>/operations/<_command>_test.exs` | `/services/api/test/sportipedia/catalog/equipment/apparatus/operations/catalog_apparatus_test.exs` |
 | `/services/api/test/sportipedia_web/<_subdomain>/<composite>/<_command>_request_test.exs` | `/services/api/test/sportipedia_web/catalog/equipment/catalog_apparatus_request_test.exs` |
+| `/services/api/test/support/<_subdomain>/<composite>/fixtures/<domain_object>s.ex` | `/services/api/test/support/catalog/equipment/fixtures/apparatuses.ex` |
+| `/services/api/test/support/<_subdomain>/<composite>/<composite>.ex` | `/services/api/test/support/catalog/equipment/equipment.ex` |
 
 ### Function Names
 
@@ -104,6 +126,10 @@ All samples use these domain model values:
 | `def authorize(:<_command>, user, params)` | `def authorize(:catalog_apparatus, user, params)` |
 | `<PublicAPI>.<_command>(params)` | `Apparatus.catalog_apparatus(params)` |
 | `operation :<_command>` | `operation :catalog_apparatus` |
+| `def <fixture_name>()` | `def parallel_bars()` |
+| `def <domain_object>s()` | `def apparatuses()` |
+| `def new_<domain_object>(attributes)` | `def new_apparatus(attributes)` |
+| `def new_<domain_object>s(attribute_collection)` | `def new_apparatuses(attribute_collection)` |
 
 ### Routes
 

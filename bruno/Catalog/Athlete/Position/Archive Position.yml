@@ -1,0 +1,39 @@
+info:
+  name: Archive Position
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{apiUrl}}/catalog/athlete/positions/archive-position"
+  body:
+    type: json
+    data: |-
+      {
+        "data": {
+          "type": "position",
+          "id": "d290f1ee-6c54-4b01-90e6-d701748f0851"
+        }
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: Archive Position
+    request:
+      url: "{{apiUrl}}/catalog/athlete/positions/archive-position"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "data": {
+              "type": "position",
+              "id": "d290f1ee-6c54-4b01-90e6-d701748f0851"
+            }
+          }

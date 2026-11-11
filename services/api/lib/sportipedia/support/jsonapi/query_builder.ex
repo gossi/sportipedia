@@ -3,6 +3,19 @@ defmodule Sportipedia.Support.JSONAPI.QueryBuilder do
   Converts a JSONAPI.Config struct into an Ecto query.
   Handles filtering, sorting, pagination (page-based and offset-based),
   and sparse fieldsets (select).
+
+  The names a request may use are gated twice before they get here: the
+  controller's `JSONAPI.QueryParser` options and the operation's
+  `...QueryParams` schema both come from the same lists the domain model
+  declares (`parameters.filter.properties`, `parameters.sort.sortableFields`),
+  and this module then checks a name against the read model's own fields.
+
+  That last check **drops** what it does not recognize rather than rejecting the
+  request: a `filter` on a field the read model has no column for silently
+  returns an unfiltered collection, and an unknown `sort` returns an unordered
+  one. Deliberate (a read model gaining a field must not break a caller), but
+  worth knowing when a filter "does nothing": the answer is a name the model
+  never stated, not a bug in the match.
   """
 
   import Ecto.Query

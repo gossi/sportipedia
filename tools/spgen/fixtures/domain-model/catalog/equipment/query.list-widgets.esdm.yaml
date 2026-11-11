@@ -6,6 +6,9 @@ scope:
   domain: sport
   boundedContext: sport
 readModel: widget
+metadata:
+  annotations:
+    spgen.operation: collection
 result:
   type: array
   items:
@@ -40,6 +43,7 @@ parameters:
     sort:
       type: string
       description: "Sort field(s) following JSON:API sort syntax"
+      sortableFields: [title, slug]
     page:
       type: object
       description: "Pagination following JSON:API pagination"

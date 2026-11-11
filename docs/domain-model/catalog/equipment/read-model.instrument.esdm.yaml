@@ -37,3 +37,12 @@ schema:
     - id
     - title
     - slug
+  examples:
+    - id: "equipment:instrument:unicycle"
+      title: "Unicycle"
+      slug: "unicycle"
+      description: "Best vehicle in the world"
+    - id: "equipment:instrument:skateboard"
+      title: "Skateboard"
+      slug: "skateboard"
+      description: "For the streets"

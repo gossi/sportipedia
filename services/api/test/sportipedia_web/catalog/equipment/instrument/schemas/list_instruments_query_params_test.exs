@@ -41,9 +41,10 @@ defmodule SportipediaWeb.Catalog.Equipment.Instrument.Schemas.ListInstrumentsQue
       fields = schema.properties.fields
       assert fields.type == :object
       assert Map.has_key?(fields.properties, :instrument)
-      assert :title in fields.properties.instrument.enum
-      assert :slug in fields.properties.instrument.enum
-      assert :description in fields.properties.instrument.enum
+
+      # the sparse fieldset is the view's own fields, as strings — the parameter
+      # is `fields[instrument]=a,b`, so its enum values are names, not atoms
+      assert fields.properties.instrument.enum == ["title", "slug", "description"]
     end
   end
 end

@@ -1,10 +1,14 @@
 apiVersion: schema.esdm.io/core/v1
 kind: command
 name: archive-position
+description: "Archives a position"
 scope:
   domain: sport
   boundedContext: sport
   aggregate: position
+metadata:
+  annotations:
+    spgen.operation: delete
 data:
   type: object
   properties:

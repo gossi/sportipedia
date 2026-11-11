@@ -17,6 +17,7 @@ defmodule SpGen.CLITest do
     {:domain,
      [
        :read_model,
+       :test_support,
        :event,
        :aggregate,
        :query,

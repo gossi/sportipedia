@@ -21,7 +21,6 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.InstrumentInternal do
   @spec instrument_by_slug(String.t()) :: InstrumentReadModel.t() | nil
   def instrument_by_slug(slug) do
     slug
-    |> String.downcase()
     |> InstrumentBySlug.new()
     |> Repo.one()
   end

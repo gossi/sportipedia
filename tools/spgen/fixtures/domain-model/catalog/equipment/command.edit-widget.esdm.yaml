@@ -2,6 +2,9 @@ apiVersion: schema.esdm.io/core/v1
 kind: command
 name: edit-widget
 description: "Edits an existing widget"
+metadata:
+  annotations:
+    spgen.operation: update
 scope:
   domain: sport
   boundedContext: sport

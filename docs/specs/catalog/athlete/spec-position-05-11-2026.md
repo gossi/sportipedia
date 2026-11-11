@@ -37,9 +37,13 @@ Used Domain Models:
 - [Event: position-cataloged](../../../domain-model/catalog/athlete/event.position-cataloged.esdm.yaml): A position was created
 - [Event: position-edited](../../../domain-model/catalog/athlete/event.position-edited.esdm.yaml): A position was updated
 - [Event: position-archived](../../../domain-model/catalog/athlete/event.position-archived.esdm.yaml): A position was removed from the catalog
-- [Read Model: position](../../../domain-model/catalog/athlete/read-model.position.esdm.yaml): Projected view of the positions still in the catalog
+- [Read Model: position](../../../domain-model/catalog/athlete/read-model.position.esdm.yaml): Projected view of the positions still in the catalog, carrying the derived `slug`
 - [Query: read-position](../../../domain-model/catalog/athlete/query.read-position.esdm.yaml): Retrieve a single position by ID or slug
 - [Query: list-positions](../../../domain-model/catalog/athlete/query.list-positions.esdm.yaml): List positions with filtering, sorting, and pagination
+- [Event: apparatus-edited](../../../domain-model/catalog/equipment/event.apparatus-edited.esdm.yaml): Referenced — re-derives the `slug` of positions bound to an apparatus whose slug changed
+- [Event: instrument-edited](../../../domain-model/catalog/equipment/event.instrument-edited.esdm.yaml): Referenced — re-derives the `slug` of positions bound to an instrument whose slug changed
+- [Read Model: apparatus](../../../domain-model/catalog/equipment/read-model.apparatus.esdm.yaml): Referenced — the source of the apparatus slug used to build a bound position's `slug`
+- [Read Model: instrument](../../../domain-model/catalog/equipment/read-model.instrument.esdm.yaml): Referenced — the source of the instrument slug used to build a bound position's `slug`
 
 ### Aggregate: Position
 
@@ -47,7 +51,8 @@ A position represents a body position or stance in a sport context. It has the f
 
 - **Identity**: UUID-based identifier
 - **Title**: Human-readable name (e.g., "Ready Stance", "Starting Block Position")
-- **Slug**: URL-friendly unique identifier
+- **Slug**: The position's own URL-friendly identifier (raw, as supplied to `catalog-position` / `edit-position`); the read model stores it as `raw_slug` — it is **not** the global key
+- **Canonical Slug** (the read model's `slug`): A derived, globally unique canonical path — `<equipment-slug>/<slug>` when the position is bound to equipment, the bare `<slug>` when it is not. It is built by the read-model projector (never supplied by a command) and is what `read-position` and clients navigate by
 - **Description**: Optional detailed description
 - **Equipment Reference**: Optional reference to either an apparatus or instrument (mutually exclusive)
 
@@ -55,7 +60,7 @@ A position represents a body position or stance in a sport context. It has the f
 
 The position aggregate enforces the following invariants:
 
-1. **unique-slug**: The slug must be unique across all positions in the system. Because deleting a position takes it out of the catalog, the slug of a deleted position becomes available again
+1. **unique-slug-by-equipment**: No two positions may share the same canonical slug. The canonical slug namespaces the position's own raw slug by its referenced equipment's slug (`<equipment-slug>/<slug>`, or the bare `<slug>` when unbound). Because equipment slugs are themselves globally unique (the `unique-equipment-slug` invariant on apparatus and instrument), this reduces to: a position's raw slug must not repeat among positions bound to the **same** equipment, and a bound position's slug can never collide with an unbound one (the namespaced form carries a `/`). Uniqueness is therefore guaranteed **by construction**, not by a repair pass — which is why renaming an equipment cannot create a duplicate slug.
 2. **at-most-one-equipment**: A position can reference at most one piece of equipment (either apparatusId or instrumentId, but not both)
 
 ## Additional Requirements
@@ -64,21 +69,27 @@ The position aggregate enforces the following invariants:
 
 #### Catalog Position
 
-- Accept title, slug, optional description, and optional equipment reference
+- Accept title, slug (the position's **raw** slug — not namespaced), optional description, and optional equipment reference
 - Validate that if equipment is referenced, it exists in the system
-- Enforce the unique-slug invariant (reject if slug already exists)
+- Enforce the unique-slug-by-equipment invariant (reject if the derived canonical slug — `<equipment-slug>/<slug>` when bound, `<slug>` when unbound — already belongs to another cataloged position)
 - Enforce the at-most-one-equipment invariant (reject if both apparatusId and instrumentId are provided)
-- Emit a `position-cataloged` event on success
+- Emit a `position-cataloged` event carrying the raw slug; the projector derives `slug` from the referenced equipment's current slug
 - Only users with the `user` role can execute this command
 
 #### Edit Position
 
-- Accept the position ID (required: it addresses the aggregate instance and is what the existence check reads) and any combination of: title, slug, description, equipment reference
+- Accept the position ID (required: it addresses the aggregate instance and is what the existence check reads) and any combination of: title, slug (raw), description, equipment reference
 - Validate that the position exists before allowing edits; a deleted position is rejected as not found
 - A reference the patch re-supplies is checked like a new one; a reference the patch does not carry is left alone (no cascade)
-- Re-validate invariants after applying changes (unique-slug, at-most-one-equipment)
-- Emit a `position-edited` event on success
+- Re-validate invariants after applying changes (unique-slug-by-equipment, at-most-one-equipment)
+- Emit a `position-edited` event carrying the new raw slug; the projector re-derives `slug` from the new raw slug and the (possibly changed) referenced equipment's current slug
 - Only users with the `user` role can execute this command
+
+#### Equipment rename re-derives bound positions
+
+- When referenced equipment is renamed (`apparatus-edited` / `instrument-edited`), the position projector re-derives the `slug` of every position bound to it, so the position's public path always tracks the equipment's **current** slug (`<new-equipment-slug>/<position-slug>`)
+- This needs no position command and touches no position aggregate state — only the derived `slug` column moves
+- The re-derivation can never produce a duplicate: equipment slugs are globally unique and each position's raw slug is unique within its equipment (see `unique-slug-by-equipment`), so a rename permutes namespaces, not values
 
 #### Archive Position
 
@@ -91,8 +102,8 @@ The position aggregate enforces the following invariants:
 
 #### Read Position
 
-- Retrieve a single position by either ID or slug
-- Return the full position details including equipment references if present
+- Retrieve a single position by either ID or **slug** (the canonical `<equipment-slug>/<slug>` path, or the bare slug when unbound)
+- Return the full position details, exposing the derived `slug` as the position's public slug (the raw slug is not exposed), including equipment references if present
 - Answer not found for an ID or slug that no longer has a position in the catalog, including one that was deleted
 - Accessible to guests, users, and admins
 
@@ -101,6 +112,7 @@ The position aggregate enforces the following invariants:
 - Support filtering by title (case-insensitive partial match)
 - Support sorting by fields using JSON:API sort syntax (e.g., `title`, `-title` for descending)
 - Support pagination using JSON:API pagination (page number and page size)
+- Expose the derived `slug` as each position's public slug
 - Return only the positions currently in the catalog: a deleted position has no row to exclude, so no "exclude archived" filter is needed
 - Accessible to guests, users, and admins
 
@@ -135,33 +147,53 @@ The following are explicitly out of scope for this feature:
 
 - **Given** no position exists with slug "ready-stance"
 - **When** a user executes `catalog-position` with title "Ready Stance", slug "ready-stance", and description "Athletic stance with knees slightly bent"
-- **Then** a `position-cataloged` event is emitted with the position data
-- **And** the position is available in the read model
+- **Then** a `position-cataloged` event is emitted with the position data and the raw slug "ready-stance"
+- **And** the position is available in the read model with `slug` "ready-stance" (no equipment namespace, because the position is unbound)
 - **And** the position has no equipment reference
 
 #### Scenario: Catalog a position with apparatus reference
 
 **Reference**: [command.catalog-position.esdm.yaml](../../../domain-model/catalog/athlete/command.catalog-position.esdm.yaml)
 
-- **Given** an apparatus "Starting Blocks" exists with ID "abc-123"
-- **And** no position exists with slug "starting-block-position"
-- **When** a user executes `catalog-position` with title "Starting Block Position", slug "starting-block-position", and apparatusId "abc-123"
-- **Then** a `position-cataloged` event is emitted with apparatusId "abc-123"
-- **And** the position read model includes the apparatus reference
+- **Given** an apparatus "Starting Blocks" exists with slug "starting-blocks" and ID "abc-123"
+- **And** no position bound to that apparatus exists with slug "take"
+- **When** a user executes `catalog-position` with title "Starting Block Position", slug "take", and apparatusId "abc-123"
+- **Then** a `position-cataloged` event is emitted with the raw slug "take" and apparatusId "abc-123"
+- **And** the position read model carries `slug` "starting-blocks/take" and the apparatus reference
 
-#### Scenario: Reject position with duplicate slug
+#### Scenario: Reject position with duplicate slug within the same equipment
 
-**Reference**: [aggregate.position.esdm.yaml](../../../domain-model/catalog/athlete/aggregate.position.esdm.yaml) - invariant: unique-slug
+**Reference**: [aggregate.position.esdm.yaml](../../../domain-model/catalog/athlete/aggregate.position.esdm.yaml) — invariant: unique-slug-by-equipment
 
-- **Given** a position exists with slug "guard-position"
-- **When** a user attempts to execute `catalog-position` with slug "guard-position"
+- **Given** a position "take" is bound to apparatus "starting-blocks" (slug "starting-blocks/take")
+- **When** a user attempts to execute `catalog-position` with slug "take" and the same apparatusId
 - **Then** the command is rejected
 - **And** no event is emitted
-- **And** an error indicates the slug must be unique
+- **And** an error indicates the slug must be unique for that equipment
+
+#### Scenario: Same slug under different equipment is allowed
+
+**Reference**: [aggregate.position.esdm.yaml](../../../domain-model/catalog/athlete/aggregate.position.esdm.yaml) — invariant: unique-slug-by-equipment
+
+- **Given** a position "take" is bound to apparatus "starting-blocks"
+- **And** a different apparatus "vaulting-box" exists
+- **When** a user executes `catalog-position` with slug "take" and apparatusId of "vaulting-box"
+- **Then** the command succeeds: the new position's canonical slug "vaulting-box/take" does not equal "starting-blocks/take"
+- **And** both positions answer their own canonical slug independently
+
+#### Scenario: Renaming referenced equipment re-derives the bound position's slug
+
+**Reference**: [read-model.position.esdm.yaml](../../../domain-model/catalog/athlete/read-model.position.esdm.yaml) — projection: apparatus-edited
+
+- **Given** a position "take" is bound to apparatus "starting-blocks" (slug "starting-blocks/take")
+- **When** the apparatus is renamed so its slug becomes "starting-blocks-v2", emitting `apparatus-edited`
+- **Then** the position's raw slug "take" is unchanged
+- **And** the position's `slug` is re-derived to "starting-blocks-v2/take"
+- **And** `read-position` by "starting-blocks/take" now answers not found, and by "starting-blocks-v2/take" returns the position
 
 #### Scenario: Reject position with both apparatus and instrument
 
-**Reference**: [aggregate.position.esdm.yaml](../../../domain-model/catalog/athlete/aggregate.position.esdm.yaml) - invariant: at-most-one-equipment
+**Reference**: [aggregate.position.esdm.yaml](../../../domain-model/catalog/athlete/aggregate.position.esdm.yaml) — invariant: at-most-one-equipment
 
 - **Given** an apparatus and an instrument exist in the system
 - **When** a user attempts to execute `catalog-position` with both apparatusId and instrumentId
@@ -182,7 +214,7 @@ The following are explicitly out of scope for this feature:
 
 **Reference**: [command.archive-position.esdm.yaml](../../../domain-model/catalog/athlete/command.archive-position.esdm.yaml)
 
-- **Given** a position exists with ID "pos-789", title "Lunge Position" and slug "lunge-position"
+- **Given** a position exists with ID "pos-789", title "Lunge Position" and raw slug "lunge-position" (unbound, slug "lunge-position")
 - **When** an admin executes `archive-position` with id "pos-789"
 - **Then** a `position-archived` event is emitted
 - **And** the position is removed from the catalog: the read model no longer holds a row for it, and neither `read-position` nor `list-positions` returns it
@@ -192,15 +224,15 @@ The following are explicitly out of scope for this feature:
 - **When** an admin executes `archive-position` with id "pos-789" again
 - **Then** the command is rejected as not found — there is no archived state to re-archive and no unarchive operation
 - **When** a user executes `catalog-position` with title "Lunge Position" and slug "lunge-position"
-- **Then** the command succeeds, because the unique-slug invariant no longer sees the deleted position
+- **Then** the command succeeds, because the unique-slug-by-equipment invariant no longer sees the deleted position
 
 #### Scenario: Read a position by slug
 
 **Reference**: [query.read-position.esdm.yaml](../../../domain-model/catalog/athlete/query.read-position.esdm.yaml)
 
-- **Given** a position exists with slug "handstand"
-- **When** a guest executes `read-position` with slug "handstand"
-- **Then** the query returns the position with all its details
+- **Given** a position "handstand" bound to apparatus "parallel-bars" (slug "parallel-bars/handstand")
+- **When** a guest executes `read-position` with slug "parallel-bars/handstand"
+- **Then** the query returns the position with all its details, exposing the canonical `slug` as its public slug
 
 #### Scenario: List positions with filtering
 
@@ -220,23 +252,23 @@ The following are explicitly out of scope for this feature:
 
 ## Tradeoffs and Concerns
 
-### No cascade delete on equipment deletion
+### Bound equipment cannot be archived while a position references it
 
-- **What:** When equipment is deleted (`archive-apparatus` / `archive-instrument`), positions referencing it are not automatically updated or deleted
-- **Why:** Positions are independent aggregates with their own lifecycle. Automatic cascade would violate aggregate boundaries and create hidden dependencies.
-- **Consequence:** Positions may reference non-existent equipment. The application layer must handle this gracefully (e.g., display "unknown equipment" or filter out orphaned positions).
-- **Follow-up:** Consider adding a validation process or read-model projection that flags positions with missing equipment references.
+- **What:** An apparatus or instrument cannot be archived (`archive-apparatus` / `archive-instrument`) while any position still references it. The guard is the equipment aggregate's `no-archive-when-in-use` invariant, extended to cover position references in addition to sport references.
+- **Why:** A bound position's public path is `<equipment-slug>/<position-slug>`. The position does not copy the equipment slug — the projector derives `slug` from the equipment's **current** slug on every change. Archiving referenced equipment would leave the position naming equipment that can no longer be maintained, breaking that derivation. Preventing the archive keeps every bound position resolvable for the whole life of the reference, and removes the need for any orphan-flagging projection.
+- **Consequence:** Equipment that is in use by a position is stuck until the positions referencing it are moved or archived first — the reference is a real precondition, checked cross-aggregate. The guard is enforced in `archive-apparatus` / `archive-instrument` (the equipment side), not in the position commands.
+- **Follow-up:** [todo-manage-apparatuses](../../_todo/todo-manage-apparatuses-19-05-2026.md) and [todo-manage-instruments](../../_todo/todo-manage-instruments-13-06-2026.md) — the position half of `no-archive-when-in-use` is implementable once this position slice lands; the sport half stays blocked until `use-apparatus` / `use-instrument`.
+
+### Renaming equipment rewrites the public paths of bound positions
+
+- **What:** Renaming an equipment's slug re-derives the `slug` of every position bound to it (via the `apparatus-edited` / `instrument-edited` projections). A position's public URL therefore changes when its equipment is renamed.
+- **Why:** Chosen deliberately — the canonical path always reflects the equipment's **current** slug (see "Equipment rename re-derives bound positions" under Additional Requirements), so paths stay human-coherent with the equipment they sit under.
+- **Consequence:** A client's bookmarked position path changes when the equipment is renamed — an accepted cost of keeping the path coherent with the equipment. Delivering this behaviour means the position read model is fed by three aggregates (position, apparatus, instrument): the position projector must subscribe to `apparatus-edited` / `instrument-edited` and rewrite the `slug` of every position bound to the renamed equipment. Writing that multi-aggregate projector and its event subscription is part of building this feature, not a step to defer.
+- **Scope:** The re-derivation can never create a duplicate (equipment slugs are globally unique and each raw slug is unique within its equipment), so no collision handling is needed. The projector clauses for `apparatus-edited` / `instrument-edited` are in-scope implementation work for this spec.
 
 ### Archive means delete
 
 - **What:** `archive-position` removes the position from the catalog. There is no `archived` flag, no archived aggregate state, no "already archived" invariant, and no `archivedAt` timestamp in the read model.
 - **Why:** The owner decided it, and the equipment constituents (apparatus, instrument) are the precedent — they already delete on archive — so the catalog's reference data follows one rule instead of two.
-- **Consequence:** The continuity the earlier version of this spec claimed to protect is **not** preserved. A skill that referenced a deleted position points at an entry the catalog can no longer resolve: `read-position` answers not found, and the position's title and slug are gone from any queryable view. Only the event store keeps what the position was, and that is not reachable through the read model. The equipment precedent accepted the same loss, so dangling references are handled by the application layer, exactly as they are for equipment (see "No cascade delete on equipment deletion").
+- **Consequence:** The continuity the earlier version of this spec claimed to protect is **not** preserved. A skill that referenced a deleted position points at an entry the catalog can no longer resolve: `read-position` answers not found, and the position's title and slug are gone from any queryable view. Only the event store keeps what the position was, and that is not reachable through the read model. The equipment precedent accepted the same loss, so dangling references are handled by the application layer.
 - **Follow-up:** If real referential continuity is ever required, it has to come from a decision about how skills store position references (for example recording the position data on the skill at edit time), not from a flag on the position read model.
-
-### No position versioning
-
-- **What:** Editing a position updates it in place rather than creating a new version
-- **Why:** Positions are reference data that skills point to. Versioning would complicate skill-position relationships unnecessarily.
-- **Consequence:** If a position's meaning changes significantly, it cannot be tracked historically. This is acceptable for the current use case.
-- **Follow-up:** If versioning becomes necessary, reconsider the aggregate design and skill-position relationship model.

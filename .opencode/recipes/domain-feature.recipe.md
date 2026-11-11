@@ -92,7 +92,7 @@ whole build of a spec.
 
 | Step | Agent | Does |
 |---|---|---|
-| `design` | software-architect | lints the model, preflights spec against model, translates to technical design, emits the generator call sequence, work packages, deviation register, boundary |
+| `design` | software-architect | lints the model (`esdm lint`) and checks its completeness (`mix sp.check`), preflights spec against model, translates to technical design, emits the generator call sequence, work packages, deviation register, boundary |
 | `generate` | backend-engineer | runs the call sequence verbatim, writes no logic, reports every file touched |
 | `implement` | backend-engineer ×N, **parallel** | one operation each: fills residual bodies, writes the tests |
 | `review` | software-architect | reviews the constituent as a whole |
@@ -156,6 +156,14 @@ validator pairs back to the field where Vex will drop them. `--check` exits 0 ev
 when it reports `Outdated`, so classify from its output, never its status code. An
 empty or unrecognisable `--check` run is a failure to classify, not a pass.
 
+**One exception never needs classification: fixture names.** The fixture files
+are model-owned projections — if a model example was renamed, the repair is
+`sp.gen.test_support` (which rewrites them) plus editing the references in test
+files whose scaffold embedded the old name. Never re-run a *test-producing*
+generator to chase a fixture rename: its merge would append a second scaffold
+into worker-filled files. Compilation is the drift detector here — an undefined
+fixture function is a warning, and warnings are errors by definition of done.
+
 ## Generators add; they never remove
 
 `SpGen.Merge` is append-only, so **a deletion in the domain model does not
@@ -189,7 +197,11 @@ cross-operation contamination is visible.
 `mix compile --force --warnings-as-errors` clean in dev and test, `ApiSpec.spec()`
 builds, `mix format --check-formatted` clean on the slice, no `TODO:` markers or
 raise-stubs in slice-owned files, `--check` reporting only registered deviations,
-the slice's tests green with every spec QA scenario executed, and the commit made.
+the slice's tests green with every spec QA scenario executed, no hand-written
+`sample-*` seed where the read model declares `schema.examples` (a test seeds a
+read-model row through the fixture factory — see
+[test-support](../../docs/architecture/blueprints/backend/domain/test-support.md)),
+and the commit made.
 
 ## Parameters
 

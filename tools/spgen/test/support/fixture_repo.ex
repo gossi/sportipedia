@@ -130,6 +130,89 @@ defmodule SpGen.FixtureRepo do
     |> Enum.sort()
   end
 
+  @doc """
+  The whole repository as `%{repo_relative_path => content}`: the tree as pure,
+  immutable data.
+
+  Paired with `restore/1` it lets an expensive state — a fully generated citizen —
+  be built once for a session and handed to every test that only reads it,
+  instead of generating it again per test.
+  """
+  @spec contents(t()) :: %{String.t() => String.t()}
+  def contents(%__MODULE__{} = repo) do
+    Map.new(paths(repo), fn rel -> {rel, read(repo, rel)} end)
+  end
+
+  @doc """
+  A fresh repository holding exactly `contents` (as `contents/1` returns it).
+
+  Each call starts its own backend, so tests sharing one `contents` map stay
+  isolated: writes land in the caller's copy and nowhere else.
+  """
+  @spec restore(%{String.t() => String.t()}) :: t()
+  def restore(contents) do
+    seed = Map.new(contents, fn {rel, text} -> {@root <> "/" <> rel, text} end)
+    {:ok, pid} = SpGen.FS.VFS.start_link(seed)
+    %__MODULE__{root: @root, fs: SpGen.FS.VFS.handle(pid), pid: pid}
+  end
+
+  @doc """
+  Builds `fun` once per test session and gives every caller the result.
+
+  For state that is expensive to produce and immutable to read — a fully
+  generated citizen, the fixture model. The memo lives in a process started by
+  `test_helper.exs`, so the work is shared across test cases *and* stays lazy: a
+  run that never asks for the tree never pays for it.
+
+  **The build runs in the caller, never inside the memo.** Building is seconds of
+  work; holding a `GenServer.call` open for it makes every other caller wait on
+  the default 5s timeout, and CI (8 cores, a cold chain) failed the tests that
+  merely asked for the tree. So: read the cache, build outside the lock, store
+  with first-writer-wins. Concurrent callers can each build once — a duplicated
+  chain costs CPU a waiting caller would have burned anyway, and it cannot time
+  out, because every message the memo handles is a map lookup.
+  """
+  @spec shared(term(), (-> term())) :: term()
+  def shared(key, fun) do
+    case memo_fetch(key) do
+      {:ok, built} ->
+        built
+
+      :error ->
+        value = fun.()
+        memo_store_first(key, value)
+        value
+    end
+  end
+
+  # the memo is an optimization: with no memo process (a lone `iex -S mix`, the
+  # helper used outside the suite) the call still returns a correct value
+  defp memo_fetch(key) do
+    case memo_pid() do
+      nil -> :error
+      _ -> Agent.get(SpGen.TestMemo, &Map.fetch(&1, key))
+    end
+  rescue
+    _ -> :error
+  end
+
+  defp memo_store_first(key, value) do
+    unless is_nil(memo_pid()) do
+      # `get_and_update`, not `run`: the memo only ever answers map operations,
+      # and each one returns immediately — which is the whole point (see
+      # `shared/2`).
+      Agent.get_and_update(SpGen.TestMemo, fn state ->
+        {:ok, if(Map.has_key?(state, key), do: state, else: Map.put(state, key, value))}
+      end)
+    end
+
+    :ok
+  rescue
+    _ -> :ok
+  end
+
+  defp memo_pid, do: Process.whereis(SpGen.TestMemo)
+
   @doc "The generated code tree as `%{repo_relative_path => content}`."
   @spec snapshot(t()) :: %{String.t() => binary()}
   def snapshot(%__MODULE__{} = repo) do
@@ -147,6 +230,34 @@ defmodule SpGen.FixtureRepo do
     |> paths()
     |> Enum.reject(&MapSet.member?(fixtures, &1))
   end
+
+  @doc """
+  The fixture domain model as an `Esdm` struct, read straight from `fixtures/`.
+
+  For the tests that reason over a *model* (resolution, invariants, contexts,
+  templates) rather than over generated code: the fixture model is the only
+  model a test may load. The live `docs/domain-model` moves with the domain and
+  is owned by nobody in this tool, so a model edit there would otherwise read as
+  an spgen failure — and a test that cannot say which citizen it asserts on
+  cannot be re-run against a changed model.
+  """
+  @spec model() :: SpGen.Esdm.t()
+  def model do
+    {:ok, model} = SpGen.Esdm.load(model_path())
+    model
+  end
+
+  @doc "The fixture domain model's path — the only model root a test may load."
+  @spec model_path() :: String.t()
+  def model_path, do: Path.join(fixtures_dir(), "domain-model")
+
+  @doc """
+  One element of the fixture model, by its `kind.name` address. Raises when the
+  fixture does not carry it: a test asking for a citizen the fixtures do not
+  model must say so loudly rather than fall back to the live tree.
+  """
+  @spec element(String.t()) :: SpGen.Esdm.Element.t()
+  def element(address), do: SpGen.Esdm.resolve!(model(), address)
 
   defp fixtures_dir do
     Path.expand("../../fixtures", __DIR__)

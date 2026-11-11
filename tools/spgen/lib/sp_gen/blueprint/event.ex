@@ -20,7 +20,7 @@ defmodule SpGen.Blueprint.Event do
 
   def name, do: :event
   def source_kinds, do: [:event]
-  def operations, do: [:create, :update, :delete]
+  def operations, do: [:create, :update, :delete, :none]
   def optional_template?, do: true
 
   @doc "The event's module-name template (referenced by `EventTest` and `Projector`)."
@@ -98,9 +98,11 @@ defmodule SpGen.Blueprint.Event do
     end)
   end
 
-  defp changes_units(%Context{operation: op}) when op in [:create, :delete], do: []
-
-  defp changes_units(_ctx) do
+  # `get_changes/1` exists for the partial-update contract — a projector
+  # merging changes onto a row. It is generated for exactly the `update`
+  # declaration: never for `create`, `delete`, the declared `none`, and never
+  # for an event nobody declared.
+  defp changes_units(%Context{operation: :update}) do
     [
       %Unit{
         id: {:def, :get_changes, 1},
@@ -124,4 +126,6 @@ defmodule SpGen.Blueprint.Event do
       }
     ]
   end
+
+  defp changes_units(_ctx), do: []
 end

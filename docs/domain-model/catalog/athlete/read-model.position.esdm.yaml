@@ -4,19 +4,34 @@ name: position
 scope:
   domain: sport
   boundedContext: sport
+metadata:
+  annotations:
+    spgen.operation.position-cataloged: create
+    spgen.operation.position-edited: update
+    spgen.operation.position-archived: delete
+    spgen.operation.apparatus-edited: update
+    spgen.operation.instrument-edited: update
 projections:
   - boundedContext: sport
     aggregate: position
     event: position-cataloged
-    rule: "Project the position when it is cataloged"
+    rule: "Project the position when it is cataloged, deriving slug from the referenced equipment's slug and the position slug"
   - boundedContext: sport
     aggregate: position
     event: position-edited
-    rule: "Update position details"
+    rule: "Update position details, re-deriving slug when the position slug or the referenced equipment changes"
   - boundedContext: sport
     aggregate: position
     event: position-archived
-    rule: "Mark position as archived"
+    rule: "Archive the position"
+  - boundedContext: sport
+    aggregate: apparatus
+    event: apparatus-edited
+    rule: "Re-derive the slug of every position bound to this apparatus from the apparatus' new slug"
+  - boundedContext: sport
+    aggregate: instrument
+    event: instrument-edited
+    rule: "Re-derive the slug of every position bound to this instrument from the instrument's new slug"
 schema:
   type: object
   properties:
@@ -27,9 +42,12 @@ schema:
     title:
       type: string
       description: "Name of the position"
+    raw_slug:
+      type: string
+      description: "The position's own URL-friendly slug (raw, as supplied to the command)"
     slug:
       type: string
-      description: "URL-friendly unique identifier"
+      description: "The canonical, globally unique lookup path: `<equipment-slug>/<slug>` when bound, `<slug>` when unbound; derived by the projector from the referenced equipment's current slug"
     description:
       type: string
       description: "Optional description"
@@ -44,4 +62,41 @@ schema:
   required:
     - id
     - title
+    - raw_slug
     - slug
+  examples:
+    - id: "athlete:position:unicycle-riding"
+      title: "Riding"
+      description: "Riding on a unicycle"
+      raw_slug: "riding"
+      slug: "unicycle/riding"
+      instrumentId: "equipment:instrument:unicycle"
+    - id: "athlete:position:unicycle-on-tire"
+      title: "On Tire"
+      description: "Feet are on the tire"
+      raw_slug: "on-tire"
+      slug: "unicycle/on-tire"
+      instrumentId: "equipment:instrument:unicycle"
+    - id: "athlete:position:unicycle-seat-in-front"
+      title: "Seat in-front"
+      description: "Seat is hold in front of the body"
+      raw_slug: "seat-in-front"
+      slug: "unicycle/seat-in-front"
+      instrumentId: "equipment:instrument:unicycle"
+    - id: "athlete:position:gymnastics-straight-arm-support"
+      title: "Straight-arm support"
+      description: "Athlete has their arms straight while supporting themselves onto the bar"
+      raw_slug: "straight-arm-support"
+      slug: "horizontal-bar/straight-arm-support"
+      apparatusId: "equipment:apparatus:horizontal-bar"
+    - id: "athlete:position:gymnastics-long-hang"
+      title: "Long Hang"
+      description: "Athlete has their arms straight while hanging on the bar"
+      raw_slug: "long-hang"
+      slug: "horizontal-bar/long-hang"
+      apparatusId: "equipment:apparatus:horizontal-bar"
+    - id: "athlete:position:ready-stance"
+      title: "Ready Stance"
+      description: "Athletic stance with knees slightly bent"
+      raw_slug: "ready-stance"
+      slug: "ready-stance"

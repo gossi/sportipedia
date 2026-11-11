@@ -7,6 +7,8 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.InstrumentEditedTest 
   alias Sportipedia.Catalog.Equipment.Instrument.InstrumentProjector
   alias Sportipedia.Catalog.Repo
 
+  import Sportipedia.TestSupport.Catalog.Equipment
+
   describe "Event" do
     @describetag :unit
 
@@ -112,12 +114,7 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.InstrumentEditedTest 
     test "updates the instrument read model on InstrumentEdited event" do
       id = UUID.uuid4()
 
-      Repo.insert!(%InstrumentReadModel{
-        id: id,
-        title: "Original",
-        slug: "original",
-        description: "desc"
-      })
+      new_instrument(%{id: id, title: "Original", slug: "original", description: "desc"})
 
       event = %InstrumentEdited{
         id: id,
@@ -150,12 +147,7 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.InstrumentEditedTest 
     test "partially updates leaving other fields intact" do
       id = UUID.uuid4()
 
-      Repo.insert!(%InstrumentReadModel{
-        id: id,
-        title: "Original",
-        slug: "original",
-        description: "desc"
-      })
+      new_instrument(%{id: id, title: "Original", slug: "original", description: "desc"})
 
       event = %InstrumentEdited{id: id, description: "new desc"}
 
@@ -202,7 +194,7 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.InstrumentEditedTest 
     test "is idempotent for the same event" do
       id = UUID.uuid4()
 
-      Repo.insert!(%InstrumentReadModel{id: id, title: "Original", slug: "original"})
+      new_instrument(%{id: id, title: "Original", slug: "original"})
 
       event = %InstrumentEdited{id: id, title: "Updated"}
 
@@ -228,10 +220,10 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Feature.InstrumentEditedTest 
     end
 
     test "rejects duplicate slug" do
-      Repo.insert!(%InstrumentReadModel{id: UUID.uuid4(), title: "Existing", slug: "existing"})
+      new_instrument(%{id: UUID.uuid4(), title: "Existing", slug: "existing"})
 
       id = UUID.uuid4()
-      Repo.insert!(%InstrumentReadModel{id: id, title: "Original", slug: "original"})
+      new_instrument(%{id: id, title: "Original", slug: "original"})
 
       event = %InstrumentEdited{id: id, slug: "existing"}
 

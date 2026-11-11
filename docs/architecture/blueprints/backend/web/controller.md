@@ -36,8 +36,11 @@ public API is the only thing a controller may call.
   `unauthorized` / `forbidden` references), a `@spec`, and the action body for
   the effect: create, update and read render the resource as `ok:`, a collection
   renders `index.json`, delete and archive send `no_content` (`204`).
-- For a collection query, the `JSONAPI.QueryParser` plug with `filter:` and
-  `sort:` from the model's parameters, gated on the view.
+- For a collection query, the `JSONAPI.QueryParser` plug: `filter:` from the
+  model's `parameters.filter.properties`, `sort:` from its
+  `sortableFields` (the filterable fields when it names none), `view:` the
+  constituent's view — the same two lists the
+  [query parameters schema](./schema.md) documents, gated on the view.
 - The route in the web router's scope chain (`/<subdomain>` → `/<composite>` →
   `/<domain-object>s`), materializing missing scope levels. Only GET for queries
   and POST for commands — every write is a command endpoint, so there is no

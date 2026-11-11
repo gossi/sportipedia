@@ -122,19 +122,25 @@ query, the registration hosts — are not in the listing: they arrive through
 
 ### 12. Tests are acceptance criteria, not unit tests of internals
 
-- **Pickup** — a `--check` sweep over the repo's own citizens must be a no-op.
+- **Pickup** — a `--check` sweep over the generated citizen must be a no-op.
 - **Order independence** — the same citizen generated in forward and reversed
   order must be AST-equal.
 - **Black box** — generators are driven through `SpGen.run/2,3`, the same
   interface the CLI uses.
+- **Fixture-driven** — every test reads `fixtures/`, never the live
+  `docs/domain-model` and never code generated elsewhere. See
+  [`contributions.md`](contributions.md), which is also the how-to for writing a
+  test here.
 
 ## Non-goals
 
 - **Migrations** — Ecto's generators own naming and history; the read model
   documents the schema, not the migration.
-- **Business logic** — handler bodies, query filters and policy rules are
+- **Business logic** — handler bodies and policy rules beyond `actors` are
   generated as TODO scaffolds; the blueprints are explicit that the last 1%
-  belongs to the spec.
+  belongs to the spec. A declared collection read is the exception: its
+  parameters *are* the JSON:API set, so `spgen query` generates the working
+  delegation to `QueryBuilder` rather than a marker.
 - **Deleting or rewriting** — the tool only adds. Removing generated code is the
   operator's decision.
 - **Custom formatting** — output goes through the project's `.formatter.exs`.

@@ -7,6 +7,10 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Operation.InstrumentArchivedT
   alias Sportipedia.Catalog.Equipment.Instrument.InstrumentProjector
   alias Sportipedia.Catalog.Repo
 
+  import Sportipedia.TestSupport.Catalog.Equipment
+
+  alias Sportipedia.TestSupport.Catalog.Equipment.InstrumentFixtures
+
   describe "Event" do
     @describetag :unit
 
@@ -41,9 +45,9 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Operation.InstrumentArchivedT
     @describetag :integration
 
     test "deletes the instrument read model on InstrumentArchived event" do
-      id = UUID.uuid4()
-
-      Repo.insert!(%InstrumentReadModel{id: id, title: "Unicycle", slug: "unicycle"})
+      instrument = InstrumentFixtures.unicycle()
+      new_instrument(instrument)
+      id = instrument.id
 
       event = %InstrumentArchived{id: id}
 
@@ -65,9 +69,9 @@ defmodule Sportipedia.Catalog.Equipment.Instrument.Operation.InstrumentArchivedT
     end
 
     test "is idempotent for the same event" do
-      id = UUID.uuid4()
-
-      Repo.insert!(%InstrumentReadModel{id: id, title: "Unicycle", slug: "unicycle"})
+      instrument = InstrumentFixtures.unicycle()
+      new_instrument(instrument)
+      id = instrument.id
 
       event = %InstrumentArchived{id: id}
 

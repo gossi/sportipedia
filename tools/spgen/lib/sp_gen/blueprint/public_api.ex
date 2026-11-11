@@ -10,7 +10,11 @@ defmodule SpGen.Blueprint.PublicAPI do
   * `update` — dispatch with the given id, return the read model
   * `delete` — dispatch, return `:ok` (no read model follows)
   * `read` — internal API lookup (`oneOf` parameters → id-or-slug chain)
-  * `collection` — `Repo.all` with the JSON:API `QueryBuilder`
+  * `collection` — the query citizen over `Repo.all`
+
+  The collection function names the query module rather than the query: which
+  read model a collection reads, and how a JSON:API config becomes an Ecto query,
+  belongs to `Queries.<Query>` (`SpGen.Blueprint.Query`), not to the port.
 
   Commands return validation failures classified via `ErrorClassifier`
   (Vex runs as commanded middleware — no rescue, no param matching).
@@ -18,7 +22,7 @@ defmodule SpGen.Blueprint.PublicAPI do
 
   use SpGen.Blueprint
 
-  alias SpGen.Blueprint.{Command, InternalAPI, ReadModel}
+  alias SpGen.Blueprint.{Command, InternalAPI, Query, ReadModel}
 
   @path "services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/public_api.ex"
   @module "Sportipedia.<Subdomain>.<Composite>.<DomainObject>"
@@ -34,8 +38,16 @@ defmodule SpGen.Blueprint.PublicAPI do
   @spec module_file(Context.t()) :: String.t()
   def module_file(%Context{} = ctx), do: Context.render(@path, ctx)
   def module_template, do: @module
-  def operations, do: [:create, :update, :delete, :read, :collection]
+  def operations, do: [:create, :update, :delete, :none, :read, :collection]
   def optional_template?, do: true
+
+  # the collection function calls the query citizen, so a run of this blueprint
+  # plans it — the query module is never left as the file nothing generated
+  def dependencies(%Context{element: %{kind: :query}} = ctx) do
+    if Context.collection?(ctx), do: [{Query, ctx.element}], else: []
+  end
+
+  def dependencies(_ctx), do: []
 
   def plans(%Context{} = ctx) do
     [
@@ -56,7 +68,7 @@ defmodule SpGen.Blueprint.PublicAPI do
     ]
 
     cond do
-      ctx.element.kind == :command and ctx.operation == :delete ->
+      ctx.element.kind == :command and ctx.operation in [:delete, :none] ->
         base ++
           [
             "alias #{Context.render(@command_module, ctx)}",
@@ -77,7 +89,7 @@ defmodule SpGen.Blueprint.PublicAPI do
           [
             "alias #{Context.render(@read_model_module, ctx)}",
             "alias #{Context.render("Sportipedia.<Subdomain>.Repo", ctx)}",
-            "alias Sportipedia.Support.JSONAPI.QueryBuilder"
+            "alias #{Context.render(Query.module_template(), ctx)}"
           ]
 
       true ->
@@ -113,6 +125,9 @@ defmodule SpGen.Blueprint.PublicAPI do
 
       {:command, :delete} ->
         delete(ctx, op, doc)
+
+      {:command, :none} ->
+        none(ctx, op, doc)
 
       {:query, _} ->
         if Context.collection?(ctx), do: collection(ctx, op, doc), else: read(ctx, op, doc)
@@ -178,6 +193,24 @@ defmodule SpGen.Blueprint.PublicAPI do
     """
   end
 
+  # a command whose declared operation is `none` dispatches facts that
+  # materialize nothing: the dispatch result IS the answer — no read model is
+  # looked up, and none would be there to read
+  defp none(ctx, op, doc) do
+    """
+    @doc \"\"\"
+    #{doc}
+    \"\"\"
+    @spec #{op}(map()) :: Architecture.public_api()
+    def #{op}(params) do
+      case #{app(ctx)}.dispatch(#{command(ctx)}.new(params), consistency: :strong) do
+        :ok -> :ok
+        {:error, errors} -> ErrorClassifier.classify_error(errors)
+      end
+    end
+    """
+  end
+
   # id-or-slug reads look the row up through a private helper that branches on
   # the id format (golden shape); plain by-id reads call the accessor directly
   defp read(ctx, op, doc) do
@@ -223,6 +256,8 @@ defmodule SpGen.Blueprint.PublicAPI do
     end
   end
 
+  # The port names the query citizen; the query owns the read model and the
+  # JSON:API → Ecto translation (`SpGen.Blueprint.Query`).
   defp collection(ctx, op, doc) do
     """
     @doc \"\"\"
@@ -230,9 +265,13 @@ defmodule SpGen.Blueprint.PublicAPI do
     \"\"\"
     @spec #{op}(JSONAPI.Config.t()) :: Architecture.public_api([#{read_model(ctx)}.t()])
     def #{op}(query) do
-      {:ok, Repo.all(QueryBuilder.build(query, #{read_model(ctx)}))}
+      {:ok, Repo.all(#{query_module(ctx)}.new(query))}
     end
     """
+  end
+
+  defp query_module(%Context{} = ctx) do
+    Context.render(Query.module_template(), ctx) |> String.split(".") |> List.last()
   end
 
   # `%{required(:title) => String.t(), optional(:description) => String.t() | nil}`
@@ -255,23 +294,32 @@ defmodule SpGen.Blueprint.PublicAPI do
   defp body_gate(%Context{element: %{kind: :command}} = c) do
     gates = [{Command.module_file(c), "command not generated (spgen command)"}]
 
-    if c.operation == :delete,
+    if c.operation in [:delete, :none],
       do: gates,
       else:
         gates ++ [{InternalAPI.module_file(c), "internal API not generated (spgen internal_api)"}]
   end
 
-  defp body_gate(%Context{} = c) do
-    [
-      {InternalAPI.module_file(c), "internal API not generated (spgen internal_api)"},
-      {ReadModel.module_file(c), "read model not generated (spgen read_model)"}
-    ]
+  # a collection reads through its query citizen; the read model is named by the
+  # `@spec`, not reached by the body
+  defp body_gate(%Context{element: %{kind: :query}} = c) do
+    if Context.collection?(c) do
+      [
+        {Query.module_file(c), "query not generated (spgen query)"},
+        {ReadModel.module_file(c), "read model not generated (spgen read_model)"}
+      ]
+    else
+      [
+        {InternalAPI.module_file(c), "internal API not generated (spgen internal_api)"},
+        {ReadModel.module_file(c), "read model not generated (spgen read_model)"}
+      ]
+    end
   end
 
   # ------------------------------------------------------------------- units
 
-  defp units(ctx) do
-    op = Context.op_snake(ctx)
+  defp units(%Context{} = ctx) do
+    op = String.to_atom(Context.op_snake(ctx))
 
     [
       %Unit{
@@ -283,8 +331,9 @@ defmodule SpGen.Blueprint.PublicAPI do
         place: Merge.head(:moduledoc)
       },
       %Unit{
-        id: {:def, String.to_atom(op), 1},
-        check: fn src -> Source.has_def?(src, String.to_atom(op), 1) end,
+        id: {:def, op, 1},
+        check: fn src -> function_present?(src, op, ctx) end,
+        stale: fn src, c -> stale_function(src, op, c) end,
         requires: &body_gate/1,
         render: fn c -> c |> body() |> String.trim_trailing() end,
         place: Merge.body_end()
@@ -296,11 +345,36 @@ defmodule SpGen.Blueprint.PublicAPI do
         %Unit{
           id: {:alias, module},
           check: fn src ->
-            Source.has_alias?(src, module) || Source.has_def?(src, String.to_atom(op), 1)
+            Source.has_alias?(src, module) or Source.has_def?(src, op, 1)
           end,
           render: fn _ctx -> alias_line end,
           place: Merge.alias_of(module)
         }
       end)
   end
+
+  # The collection function is present only when it reads through the query
+  # citizen. One that still names the builder inline belongs to the report, not
+  # to the append: a second clause of the same function would shadow the first.
+  defp function_present?(%Source{} = src, op, %Context{operation: :collection}) do
+    Source.has_def?(src, op, 1) and not inline_builder?(src)
+  end
+
+  defp function_present?(%Source{} = src, op, _ctx), do: Source.has_def?(src, op, 1)
+
+  defp stale_function(%Source{} = src, op, %Context{operation: :collection} = ctx) do
+    if Source.has_def?(src, op, 1) and inline_builder?(src) do
+      [
+        "#{op}/1 builds the query inline — the query citizen owns how a JSON:API " <>
+          "config becomes a query: call Repo.all(#{query_module(ctx)}.new(query)) " <>
+          "and alias that module"
+      ]
+    else
+      []
+    end
+  end
+
+  defp stale_function(_src, _op, _ctx), do: []
+
+  defp inline_builder?(%Source{text: text}), do: text =~ "QueryBuilder.build("
 end

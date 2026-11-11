@@ -10,9 +10,9 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus do
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.ArchiveApparatus
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.CatalogApparatus
   alias Sportipedia.Catalog.Equipment.Apparatus.Command.EditApparatus
+  alias Sportipedia.Catalog.Equipment.Apparatus.Queries.ListApparatuses
   alias Sportipedia.Catalog.Repo
   alias Sportipedia.Support.ErrorClassifier
-  alias Sportipedia.Support.JSONAPI.QueryBuilder
   alias Sportipedia.Support.Validators.UuidValidator
 
   @doc """
@@ -91,6 +91,6 @@ defmodule Sportipedia.Catalog.Equipment.Apparatus do
   """
   @spec list_apparatuses(JSONAPI.Config.t()) :: Architecture.public_api([ApparatusReadModel.t()])
   def list_apparatuses(query) do
-    {:ok, Repo.all(QueryBuilder.build(query, ApparatusReadModel))}
+    {:ok, Repo.all(ListApparatuses.new(query))}
   end
 end

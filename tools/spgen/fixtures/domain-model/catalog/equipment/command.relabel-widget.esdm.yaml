@@ -2,6 +2,9 @@ apiVersion: schema.esdm.io/core/v1
 kind: command
 name: relabel-widget
 description: "Renames a widget and records the rename for the audit trail"
+metadata:
+  annotations:
+    spgen.operation: update
 scope:
   domain: sport
   boundedContext: sport
