@@ -140,16 +140,17 @@ defmodule SpGen.Check do
 
   # --------------------------------------------- declared operations (annotations)
   #
-  # What a command does, and what each event does to its read model, are
-  # DECISIONS recorded in metadata.annotations under the `spgen.` namespace —
-  # generation refuses to guess. The checks here are the two halves of that
-  # contract:
+  # What a command does, what each event does to its read model, and what kind of
+  # read a query is are DECISIONS recorded in metadata.annotations under the
+  # `spgen.` namespace — generation refuses to guess. The checks here are the
+  # halves of that contract:
   #
   # * integrity: a read model's `spgen.operation.<event>` keys and their
   #   projections agree, one decision per event, `none` only without a
-  #   projection;
+  #   projection; a query's declaration and its `result` shape agree;
   # * completeness: every command declares `spgen.operation`, so any generator
-  #   run can proceed without --template.
+  #   run can proceed without --template. A query need not: `result.type: array`
+  #   already answers `read | collection`, so absence is silence, not a gap.
 
   defp operation_findings(model, %Element{kind: :"read-model"} = element) do
     read_model_ledger(model, element)
@@ -164,6 +165,18 @@ defmodule SpGen.Check do
         prefixed,
         element,
         "commands declare a bare #{Esdm.operation_key()}, never #{Esdm.effect_prefix()}<event>"
+      )
+  end
+
+  defp operation_findings(_model, %Element{kind: :query} = element) do
+    prefixed =
+      for({key, _} <- operation_keys(element), key != Esdm.operation_key(), do: {key, nil})
+
+    query_operation(element) ++
+      misplaced(
+        prefixed,
+        element,
+        "queries declare a bare #{Esdm.operation_key()} (read|collection), never a per-event key"
       )
   end
 
@@ -219,6 +232,51 @@ defmodule SpGen.Check do
             "#{Esdm.operation_key()}: #{inspect(other)} is not create|update|delete|none"
           )
         ]
+    end
+  end
+
+  # A query's declaration is optional, but a made declaration is binding: it is
+  # what lets `SpGen.Blueprint.Query` generate a body instead of leaving a TODO,
+  # so it must be in the query vocabulary and it must agree with the `result` the
+  # model already states — a `collection` over a single object, or a `read` that
+  # returns an array, would have the generators build two different citizens.
+  defp query_operation(%Element{} = element) do
+    case Esdm.annotations(element)[Esdm.operation_key()] do
+      nil ->
+        []
+
+      v when v in ["read", "collection"] ->
+        operation_agreement(element, v)
+
+      other ->
+        [
+          finding(
+            element,
+            "#{Esdm.operation_key()}: #{inspect(other)} is not #{Enum.join(Esdm.query_operations(), "|")}"
+          )
+        ]
+    end
+  end
+
+  defp operation_agreement(%Element{doc: doc} = element, declared) do
+    case get_in(doc, ["result", "type"]) do
+      type when is_binary(type) ->
+        array? = type == "array"
+        declares_collection? = declared == "collection"
+
+        if array? == declares_collection? do
+          []
+        else
+          [
+            finding(
+              element,
+              "#{Esdm.operation_key()}: #{declared} contradicts result.type: #{type} — a collection reads an array"
+            )
+          ]
+        end
+
+      _ ->
+        []
     end
   end
 

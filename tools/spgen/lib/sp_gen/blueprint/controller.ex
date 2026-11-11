@@ -59,18 +59,17 @@ defmodule SpGen.Blueprint.Controller do
       "    fallback: FallbackController\n"
   end
 
-  defp query_parser_plug(ctx) do
+  # The parser is the request's gate: it admits exactly the names the model
+  # declares, and the same lists document them (`SpGen.Blueprint.Schema`) — one
+  # fact, stated twice because one is a validation and one is a contract.
+  defp query_parser_plug(%Context{} = ctx) do
     if Context.collection?(ctx) do
-      fields =
-        ctx
-        |> Context.query_parameters()
-        |> get_in(["filter", "properties"])
-        |> Kernel.||(%{})
-        |> Map.keys()
+      filters = Context.filterable_fields(ctx)
+      sorts = Context.sortable_fields(ctx)
 
       "  plug JSONAPI.QueryParser,\n" <>
-        "    filter: ~w(#{Enum.join(fields, " ")}),\n" <>
-        "    sort: ~w(#{Enum.join(fields, " ")}),\n" <>
+        "    filter: ~w(#{Enum.join(filters, " ")}),\n" <>
+        "    sort: ~w(#{Enum.join(sorts, " ")}),\n" <>
         "    view: #{Context.pascal(ctx.constituent)}View\n"
     else
       ""

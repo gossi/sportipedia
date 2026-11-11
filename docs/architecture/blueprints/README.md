@@ -263,7 +263,7 @@ first contributor that has a test to write — never as an empty module.
 | Web router | operator; merge-only and must exist, or the run fails |
 | Starting the subdomain supervisor from the root application, `Repo`, subdomain test case | operator, per subdomain |
 | Migrations | `mix ecto.gen.migration` |
-| Business logic: deep handler rules, query filters, policy beyond `actors`, spec-specific assertions | operator, from the feature spec |
+| Business logic: deep handler rules, query bodies that are not a plain JSON:API collection read, policy beyond `actors`, spec-specific assertions | operator, from the feature spec |
 | Bruno updates after an API change | operator — Bruno is create-only |
 
 ## Definition of done
@@ -309,6 +309,11 @@ nobody rediscovers them as "mysterious missing code":
   handler's field-by-field mapping, an update event's `get_changes/1`, the
   projector's idempotency and error cases, a param-dependent policy case, a
   successful read, the update cases of the public API, and endpoint `422`.
+- **A collection query's test is still a placeholder.** `spgen query` generates
+  the whole body for one (the `QueryBuilder` delegation), but its behaviour —
+  filtering, sorting, pagination over seeded fixtures — has no generated case:
+  the `describe "Query"` it contributes asserts `true` until the operator
+  replaces it ([Query](backend/domain/query.md#tests)).
 
 ## Blueprints
 

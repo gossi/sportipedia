@@ -9,9 +9,11 @@ defmodule SpGen.CheckTest do
 
   @rm "docs/domain-model/catalog/equipment/read-model.widget.esdm.yaml"
   @cmd "docs/domain-model/catalog/equipment/command.create-widget.esdm.yaml"
+  @query "docs/domain-model/catalog/equipment/query.list-widgets.esdm.yaml"
 
   defp rm_text(repo), do: FixtureRepo.read(repo, @rm)
   defp cmd_text(repo), do: FixtureRepo.read(repo, @cmd)
+  defp query_text(repo), do: FixtureRepo.read(repo, @query)
 
   describe "the fixture model as a whole" do
     setup do
@@ -176,6 +178,95 @@ defmodule SpGen.CheckTest do
       assert {:ok, findings} = Check.run(["--root", repo.root], fs: repo.fs)
       assert Enum.any?(findings, &(&1.message =~ "a key must name its own home"))
     end
+  end
+
+  # A query's `spgen.operation` is the declaration that lets `spgen query` ship a
+  # working body instead of a marker, so the value is checked when present — and
+  # its absence is silence, not a gap: `result.type: array` answers the same
+  # question and every model written before the annotation stays valid.
+  describe "a query's declared operation" do
+    setup do
+      %{repo: FixtureRepo.build()}
+    end
+
+    test "declaring collection over an array is clean", %{repo: repo} do
+      assert {:ok, []} = Check.run(["query.list-widgets", "--root", repo.root], fs: repo.fs)
+    end
+
+    test "declaring none is clean — the result shape answers it", %{repo: repo} do
+      FixtureRepo.write(
+        repo,
+        @query,
+        query_text(repo) |> String.replace("    spgen.operation: collection\n", "")
+      )
+
+      assert {:ok, []} = Check.run(["query.list-widgets", "--root", repo.root], fs: repo.fs)
+    end
+
+    test "a value outside read|collection is found", %{repo: repo} do
+      rewrite_query(repo, "spgen.operation: everything")
+
+      assert {:ok, findings} = Check.run(["query.list-widgets", "--root", repo.root], fs: repo.fs)
+
+      assert Enum.any?(
+               findings,
+               &(&1.message =~ "spgen.operation: \"everything\" is not read|collection")
+             )
+    end
+
+    test "a declaration that contradicts the result is found", %{repo: repo} do
+      rewrite_query(repo, "spgen.operation: read")
+
+      assert {:ok, findings} = Check.run(["query.list-widgets", "--root", repo.root], fs: repo.fs)
+
+      assert Enum.any?(
+               findings,
+               &(&1.message =~ "spgen.operation: read contradicts result.type: array")
+             )
+    end
+
+    test "a per-event key on a query is found — it names no event", %{repo: repo} do
+      FixtureRepo.write(
+        repo,
+        @query,
+        query_text(repo)
+        |> String.replace(
+          "    spgen.operation: collection\n",
+          "    spgen.operation: collection\n    spgen.operation.widget-created: create\n"
+        )
+      )
+
+      assert {:ok, findings} = Check.run(["query.list-widgets", "--root", repo.root], fs: repo.fs)
+
+      assert Enum.any?(
+               findings,
+               &(&1.message =~ "queries declare a bare spgen.operation (read|collection)")
+             )
+    end
+
+    test "a read query declaring read is clean", %{repo: repo} do
+      read = "docs/domain-model/catalog/equipment/query.read-widget.esdm.yaml"
+
+      FixtureRepo.write(
+        repo,
+        read,
+        FixtureRepo.read(repo, read)
+        |> String.replace(
+          "readModel: widget\n",
+          "readModel: widget\nmetadata:\n  annotations:\n    spgen.operation: read\n"
+        )
+      )
+
+      assert {:ok, []} = Check.run(["query.read-widget", "--root", repo.root], fs: repo.fs)
+    end
+  end
+
+  defp rewrite_query(repo, annotation) do
+    FixtureRepo.write(
+      repo,
+      @query,
+      query_text(repo) |> String.replace("spgen.operation: collection", annotation)
+    )
   end
 
   defp drop_description(text) do

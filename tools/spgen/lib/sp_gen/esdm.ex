@@ -435,6 +435,8 @@ defmodule SpGen.Esdm do
   #
   #   command:     metadata.annotations."spgen.operation":
   #                create | update | delete | none
+  #   query:       metadata.annotations."spgen.operation":
+  #                read | collection      (optional — see below)
   #   read-model:  metadata.annotations."spgen.operation.<event>":
   #                create | update | delete | none
   #
@@ -442,9 +444,20 @@ defmodule SpGen.Esdm do
   # is not the same thing as the absence of any annotation. On a command it
   # reads "dispatch facts, change no read model": the API answers `:ok`, the
   # endpoint 204, and no row is read back.
+  #
+  # A query may declare which read it is: `collection` says the parameters are
+  # the JSON:API set (`filter`/`sort`/`page`/`fields`) and the answer is the
+  # live read-model table, which is what `SpGen.Blueprint.Query` generates
+  # against the shared `QueryBuilder`. It is OPTIONAL: a query that declares
+  # nothing falls back to its `result` shape, so a model written before the
+  # annotation stays valid.
+  #
+  # The vocabulary differs per kind, which is why `declared_operation/1` and
+  # `declared_query_operation/1` are separate reads of one key.
 
   @operations ~w(create update delete none)
   @projection_operations @operations
+  @query_operations ~w(read collection)
 
   @operation_key "spgen.operation"
   @effect_prefix "spgen.operation."
@@ -469,6 +482,20 @@ defmodule SpGen.Esdm do
   def declared_operation(%Element{} = element) do
     case annotations(element)[@operation_key] do
       v when v in @operations -> String.to_atom(v)
+      _ -> nil
+    end
+  end
+
+  @doc """
+  The operation a **query** document declares: `:read | :collection`, or `nil`
+  when it declares none (or names something outside the query vocabulary —
+  `mix sp.check` reports the bad value, generation must not read meaning from
+  a typo).
+  """
+  @spec declared_query_operation(Element.t()) :: :read | :collection | nil
+  def declared_query_operation(%Element{} = element) do
+    case annotations(element)[@operation_key] do
+      v when v in @query_operations -> String.to_atom(v)
       _ -> nil
     end
   end
@@ -502,6 +529,74 @@ defmodule SpGen.Esdm do
 
   @doc "Vocabulary of the `spgen.operation.<event>` annotations (read models)."
   def projection_operations, do: @projection_operations
+
+  @doc "Vocabulary of the bare `spgen.operation` annotation (queries)."
+  def query_operations, do: @query_operations
+
+  @doc """
+  The parameter names a query's `parameters.properties` declares (`filter`,
+  `sort`, `page`, `fields` …).
+  """
+  @spec query_parameter_names(Element.t()) :: [String.t()]
+  def query_parameter_names(%Element{} = element) do
+    element |> param_properties([]) |> Map.keys() |> Enum.sort()
+  end
+
+  @doc """
+  The fields a query declares sortable: the `sortableFields` list on its
+  `parameters.properties.sort` entry. JSON:API `sort` is a comma-separated
+  *string*, so the names are not nested `properties` the way `filter`'s are —
+  the field list is a fact about the string, not an object shape. A model that
+  lists none leaves sorting to whatever its `filter` names.
+  """
+  @spec sortable_fields(Element.t()) :: [String.t()]
+  def sortable_fields(%Element{doc: doc}) do
+    doc
+    |> get_in(["parameters", "properties", "sort", "sortableFields"])
+    |> List.wrap()
+    |> Enum.map(&to_string/1)
+  end
+
+  @doc """
+  How a query paginates, from its `parameters.properties.page`: `:none` when the
+  model declares no `page` parameter at all, `:offset` when it names
+  `limit`/`offset`, and `:numbered` (`number`/`size`) otherwise — including a
+  bare `page` that states no properties, since `number`/`size` is the house
+  style `Sportipedia.Support.JSONAPI.QueryBuilder` defaults to.
+  """
+  @spec page_style(Element.t()) :: :numbered | :offset | :none
+  def page_style(%Element{doc: doc}) do
+    case get_in(doc, ["parameters", "properties"]) do
+      props when is_map(props) ->
+        case Map.get(props, "page") do
+          page when is_map(page) -> page_style_of(Map.get(page, "properties"))
+          nil -> :none
+        end
+
+      _ ->
+        :none
+    end
+  end
+
+  defp page_style_of(props) when is_map(props) do
+    keys = Map.keys(props)
+
+    cond do
+      Enum.any?(keys, &(&1 in ["number", "size"])) -> :numbered
+      Enum.any?(keys, &(&1 in ["limit", "offset"])) -> :offset
+      true -> :numbered
+    end
+  end
+
+  defp page_style_of(_), do: :numbered
+
+  # `parameters.properties.<path>` as a map, `%{}` when the model says nothing
+  defp param_properties(%Element{doc: doc}, path) do
+    case get_in(doc, ["parameters", "properties"] ++ path) do
+      map when is_map(map) -> map
+      _ -> %{}
+    end
+  end
 
   @doc "Command constraints as `%{name:, rule:}`."
   def constraints(%Element{doc: doc}), do: List.wrap(doc["constraints"])

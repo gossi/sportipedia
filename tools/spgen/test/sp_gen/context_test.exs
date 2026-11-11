@@ -194,6 +194,61 @@ defmodule SpGen.ContextTest do
     end
   end
 
+  # The one place a blueprint asks "is this a collection read?" is the context's
+  # operation: declared by the model's `spgen.operation` when the model declares
+  # it, else derived from `result.type`. Asking the shape as well would give one
+  # decision two sources, and a `--template` override would mean nothing.
+  describe "query operations and parameters" do
+    test "a declared collection read is a collection", %{model: model} do
+      c = ctx(model, "query.list-positions")
+      assert c.operation == :collection
+      assert Context.collection?(c)
+    end
+
+    test "a read query is not a collection", %{model: model} do
+      c = ctx(model, "query.read-position")
+      assert c.operation == :read
+      refute Context.collection?(c)
+    end
+
+    test "--template wins over the declaration", %{model: model} do
+      c = ctx(model, "query.list-positions", operation: :read)
+      refute Context.collection?(c)
+    end
+
+    test "filterable names are the filter's properties", %{model: model} do
+      c = ctx(model, "query.list-positions")
+      assert Context.filterable_fields(c) == ["title"]
+    end
+
+    test "sortable names are the sort's own list, in its order", %{model: model} do
+      c = ctx(model, "query.list-positions")
+      assert Context.sortable_fields(c) == ["title", "slug"]
+    end
+
+    test "a model naming no sortable fields sorts by what it filters", %{model: model} do
+      element = Esdm.resolve!(model, "query.list-positions")
+
+      bare = %{
+        element
+        | doc: put_in(element.doc, ["parameters", "properties", "sort", "sortableFields"], nil)
+      }
+
+      {:ok, c} = Context.build(model, bare)
+      assert Context.sortable_fields(c) == ["title"]
+      assert Context.sortable_fields(c) == Context.filterable_fields(c)
+    end
+
+    test "the query module template renders from a query context", %{model: model} do
+      c = ctx(model, "query.list-positions")
+
+      assert Context.render(
+               "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Queries.<Query>",
+               c
+             ) == "Sportipedia.Catalog.Athlete.Position.Queries.ListPositions"
+    end
+  end
+
   describe "generated fixtures (the read model's schema.examples)" do
     test "the primary example names the fixture and factory for its constituent", %{
       model: model

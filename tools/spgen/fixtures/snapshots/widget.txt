@@ -665,12 +665,11 @@ defmodule Sportipedia.Catalog.Equipment.Widget do
   alias Sportipedia.Catalog.Equipment.Widget.Command.EditWidget
   alias Sportipedia.Catalog.Equipment.Widget.Command.NoteWidget
   alias Sportipedia.Catalog.Equipment.Widget.Command.RelabelWidget
+  alias Sportipedia.Catalog.Equipment.Widget.Queries.ListWidgets
   alias Sportipedia.Catalog.Equipment.Widget.WidgetInternal
   alias Sportipedia.Catalog.Equipment.Widget.WidgetReadModel
   alias Sportipedia.Catalog.Repo
   alias Sportipedia.Support.ErrorClassifier
-
-  alias Sportipedia.Support.JSONAPI.QueryBuilder
 
   alias Sportipedia.Support.Validators.UuidValidator
 
@@ -747,7 +746,7 @@ defmodule Sportipedia.Catalog.Equipment.Widget do
   """
   @spec list_widgets(JSONAPI.Config.t()) :: Architecture.public_api([WidgetReadModel.t()])
   def list_widgets(query) do
-    {:ok, Repo.all(QueryBuilder.build(query, WidgetReadModel))}
+    {:ok, Repo.all(ListWidgets.new(query))}
   end
 
   @doc """
@@ -775,13 +774,15 @@ defmodule Sportipedia.Catalog.Equipment.Widget.Queries.ListWidgets do
   @moduledoc """
   List all widgets with filtering, sorting, and pagination
   """
+  alias Sportipedia.Catalog.Equipment.Widget.WidgetReadModel
+  alias Sportipedia.Support.JSONAPI.QueryBuilder
+
   @doc """
   Creates a new query to fetch widgets.
   """
-  @spec new(map()) :: Ecto.Query.t()
-  def new(_params) do
-    # TODO: construct and return the query from the read model
-    raise "TODO: implement list-widgets query (see the feature spec)"
+  @spec new(JSONAPI.Config.t()) :: Ecto.Query.t()
+  def new(query) do
+    QueryBuilder.build(query, WidgetReadModel)
   end
 end
 
@@ -951,7 +952,6 @@ defmodule SportipediaWeb.Catalog.Equipment.Widget.Schemas.CreateWidgetRequest do
   OpenAPI schema for documenting the create-widget request parameters.
   """
   require OpenApiSpex
-  require OpenApiSpex
 
   @doc """
   Returns the OpenAPI schema for the create-widget request.
@@ -987,12 +987,33 @@ defmodule SportipediaWeb.Catalog.Equipment.Widget.Schemas.CreateWidgetRequest do
   })
 end
 
+== services/api/lib/sportipedia_web/catalog/equipment/widget/schemas/list_widgets_query_params.ex ==
+defmodule SportipediaWeb.Catalog.Equipment.Widget.Schemas.ListWidgetsQueryParams do
+  @moduledoc """
+  OpenAPI schema for documenting list-widgets collection query parameters.
+  """
+  alias Sportipedia.Support.JSONAPI.OpenApiSchema
+  alias SportipediaWeb.Catalog.Equipment.Widget.WidgetView
+  require OpenApiSpex
+
+  @doc """
+  Returns the OpenAPI schema for the list-widgets collection query parameters.
+  """
+  OpenApiSpex.schema(
+    OpenApiSchema.query_params(WidgetView,
+      title: "equipment.ListWidgetsQueryParams",
+      filter: [title: "Filter widgets by title (partial match)"],
+      sort: ~w(title slug),
+      page: :numbered
+    )
+  )
+end
+
 == services/api/lib/sportipedia_web/catalog/equipment/widget/schemas/note_widget_request.ex ==
 defmodule SportipediaWeb.Catalog.Equipment.Widget.Schemas.NoteWidgetRequest do
   @moduledoc """
   OpenAPI schema for documenting the note-widget request parameters.
   """
-  require OpenApiSpex
   require OpenApiSpex
 
   @doc """
@@ -1017,10 +1038,6 @@ defmodule SportipediaWeb.Catalog.Equipment.Widget.Schemas.WidgetCollectionRespon
   alias Sportipedia.Support.JSONAPI.OpenApiSchema
   alias SportipediaWeb.Catalog.Equipment.Widget.WidgetView
   require OpenApiSpex
-  alias SportipediaWeb.Catalog.Equipment.Widget.WidgetView
-  alias Sportipedia.Support.JSONAPI.OpenApiSchema
-
-  require OpenApiSpex
 
   @doc """
   Returns the OpenAPI schema for the widget collection response.
@@ -1035,10 +1052,6 @@ defmodule SportipediaWeb.Catalog.Equipment.Widget.Schemas.WidgetResponse do
   """
   alias Sportipedia.Support.JSONAPI.OpenApiSchema
   alias SportipediaWeb.Catalog.Equipment.Widget.WidgetView
-  require OpenApiSpex
-  alias SportipediaWeb.Catalog.Equipment.Widget.WidgetView
-  alias Sportipedia.Support.JSONAPI.OpenApiSchema
-
   require OpenApiSpex
 
   @doc """
@@ -1058,6 +1071,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Widget.WidgetController do
   alias Sportipedia.Catalog.Equipment.Widget
   alias Sportipedia.Catalog.Equipment.Widget.WidgetReadModel
   alias SportipediaWeb.Catalog.Equipment.Widget.Schemas.CreateWidgetRequest
+  alias SportipediaWeb.Catalog.Equipment.Widget.Schemas.ListWidgetsQueryParams
   alias SportipediaWeb.Catalog.Equipment.Widget.Schemas.NoteWidgetRequest
   alias SportipediaWeb.Catalog.Equipment.Widget.Schemas.WidgetCollectionResponse
   alias SportipediaWeb.Catalog.Equipment.Widget.Schemas.WidgetResponse
@@ -1072,7 +1086,7 @@ defmodule SportipediaWeb.Catalog.Equipment.Widget.WidgetController do
 
   plug JSONAPI.QueryParser,
     filter: ~w(title),
-    sort: ~w(title),
+    sort: ~w(title slug),
     view: WidgetView
 
   tags ["equipment"]
@@ -2283,6 +2297,22 @@ defmodule SportipediaWeb.Catalog.Equipment.Widget.Schemas.CreateWidgetRequestTes
 
     test "schema is an object" do
       assert %{type: :object} = CreateWidgetRequest.schema()
+    end
+  end
+end
+
+== services/api/test/sportipedia_web/catalog/equipment/widget/schemas/list_widgets_query_params_test.exs ==
+defmodule SportipediaWeb.Catalog.Equipment.Widget.Schemas.ListWidgetsQueryParamsTest do
+  use ExUnit.Case
+  alias SportipediaWeb.Catalog.Equipment.Widget.Schemas.ListWidgetsQueryParams
+
+  describe "ListWidgetsQueryParams" do
+    test "schema/0 has the correct title" do
+      assert %{title: "equipment.ListWidgetsQueryParams"} = ListWidgetsQueryParams.schema()
+    end
+
+    test "schema is an object" do
+      assert %{type: :object} = ListWidgetsQueryParams.schema()
     end
   end
 end

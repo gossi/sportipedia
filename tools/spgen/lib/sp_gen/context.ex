@@ -100,7 +100,12 @@ defmodule SpGen.Context do
   #   refused by `SpGen` — generation must not guess domain intent)
   # * event — the effect its read model declares via `spgen.operation.<event>`;
   #   `:none` is a decision (no materialization), `nil` is an open question
-  # * query — `:collection` when the result is an array, `:read` otherwise
+  # * query — its `metadata.annotations."spgen.operation"` (`read | collection`).
+  #   The annotation is optional: a query that declares none falls back to its
+  #   `result` shape, because `result.type: array` *is* a collection read. The
+  #   declaration says more than the shape does — it names the JSON:API
+  #   parameters as the whole of the query's contract, which is what
+  #   `SpGen.Blueprint.Query` generates its body from.
   # * anything else — `:create` (the template is irrelevant or fixed)
   @doc false
   @spec derive_operation(Esdm.t(), Element.t()) :: __MODULE__.operation() | nil
@@ -117,7 +122,8 @@ defmodule SpGen.Context do
         end
 
       :query ->
-        if get_in(element.doc, ["result", "type"]) == "array", do: :collection, else: :read
+        Esdm.declared_query_operation(element) ||
+          if(get_in(element.doc, ["result", "type"]) == "array", do: :collection, else: :read)
 
       _kind ->
         :create
@@ -532,14 +538,55 @@ defmodule SpGen.Context do
 
   def query_parameters(_ctx), do: %{}
 
+  @doc """
+  The fields a collection query may be filtered by — the names its
+  `parameters.filter.properties` declares, in the model's own order of
+  appearance (sorted, so a regenerated file is stable).
+  """
+  @spec filterable_fields(%__MODULE__{}) :: [String.t()]
+  def filterable_fields(%__MODULE__{} = ctx) do
+    ctx
+    |> query_parameters()
+    |> get_in(["filter", "properties"])
+    |> Kernel.||(%{})
+    |> Map.keys()
+    |> Enum.sort()
+  end
+
+  @doc """
+  The fields a collection query may be sorted by: the model's `sort.properties`
+  when it declares them, its filterable fields when it does not — sorting is
+  never wider than the model allows, and a model that lists sort fields only
+  says so on purpose.
+  """
+  @spec sortable_fields(%__MODULE__{}) :: [String.t()]
+  def sortable_fields(%__MODULE__{element: %{kind: :query} = element} = ctx) do
+    case Esdm.sortable_fields(element) do
+      [] -> filterable_fields(ctx)
+      fields -> fields
+    end
+  end
+
+  def sortable_fields(_ctx), do: []
+
+  @doc "How a collection query paginates: `:numbered | :offset | :none`."
+  @spec page_style(%__MODULE__{}) :: :numbered | :offset | :none
+  def page_style(%__MODULE__{element: %{kind: :query} = element}), do: Esdm.page_style(element)
+  def page_style(_ctx), do: :none
+
   @doc "Read-model fields rendered for schema/view purposes (ecto-typed)."
   def read_model_fields(%__MODULE__{read_model: rm}) when not is_nil(rm), do: Esdm.fields(rm)
   def read_model_fields(_ctx), do: []
 
-  @doc "True for queries returning a collection (`result.type: array`)."
-  def collection?(%__MODULE__{element: %{kind: :query, doc: doc}}) do
-    get_in(doc, ["result", "type"]) == "array"
-  end
+  @doc """
+  True for queries whose operation is a collection read.
+
+  The context's `operation` is the ONE representation of that fact: declared by
+  `metadata.annotations."spgen.operation"` when the model declares it, else
+  derived from `result.type: array` (see `derive_operation/2`). Asking the shape
+  here would make a declaration and a shape two sources for one decision.
+  """
+  def collection?(%__MODULE__{element: %{kind: :query}} = ctx), do: ctx.operation == :collection
 
   def collection?(_ctx), do: false
 

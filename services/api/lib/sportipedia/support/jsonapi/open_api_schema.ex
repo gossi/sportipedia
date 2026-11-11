@@ -1,6 +1,16 @@
 defmodule Sportipedia.Support.JSONAPI.OpenApiSchema do
   @moduledoc """
-  Derives an `OpenApiSpex.Schema` from a `JSONAPI.View` module.
+  Derives `OpenApiSpex.Schema`s from a `JSONAPI.View` module — the two halves of
+  a JSON:API endpoint that a view already fully describes:
+
+  * `from_view/2` — the response document (resource object, relationships, links)
+  * `query_params/2` — a collection read's query parameters
+    (`filter`/`sort`/`page`/`fields`)
+
+  Both exist so an endpoint's document is *derived* instead of transcribed: the
+  field lists of a JSON:API request otherwise live in three places — the domain
+  model, the schema module, and the controller's `JSONAPI.QueryParser` options —
+  and only the builder keeps them one fact.
 
   ## Usage
 
@@ -22,6 +32,8 @@ defmodule Sportipedia.Support.JSONAPI.OpenApiSchema do
 
   ## Options
 
+  `from_view/2`:
+
   - `:many` - When `true`, wraps the `data` key as an array (for index actions).
     Defaults to `false`.
   - `:title` - Override the auto-derived schema title.
@@ -33,6 +45,10 @@ defmodule Sportipedia.Support.JSONAPI.OpenApiSchema do
   - `:include_meta` - When `false`, omits `meta` fields.
     Defaults to `true`.
 
+  `query_params/2` — see its own `@doc` for `:filter`, `:sort`, `:page` and
+  `:title`; `:title` is required there, because a collection's parameters belong
+  to the operation, not to the resource type.
+
   ## Examples
 
       # Single resource
@@ -43,6 +59,13 @@ defmodule Sportipedia.Support.JSONAPI.OpenApiSchema do
 
       # With options
       OpenApiSchema.from_view(PostView, title: "ArticleResponse", include_meta: false)
+
+      # A collection read's query parameters
+      OpenApiSchema.query_params(PostView,
+        title: "blog.ListPostsQueryParams",
+        filter: [title: "Filter posts by title (partial match)"],
+        sort: ~w(title slug)
+      )
   """
 
   alias OpenApiSpex.Schema
@@ -76,6 +99,127 @@ defmodule Sportipedia.Support.JSONAPI.OpenApiSchema do
         ),
       required: [:data]
     }
+  end
+
+  @doc """
+  Builds the `OpenApiSpex.Schema` map documenting a JSON:API **collection read**'s
+  query parameters: the four members `JSONAPI.QueryParser` validates and
+  `Sportipedia.Support.JSONAPI.QueryBuilder` turns into an Ecto query.
+
+  One call states what the whole request allows, so the filterable and sortable
+  names live in the API document and the plug options rather than in a schema
+  written out by hand. Members the caller names nothing for are left out: a
+  collection that filters by nothing has no `filter` parameter to document.
+
+  ## Options
+
+  - `:filter` - keyword list of `field: "description"`, the fields the query
+    allows filtering by (a partial, case-insensitive match for strings).
+  - `:sort` - list of field names sortable in either direction; each is
+    documented as `field` (ascending) and `-field` (descending).
+  - `:page` - `:numbered` (`page[number]`/`page[size]`, the default), `:offset`
+    (`page[limit]`/`page[offset]`), or `:none`.
+  - `:title` - the schema title. Required: a collection's parameters belong to
+    the operation, not to the resource type.
+
+  The `fields` member (sparse fieldsets) is derived from the view — it is the
+  view's own `fields/0`, the only list that says what a response may carry.
+
+  ## Examples
+
+      OpenApiSpex.schema(
+        OpenApiSchema.query_params(PostView,
+          title: "blog.ListPostsQueryParams",
+          filter: [title: "Filter posts by title (partial match)"],
+          sort: ~w(title slug),
+          page: :numbered
+        )
+      )
+  """
+  @spec query_params(view :: JSONAPI.View.t(), opts :: keyword()) :: map()
+  def query_params(view, opts) do
+    title = Keyword.fetch!(opts, :title)
+
+    properties =
+      %{}
+      |> put_member(:filter, filter_schema(Keyword.get(opts, :filter, [])))
+      |> put_member(:sort, sort_schema(Keyword.get(opts, :sort, [])))
+      |> put_member(:page, page_schema(Keyword.get(opts, :page, :numbered)))
+      |> put_member(:fields, fields_schema(view))
+
+    %{
+      title: title,
+      type: :object,
+      properties: properties
+    }
+  end
+
+  defp put_member(properties, _key, nil), do: properties
+  defp put_member(properties, key, schema), do: Map.put(properties, key, schema)
+
+  defp filter_schema([]), do: nil
+
+  defp filter_schema(filters) do
+    %Schema{
+      type: :object,
+      properties:
+        Map.new(filters, fn {field, description} ->
+          {field, %Schema{type: :string, description: description}}
+        end)
+    }
+  end
+
+  defp sort_schema([]), do: nil
+
+  defp sort_schema(fields) do
+    %Schema{
+      type: :string,
+      description: "Comma-separated fields to sort by. Prefix with `-` for descending.",
+      enum: for(field <- fields, direction <- ["", "-"], do: direction <> to_string(field))
+    }
+  end
+
+  defp page_schema(:none), do: nil
+
+  defp page_schema(style) do
+    %Schema{
+      type: :object,
+      properties:
+        case style do
+          :numbered ->
+            %{
+              number: %Schema{type: :integer, default: 1},
+              size: %Schema{type: :integer, default: 20}
+            }
+
+          :offset ->
+            %{
+              limit: %Schema{type: :integer, default: 20},
+              offset: %Schema{type: :integer, default: 0}
+            }
+        end
+    }
+  end
+
+  defp fields_schema(view) do
+    case view.fields() do
+      [] ->
+        nil
+
+      fields ->
+        # the view's `fields/0` names what a response may carry; the parameter is
+        # a comma-separated *string*, so its enum holds strings, matching its type
+        %Schema{
+          type: :object,
+          properties: %{
+            String.to_atom(view.type()) => %Schema{
+              type: :string,
+              description: "Comma-separated fields to include in the response",
+              enum: Enum.map(fields, &to_string/1)
+            }
+          }
+        }
+    end
   end
 
   # ---------------------------------------------------------------------------

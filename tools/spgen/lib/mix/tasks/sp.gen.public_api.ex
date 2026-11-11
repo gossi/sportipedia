@@ -9,8 +9,9 @@ defmodule Mix.Tasks.Sp.Gen.PublicApi do
   (`SpGen.Blueprint.PublicAPI`): `@doc`, `@spec`
   (`Architecture.public_api/...`) and the function body per operation —
   commands dispatch with `consistency: :strong` (create generates the id) and
-  classify validation failures; queries read through the internal API /
-  `Repo` + JSON:API `QueryBuilder`.
+  classify validation failures; a read goes through the internal API; a
+  collection reads through the query citizen, which owns the JSON:API
+  translation (a run of this generator creates that query with it).
 
       mix sp.gen.public_api catalog-apparatus --template create
       mix sp.gen.public_api read-apparatus --template read

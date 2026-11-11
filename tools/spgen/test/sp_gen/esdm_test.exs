@@ -262,6 +262,86 @@ defmodule SpGen.EsdmTest do
       assert Esdm.declared_operation(command.("install")) == nil
       assert Esdm.declared_operation(%{command.(nil) | doc: %{}}) == nil
     end
+
+    test "a query declares read|collection, and the command vocabulary is not its own" do
+      query =
+        fn value ->
+          %SpGen.Esdm.Element{
+            kind: :query,
+            name: "list-widgets",
+            scope: [{"domain", "sport"}, {"bounded-context", "sport"}],
+            doc: %{"metadata" => %{"annotations" => %{"spgen.operation" => value}}},
+            source: "docs/domain-model/catalog/equipment/query.list-widgets.esdm.yaml",
+            address: "esdm:domain=sport/.../query=list-widgets"
+          }
+        end
+
+      assert Esdm.declared_query_operation(query.("collection")) == :collection
+      assert Esdm.declared_query_operation(query.("read")) == :read
+      # a command's word is not a query's: `create` over an array is no answer
+      assert Esdm.declared_query_operation(query.("create")) == nil
+      assert Esdm.declared_query_operation(query.(nil)) == nil
+    end
+  end
+
+  # The collection's parameters are the model's, not the generator's invention:
+  # what is filterable, what is sortable, and how it paginates are three reads of
+  # one document, and `SpGen.Blueprint.Schema` renders no enum without them.
+  describe "query parameters" do
+    setup %{model: model} do
+      {:ok, query} = Esdm.resolve(model, "query.list-positions")
+      %{query: query}
+    end
+
+    test "the declared parameter names, in order", %{query: query} do
+      assert Esdm.query_parameter_names(query) == ["filter", "page", "sort"]
+    end
+
+    test "sortable names come from the sort's own list, in its order", %{query: query} do
+      assert Esdm.sortable_fields(query) == ["title", "slug"]
+    end
+
+    test "a model that names no sort fields declares none", %{query: query} do
+      bare = %{
+        query
+        | doc: put_in(query.doc, ["parameters", "properties", "sort", "sortableFields"], nil)
+      }
+
+      assert Esdm.sortable_fields(bare) == []
+    end
+
+    test "pagination style is the page's own keys", %{query: query} do
+      assert Esdm.page_style(query) == :numbered
+
+      offset =
+        %{
+          query
+          | doc:
+              put_in(
+                query.doc,
+                ["parameters", "properties", "page", "properties"],
+                %{"limit" => %{"type" => "integer"}, "offset" => %{"type" => "integer"}}
+              )
+        }
+
+      assert Esdm.page_style(offset) == :offset
+
+      nopage = %{
+        query
+        | doc: update_in(query.doc, ["parameters", "properties"], &Map.delete(&1, "page"))
+      }
+
+      assert Esdm.page_style(nopage) == :none
+    end
+
+    test "a bare page is the house style", %{query: query} do
+      bare = %{
+        query
+        | doc: put_in(query.doc, ["parameters", "properties", "page", "properties"], nil)
+      }
+
+      assert Esdm.page_style(bare) == :numbered
+    end
   end
 
   describe "scenarios/2" do
