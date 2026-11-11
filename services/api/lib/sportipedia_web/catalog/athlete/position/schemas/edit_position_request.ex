@@ -34,7 +34,7 @@ defmodule SportipediaWeb.Catalog.Athlete.Position.Schemas.EditPositionRequest do
         type: :string,
         nullable: true,
         description:
-          "URL-friendly identifier of the position itself (raw, not namespaced; the read model re-derives the lookup slug from it and the referenced equipment's slug)"
+          "URL-friendly identifier of the position itself (raw, not namespaced; the read model stores it as raw_slug and re-derives the globally unique slug from it and the referenced equipment's slug)"
       },
       title: %OpenApiSpex.Schema{
         type: :string,

@@ -158,7 +158,7 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.CatalogPositionTest do
                })
 
       # No equipment, so no namespace: the raw slug is the whole canonical path.
-      assert position.lookup_slug == "ready-stance"
+      assert position.slug == "ready-stance"
       assert position.apparatusId == nil
       assert position.instrumentId == nil
     end
@@ -173,8 +173,8 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.CatalogPositionTest do
                  apparatusId: ApparatusFixtures.parallel_bars().id
                })
 
-      assert position.slug == "take"
-      assert position.lookup_slug == "parallel-bars/take"
+      assert position.raw_slug == "take"
+      assert position.slug == "parallel-bars/take"
       assert position.apparatusId == ApparatusFixtures.parallel_bars().id
     end
 
@@ -197,8 +197,8 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.CatalogPositionTest do
                })
 
       # Two namespaces, two canonical paths: each position answers its own.
-      assert on_bars.lookup_slug == "parallel-bars/take"
-      assert on_beam.lookup_slug == "balance-beam/take"
+      assert on_bars.slug == "parallel-bars/take"
+      assert on_beam.slug == "balance-beam/take"
     end
 
     test "rejects a slug already taken inside the referenced equipment and emits no fact" do
@@ -268,14 +268,14 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.CatalogPositionTest do
           apparatusId: ApparatusFixtures.parallel_bars().id
         })
 
-      assert bound.lookup_slug == "parallel-bars/take"
+      assert bound.slug == "parallel-bars/take"
 
       # The disjointness argument of `unique-slug-by-equipment` — a bound and an
-      # unbound position can never derive the same lookup slug, because the
+      # unbound position can never derive the same slug, because the
       # namespaced form carries a `/` — only holds by construction if raw slugs
       # cannot carry `/`. A raw slug that looks like a path is malformed at the
       # boundary: it is rejected as `:invalid_slug` before dispatch, never
-      # accepted into the projection the `lookup_slug` index then refuses.
+      # accepted into the projection the `slug` index then refuses.
       assert {:error, {:validation_failure, failures}} =
                Position.catalog_position(%{
                  title: "Take, unbound",

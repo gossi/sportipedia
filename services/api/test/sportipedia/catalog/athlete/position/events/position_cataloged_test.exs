@@ -100,7 +100,7 @@ defmodule Sportipedia.Catalog.Athlete.Position.Event.PositionCatalogedTest do
       assert Repo.get(PositionReadModel, event.id) != nil
     end
 
-    test "re-derives the lookup slug of every position bound to a renamed apparatus" do
+    test "re-derives the slug of every position bound to a renamed apparatus" do
       Athlete.new_positions([
         PositionFixtures.gymnastics_straight_arm_support(),
         PositionFixtures.gymnastics_long_hang()
@@ -118,11 +118,11 @@ defmodule Sportipedia.Catalog.Athlete.Position.Event.PositionCatalogedTest do
       support = Repo.get(PositionReadModel, PositionFixtures.gymnastics_straight_arm_support().id)
       hang = Repo.get(PositionReadModel, PositionFixtures.gymnastics_long_hang().id)
 
-      assert support.lookup_slug == "high-bar/straight-arm-support"
-      assert hang.lookup_slug == "high-bar/long-hang"
+      assert support.slug == "high-bar/straight-arm-support"
+      assert hang.slug == "high-bar/long-hang"
       # The rename moves the namespace, never the position's own raw slug.
-      assert support.slug == "straight-arm-support"
-      assert hang.slug == "long-hang"
+      assert support.raw_slug == "straight-arm-support"
+      assert hang.raw_slug == "long-hang"
     end
 
     test "leaves the positions bound to other equipment alone when an apparatus is renamed" do
@@ -143,10 +143,10 @@ defmodule Sportipedia.Catalog.Athlete.Position.Event.PositionCatalogedTest do
 
       riding = Repo.get(PositionReadModel, PositionFixtures.unicycle_riding().id)
 
-      assert riding.lookup_slug == "unicycle/riding"
+      assert riding.slug == "unicycle/riding"
     end
 
-    test "keeps the lookup slug of bound positions when the equipment edit carries no new slug" do
+    test "keeps the slug of bound positions when the equipment edit carries no new slug" do
       Athlete.new_position(PositionFixtures.gymnastics_long_hang())
 
       event = %ApparatusEdited{
@@ -159,11 +159,11 @@ defmodule Sportipedia.Catalog.Athlete.Position.Event.PositionCatalogedTest do
 
       hang = Repo.get(PositionReadModel, PositionFixtures.gymnastics_long_hang().id)
 
-      assert hang.lookup_slug == "horizontal-bar/long-hang"
+      assert hang.slug == "horizontal-bar/long-hang"
       assert hang.title == "Long Hang"
     end
 
-    test "re-derives the lookup slug of every position bound to a renamed instrument" do
+    test "re-derives the slug of every position bound to a renamed instrument" do
       Athlete.new_positions([
         PositionFixtures.unicycle_riding(),
         PositionFixtures.unicycle_on_tire(),
@@ -186,10 +186,10 @@ defmodule Sportipedia.Catalog.Athlete.Position.Event.PositionCatalogedTest do
       on_tire = Repo.get(PositionReadModel, PositionFixtures.unicycle_on_tire().id)
       hang = Repo.get(PositionReadModel, PositionFixtures.gymnastics_long_hang().id)
 
-      assert riding.lookup_slug == "unicorne/riding"
-      assert on_tire.lookup_slug == "unicorne/on-tire"
+      assert riding.slug == "unicorne/riding"
+      assert on_tire.slug == "unicorne/on-tire"
       # A position bound to an apparatus does not live in this instrument's namespace.
-      assert hang.lookup_slug == "horizontal-bar/long-hang"
+      assert hang.slug == "horizontal-bar/long-hang"
     end
 
     test "keeps one row when the replay hands PositionCataloged the same event number" do
@@ -218,13 +218,13 @@ defmodule Sportipedia.Catalog.Athlete.Position.Event.PositionCatalogedTest do
           apparatusId: apparatus.id
         })
 
-      assert position.lookup_slug == "starting-blocks/take"
+      assert position.slug == "starting-blocks/take"
 
       {:ok, _renamed} = Apparatus.edit_apparatus(%{id: apparatus.id, slug: "starting-blocks-v2"})
 
       # The position projection subscribes to the equipment fact: the row moved
       # under the apparatus' new slug, and no position command was needed.
-      assert %PositionReadModel{lookup_slug: moved, slug: "take"} =
+      assert %PositionReadModel{slug: moved, raw_slug: "take"} =
                Repo.get(PositionReadModel, position.id)
 
       assert moved == "starting-blocks-v2/take"

@@ -26,11 +26,13 @@ defmodule SportipediaWeb.Catalog.Equipment.Apparatus.Schemas.ListApparatusesQuer
       assert Map.has_key?(filter_props, :title)
     end
 
-    test "sort enum only allows title sorting" do
+    test "sort enum holds every field the model declares sortable, both ways" do
       schema = ListApparatusesQueryParams.schema()
       sort_schema = schema.properties.sort
 
-      assert sort_schema.enum == ["title", "-title"]
+      # sortable is the model's `sortableFields`, not a restatement of what is
+      # filterable: a slug sorts even where it is not a filter
+      assert sort_schema.enum == ["title", "-title", "slug", "-slug"]
     end
 
     test "fields enum uses strings, not atoms" do

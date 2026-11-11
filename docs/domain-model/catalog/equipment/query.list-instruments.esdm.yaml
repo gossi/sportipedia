@@ -6,6 +6,9 @@ scope:
   domain: sport
   boundedContext: sport
 readModel: instrument
+metadata:
+  annotations:
+    spgen.operation: collection
 result:
   type: array
   items:
@@ -37,9 +40,13 @@ parameters:
         title:
           type: string
           description: "Filter instruments by title (partial match)"
+        slug:
+          type: string
+          description: "Filter instruments by slug (partial match)"
     sort:
       type: string
       description: "Sort field(s) following JSON:API sort syntax"
+      sortableFields: [title, slug]
     page:
       type: object
       description: "Pagination following JSON:API pagination"

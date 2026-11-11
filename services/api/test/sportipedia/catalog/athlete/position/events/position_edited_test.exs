@@ -130,10 +130,10 @@ defmodule Sportipedia.Catalog.Athlete.Position.Event.PositionEditedTest do
       assert :ok = PositionProjector.handle(event, metadata(event, 2))
 
       edited = Repo.get(PositionReadModel, position.id)
-      assert edited.slug == "balancing-on-the-seat"
+      assert edited.raw_slug == "balancing-on-the-seat"
       # The patch carried no reference, so the namespace comes from the stored
       # binding — and the stored binding is left exactly where it was.
-      assert edited.lookup_slug == "unicycle/balancing-on-the-seat"
+      assert edited.slug == "unicycle/balancing-on-the-seat"
       assert edited.instrumentId == position.instrumentId
     end
 
@@ -149,8 +149,8 @@ defmodule Sportipedia.Catalog.Athlete.Position.Event.PositionEditedTest do
       edited = Repo.get(PositionReadModel, position.id)
       assert edited.instrumentId == skateboard.id
       # The raw slug did not move, only its namespace.
-      assert edited.slug == "riding"
-      assert edited.lookup_slug == "skateboard/riding"
+      assert edited.raw_slug == "riding"
+      assert edited.slug == "skateboard/riding"
     end
 
     test "leaves the canonical path where it is for an edit that moved neither slug nor binding" do
@@ -166,8 +166,8 @@ defmodule Sportipedia.Catalog.Athlete.Position.Event.PositionEditedTest do
 
       edited = Repo.get(PositionReadModel, position.id)
       assert edited.title == "Straight Arm Support"
-      assert edited.slug == "straight-arm-support"
-      assert edited.lookup_slug == "horizontal-bar/straight-arm-support"
+      assert edited.raw_slug == "straight-arm-support"
+      assert edited.slug == "horizontal-bar/straight-arm-support"
       assert edited.apparatusId == position.apparatusId
     end
 
@@ -192,12 +192,10 @@ defmodule Sportipedia.Catalog.Athlete.Position.Event.PositionEditedTest do
       assert :ok = PositionProjector.handle(event, metadata(event, 3))
 
       edited = Repo.get(PositionReadModel, position.id)
-      assert edited.lookup_slug == "unicycle/riding-a-unicycle"
+      assert edited.slug == "unicycle/riding-a-unicycle"
 
       siblings =
-        Repo.all(
-          from(p in PositionReadModel, where: p.lookup_slug == "unicycle/riding-a-unicycle")
-        )
+        Repo.all(from(p in PositionReadModel, where: p.slug == "unicycle/riding-a-unicycle"))
 
       assert length(siblings) == 1
     end

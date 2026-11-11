@@ -35,7 +35,7 @@ defmodule SportipediaWeb.Catalog.Athlete.Position.ReadPositionEndpointTest do
 
       assert jsonapi_id(body) == position.id
       assert jsonapi_attr(body, "slug") == "horizontal-bar/long-hang"
-      refute Map.has_key?(jsonapi_attrs(body), "lookup_slug")
+      refute Map.has_key?(jsonapi_attrs(body), "raw_slug")
     end
 
     test "returns 200 with the bare lookup path as its slug when read by its bare slug",
@@ -51,7 +51,7 @@ defmodule SportipediaWeb.Catalog.Athlete.Position.ReadPositionEndpointTest do
 
       assert jsonapi_id(body) == position.id
       assert jsonapi_attr(body, "slug") == "ready-stance"
-      refute Map.has_key?(jsonapi_attrs(body), "lookup_slug")
+      refute Map.has_key?(jsonapi_attrs(body), "raw_slug")
     end
 
     test "returns 404 when the position does not exist", %{conn: conn} do

@@ -35,9 +35,9 @@ defmodule SportipediaWeb.Catalog.Athlete.Position.ListPositionsEndpointTest do
       attributes = Enum.map(body["data"], & &1["attributes"])
 
       assert Enum.map(attributes, & &1["slug"]) ==
-               seeded |> Enum.sort_by(& &1.title) |> Enum.map(& &1.lookup_slug)
+               seeded |> Enum.sort_by(& &1.title) |> Enum.map(& &1.slug)
 
-      refute Enum.any?(attributes, &Map.has_key?(&1, "lookup_slug"))
+      refute Enum.any?(attributes, &Map.has_key?(&1, "raw_slug"))
     end
 
     test "returns 200 sorting the collection by the slug it publishes, the canonical path", %{
@@ -53,7 +53,7 @@ defmodule SportipediaWeb.Catalog.Athlete.Position.ListPositionsEndpointTest do
       body = json_response(conn, 200)
 
       assert Enum.map(body["data"], & &1["attributes"]["slug"]) ==
-               seeded |> Enum.sort_by(& &1.lookup_slug) |> Enum.map(& &1.lookup_slug)
+               seeded |> Enum.sort_by(& &1.slug) |> Enum.map(& &1.slug)
     end
 
     test "returns 200 with only the positions whose title partially matches the filter", %{
@@ -65,8 +65,8 @@ defmodule SportipediaWeb.Catalog.Athlete.Position.ListPositionsEndpointTest do
         struct!(PositionFixtures.unicycle_riding(),
           id: UUID.uuid4(),
           title: "Athletic Stance",
-          slug: "athletic-stance",
-          lookup_slug: "athletic-stance"
+          raw_slug: "athletic-stance",
+          slug: "athletic-stance"
         )
       )
 
@@ -116,7 +116,7 @@ defmodule SportipediaWeb.Catalog.Athlete.Position.ListPositionsEndpointTest do
       assert [resource] = body["data"]
       assert resource["id"] == seeded.id
       assert resource["attributes"]["title"] == seeded.title
-      assert resource["attributes"]["slug"] == seeded.lookup_slug
+      assert resource["attributes"]["slug"] == seeded.slug
     end
   end
 
@@ -129,8 +129,8 @@ defmodule SportipediaWeb.Catalog.Athlete.Position.ListPositionsEndpointTest do
       struct!(Enum.at(fixtures, rem(index - 1, length(fixtures))),
         id: UUID.uuid4(),
         title: paging_title(index),
-        slug: "paging-position-#{index}",
-        lookup_slug: "paging/paging-position-#{index}"
+        raw_slug: "paging-position-#{index}",
+        slug: "paging/paging-position-#{index}"
       )
     end)
   end

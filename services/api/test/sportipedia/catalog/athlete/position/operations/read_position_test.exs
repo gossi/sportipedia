@@ -14,13 +14,13 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.ReadPositionTest do
       assert Repo.one(ReadPosition.new(position.id)) == position
     end
 
-    test "reads the position by its canonical lookup slug" do
+    test "reads the position by its canonical slug" do
       {:ok, position} = Athlete.new_position(PositionFixtures.unicycle_riding())
 
       assert Repo.one(ReadPosition.new("unicycle/riding")) == position
     end
 
-    test "reads the unbound position by its bare lookup slug" do
+    test "reads the unbound position by its bare slug" do
       {:ok, position} = Athlete.new_position(PositionFixtures.ready_stance())
 
       assert Repo.one(ReadPosition.new("ready-stance")) == position
@@ -29,10 +29,10 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.ReadPositionTest do
     test "does not read a position by its raw slug" do
       {:ok, position} = Athlete.new_position(PositionFixtures.unicycle_riding())
 
-      assert Repo.one(ReadPosition.new(position.slug)) == nil
+      assert Repo.one(ReadPosition.new(position.raw_slug)) == nil
     end
 
-    test "does not read a position by a lookup slug in another case" do
+    test "does not read a position by its slug in another case" do
       {:ok, _position} = Athlete.new_position(PositionFixtures.unicycle_riding())
 
       assert Repo.one(ReadPosition.new("UNICYCLE/RIDING")) == nil

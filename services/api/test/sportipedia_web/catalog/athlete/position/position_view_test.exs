@@ -32,8 +32,8 @@ defmodule SportipediaWeb.Catalog.Athlete.Position.PositionViewTest do
       position = %PositionReadModel{
         id: "d290f1ee-6c54-4b01-90e6-d701748f0851",
         title: "Riding",
-        slug: "riding",
-        lookup_slug: "unicycle/riding",
+        raw_slug: "riding",
+        slug: "unicycle/riding",
         apparatusId: UUID.uuid4(),
         description: "Riding on a unicycle",
         instrumentId: UUID.uuid5(:dns, "equipment:instrument:unicycle")
@@ -51,8 +51,8 @@ defmodule SportipediaWeb.Catalog.Athlete.Position.PositionViewTest do
       position = %PositionReadModel{
         id: "d290f1ee-6c54-4b01-90e6-d701748f0851",
         title: "Long Hang",
-        slug: "long-hang",
-        lookup_slug: "horizontal-bar/long-hang",
+        raw_slug: "long-hang",
+        slug: "horizontal-bar/long-hang",
         apparatusId: UUID.uuid5(:dns, "equipment:apparatus:horizontal-bar"),
         description: "Athlete has their arms straight while hanging on the bar"
       }
@@ -62,7 +62,7 @@ defmodule SportipediaWeb.Catalog.Athlete.Position.PositionViewTest do
       result = PositionView.render("show.json", %{data: position, conn: conn})
 
       assert result.data.attributes.slug == "horizontal-bar/long-hang"
-      refute Map.has_key?(result.data.attributes, :lookup_slug)
+      refute Map.has_key?(result.data.attributes, :raw_slug)
     end
   end
 end

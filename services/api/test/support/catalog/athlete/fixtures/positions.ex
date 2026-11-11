@@ -19,8 +19,8 @@ defmodule Sportipedia.TestSupport.Catalog.Athlete.PositionFixtures do
     %PositionReadModel{
       id: UUID.uuid5(:dns, "athlete:position:unicycle-riding"),
       title: "Riding",
-      slug: "riding",
-      lookup_slug: "unicycle/riding",
+      raw_slug: "riding",
+      slug: "unicycle/riding",
       description: "Riding on a unicycle",
       instrumentId: UUID.uuid5(:dns, "equipment:instrument:unicycle")
     }
@@ -32,8 +32,8 @@ defmodule Sportipedia.TestSupport.Catalog.Athlete.PositionFixtures do
     %PositionReadModel{
       id: UUID.uuid5(:dns, "athlete:position:unicycle-on-tire"),
       title: "On Tire",
-      slug: "on-tire",
-      lookup_slug: "unicycle/on-tire",
+      raw_slug: "on-tire",
+      slug: "unicycle/on-tire",
       description: "Feet are on the tire",
       instrumentId: UUID.uuid5(:dns, "equipment:instrument:unicycle")
     }
@@ -45,8 +45,8 @@ defmodule Sportipedia.TestSupport.Catalog.Athlete.PositionFixtures do
     %PositionReadModel{
       id: UUID.uuid5(:dns, "athlete:position:unicycle-seat-in-front"),
       title: "Seat in-front",
-      slug: "seat-in-front",
-      lookup_slug: "unicycle/seat-in-front",
+      raw_slug: "seat-in-front",
+      slug: "unicycle/seat-in-front",
       description: "Seat is hold in front of the body",
       instrumentId: UUID.uuid5(:dns, "equipment:instrument:unicycle")
     }
@@ -58,8 +58,8 @@ defmodule Sportipedia.TestSupport.Catalog.Athlete.PositionFixtures do
     %PositionReadModel{
       id: UUID.uuid5(:dns, "athlete:position:gymnastics-straight-arm-support"),
       title: "Straight-arm support",
-      slug: "straight-arm-support",
-      lookup_slug: "horizontal-bar/straight-arm-support",
+      raw_slug: "straight-arm-support",
+      slug: "horizontal-bar/straight-arm-support",
       apparatusId: UUID.uuid5(:dns, "equipment:apparatus:horizontal-bar"),
       description: "Athlete has their arms straight while supporting themselves onto the bar"
     }
@@ -71,8 +71,8 @@ defmodule Sportipedia.TestSupport.Catalog.Athlete.PositionFixtures do
     %PositionReadModel{
       id: UUID.uuid5(:dns, "athlete:position:gymnastics-long-hang"),
       title: "Long Hang",
-      slug: "long-hang",
-      lookup_slug: "horizontal-bar/long-hang",
+      raw_slug: "long-hang",
+      slug: "horizontal-bar/long-hang",
       apparatusId: UUID.uuid5(:dns, "equipment:apparatus:horizontal-bar"),
       description: "Athlete has their arms straight while hanging on the bar"
     }
@@ -84,8 +84,8 @@ defmodule Sportipedia.TestSupport.Catalog.Athlete.PositionFixtures do
     %PositionReadModel{
       id: UUID.uuid5(:dns, "athlete:position:ready-stance"),
       title: "Ready Stance",
+      raw_slug: "ready-stance",
       slug: "ready-stance",
-      lookup_slug: "ready-stance",
       description: "Athletic stance with knees slightly bent"
     }
   end

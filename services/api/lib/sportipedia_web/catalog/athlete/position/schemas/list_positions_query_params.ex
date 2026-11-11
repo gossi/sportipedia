@@ -2,46 +2,20 @@ defmodule SportipediaWeb.Catalog.Athlete.Position.Schemas.ListPositionsQueryPara
   @moduledoc """
   OpenAPI schema for documenting list-positions collection query parameters.
   """
+  alias Sportipedia.Support.JSONAPI.OpenApiSchema
+  alias SportipediaWeb.Catalog.Athlete.Position.PositionView
+
   require OpenApiSpex
 
   @doc """
   Returns the OpenAPI schema for the list-positions collection query parameters.
   """
-  OpenApiSpex.schema(%{
-    title: "athlete.ListPositionsQueryParams",
-    type: :object,
-    properties: %{
-      filter: %OpenApiSpex.Schema{
-        type: :object,
-        properties: %{
-          title: %OpenApiSpex.Schema{
-            type: :string,
-            description: "Filter positions by title (partial match)"
-          }
-        }
-      },
-      sort: %OpenApiSpex.Schema{
-        type: :string,
-        description: "Comma-separated fields to sort by. Prefix with `-` for descending.",
-        enum: ["title", "-title", "slug", "-slug"]
-      },
-      page: %OpenApiSpex.Schema{
-        type: :object,
-        properties: %{
-          number: %OpenApiSpex.Schema{type: :integer, default: 1},
-          size: %OpenApiSpex.Schema{type: :integer, default: 20}
-        }
-      },
-      fields: %OpenApiSpex.Schema{
-        type: :object,
-        properties: %{
-          position: %OpenApiSpex.Schema{
-            type: :string,
-            description: "Comma-separated fields to include in the response",
-            enum: ["title", "slug", "apparatusId", "description", "instrumentId"]
-          }
-        }
-      }
-    }
-  })
+  OpenApiSpex.schema(
+    OpenApiSchema.query_params(PositionView,
+      title: "athlete.ListPositionsQueryParams",
+      filter: [title: "Filter positions by title (partial match)"],
+      sort: ~w(title slug),
+      page: :numbered
+    )
+  )
 end

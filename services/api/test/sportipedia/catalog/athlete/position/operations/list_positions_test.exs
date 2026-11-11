@@ -21,8 +21,8 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.ListPositionsTest do
         struct!(PositionFixtures.unicycle_riding(),
           id: UUID.uuid4(),
           title: "Athletic Stance",
-          slug: "athletic-stance",
-          lookup_slug: "athletic-stance"
+          raw_slug: "athletic-stance",
+          slug: "athletic-stance"
         )
       )
 
@@ -52,8 +52,8 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.ListPositionsTest do
 
       assert {:ok, listed} = Position.list_positions(%JSONAPI.Config{sort: [asc: :slug]})
 
-      by_canonical_path = seeded |> Enum.sort_by(& &1.lookup_slug) |> Enum.map(& &1.id)
-      by_raw_slug = seeded |> Enum.sort_by(& &1.slug) |> Enum.map(& &1.id)
+      by_canonical_path = seeded |> Enum.sort_by(& &1.slug) |> Enum.map(& &1.id)
+      by_raw_slug = seeded |> Enum.sort_by(& &1.raw_slug) |> Enum.map(& &1.id)
 
       # The fixture set orders differently by raw slug than by canonical path,
       # so the assertion below can only hold for the path the client sees.
@@ -101,8 +101,8 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.ListPositionsTest do
       struct!(Enum.at(fixtures, rem(index - 1, length(fixtures))),
         id: UUID.uuid4(),
         title: paging_title(index),
-        slug: "paging-position-#{index}",
-        lookup_slug: "paging/paging-position-#{index}"
+        raw_slug: "paging-position-#{index}",
+        slug: "paging/paging-position-#{index}"
       )
     end)
   end

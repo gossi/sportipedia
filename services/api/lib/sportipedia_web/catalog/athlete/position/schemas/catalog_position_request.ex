@@ -15,7 +15,7 @@ defmodule SportipediaWeb.Catalog.Athlete.Position.Schemas.CatalogPositionRequest
       slug: %OpenApiSpex.Schema{
         type: :string,
         description:
-          "URL-friendly identifier of the position itself (raw, not namespaced; the read model derives the globally unique lookup slug from it and the referenced equipment's slug)"
+          "URL-friendly identifier of the position itself (raw, not namespaced; the read model stores it as raw_slug and derives the globally unique slug from it and the referenced equipment's slug)"
       },
       apparatusId: %OpenApiSpex.Schema{
         type: :string,

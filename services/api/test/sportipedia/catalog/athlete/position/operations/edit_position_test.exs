@@ -154,8 +154,8 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.EditPositionTest do
                })
 
       assert edited.title == "Balancing"
-      assert edited.slug == "riding"
-      assert edited.lookup_slug == "unicycle/riding"
+      assert edited.raw_slug == "riding"
+      assert edited.slug == "unicycle/riding"
     end
 
     test "an edit that takes a slug another position holds in the same equipment is rejected" do
@@ -174,8 +174,8 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.EditPositionTest do
 
       assert :slug_exists in failures[:slug]
       # The rejected patch leaves the catalog as it was.
-      assert Repo.get(PositionReadModel, seat_in_front.id).slug == "seat-in-front"
-      assert Repo.get(PositionReadModel, riding.id).slug == "riding"
+      assert Repo.get(PositionReadModel, seat_in_front.id).raw_slug == "seat-in-front"
+      assert Repo.get(PositionReadModel, riding.id).raw_slug == "riding"
     end
 
     test "an edit that omits the equipment reference is checked inside the stored namespace" do
@@ -192,8 +192,8 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.EditPositionTest do
 
       assert failures[:slug] == [:slug_exists]
 
-      assert Repo.get(PositionReadModel, seat_in_front.id).slug == "seat-in-front"
-      assert Repo.get(PositionReadModel, riding.id).lookup_slug == "unicycle/riding"
+      assert Repo.get(PositionReadModel, seat_in_front.id).raw_slug == "seat-in-front"
+      assert Repo.get(PositionReadModel, riding.id).slug == "unicycle/riding"
     end
 
     test "an edit that omits the reference accepts a slug an unbound position already holds" do
@@ -206,8 +206,8 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.EditPositionTest do
       # the two paths never collide.
       assert {:ok, edited} = Position.edit_position(%{id: position.id, slug: "ready-stance"})
 
-      assert edited.slug == "ready-stance"
-      assert edited.lookup_slug == "unicycle/ready-stance"
+      assert edited.raw_slug == "ready-stance"
+      assert edited.slug == "unicycle/ready-stance"
     end
 
     test "an edit that re-supplies its own slug with no reference in the patch is accepted" do
@@ -216,7 +216,7 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.EditPositionTest do
       position = catalog_position_fixture(PositionFixtures.unicycle_riding())
 
       assert {:ok, moved} = Position.edit_position(%{id: position.id, slug: "ready-stance"})
-      assert moved.lookup_slug == "unicycle/ready-stance"
+      assert moved.slug == "unicycle/ready-stance"
 
       # Now the raw slug `ready-stance` is held twice, once unbound and once under
       # `unicycle`. Re-supplying it without a reference finds the stored row — the
@@ -229,8 +229,8 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.EditPositionTest do
                })
 
       assert again.title == "Balancing"
-      assert again.slug == "ready-stance"
-      assert again.lookup_slug == "unicycle/ready-stance"
+      assert again.raw_slug == "ready-stance"
+      assert again.slug == "unicycle/ready-stance"
     end
 
     test "an edit of an address that is not in the catalog stays not found" do
@@ -242,7 +242,7 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.EditPositionTest do
       assert {:error, :not_found} =
                Position.edit_position(%{id: UUID.uuid4(), slug: "ready-stance"})
 
-      assert Repo.get(PositionReadModel, PositionFixtures.ready_stance().id).lookup_slug ==
+      assert Repo.get(PositionReadModel, PositionFixtures.ready_stance().id).slug ==
                "ready-stance"
     end
 
@@ -260,8 +260,8 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.EditPositionTest do
       assert failures == %{slug: [:invalid_slug]}
 
       row = Repo.get(PositionReadModel, position.id)
-      assert row.slug == "riding"
-      assert row.lookup_slug == "unicycle/riding"
+      assert row.raw_slug == "riding"
+      assert row.slug == "unicycle/riding"
     end
 
     test "an edit that omits the equipment reference leaves the binding and the path alone" do
@@ -272,8 +272,8 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.EditPositionTest do
 
       assert edited.title == "Riding High"
       assert edited.instrumentId == position.instrumentId
-      assert edited.slug == "riding"
-      assert edited.lookup_slug == "unicycle/riding"
+      assert edited.raw_slug == "riding"
+      assert edited.slug == "unicycle/riding"
     end
 
     test "an edit that re-supplies an equipment reference is checked like a new one" do
@@ -312,8 +312,8 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.EditPositionTest do
 
       assert edited.instrumentId == skateboard.id
       assert edited.apparatusId == nil
-      assert edited.slug == "riding"
-      assert edited.lookup_slug == "skateboard/riding"
+      assert edited.raw_slug == "riding"
+      assert edited.slug == "skateboard/riding"
     end
 
     test "an edit that only moves the equipment binding re-validates the stored slug in the patch's namespace" do
@@ -325,7 +325,7 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.EditPositionTest do
       # legal — until a move says otherwise.
       assert {:ok, mover} = Position.catalog_position(%{title: "Riding Seat", slug: "riding"})
 
-      assert mover.lookup_slug == "riding"
+      assert mover.slug == "riding"
 
       # The patch carries a reference and no slug — but the stored raw slug
       # moves into `unicycle`'s namespace with it, and `riding` is taken there
@@ -339,8 +339,8 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.EditPositionTest do
 
       # The rejected patch leaves the row where it was: the bare path stands.
       row = Repo.get(PositionReadModel, mover.id)
+      assert row.raw_slug == "riding"
       assert row.slug == "riding"
-      assert row.lookup_slug == "riding"
       assert row.instrumentId == nil
     end
 
@@ -354,20 +354,23 @@ defmodule Sportipedia.Catalog.Athlete.Position.Operation.EditPositionTest do
       assert {:ok, edited} =
                Position.edit_position(%{id: position.id, instrumentId: unicycle.id})
 
-      assert edited.slug == "riding"
-      assert edited.lookup_slug == "unicycle/riding"
+      assert edited.raw_slug == "riding"
+      assert edited.slug == "unicycle/riding"
     end
   end
 
   # A position an edit can act on needs the aggregate, and only a command dispatch
   # builds it — so the fixture's own data goes through the port. `id` and the
-  # derived `lookup_slug` are not inputs: the API makes the id and the projector
+  # derived `slug` are not inputs: the API makes the id and the projector
   # derives the path.
   defp catalog_position_fixture(%PositionReadModel{} = fixture) do
-    params =
-      fixture
-      |> Map.from_struct()
-      |> Map.take([:title, :slug, :description, :apparatusId, :instrumentId])
+    params = %{
+      title: fixture.title,
+      slug: fixture.raw_slug,
+      description: fixture.description,
+      apparatusId: fixture.apparatusId,
+      instrumentId: fixture.instrumentId
+    }
 
     case Position.catalog_position(params) do
       {:ok, position} -> position
