@@ -3,6 +3,7 @@ export {
   BALANCE_BEAM,
   findApparatusById,
   findApparatusBySlug,
+  HORIZONTAL_BAR,
   PARALLEL_BARS,
   RINGS
 } from './fixtures/apparatuses';

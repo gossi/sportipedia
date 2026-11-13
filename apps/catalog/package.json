@@ -2,6 +2,8 @@
   "name": "@sportipedia/catalog",
   "type": "module",
   "imports": {
+    "#athlete": "./src/athlete/index.ts",
+    "#athlete-test-support": "./tests/athlete/support/index.ts",
     "#equipment": "./src/equipment/index.ts",
     "#equipment-test-support": "./tests/equipment/support/index.ts",
     "#user": "./src/user/index.ts",
@@ -74,6 +76,7 @@
     "@warp-drive/core": "catalog:lib",
     "@warp-drive/ember": "catalog:lib",
     "@warp-drive/json-api": "catalog:lib",
+    "@warp-drive/legacy": "catalog:lib",
     "@warp-drive/utilities": "catalog:lib",
     "babel-plugin-debug-macros": "catalog:build",
     "babel-plugin-ember-template-compilation": "catalog:build",

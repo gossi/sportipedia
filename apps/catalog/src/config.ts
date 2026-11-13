@@ -1,6 +1,7 @@
 import { setBuildURLConfig } from '@warp-drive/utilities';
 import translations from 'virtual:ember-intl-loader';
 
+import { configureAthleteSchema } from '#athlete';
 import { auth } from '#auth/client';
 import { configureEquipmentSchema } from '#equipment';
 
@@ -44,6 +45,7 @@ function configureApi(app: ApplicationInstance) {
 
   const store = app.lookup('service:store') as Store;
 
+  configureAthleteSchema(store.schema);
   configureEquipmentSchema(store.schema);
 }
 
