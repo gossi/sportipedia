@@ -11,6 +11,7 @@
       "#support/*": ["./src/support/*"],
       "#equipment": ["./src/equipment/index.ts"],
       "#equipment-test-support": ["./tests/equipment/support/index.ts"],
+      "#athlete-test-support": ["./tests/athlete/support/index.ts"],
       "#user": ["./src/user/index.ts"],
       "#storybook/*": ["./.storybook/*"],
       "#test-support/*": ["./tests/support/*"],

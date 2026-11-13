@@ -100,6 +100,7 @@ catalogs:
     "@warp-drive/core": 5.9.1
     "@warp-drive/ember": 5.9.1
     "@warp-drive/json-api": 5.9.1
+    "@warp-drive/legacy": 5.9.1
     "@warp-drive/utilities": 5.9.1
     "auth": "^1.7.7"
     "better-auth": 1.7.7

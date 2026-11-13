@@ -7,6 +7,7 @@ import {
 } from '@warp-drive/core/reactive';
 import { DefaultCachePolicy } from '@warp-drive/core/store';
 import { JSONAPICache } from '@warp-drive/json-api';
+import { registerDerivations as registerLegacyDerivations } from '@warp-drive/legacy/model/migration-support';
 
 import { AuthHandler } from '#auth/auth-handler';
 
@@ -37,6 +38,7 @@ export class Store extends DataStore {
     const schema = new SchemaService();
 
     registerDerivations(schema);
+    registerLegacyDerivations(schema);
     schema.registerTrait(Timestamps);
     schema.registerTransformation(TemporalDateTransform);
     schema.registerTransformation(TemporalDateTimeTransform);

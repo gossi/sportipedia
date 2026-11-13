@@ -35,7 +35,18 @@ export const RINGS: Apparatus = Object.freeze({
   updatedAt: Temporal.Now.plainDateTimeISO()
 });
 
-export const APPARATUSES = [PARALLEL_BARS, BALANCE_BEAM, RINGS];
+export const HORIZONTAL_BAR: Apparatus = Object.freeze({
+  [Type]: 'apparatus',
+  id: 'horizontal-bar',
+  title: 'Horizontal Bar',
+  slug: 'horizontal-bar',
+  description:
+    'A horizontal bar of steel or fiberglass, elevated above the floor, swung on and released in giant-swing and flight elements.',
+  createdAt: Temporal.Now.plainDateTimeISO(),
+  updatedAt: Temporal.Now.plainDateTimeISO()
+});
+
+export const APPARATUSES = [PARALLEL_BARS, BALANCE_BEAM, RINGS, HORIZONTAL_BAR];
 
 export function findApparatusById(
   id: string,

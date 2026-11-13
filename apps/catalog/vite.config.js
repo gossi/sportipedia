@@ -34,6 +34,13 @@ export default defineConfig({
       {
         extends: true,
         test: {
+          name: 'Athlete',
+          include: ['tests/athlete/**/*.test.ts']
+        }
+      },
+      {
+        extends: true,
+        test: {
           name: 'Equipment',
           include: ['tests/equipment/**/*.test.ts']
         }
