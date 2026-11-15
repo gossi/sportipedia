@@ -22,58 +22,6 @@ import type {
 import type { WithPartial } from '@warp-drive/core/types/utils';
 import type { Store } from '#support/data';
 
-type CatalogPositionData = WithPartial<PositionFields, 'description'>;
-
-/**
- * @group Position
- * @category Actions
- */
-export function catalogPosition(
-  data: CatalogPositionData,
-  { store }: { store: Store }
-): CreateRequestOptions<Position> {
-  const position = store.createRecord<Position>('position', data);
-  const options = createRecord(position, {
-    resourcePath: 'athlete/position/catalog-position',
-    reload: true
-  });
-
-  options.headers.append('Content-Type', 'application/vnd.api+json');
-  options.body = JSON.stringify({
-    data: store.cache.peek(cacheKeyFor(position))
-  });
-
-  return options;
-}
-
-/**
- * @group Position
- * @category Actions
- */
-export function editPosition(
-  record: ReactiveResource,
-  changes: Position,
-  { store }: { store: Store }
-): UpdateRequestOptions {
-  Object.assign(record, changes);
-
-  const requestOptions = updateRecord(record, {
-    reload: true
-  });
-
-  // @ts-expect-error warp-drive thinks, this must be PUT or PATCH (haiyaa, so wrong!)
-  requestOptions.method = 'POST';
-  requestOptions.url = buildBaseURL({ resourcePath: 'athlete/position/edit-apparatus' });
-  requestOptions.headers.append('Content-Type', 'application/vnd.api+json');
-
-  const payload = serializePatch(store.cache, cacheKeyFor(record));
-
-  // payload.data.attributes = data;
-  requestOptions.body = JSON.stringify(payload);
-
-  return requestOptions;
-}
-
 /**
  * @group Position
  * @category Actions
@@ -86,10 +34,63 @@ export function archivePosition(
 
   // @ts-expect-error warp-drive thinks, this must be DELETE (haiyaa, so wrong!)
   requestOptions.method = 'POST';
-  requestOptions.url = buildBaseURL({ resourcePath: 'athlete/position/archive-apparatus' });
+  requestOptions.url = buildBaseURL({ resourcePath: 'athlete/positions/archive-position' });
   requestOptions.headers.append('Content-Type', 'application/vnd.api+json');
 
   const payload = serializeResources(store.cache, cacheKeyFor(record));
+
+  requestOptions.body = JSON.stringify(payload);
+
+  return requestOptions;
+}
+
+type CatalogPositionData = WithPartial<PositionFields, 'apparatus' | 'description' | 'instrument'>;
+
+/**
+ * @group Position
+ * @category Actions
+ */
+export function catalogPosition(
+  data: CatalogPositionData,
+  { store }: { store: Store }
+): CreateRequestOptions<Position> {
+  const position = store.createRecord<Position>('position', data);
+  const options = createRecord(position, {
+    resourcePath: 'athlete/positions/catalog-position',
+    reload: true
+  });
+
+  options.headers.append('Content-Type', 'application/vnd.api+json');
+  options.body = JSON.stringify({
+    data: store.cache.peek(cacheKeyFor(position))
+  });
+
+  return options;
+}
+
+type EditPositionData = Partial<PositionFields>;
+
+/**
+ * @group Position
+ * @category Actions
+ */
+export function editPosition(
+  record: ReactiveResource,
+  changes: EditPositionData,
+  { store }: { store: Store }
+): UpdateRequestOptions {
+  Object.assign(record, changes);
+
+  const requestOptions = updateRecord(record, {
+    reload: true
+  });
+
+  // @ts-expect-error warp-drive thinks, this must be PUT or PATCH (haiyaa, so wrong!)
+  requestOptions.method = 'POST';
+  requestOptions.url = buildBaseURL({ resourcePath: 'athlete/positions/edit-position' });
+  requestOptions.headers.append('Content-Type', 'application/vnd.api+json');
+
+  const payload = serializePatch(store.cache, cacheKeyFor(record));
 
   requestOptions.body = JSON.stringify(payload);
 

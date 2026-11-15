@@ -3,6 +3,7 @@ packages:
   - support/*
   - packages/*
   - services/*
+  - tools/spgen-rs/node
 
 # for vscode-stylelint to work
 publicHoistPattern:

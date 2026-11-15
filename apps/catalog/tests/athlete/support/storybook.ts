@@ -1,6 +1,11 @@
 import { Type } from '@warp-drive/core/types/symbols';
 
-import { APPARATUSES, INSTRUMENTS } from '#equipment-test-support';
+import {
+  APPARATUSES,
+  findApparatusBySlug,
+  findInstrumentBySlug,
+  INSTRUMENTS
+} from '#equipment-test-support';
 import { CUSTOM } from '#tests/support/storybook.ts';
 
 import { findPositionBySlug, UNICYCLE_RIDING } from './fixtures/positions';
@@ -9,7 +14,19 @@ import type { Position } from '#athlete';
 import type { Meta } from 'ember-storybook';
 import type { Conditional, DecoratorFunction, InputType } from 'storybook/internal/csf';
 
-export function makeDomainObjectArgTypes(options?: {
+export function makePositionPresetControl(collection: Position[]): InputType {
+  return {
+    control: {
+      type: 'select',
+      labels: {
+        ...Object.fromEntries(collection.map((e) => [e.slug, e.title]))
+      }
+    },
+    options: [CUSTOM, ...collection.map((i) => i.slug)]
+  };
+}
+
+export function makePositionArgTypes(options?: {
   category?: string;
   subcategory?: string;
   condition?: Conditional;
@@ -19,52 +36,21 @@ export function makeDomainObjectArgTypes(options?: {
     subcategory: 'Position',
     ...options
   };
-  const condition = options?.condition ?? {
-    arg: 'position',
-    eq: CUSTOM
-  };
+  const condition = options?.condition ?? { arg: 'position', eq: CUSTOM };
 
   return {
-    slug: {
-      type: {
-        required: true,
-        name: 'string'
-      },
+    title: {
+      type: { required: true, name: 'string' },
       if: condition,
       table
     },
     rawSlug: {
-      type: {
-        required: true,
-        name: 'string'
-      },
+      type: { required: true, name: 'string' },
       if: condition,
       table
     },
-    title: {
-      type: {
-        required: true,
-        name: 'string'
-      },
-      if: condition,
-      table
-    },
-    description: {
-      type: {
-        required: true,
-        name: 'string'
-      },
-      if: condition,
-      table
-    },
-    instrument: {
-      control: {
-        type: 'select',
-        labels: {
-          ...Object.fromEntries(INSTRUMENTS.map((e) => [e.slug, e.title]))
-        }
-      },
-      options: INSTRUMENTS,
+    slug: {
+      type: { required: true, name: 'string' },
       if: condition,
       table
     },
@@ -78,23 +64,27 @@ export function makeDomainObjectArgTypes(options?: {
       options: APPARATUSES,
       if: condition,
       table
+    },
+    description: {
+      type: { required: false, name: 'string' },
+      if: condition,
+      table
+    },
+    instrument: {
+      control: {
+        type: 'select',
+        labels: {
+          ...Object.fromEntries(INSTRUMENTS.map((e) => [e.slug, e.title]))
+        }
+      },
+      options: INSTRUMENTS,
+      if: condition,
+      table
     }
   };
 }
 
-export function makePresetControl(collection: Position[]): InputType {
-  return {
-    control: {
-      type: 'select',
-      labels: {
-        ...Object.fromEntries(collection.map((e) => [e.slug, e.title]))
-      }
-    },
-    options: [CUSTOM, ...collection.map((i) => i.slug)]
-  };
-}
-
-export function makePositionArgTypes(
+export function makePositionArgTypesWithPreset(
   collection: Position[],
   options?: {
     category?: string;
@@ -103,78 +93,70 @@ export function makePositionArgTypes(
   }
 ): Record<string, InputType> {
   return {
-    equipment: {
-      ...makePresetControl(collection),
-      table: {
-        category: options?.category ?? 'Domain Object'
-      }
+    position: {
+      ...makePositionPresetControl(collection),
+      table: { category: options?.category ?? 'Domain Object' }
     },
-    ...makeDomainObjectArgTypes(options)
+    ...makePositionArgTypes(options)
   };
 }
 
 export interface PositionArgs {
-  // preset: boolean;
-  equipment: string;
+  position: string;
   title: string;
-  slug: string;
   rawSlug: string;
-  description: string;
-  instrument?: string;
+  slug: string;
   apparatus?: string;
+  description?: string;
+  instrument?: string;
 }
 
 export function getPositionFromArgs(args: PositionArgs, collection: Position[]): Position {
-  return args.equipment === CUSTOM
+  return args.position === CUSTOM
     ? {
         [Type]: 'position',
-        title: args.title,
-        slug: args.slug,
-        rawSlug: args.rawSlug,
-        description: args.description,
         id: args.slug,
+        title: args.title,
+        rawSlug: args.rawSlug,
+        slug: args.slug,
+        apparatus: args.apparatus ? findApparatusBySlug(args.apparatus) : undefined,
+        description: args.description,
+        instrument: args.instrument ? findInstrumentBySlug(args.instrument) : undefined,
         createdAt: Temporal.Now.plainDateTimeISO(),
         updatedAt: Temporal.Now.plainDateTimeISO()
       }
-    : (findPositionBySlug(args.equipment, collection) as Position);
-}
-
-export function makePositionDecorator(collection: Position[]): DecoratorFunction {
-  return (story, { args }) => {
-    const equipment = getPositionFromArgs(args as PositionArgs, collection);
-
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
-    return story({ args: { ...args, equipment } });
-  };
+    : (findPositionBySlug(args.position, collection) as Position);
 }
 
 export function getPositionDefaultArgs(position: Position = UNICYCLE_RIDING) {
   return {
-    equipment: position.slug,
+    position: position.slug,
     title: position.title,
-    slug: position.slug,
     rawSlug: position.rawSlug,
-    description: position.description
+    slug: position.slug,
+    apparatus: position.apparatus?.slug,
+    description: position.description,
+    instrument: position.instrument?.slug
+  };
+}
+
+export function makePositionDecorator(collection: Position[]): DecoratorFunction {
+  return (story, { args }) => {
+    const position = getPositionFromArgs(args as PositionArgs, collection);
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return story({ args: { ...args, position } });
   };
 }
 
 export function makePositionMeta(
   collection: Position[],
   position: Position,
-  options?: {
-    category?: string;
-    subcategory?: string;
-  }
-) {
+  options?: { category?: string; subcategory?: string }
+): (meta: Meta) => Meta {
   return (meta: Meta): Meta => {
     const argTypes = {
-      equipment: {
-        ...makePresetControl(collection),
-        table: {
-          category: options?.category ?? 'Domain Object'
-        }
-      },
-      ...makeDomainObjectArgTypes(options),
+      ...makePositionArgTypesWithPreset(collection, options),
       ...meta.argTypes
     };
     const decorators = meta.decorators
@@ -186,10 +168,7 @@ export function makePositionMeta(
     return {
       ...meta,
       argTypes,
-      args: {
-        ...meta.args,
-        ...getPositionDefaultArgs(position)
-      },
+      args: { ...meta.args, ...getPositionDefaultArgs(position) },
       decorators: [...decorators, makePositionDecorator(collection)]
     };
   };

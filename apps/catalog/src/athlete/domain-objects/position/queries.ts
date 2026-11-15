@@ -14,7 +14,7 @@ import type { FindRecordRequestOptions, QueryRequestOptions } from '@warp-drive/
  * @group Position
  * @category Queries
  */
-export function readPositiones(
+export function listPositions(
   params: QueryParamsSource = {}
 ): QueryRequestOptions<ReactiveDataDocument<Position[]>> {
   return query<Position>('position', params, { resourcePath: 'athlete/positions' });

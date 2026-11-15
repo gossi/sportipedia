@@ -2,6 +2,7 @@ import { Type } from '@warp-drive/core/types/symbols';
 
 import { HORIZONTAL_BAR, UNICYCLE } from '#equipment-test-support';
 
+import type { ID, Slug } from '#/support/domain-objects/fields';
 import type { Position } from '#athlete';
 
 export const UNICYCLE_RIDING: Position = Object.freeze({
@@ -46,8 +47,8 @@ export const GYMNASTICS_STRAIGHT_ARM_SUPPORT: Position = Object.freeze({
   title: 'Straight-arm support',
   rawSlug: 'straight-arm-support',
   slug: 'horizontal-bar/straight-arm-support',
-  description: 'Athlete has their arms straight while supporting themselves onto the bar',
   apparatus: HORIZONTAL_BAR,
+  description: 'Athlete has their arms straight while supporting themselves onto the bar',
   createdAt: Temporal.Now.plainDateTimeISO(),
   updatedAt: Temporal.Now.plainDateTimeISO()
 });
@@ -58,8 +59,8 @@ export const GYMNASTICS_LONG_HANG: Position = Object.freeze({
   title: 'Long Hang',
   rawSlug: 'long-hang',
   slug: 'horizontal-bar/long-hang',
-  description: 'Athlete has their arms straight while hanging on the bar',
   apparatus: HORIZONTAL_BAR,
+  description: 'Athlete has their arms straight while hanging on the bar',
   createdAt: Temporal.Now.plainDateTimeISO(),
   updatedAt: Temporal.Now.plainDateTimeISO()
 });
@@ -84,15 +85,12 @@ export const POSITIONS = [
   READY_STANCE
 ];
 
-export function findPositionById(
-  id: string,
-  positions: Position[] = POSITIONS
-): Position | undefined {
+export function findPositionById(id: ID, positions: Position[] = POSITIONS): Position | undefined {
   return positions.find((i) => i.id === id);
 }
 
 export function findPositionBySlug(
-  slug: string,
+  slug: Slug,
   positions: Position[] = POSITIONS
 ): Position | undefined {
   return positions.find((i) => i.slug === slug);

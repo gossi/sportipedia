@@ -64,6 +64,7 @@
     "@iconify-json/material-symbols": "catalog:icons",
     "@iconify-json/ph": "catalog:icons",
     "@rollup/plugin-babel": "catalog:build",
+    "@sportipedia/spgen": "workspace:*",
     "@standard-schema/spec": "^1.1.0",
     "@storybook/addon-a11y": "catalog:workshop",
     "@storybook/addon-docs": "catalog:workshop",
