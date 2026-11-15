@@ -1,0 +1,26 @@
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: create-exercise
+description: "Creates a new exercise"
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: exercise
+metadata:
+  annotations:
+    spgen.operation: create
+data:
+  type: object
+  properties:
+    title:
+      type: string
+      description: "Name of the exercise"
+    difficulty:
+      type: integer
+      description: "Optional difficulty rating"
+  required:
+    - title
+publishes:
+  - exercise-created
+actors:
+  - user

@@ -1,0 +1,30 @@
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: exercise
+scope:
+  domain: sport
+  boundedContext: sport
+metadata:
+  annotations:
+    spgen.operation.exercise-created: create
+projections:
+  - boundedContext: sport
+    aggregate: exercise
+    event: exercise-created
+    rule: "Project the exercise when it is created"
+schema:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier"
+    title:
+      type: string
+      description: "Name of the exercise"
+    difficulty:
+      type: integer
+      description: "Optional difficulty rating"
+  required:
+    - id
+    - title

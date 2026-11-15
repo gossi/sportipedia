@@ -1,0 +1,16 @@
+[package]
+name = "spgen-fe"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "spgen"
+path = "src/main.rs"
+
+[dependencies]
+spgen-model = { path = "../spgen-model" }
+
+oxc_allocator = "=0.158.0"
+oxc_ast = "=0.158.0"
+oxc_parser = "=0.158.0"
+oxc_span = "=0.158.0"
