@@ -48,16 +48,19 @@ schema:
     slug:
       type: string
       description: "The canonical, globally unique lookup path: `<equipment-slug>/<slug>` when bound, `<slug>` when unbound; derived by the projector from the referenced equipment's current slug"
+      readOnly: true
     description:
       type: string
       description: "Optional description"
     apparatusId:
       type: string
       format: uuid
+      x-esdm-relation: { to: apparatus, cardinality: one }
       description: "Reference to apparatus (optional)"
     instrumentId:
       type: string
       format: uuid
+      x-esdm-relation: { to: instrument, cardinality: one }
       description: "Reference to instrument (optional)"
   required:
     - id

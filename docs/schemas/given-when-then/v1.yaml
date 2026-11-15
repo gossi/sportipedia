@@ -1,6 +1,6 @@
 # Copyright (c) 2026 the native web GmbH. All rights reserved.
 #
-# Free to use and redistribute as-is. Modification is not permitted.
+# Licensed under the MIT license.
 # Full terms: https://www.esdm.io/introduction/license/
 # This notice must not be removed.
 
@@ -27,7 +27,7 @@
 # Hybrid structure: a feature is a container, scenarios are its
 # elements. The hybrid mirrors `domain-story`'s container-of-
 # `sentences` shape and avoids both extremes – one document per
-# scenario (no fachliche Klammer, scope repeated everywhere) and a
+# scenario (no shared frame, scope repeated everywhere) and a
 # bare list of scenarios (no narrative framing).
 #
 # For the extension mechanism (URL layout, dispatch on `apiVersion`,
@@ -84,7 +84,7 @@ x-esdm-document-separator: "---"
 x-esdm-project-layout:
   schemas-directory: "schemas"
   schema-path-template: "schemas/{name}/{version}.yaml"
-description: "Extension schema for Given-When-Then specifications. A `feature` document groups scenarios about one consistency unit (`aggregate`, `dynamic-consistency-boundary`, `process-manager`, or `read-model`) under a single fachliche Klammer. Each scenario carries `given` (preceding events), `when` (a triggering command, event, timer, or query), and `then` (the expected outcome). The four feature variants are distinguished by the discriminator field inside `scope` (`aggregate`, `dynamicConsistencyBoundary`, `processManager`, `readModel`) – the chosen variant fixes the form of `given`, `when`, and `then` on every scenario. Aggregate features identify events by bare name (the feature's scope fixes the producing aggregate); DCB, process-manager and read-model features carry full event references because their preceding events may originate in other bounded contexts. Cross-field references (commands, events, queries, timers, actors, named invariants) are modeling rules the schema does not enforce; the linter checks them separately."
+description: "Extension schema for Given-When-Then specifications. A `feature` document groups scenarios about one consistency unit (`aggregate`, `dynamic-consistency-boundary`, `process-manager`, or `read-model`) under one shared frame. Each scenario carries `given` (preceding events), `when` (a triggering command, event, timer, or query), and `then` (the expected outcome). The four feature variants are distinguished by the discriminator field inside `scope` (`aggregate`, `dynamicConsistencyBoundary`, `processManager`, `readModel`) – the chosen variant fixes the form of `given`, `when`, and `then` on every scenario. Aggregate features identify events by bare name (the feature's scope fixes the producing aggregate); DCB, process-manager and read-model features carry full event references because their preceding events may originate in other bounded contexts. Cross-field references (commands, events, queries, timers, actors, named invariants) are modeling rules the schema does not enforce; the linter checks them separately."
 
 $defs:
   name:
@@ -273,25 +273,17 @@ $defs:
     additionalProperties: false
 
   rejection:
-    # An expected refusal of the When trigger. Either points at a
-    # named invariant of the unit under test (linkable, machine-
-    # checkable) or carries free-form prose (open, when no single
-    # invariant captures the cause). Picking either form is a
-    # modeling judgment per scenario.
-    oneOf:
-      - type: object
-        properties:
-          invariant:
-            $ref: "#/$defs/name"
-        required: [invariant]
-        additionalProperties: false
-      - type: object
-        properties:
-          reason:
-            type: string
-            minLength: 1
-        required: [reason]
-        additionalProperties: false
+    # An expected refusal of the When trigger. It points at a named
+    # invariant of the unit under test (linkable, machine-checkable) –
+    # every rejection anchors to a named invariant, so the cause is
+    # always traceable, and authorization stays out of it (that lives
+    # on the command's actors, not in a rejection).
+    type: object
+    properties:
+      invariant:
+        $ref: "#/$defs/name"
+    required: [invariant]
+    additionalProperties: false
 
   bareCommandWhen:
     # When for aggregate and DCB features: a command name (bare,

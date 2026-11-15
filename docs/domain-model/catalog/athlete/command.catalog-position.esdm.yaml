@@ -24,10 +24,12 @@ data:
     apparatusId:
       type: string
       format: uuid
+      x-esdm-relation: { to: apparatus, cardinality: one }
       description: "Reference to apparatus (optional, mutually exclusive with instrumentId)"
     instrumentId:
       type: string
       format: uuid
+      x-esdm-relation: { to: instrument, cardinality: one }
       description: "Reference to instrument (optional, mutually exclusive with apparatusId)"
   required:
     - title
