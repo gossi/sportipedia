@@ -1,0 +1,27 @@
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: archive-position
+description: "Archives a position"
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: position
+metadata:
+  annotations:
+    spgen.operation: delete
+data:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier of the position to archive"
+  required:
+    - id
+constraints:
+  - name: position-exists
+    rule: A position needs to exist (check by id)
+publishes:
+  - position-archived
+actors:
+  - admin

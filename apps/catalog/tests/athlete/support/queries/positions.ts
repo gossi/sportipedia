@@ -16,19 +16,35 @@ export function makePositionResponse(position: Position): ResponseResolver {
 
 // Endpoints
 
+export function makeArchivePositionEndpoint(): Endpoint {
+  return { method: 'POST', path: `**/catalog/athlete/positions/archive-position` };
+}
+
 export function makeCatalogPositionEndpoint(): Endpoint {
   return { method: 'POST', path: `**/catalog/athlete/positions/catalog-position` };
 }
 
-export function makeReadPositionEndpoint(slug: string): Endpoint {
-  return { method: 'GET', path: `**/catalog/athlete/positions/${slug}` };
+export function makeEditPositionEndpoint(): Endpoint {
+  return { method: 'POST', path: `**/catalog/athlete/positions/edit-position` };
 }
 
-export function makeListPositionesEndpoint(): Endpoint {
-  return { method: 'GET', path: '**/catalog/athlete/positions' };
+export function makeListPositionsEndpoint(): Endpoint {
+  return { method: 'GET', path: `**/catalog/athlete/positions` };
+}
+
+export function makeReadPositionEndpoint(idOrSlug: string): Endpoint {
+  return { method: 'GET', path: `**/catalog/athlete/positions/${idOrSlug}` };
 }
 
 // Mocks
+
+export function mockArchivePosition(): RequestHandler {
+  return mock(makeArchivePositionEndpoint(), async ({ request }) => {
+    const position = (await request.json()) as Position;
+
+    return HttpResponse.json(toJsonApiDocument(toResource(position)));
+  });
+}
 
 export function mockCatalogPosition(): RequestHandler {
   return mock(makeCatalogPositionEndpoint(), async ({ request }) => {
@@ -38,12 +54,20 @@ export function mockCatalogPosition(): RequestHandler {
   });
 }
 
-export function mockReadPosition(position: Position): RequestHandler {
-  return mock(makeReadPositionEndpoint(position.slug), makePositionResponse(position));
+export function mockEditPosition(): RequestHandler {
+  return mock(makeEditPositionEndpoint(), async ({ request }) => {
+    const position = (await request.json()) as Position;
+
+    return HttpResponse.json(toJsonApiDocument(toResource(position)));
+  });
 }
 
-export function mockListPositiones(positiones: Position[] = POSITIONS): RequestHandler {
-  const data = positiones.map((position) => toResource(position));
+export function mockListPositions(positions: Position[] = POSITIONS): RequestHandler {
+  const data = positions.map((position) => toResource(position));
 
-  return mock(makeListPositionesEndpoint(), makeJsonResponder(toJsonApiDocument(data)));
+  return mock(makeListPositionsEndpoint(), makeJsonResponder(toJsonApiDocument(data)));
+}
+
+export function mockReadPosition(position: Position): RequestHandler {
+  return mock(makeReadPositionEndpoint(position.slug), makePositionResponse(position));
 }

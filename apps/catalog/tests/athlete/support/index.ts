@@ -10,21 +10,25 @@ export {
   UNICYCLE_SEAT_IN_FRONT
 } from './fixtures/positions';
 export {
+  makeArchivePositionEndpoint,
   makeCatalogPositionEndpoint,
-  makeListPositionesEndpoint,
+  makeEditPositionEndpoint,
+  makeListPositionsEndpoint,
   makePositionResponse,
   makeReadPositionEndpoint,
+  mockArchivePosition,
   mockCatalogPosition,
-  mockListPositiones,
+  mockEditPosition,
+  mockListPositions,
   mockReadPosition
 } from './queries/positions';
 export {
   getPositionDefaultArgs,
   getPositionFromArgs,
-  makeDomainObjectArgTypes,
   makePositionArgTypes,
+  makePositionArgTypesWithPreset,
   makePositionDecorator,
   makePositionMeta,
-  makePresetControl,
+  makePositionPresetControl,
   type PositionArgs
 } from './storybook';

@@ -1,0 +1,61 @@
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: apparatus
+scope:
+  domain: sport
+  boundedContext: sport
+metadata:
+  annotations:
+    spgen.operation.apparatus-cataloged: create
+    spgen.operation.apparatus-edited: update
+    spgen.operation.apparatus-archived: delete
+projections:
+  - boundedContext: sport
+    aggregate: apparatus
+    event: apparatus-cataloged
+    rule: "Project the apparatus when it is cataloged"
+  - boundedContext: sport
+    aggregate: apparatus
+    event: apparatus-edited
+    rule: "Update apparatus details"
+  - boundedContext: sport
+    aggregate: apparatus
+    event: apparatus-archived
+    rule: "Delete the apparatus"
+schema:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier"
+    title:
+      type: string
+      description: "Name of the apparatus"
+    slug:
+      type: string
+      description: "URL-friendly unique identifier"
+    description:
+      type: string
+      description: "Optional description"
+  required:
+    - id
+    - title
+    - slug
+  examples:
+    - id: "equipment:apparatus:parallel-bars"
+      title: "Parallel Bars"
+      slug: "parallel-bars"
+      description: "The apparatus consists of two parallel bars that are held parallel to, and elevated above, the floor by a metal supporting framework."
+    - id: "equipment:apparatus:balance-beam"
+      title: "Balance Beam"
+      slug: "balance-beam"
+      description: "The beam is a small, thin beam that is typically raised from the floor on a leg or stand at both ends. It is usually covered with leather-like material and is only four inches wide."
+    - id: "equipment:apparatus:still-rings"
+      title: "Still Rings"
+      slug: "still-rings"
+      description: "The apparatus consists of two rings that hang freely from a rigid metal frame. Each ring is supported by a strap, which connects to a steel cable suspended from the metal frame."
+    - id: "equipment:apparatus:horizontal-bar"
+      title: "Horizontal Bar"
+      slug: "horizontal-bar"
+      description: "The Horizontal Bar is an apparatus consisting of a single elevated horizontal bar, on which athletes perform dynamic swinging, turning and flight elements using a variety of hand grips."

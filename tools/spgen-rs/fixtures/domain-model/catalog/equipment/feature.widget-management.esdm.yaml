@@ -1,0 +1,42 @@
+apiVersion: schema.esdm.io/given-when-then/v1
+kind: feature
+name: manage-widgets
+description: "Coaches catalog and maintain widgets in the equipment catalog"
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: widget
+scenarios:
+  - name: create-widget
+    given: []
+    when:
+      command: create-widget
+      data:
+        title: "Pommel Horse"
+        slug: "pommel-horse"
+        label: "Pommel"
+      actor: user
+    then:
+      events:
+        - event: widget-created
+          data:
+            id: "{{ generated }}"
+            title: "Pommel Horse"
+            slug: "pommel-horse"
+            label: "Pommel"
+  - name: edit-widget
+    given: []
+    when:
+      command: edit-widget
+      data:
+        id: "{{ generated }}"
+        title: "Vaulting Table"
+        slug: "vaulting-table"
+        label: "Vaulting"
+      actor: user
+    then:
+      events:
+        - event: widget-edited
+          data:
+            id: "{{ generated }}"
+            title: "Vaulting Table"

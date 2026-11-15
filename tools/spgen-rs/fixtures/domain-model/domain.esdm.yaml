@@ -1,0 +1,24 @@
+apiVersion: schema.esdm.io/core/v1
+kind: domain
+name: sport
+description: "Movement Skills and Technical Training"
+---
+apiVersion: schema.esdm.io/core/v1
+kind: bounded-context
+name: sport
+description: >
+  Sport science provides definitions for all terms in this bounded context.
+  All domain terms shall follow their definitions from established literature and are not meant to change within the system.
+  Ubiquitous language follows established sport-science terminology.
+scope:
+  domain: sport
+---
+apiVersion: schema.esdm.io/core/v1
+kind: subdomain
+name: catalog
+description: "The catalog is a knowledge system for skills, exercises, tutorials, and media assets"
+scope:
+  domain: sport
+type: core
+boundedContexts:
+  - sport

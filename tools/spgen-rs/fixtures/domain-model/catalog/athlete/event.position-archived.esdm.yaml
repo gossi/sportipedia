@@ -1,0 +1,17 @@
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: position-archived
+description: "A position has been archived to state it is no longer used"
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: position
+data:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier of the position"
+  required:
+    - id

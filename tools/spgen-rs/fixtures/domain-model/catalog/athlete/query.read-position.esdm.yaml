@@ -1,0 +1,64 @@
+apiVersion: schema.esdm.io/core/v1
+kind: query
+name: read-position
+description: "Retrieve a single position by its id or slug"
+scope:
+  domain: sport
+  boundedContext: sport
+readModel: position
+result:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier"
+    title:
+      type: string
+      description: "Name of the position"
+    slug:
+      type: string
+      description: "The canonical, globally unique lookup path: `<equipment-slug>/<slug>` when bound, `<slug>` when unbound"
+    description:
+      type: string
+      description: "Optional description"
+    apparatusId:
+      type: string
+      format: uuid
+      description: "Reference to apparatus (optional)"
+    instrumentId:
+      type: string
+      format: uuid
+      description: "Reference to instrument (optional)"
+  required:
+    - id
+    - title
+    - slug
+parameters:
+  oneOf:
+    - type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: "Unique identifier of the position"
+      required:
+        - id
+    - type: object
+      properties:
+        slug:
+          type: string
+          description: "The position's canonical slug (`<equipment-slug>/<slug>` or bare `<slug>`)"
+      required:
+        - slug
+actors:
+  - guest
+  - user
+  - admin
+constraints:
+  - name: read-by-id-or-slug
+    rule: "Take the parameter as the position's `id` when it is a UUID and as its `slug` otherwise."
+  - name: slug-match-is-canonical
+    rule: "Match the `slug` exactly as stored — the reader sends the canonical path (`<equipment-slug>/<slug>`, or the bare slug when the position is unbound) and no case folding is applied. The canonical slug is globally unique, so the read answers at most one position; it has no sort and no pages, so no ordering rule applies to it."
+  - name: not-found-when-absent
+    rule: "Answer not-found when no position carries the given id or slug."

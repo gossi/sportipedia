@@ -1,0 +1,31 @@
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: note-widget
+description: "Takes note of a widget — a fact is recorded, nothing materializes"
+metadata:
+  annotations:
+    spgen.operation: none
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: widget
+data:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "The widget the note concerns"
+    comment:
+      type: string
+      description: "What was observed"
+  required:
+    - id
+    - comment
+constraints:
+  - name: widget-exists
+    rule: A widget needs to exist (check by id)
+publishes:
+  - widget-noted
+actors:
+  - user

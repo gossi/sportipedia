@@ -2,6 +2,7 @@
  * @module Position
  * @category Domain Objects
  */
+
 import type { Type } from '@warp-drive/core/types/symbols';
 import type { Mutable } from '@warp-drive/core/types/utils';
 import type { ID, Slug } from '#/support/domain-objects/fields';
@@ -18,12 +19,14 @@ export interface Position extends Timestamps {
 
   readonly id: ID;
   readonly title: string;
-  readonly description?: string;
+  readonly rawSlug: string;
   readonly slug: Slug;
-  readonly rawSlug: Slug;
+  readonly description?: string;
 
   readonly apparatus?: Apparatus;
   readonly instrument?: Instrument;
 }
 
-export type PositionFields = Mutable<Pick<Position, 'title' | 'description' | 'slug'>>;
+export type PositionFields = Mutable<
+  Pick<Position, 'title' | 'rawSlug' | 'apparatus' | 'description' | 'instrument'>
+>;

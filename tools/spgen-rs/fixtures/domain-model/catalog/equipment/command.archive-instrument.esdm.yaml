@@ -1,0 +1,23 @@
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: archive-instrument
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: instrument
+data:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier of the instrument to archive"
+  required:
+    - id
+constraints:
+  - name: instrument-exists
+    rule: An instrument needs to exist (check by id)
+publishes:
+  - instrument-archived
+actors:
+  - user

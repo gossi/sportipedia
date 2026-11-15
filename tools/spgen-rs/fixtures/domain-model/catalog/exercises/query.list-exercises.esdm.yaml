@@ -1,0 +1,32 @@
+apiVersion: schema.esdm.io/core/v1
+kind: query
+name: list-exercises
+description: "List all exercises"
+scope:
+  domain: sport
+  boundedContext: sport
+readModel: exercise
+metadata:
+  annotations:
+    spgen.operation: collection
+result:
+  type: array
+  items:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+        description: "Unique identifier"
+      title:
+        type: string
+        description: "Name of the exercise"
+      difficulty:
+        type: integer
+        description: "Optional difficulty rating"
+    required:
+      - id
+      - title
+actors:
+  - user
+  - admin

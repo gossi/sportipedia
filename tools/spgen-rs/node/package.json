@@ -1,0 +1,10 @@
+{
+  "name": "@sportipedia/spgen",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sportipedia blueprint generators (frontend) — wraps the Rust spgen binary",
+  "type": "module",
+  "bin": {
+    "spgen": "./bin/spgen.mjs"
+  }
+}
