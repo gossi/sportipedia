@@ -2,8 +2,7 @@
 //! plus placement offsets, with AST-printing replaced by text insertion into
 //! the original bytes.
 //!
-//! Write-path verdict for the BE (measured by the probe tests and the
-//! parity golden, the way M2 measured TypeScript before sparch-typescript):
+//! Write-path verdict for the BE (measured by the probe tests):
 //! presence is answered from the syntax tree, insertion is a text splice at
 //! computed offsets, and the bytes in between are never reprinted.
 //! Formatting is not this binary's job: the mix binding runs `mix format`

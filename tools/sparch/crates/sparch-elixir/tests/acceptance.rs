@@ -1,4 +1,4 @@
-//! End-to-end acceptance of the BE binary, the way `sparch-typescript`'s golden
+//! End-to-end acceptance of the BE binary, the way `sparch-typescript`'s acceptance
 //! drives the FE binary: a sandbox repository from the shared fixture
 //! corpus, the real compiled CLI, and the four Elixir-tool acceptance
 //! criteria re-expressed in Rust — pickup, resurrection, black-box,

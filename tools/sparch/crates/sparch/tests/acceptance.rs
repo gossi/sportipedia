@@ -1,6 +1,6 @@
 //! Acceptance for the crossover binary: the capability list, the arch
 //! answers, the manual, validate, and the generate face — the sandbox
-//! method the engine goldens use, one binary up.
+//! method the engine acceptance tests use, one binary up.
 
 use std::path::{Path, PathBuf};
 use std::process::Command;

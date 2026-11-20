@@ -36,8 +36,7 @@ binary, exactly as the FE surface stays `pnpm spgen` through `typescript/`.
 * `fixtures/` — the shared corpus: `domain-model` (one superset tree —
   the widget citizen from the Elixir tool's tests plus the
   apparatus/instrument/position/exercise citizens), `repo` (the
-  hand-owned BE hosts a generated tree registers into), `snapshots` (the
-  oracle's generated widget tree, the parity baseline).
+  hand-owned BE hosts a generated tree registers into).
 
 Faithful porting and the shared corpus are what deduplicate the
 *semantics* of the model — language choice alone does not:
@@ -179,7 +178,7 @@ rules on both sides.
 
 ```sh
 cargo build --release          # binaries in target/release
-cargo test                     # ported model tests + blueprint tests + golden acceptance
+cargo test                     # ported model tests + blueprint tests + acceptance
 pnpm spgen                     # dev-dependency of the app that uses it (apps/catalog) — auto-builds the Rust binary, SPARCH_NO_AUTOBUILD=1 opts out
 mix sp.gen.<name> <element>    # from services/api via the binding in elixir/ — auto-builds sparch-elixir the same way
 cargo run -p sparch -- man read_model   # the manual, without any binding
@@ -205,7 +204,7 @@ BE port waves (the move of `../spgen` into this workspace):
 | | | status |
 | --- | --- | --- |
 | B0 | write-path probe: tree-sitter-elixir presence, splice, format — verdict recorded above | **done** |
-| B1 | `sparch-model` completed for the BE: invariant patterns, placeholder template engine, shared fixture corpus merged (widget + hosts + snapshots) | **done** |
+| B1 | `sparch-model` completed for the BE: invariant patterns, placeholder template engine, shared fixture corpus merged (widget + hosts) | **done** |
 | B2 | `sparch-elixir` engine: CLI, options, resolution, unit application, deferral + closure, report, `read_model` end-to-end | **done** |
 | B2+ | the suite tier: `operation`, `endpoint`, `feature` with the membership gate, merged reports, binding tasks | **done** |
 | B3 | blueprint waves: domain actor (event → aggregate → query → internal API → command → handler → projector → policy → public API), test-support projections, web actor (view → schema → controller → bruno) | **done** |

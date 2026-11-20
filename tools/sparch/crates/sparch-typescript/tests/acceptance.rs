@@ -1,4 +1,4 @@
-//! Golden acceptance, ported in spirit from the BE test culture
+//! End-to-end acceptance, ported in spirit from the BE test culture
 //! (pickup, order independence, black box, fixture-driven):
 //!
 //! * a fresh tree, built in a "wrong" order — the position citizen is
@@ -38,7 +38,7 @@ fn sandbox() -> PathBuf {
             .unwrap()
             .as_nanos()
     );
-    let dir = std::env::temp_dir().join(format!("sparch-golden-{unique}"));
+    let dir = std::env::temp_dir().join(format!("sparch-acceptance-{unique}"));
     fs::create_dir_all(dir.join("docs")).unwrap();
     fs::create_dir_all(dir.join("apps")).unwrap();
 
