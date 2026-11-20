@@ -1,8 +1,4 @@
-//! The lookup query behind a unique-field accessor — ported from
-//! `SpGen.Blueprint.LookupQuery`
-//! (`tools/spgen/lib/sp_gen/blueprint/lookup_query.ex`), the executable
-//! transfer of the query half of
-//! `docs/architecture/blueprints/backend/domain/examples/unique-slug.md`.
+//! The lookup query behind a unique-field accessor.
 //!
 //! One `Queries.<DomainObject>By<Field>` module per field a unique invariant
 //! declares: the single-value lookup the internal API accessor delegates to.
@@ -11,15 +7,14 @@
 //! while [`crate::blueprints::query`] transfers the citizen's modelled
 //! queries.
 //!
-//! Not a generator. `SpGen.generators/0` holds no `lookup_query` entry: the
-//! [internal API](crate::blueprints) reaches it through `dependencies/1`, so
+//! Not a generator. The registry lists no `lookup_query` entry: the
+//! [internal API](crate::blueprints) reaches it through `dependencies`, so
 //! the accessor and its query appear together in one run and no generated
 //! code ever calls a module that is not there. That is why this module joins
 //! [`crate::blueprints::by_name`] (the dependency lookup) and not the
-//! registry, nor [`crate::blueprints::all`] — the oracle's closure sweep
-//! builds its groups from the registry's module lists, so this blueprint
-//! reaches the sweep only inside its caller's group, from the element that
-//! caller passes.
+//! registry, nor [`crate::blueprints::all`] — the closure sweep builds its
+//! groups from the registry's module lists, so this blueprint reaches the
+//! sweep only inside its caller's group, from the element that caller passes.
 
 use sparch_model::ElementKind;
 use sparch_model::placeholders::Vars;
@@ -38,34 +33,30 @@ const READ_MODEL_MODULE: &str =
 pub struct LookupQuery;
 
 impl LookupQuery {
-    /// The query name of a unique field (`position-by-slug`) —
-    /// `LookupQuery.query_name/2`.
+    /// The query name of a unique field (`position-by-slug`).
     pub fn query_name(ctx: &Context, field: &str) -> String {
         format!("{}-by-{field}", ctx.constituent)
     }
 
-    /// The lookup query's module name for `field` (used to alias it) —
-    /// `LookupQuery.module_name/2`.
+    /// The lookup query's module name for `field` (used to alias it).
     pub fn module_name(ctx: &Context, field: &str) -> String {
         ctx.render_or_panic_with(MODULE, &query_vars(ctx, field))
     }
 
-    /// The lookup query's module name as code refers to it
-    /// (`PositionBySlug`) — `LookupQuery.short_name/2`.
+    /// The lookup query's module name as code refers to it (`PositionBySlug`).
     pub fn short_name(ctx: &Context, field: &str) -> String {
         let module = Self::module_name(ctx, field);
         module.rsplit('.').next().unwrap_or(&module).to_string()
     }
 
-    /// The lookup query's file path (used as a `requires` gate) —
-    /// `LookupQuery.module_file/2`.
+    /// The lookup query's file path (used as a `requires` gate).
     pub fn module_file(ctx: &Context, field: &str) -> String {
         ctx.render_or_panic_with(PATH, &query_vars(ctx, field))
     }
 }
 
 /// The `<query>` placeholder override this blueprint drives every template
-/// with — the Elixir `%{"query" => query_name(ctx, field)}`.
+/// with: the entry `"query" => query_name(ctx, field)`.
 fn query_vars(ctx: &Context, field: &str) -> Vars {
     let mut vars = Vars::new();
     vars.insert("query".to_string(), LookupQuery::query_name(ctx, field));
@@ -85,8 +76,7 @@ impl Blueprint for LookupQuery {
         ]
     }
 
-    /// Every lookup query reads its constituent's read model —
-    /// `LookupQuery.dependencies/1`.
+    /// Every lookup query reads its constituent's read model.
     fn dependencies(&self, ctx: &Context) -> Vec<Dependency> {
         ctx.read_model
             .as_ref()
@@ -116,14 +106,13 @@ impl Blueprint for LookupQuery {
     }
 }
 
-/// The read model as the `from` names it, through its alias —
-/// `LookupQuery.read_model/1`.
+/// The read model as the `from` names it, through its alias.
 fn read_model(ctx: &Context) -> String {
     format!("{}ReadModel", Context::pascal(&ctx.constituent))
 }
 
-/// `LookupQuery.def_block/2` — the one clause that is complete on generation:
-/// the field is unique, so the query is the model's own statement.
+/// The one clause that is complete on generation: the field is unique, so the
+/// query is the model's own statement.
 fn def_block(ctx: &Context, field: &str) -> String {
     format!(
         "@doc \"\"\"\nCreates a new query to fetch a {} by {field}.\n\"\"\"\n@spec new(String.t()) :: Ecto.Query.t()\ndef new({field}) do\n  from(r in {},\n    where: r.{field} == ^{field}\n  )\nend",
@@ -136,8 +125,8 @@ fn def_block(ctx: &Context, field: &str) -> String {
 
 fn units(ctx: &Context, field: &str) -> Vec<Unit> {
     let read_model_module = ctx.render_or_panic(READ_MODEL_MODULE);
-    // plans are per-context: every render resolves now, the way
-    // `FilePlan` documents the Elixir closures' context dependency
+    // plans are per-context: every render resolves now, the way `FilePlan`
+    // documents the context-dependent parts
     let moduledoc_text = format!(
         "@moduledoc \"\"\"\nQuery to fetch a {} by its {field}.\n\"\"\"",
         ctx.constituent
@@ -194,8 +183,7 @@ fn units(ctx: &Context, field: &str) -> Vec<Unit> {
     ]
 }
 
-/// The read model must exist before the query may name it —
-/// `LookupQuery.read_model_gate/0`.
+/// The read model must exist before the query may name it.
 fn read_model_gate(ctx: &Context) -> Vec<(String, String)> {
     vec![(
         ReadModel::module_file(ctx),

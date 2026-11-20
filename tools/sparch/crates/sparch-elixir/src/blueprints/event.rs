@@ -1,6 +1,4 @@
-//! The event struct file — the executable transfer of
-//! `docs/architecture/blueprints/backend/domain/event.md`, ported from
-//! `SpGen.Blueprint.Event` (`tools/spgen/lib/sp_gen/blueprint/event.ex`).
+//! The event struct file.
 //!
 //! Templates follow what the operation does:
 //!
@@ -28,7 +26,7 @@ impl Event {
     }
 
     /// The event module's file path for the element in `ctx` (used as a
-    /// `requires` gate) — `Event.module_file/1`.
+    /// `requires` gate).
     pub fn module_file(ctx: &Context) -> String {
         ctx.render_or_panic(PATH)
     }
@@ -192,7 +190,7 @@ mod tests {
     }
 
     #[test]
-    fn paths_and_modules_render_like_the_oracle() {
+    fn paths_and_modules_render_as_the_model_expects() {
         let ctx = ctx_for("widget-created");
         assert_eq!(
             Event::module_file(&ctx),
@@ -205,7 +203,7 @@ mod tests {
     }
 
     #[test]
-    fn unit_ids_and_order_mirror_the_oracle() {
+    fn unit_ids_and_order_match_the_model() {
         let ctx = ctx_for("widget-created");
         let plans = Event.plans(&ctx);
         let ids: Vec<String> = plans[0].units.iter().map(|u| u.id.label()).collect();
@@ -253,7 +251,7 @@ mod tests {
     }
 
     #[test]
-    fn renders_carry_the_exact_oracle_text() {
+    fn renders_carry_the_expected_text() {
         let ctx = ctx_for("widget-created");
         let units = Event.plans(&ctx)[0].units.clone_unit_texts();
         assert_eq!(

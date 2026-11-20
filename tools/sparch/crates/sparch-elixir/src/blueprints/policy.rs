@@ -163,7 +163,7 @@ mod tests {
     }
 
     #[test]
-    fn paths_and_modules_render_like_the_oracle() {
+    fn paths_and_modules_render_as_the_model_expects() {
         let ctx = ctx_for("create-widget");
         assert_eq!(
             Policy::module_file(&ctx),
@@ -178,7 +178,7 @@ mod tests {
     }
 
     #[test]
-    fn unit_ids_and_order_mirror_the_oracle() {
+    fn unit_ids_and_order_match_the_model() {
         let labels: Vec<String> = units_for("create-widget")
             .iter()
             .map(|u| u.id.label())
@@ -195,7 +195,7 @@ mod tests {
     }
 
     #[test]
-    fn the_directive_units_carry_the_exact_oracle_text() {
+    fn the_directive_units_carry_the_expected_text() {
         let units = units_for("create-widget");
         assert_eq!(
             render(&units, "moduledoc"),

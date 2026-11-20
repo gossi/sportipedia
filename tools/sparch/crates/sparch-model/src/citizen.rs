@@ -1,6 +1,6 @@
 //! The FE citizen: one read model, seen the way the frontend needs it.
 //!
-//! Where the BE `SpGen.Context` assembles variables for Elixir template
+//! Where the BE assembles variables for Elixir template
 //! rendering, `Citizen` assembles typed facts for the TypeScript
 //! blueprints: properties with their TS names and types, commands with
 //! their effects (declared, never guessed), queries with their read kind,
@@ -299,8 +299,7 @@ impl Citizen {
 }
 
 /// `docs/domain-model/<subdomain>/<composite>/...` — the model layout is the
-/// architecture's source for subdomain and composite, ported from
-/// `Context.model_dir_segments/1`.
+/// architecture's source for subdomain and composite.
 fn path_segments(element: &Element) -> Vec<String> {
     let parts: Vec<String> = element
         .source

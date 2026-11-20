@@ -477,7 +477,7 @@ mod tests {
     }
 
     #[test]
-    fn names_paths_and_modules_mirror_the_oracle() {
+    fn names_paths_and_modules_match_the_model() {
         let ctx = ctx_for("widget");
         let n = Schema::names(&ctx, Which::CollectionResponse);
         assert_eq!(n.stem, "widget_collection_response");

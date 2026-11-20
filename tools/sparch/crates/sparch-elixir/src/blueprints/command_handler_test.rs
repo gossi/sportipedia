@@ -1,6 +1,4 @@
-//! The command handler's contribution to the operation test file — ported
-//! from `SpGen.Blueprint.CommandHandlerTest`
-//! (`tools/spgen/lib/sp_gen/blueprint/command_handler_test.ex`).
+//! The command handler's contribution to the operation test file.
 //!
 //! One `describe "Command Handler"` block exercising `handle/2` with a sample
 //! command and asserting the emitted event type. The file, its `use`, its
@@ -9,10 +7,9 @@
 //! this file uses; the handler's own file and the command's gate the whole
 //! contribution.
 //!
-//! A command that resolves no event plans nothing here: the oracle's
-//! `plans/1` raises on the unresolved `<Event>` of its alias templates, and
-//! the plan-less port matches what that run manages to write, which is
-//! nothing. See the module header of
+//! A command that resolves no event plans nothing here: the alias templates
+//! name `<Event>`, which stays unresolved, so the run writes no file at all.
+//! See the module header of
 //! [`crate::blueprints::command_handler`] for the full note.
 
 use sparch_model::ElementKind;
@@ -35,9 +32,8 @@ impl Blueprint for CommandHandlerTest {
         "command_handler_test"
     }
 
-    /// The oracle derives its sweep participation from the generator's head
-    /// (`primary.accepts?`); the Rust sweep asks each ported module, so the
-    /// companion names the kind it contributes to.
+    /// The sweep asks each blueprint which element kinds it contributes to, so
+    /// this test companion names the kind it serves directly.
     fn source_kinds(&self) -> Vec<ElementKind> {
         vec![ElementKind::Command]
     }
@@ -47,7 +43,7 @@ impl Blueprint for CommandHandlerTest {
     }
     fn plans(&self, ctx: &Context) -> Vec<FilePlan> {
         // the alias templates below name `<Event>`, which a command that
-        // publishes nothing leaves unresolved (the oracle raises there)
+        // publishes nothing leaves unresolved
         if ctx.events.is_empty() {
             return Vec::new();
         }
@@ -85,7 +81,7 @@ impl Blueprint for CommandHandlerTest {
     }
 }
 
-/// `CommandHandlerTest.describe_body/2`, heredoc whitespace included. The
+/// The command handler's describe body, heredoc whitespace included. The
 /// sample command is every field of the model with its sample value, the
 /// handler is called on an empty aggregate, and the assertion names the event
 /// the command publishes.
@@ -191,7 +187,7 @@ mod tests {
     }
 
     #[test]
-    fn the_describe_body_is_the_oracles_heredoc() {
+    fn the_describe_body_is_the_expected_heredoc() {
         let ctx = ctx_for("archive-widget");
         assert_eq!(
             describe_body(&ctx, "Command Handler"),
@@ -216,8 +212,8 @@ mod tests {
 
     #[test]
     fn a_command_that_publishes_nothing_plans_nothing() {
-        // the oracle raises here on the unresolved `<Event>`; the run that
-        // raises writes nothing, and neither does this plan
+        // the alias templates would name an unresolved `<Event>`, which is
+        // why this plans no file at all rather than a half-filled one
         let ctx = ctx_for("catalog-apparatus");
         assert!(ctx.events.is_empty(), "the model holds no such event");
         assert!(CommandHandlerTest.plans(&ctx).is_empty());

@@ -1,5 +1,4 @@
-//! Model loader and index, ported from `SpGen.Esdm`
-//! (`tools/spgen/lib/sp_gen/esdm.ex`).
+//! Model loader and index.
 
 use std::{
     fs,
@@ -78,8 +77,8 @@ impl Model {
     }
 
     /// Resolve an address into exactly one element. Bare names are narrowed
-    /// to `kinds` before the unique/ambiguous decision (the `:kinds` option
-    /// of `Esdm.resolve/3`); explicit forms keep addressing what they name.
+    /// to `kinds` before the unique/ambiguous decision; explicit forms keep
+    /// addressing what they name.
     pub fn resolve(&self, address: &str, kinds: &[ElementKind]) -> Result<Element, ResolveError> {
         if let Some(body) = address.strip_prefix("esdm:") {
             return self.resolve_reference(body);
@@ -100,7 +99,7 @@ impl Model {
             .cloned()
     }
 
-    /// All events owned by an aggregate, sorted by name — `Esdm.events_of/2`.
+    /// All events owned by an aggregate, sorted by name.
     pub fn events_of(&self, aggregate: &str) -> Vec<Element> {
         let mut events: Vec<Element> = self
             .elements
@@ -136,7 +135,7 @@ impl Model {
         queries
     }
 
-    /// The read model for an element — `Esdm.read_model_for/2`.
+    /// The read model for an element.
     pub fn read_model_for(&self, element: &Element) -> Option<Element> {
         match element.kind {
             ElementKind::Query => element
@@ -271,7 +270,7 @@ impl Model {
 }
 
 /// One path is a segment-suffix of the other (absolute, repo-relative,
-/// cwd-relative), ported from `Esdm.suffix_match?/2`.
+/// cwd-relative).
 fn suffix_match(longer: &[String], shorter: &[String]) -> bool {
     let (longer, shorter) = if longer.len() >= shorter.len() {
         (longer, shorter)

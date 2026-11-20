@@ -1,13 +1,12 @@
-//! The query's contribution to the operation test file — ported from
-//! `SpGen.Blueprint.QueryTest`
-//! (`tools/spgen/lib/sp_gen/blueprint/query_test.ex`).
+//! The query's contribution to the operation test file.
 //!
 //! A `describe "Query"` placeholder test marking the query body as the 1% the
 //! blueprint leaves to the feature spec. The operation owns the file (the
-//! [operation test](docs/architecture/blueprints/backend/domain/operation-test.md)
-//! blueprint), so this module names the operation's path and module through
-//! the shared `TestCaseFile` machinery and contributes exactly one describe —
-//! with no aliases of its own, because the placeholder asserts nothing.
+//! operation-test blueprint), so this module names the operation's path and
+//! module through
+//! the shared [`mod@crate::blueprints::test_case`] machinery and
+//! contributes exactly one describe — with no aliases of its own, because the
+//! placeholder asserts nothing.
 
 use crate::blueprints::test_case::{self, Describe, Options};
 use crate::context::Context;
@@ -25,8 +24,7 @@ impl Blueprint for QueryTest {
         "query_test"
     }
 
-    /// The oracle derives its sweep participation from the generator's head
-    /// (`primary.accepts?`); the Rust sweep asks each ported module, so the
+    /// The sweep asks each module for its participation, so the
     /// companion names the kind it contributes to.
     fn source_kinds(&self) -> Vec<ElementKind> {
         vec![ElementKind::Query]
@@ -57,8 +55,8 @@ impl Blueprint for QueryTest {
     }
 }
 
-/// `QueryTest.describe_body/2` — the heredoc's own indentation: the block is
-/// written at the file's top level and the placement indents it.
+/// The describe block's text. The heredoc keeps its own indentation: the block
+/// is written at the file's top level and the placement indents it.
 pub fn describe_body(_ctx: &Context, subject: &str) -> String {
     format!(
         "describe \"{subject}\" do\n  test \"is a work in progress until the spec fills it\" do\n    # the query module body is the 1% the blueprint leaves to the spec\n    assert true\n  end\nend"

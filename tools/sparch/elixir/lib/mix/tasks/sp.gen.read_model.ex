@@ -4,8 +4,7 @@ defmodule Mix.Tasks.Sp.Gen.ReadModel do
   @moduledoc """
   Generates the read-model citizen from the domain model.
 
-  Executes `docs/architecture/blueprints/backend/domain/read-model.md`
-  (`read model` blueprint): the typed Ecto schema, the
+  Writes the typed Ecto schema, the
   schema prefix and the `insert_changeset/2` / `update_changeset/2` pair.
 
       mix sp.gen.read_model read-model.apparatus

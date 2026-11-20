@@ -5,8 +5,7 @@ defmodule Mix.Tasks.Sp.Gen.PublicApi do
   Generates the public-API port function for one ESDM operation (the
   constituent port — exactly one function per operation).
 
-  Executes `docs/architecture/blueprints/backend/domain/public-api.md`
-  (`public api` blueprint): `@doc`, `@spec`
+  Writes the port function's `@doc`, `@spec`
   (`Architecture.public_api/...`) and the function body per operation —
   commands dispatch with `consistency: :strong` (create generates the id) and
   classify validation failures; a read goes through the internal API; a

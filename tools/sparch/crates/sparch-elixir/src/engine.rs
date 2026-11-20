@@ -1,4 +1,4 @@
-//! The run engine — the port of `SpGen` itself: options, resolution,
+//! The run engine: options, resolution,
 //! planning (with dependency expansion), append-only application, the
 //! neighborhood closure with deferral back-fill, and the row contract the
 //! report renders.
@@ -15,7 +15,7 @@ use crate::elixir::ElixirFile;
 use crate::plan::{Blueprint, ClosureScope, FilePlan, UnitId};
 use crate::report::{self, CheckId};
 
-/// The per-file result rows of a run — `t:SpGen.row/0`, same states.
+/// The per-file result rows of a run.
 #[derive(Debug)]
 pub enum Row {
     Created(String),
@@ -44,7 +44,7 @@ pub struct RunOptions {
     pub verbose: bool,
 }
 
-/// The run state threaded through plan application — `SpGen`'s `run` map.
+/// The run state threaded through plan application.
 struct Applied {
     repo_root: PathBuf,
     dry_run: bool,
@@ -72,10 +72,9 @@ impl Applied {
 
 /// Runs one generator against one resolved element address. `modules` is
 /// the generator's registry entry — every *ported* blueprint module, head
-/// first — mirroring `SpGen.run/3`, which hands the whole module list to
-/// the run while the head owns the element kinds and `--template`
-/// semantics. Argument syntax is the CLI's (clap's) business; this returns
-/// rows or a hard error message.
+/// first. The run takes the whole module list while the head owns the
+/// element kinds and `--template` semantics. Argument syntax is the CLI's
+/// (clap's) business; this returns rows or a hard error message.
 pub fn run(
     modules: &[&dyn Blueprint],
     opts: &RunOptions,
@@ -131,10 +130,10 @@ pub fn run(
         )
     })?;
 
-    // `Blueprint.validate_hook(blueprint, ctx)` in the oracle's `with`
-    // chain: the model-content gate of the primary blueprint runs after
+    // The model-content gate of the primary blueprint runs after
     // the context resolves and before anything is planned or written.
-    // The message mirrors it, `inspect(kind)` and all (`:command`).
+    // The error message names the blueprint and element, with the kind
+    // inspected (`:command`).
     if let Err(messages) = blueprint.validate(&ctx) {
         return Err(format!(
             "{} :{}.{} cannot generate — the model needs fixing:\n{}",
@@ -177,8 +176,8 @@ fn element_accepted(blueprint: &dyn Blueprint, element: &Element) -> bool {
 
 // ----------------------------------------------------------------- options
 
-/// `Blueprint.validate_operation/4` — the template vocabulary check for
-/// every blueprint shape. The oracle inspects the requested atom, so the
+/// The template vocabulary check for
+/// every blueprint shape. The check inspects the requested atom, so the
 /// error texts carry the leading colon (`template :read not supported…`),
 /// and a given template must both be supported by the blueprint and fit
 /// the element kind.
@@ -219,7 +218,7 @@ fn validate_operation(
             ops_text(&ops)
         ));
     }
-    // `Blueprint.operations_for/1` — commands and events perform
+    // Commands and events perform
     // create | update | delete, queries read | collection.
     let kind_ops: Option<Vec<Operation>> = match kind {
         ElementKind::Command | ElementKind::Event => Some(vec![
@@ -250,8 +249,8 @@ fn ops_text(ops: &[Operation]) -> String {
         .join(", ")
 }
 
-/// `SpGen.require_operation/2` — a command with neither a model declaration
-/// nor `--template` is refused where the message names both possible fixes.
+/// A command with neither a model declaration nor `--template` is refused
+/// where the message names both possible fixes.
 fn require_operation(element: &Element, ctx: &Context) -> Result<(), String> {
     if element.kind == ElementKind::Command && ctx.operation.is_none() {
         return Err(format!(
@@ -265,7 +264,7 @@ fn require_operation(element: &Element, ctx: &Context) -> Result<(), String> {
 }
 
 /// Repo root discovery: the nearest ancestor holding both `services/api`
-/// and `docs/domain-model` — `SpGen.find_root/2`.
+/// and `docs/domain-model`.
 pub fn find_root(cwd: &Path) -> PathBuf {
     let mut dir = cwd.to_path_buf();
     loop {
@@ -278,7 +277,7 @@ pub fn find_root(cwd: &Path) -> PathBuf {
     }
 }
 
-/// CLI help text shared by all sp.gen tasks — `SpGen.help/0`.
+/// CLI help text shared by all sp.gen tasks.
 /// The element-address forms and option lore, shared by `--help`
 /// (clap `after_help`) and the curated usage errors.
 pub const HELP: &str = r#"<element> is one of:
@@ -325,7 +324,7 @@ pub fn help() -> String {
 
 /// The plans of a run: every blueprint module of the generator's registry
 /// entry — head first, each from the same context — and, before each, the
-/// plans of the blueprints its code calls — `SpGen.plans_for/4`. A module
+/// plans of the blueprints its code calls. A module
 /// plans exactly once across the whole list (the shared `seen` set), so a
 /// dependency shared by several callers appears once, ahead of all of
 /// them; the plan order keeps the citizen's own file ahead of its test
@@ -403,8 +402,7 @@ fn apply_plan(plan: &FilePlan, ctx: &Context, applied: &mut Applied) -> Vec<Row>
 
 /// A projection is gated, not merge-restricted: its content depends on
 /// nothing but the model, so a re-render of equal content is `Unchanged`,
-/// never a rewrite, and a differing one rewrites the file wholesale —
-/// `SpGen.apply_plan/3` and `rewrite_projection/5`.
+/// never a rewrite, and a differing one rewrites the file wholesale.
 fn apply_projection(plan: &FilePlan, applied: &mut Applied) -> Vec<Row> {
     let unmet: Vec<String> = plan
         .gate
@@ -504,8 +502,8 @@ fn merge(plan: &FilePlan, ctx: &Context, text: &str, applied: &mut Applied) -> V
     place_units(plan, text, &abs, applied)
 }
 
-/// Presence-gated, gate-deferred, stale-aware placement of one file —
-/// `SpGen.place_units/6` with the AST merge replaced by sequential splices.
+/// Presence-gated, gate-deferred, stale-aware placement of one file,
+/// applied as sequential splices.
 fn place_units(plan: &FilePlan, text: &str, abs: &Path, applied: &mut Applied) -> Vec<Row> {
     let mut current = text.to_string();
     let mut placed: Vec<UnitId> = Vec::new();
@@ -515,7 +513,7 @@ fn place_units(plan: &FilePlan, text: &str, abs: &Path, applied: &mut Applied) -
 
     for unit in &plan.units {
         // a unit's check reads the file as it stands after earlier inserts,
-        // the way the AST merge saw each new sibling
+        // so each check sees the units that already landed
         let file = ElixirFile::parse(&current);
         if !(unit.check)(&file) {
             let unmet: Vec<(String, String)> = unit
@@ -550,8 +548,8 @@ fn place_units(plan: &FilePlan, text: &str, abs: &Path, applied: &mut Applied) -
     }
 
     if placed.is_empty() && deferred.is_empty() && stale.is_empty() && blocked.is_empty() {
-        // everything the plan wants is already there — same early return as
-        // `place_units`'s `missing == []`
+        // everything the plan wants is already there — the unchanged
+        // early return
         return vec![Row::Unchanged(plan.path.clone())];
     }
 
@@ -667,7 +665,7 @@ fn write_file(path: &Path, content: &str) {
 /// neighborhood generator's plans merge-only (existing files only) until a
 /// round places nothing. The first round is a full pass — that is what
 /// keeps `pickup` honest: a tree a human edited gets every deferred unit
-/// re-checked, everywhere. — `SpGen.closure_rounds/4`
+/// re-checked, everywhere.
 fn closure_rounds(
     model: &Model,
     seed_ctx: &Context,
@@ -745,9 +743,9 @@ struct SweepGroup {
 
 /// Every generator that accepts a neighborhood element, with its plans
 /// already expanded and its gates frozen into the plan data (Rust plans
-/// are per-context by construction — `SpGen.freeze_gates/1` is a no-op
-/// here). Memoized across rounds of one run because the same groups are
-/// re-applied; not memoized across processes — a CLI run is one process.
+/// are per-context by construction). Memoized across rounds of one run
+/// because the same groups are re-applied; not memoized across processes
+/// — a CLI run is one process.
 fn build_sweep(model: &Model, seed: &Context, ctx_opts: &ContextOptions) -> Vec<Rc<SweepGroup>> {
     let constituent = &seed.constituent;
     let mut elements: Vec<Element> = Vec::new();
@@ -838,7 +836,7 @@ fn apply_plan_merge_only(plan: &FilePlan, ctx: &Context, applied: &mut Applied) 
 
 /// The citizen's rules that no invariant pattern realizes are not an error
 /// and generate nothing — so they are named in the report instead of
-/// living only in `Context`. — `SpGen.unresolved_rows/1`
+/// living only in `Context`.
 fn unresolved_rows(ctx: &Context) -> Vec<Row> {
     if ctx.unresolved.is_empty() {
         return Vec::new();
@@ -870,7 +868,6 @@ fn unresolved_rows(ctx: &Context) -> Vec<Row> {
 /// Effect-bearing runs report open questions instead of inventing answers:
 /// an event the read model never decided on generates no projector clause
 /// and no aggregate fold — the gap is stated until a declaration closes it.
-/// — `SpGen.effect_gap_rows/1`
 fn effect_gap_rows(model: &Model, ctx: &Context) -> Vec<Row> {
     match ctx.element.kind {
         ElementKind::Event => {
@@ -900,7 +897,7 @@ fn effect_gap_rows(model: &Model, ctx: &Context) -> Vec<Row> {
     }
 }
 
-/// The gap wording — `SpGen.effect_gap_text/1`.
+/// The gap wording.
 fn effect_gap_text(event_name: &str) -> String {
     format!(
         "no operation declared by the read model for {event_name} — metadata.annotations.spgen.operation.{event_name} (create|update|delete|none) decides materialization; projector clause and apply fold skipped"
@@ -998,8 +995,7 @@ mod tests {
         let rows = effect_gap_rows(&model, &agg);
         assert_eq!(rows.len(), 1, "only the undeclared event is missing");
         if let Row::Unresolved(address, details) = &rows[0] {
-            // the row hangs on the aggregate's own address — `sp_gen.ex`
-            // reports `{:unresolved, agg.address, details}`
+            // the row hangs on the aggregate's own address
             assert_eq!(address, &agg.element.address);
             assert_eq!(details.len(), 1);
             assert_eq!(details[0], effect_gap_text("widget-archived"));
@@ -1057,9 +1053,8 @@ mod tests {
 
     // -------------------------------------------------------- validate hook
 
-    /// A blueprint exporting `validate` — the port's equivalent of the
-    /// oracle's optional `validate/1` — aborts the run before anything is
-    /// planned or written, with the oracle's message shape.
+    /// A blueprint exporting `validate` aborts the run before anything is
+    /// planned or written, with the model-needs-fixing message shape.
     struct ModelGated;
 
     impl crate::plan::Blueprint for ModelGated {
@@ -1115,7 +1110,7 @@ mod tests {
 
     #[test]
     fn a_blueprint_without_the_gate_runs_on() {
-        // the default `validate` (Ok) mirrors `function_exported?` false:
+        // the default `validate` (Ok) means the blueprint gates nothing:
         // the same run with a real blueprint passes the hook untouched
         let root = gate_repo("passing");
         let cmd: &dyn crate::plan::Blueprint = &crate::blueprints::command::Command;

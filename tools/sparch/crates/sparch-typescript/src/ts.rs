@@ -1,4 +1,4 @@
-//! The TypeScript file model — the FE answer to `SpGen.Source`: parse a
+//! The TypeScript file model. Parse a
 //! file for reading (presence checks, placement offsets), and express
 //! changes as **text splices**.
 //!

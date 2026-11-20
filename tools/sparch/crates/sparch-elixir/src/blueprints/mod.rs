@@ -1,9 +1,9 @@
-//! Blueprint registry and generator listing — the port of
-//! `SpGen.generators/0` and the listing `mix sp.gen` prints.
+//! Blueprint registry and the generator listing that
+//! `mix sp.gen` prints.
 //!
-//! The generator-to-blueprint mapping carries the Elixir registry verbatim;
+//! The generator-to-blueprint mapping carries the full registry;
 //! a generator whose blueprints are not ported yet is addressable but
-//! answers with the pointer to the Elixir tool that still runs it. The
+//! answers with a pointer to the `mix sp.gen` task that still runs it. The
 //! porting waves fill this list.
 
 pub mod aggregate;
@@ -44,7 +44,7 @@ pub mod web_router;
 use crate::plan::{Actor, Blueprint};
 
 /// The full BE registry: generator name, actor, and the blueprint modules
-/// the Elixir tool runs (head = primary). `SpGen.generators/0`.
+/// of the generator (head = primary).
 pub const REGISTRY: &[(&str, &[&str])] = &[
     ("aggregate", &["aggregate", "aggregate_test"]),
     ("bruno", &["bruno", "bruno_folder"]),
@@ -102,11 +102,11 @@ pub const GENERATOR_ORDER: &[&str] = &[
     "bruno",
 ];
 
-/// Every ported blueprint, keyed by its `SpGen.Blueprint.name/0` — the
+/// Every ported blueprint, keyed by its blueprint name — the
 /// lookup dependency expansion and the registry walk use. A companion
 /// module (`event_test`) is addressable through its generator's entry, not
-/// as a generator of its own. A blueprint the oracle keeps out of
-/// `SpGen.generators/0` (`lookup_query`, `validator`) is addressable here
+/// as a generator of its own. A blueprint kept out of the generator
+/// listing (`lookup_query`, `validator`) is addressable here
 /// only: its caller's `dependencies` is what plans it.
 pub fn by_name(name: &str) -> Option<&'static dyn Blueprint> {
     match name {
@@ -149,8 +149,8 @@ pub fn by_name(name: &str) -> Option<&'static dyn Blueprint> {
 }
 
 /// The ported blueprint modules of a generator's registry entry, in list
-/// order (head first). `SpGen.run/3` hands every module of the entry to the
-/// run; the head owns the element kinds and `--template` semantics.
+/// order (head first). The run takes every module of the entry; the head
+/// owns the element kinds and `--template` semantics.
 /// Not-yet-ported members are skipped silently — the head defines
 /// addressability, and suites keep refusing until every member generator
 /// has its head ported.
@@ -174,16 +174,14 @@ pub fn blueprint_for(generator: &str) -> Option<&'static dyn Blueprint> {
 }
 
 /// Every ported blueprint the registry lists — the closure sweep's universe.
-/// `SpGen.build_sweep/4` walks `Map.values(generators())`, so a blueprint the
-/// oracle keeps out of that map (the validator, a lookup query) forms no
-/// group of its own: it reaches the sweep inside its caller's plans, from the
-/// element that caller passes.
+/// A blueprint kept out of the generator listing (the validator, a lookup
+/// query) forms no group of its own: it reaches the sweep inside its
+/// caller's plans, from the element that caller passes.
 ///
 /// The order is what the sweep produces: two groups back-filling the same
 /// file in one round land in list order, and a file's surviving `skipped:`
-/// note comes from the **last** deferred row of that path. `Map.values/1`
-/// walks an atom-keyed map in key order, so this list carries the generators
-/// alphabetically, each one's registry entry in list order.
+/// note comes from the **last** deferred row of that path. The list carries
+/// the generators alphabetically, each one's registry entry in list order.
 pub fn all() -> Vec<&'static dyn Blueprint> {
     vec![
         &aggregate::Aggregate,
@@ -221,8 +219,8 @@ pub fn all() -> Vec<&'static dyn Blueprint> {
     ]
 }
 
-/// The primary blueprint's actor, `SpGen.actor/1` — blueprints not ported
-/// yet keep the Elixir tool's declaration for the listing.
+/// The listing actor of a generator: the primary blueprint's actor once
+/// ported; not-yet-ported generators keep their declaration here.
 pub fn actor_for(generator: &str) -> Actor {
     match generator {
         "view" | "schema" | "controller" | "bruno" => Actor::Web,

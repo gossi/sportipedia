@@ -4,8 +4,7 @@ defmodule Mix.Tasks.Sp.Gen.Command do
   @moduledoc """
   Generates the command citizen from an ESDM command element.
 
-  Executes the blueprint `docs/architecture/blueprints/backend/domain/command.md`
-  :
+  Writes the command module and its registration:
 
   * `services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/operations/<_operation>/command.ex`
   * the `<Command> command` `describe` block in the operation test file

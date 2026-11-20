@@ -80,7 +80,7 @@ impl ElementKind {
     }
 }
 
-/// One ESDM model element, ported from `SpGen.Esdm.Element`.
+/// One ESDM model element.
 #[derive(Clone, Debug)]
 pub struct Element {
     pub kind: ElementKind,
@@ -153,17 +153,16 @@ fn named_entries(value: Option<&Value>) -> Vec<Value> {
     value.and_then(Value::as_array).cloned().unwrap_or_default()
 }
 
-/// The `esdm:` address for a scope chain plus the element's own segment —
-/// ported from `SpGen.Esdm.build_address/3`.
+/// The `esdm:` address for a scope chain plus the element's own segment.
 pub fn build_address(scope: &[(String, String)], kind: &str, name: &str) -> String {
     let mut segments: Vec<String> = scope.iter().map(|(k, n)| format!("{k}={n}")).collect();
     segments.push(format!("{kind}={name}"));
     format!("esdm:{}", segments.join("/"))
 }
 
-/// The scope chain of a document, ported from `SpGen.Esdm.scope_chain/1`:
-/// scope fields written as the kinds they name; a domain or context-mapping
-/// carries no scope; a domain document self-scopes.
+/// The scope chain of a document: scope fields written as the kinds they
+/// name; a domain or context-mapping carries no scope; a domain document
+/// self-scopes.
 pub fn scope_chain(doc: &Value) -> Vec<(String, String)> {
     let mut chain = Vec::new();
     let kind = doc.get("kind").and_then(Value::as_str).unwrap_or_default();

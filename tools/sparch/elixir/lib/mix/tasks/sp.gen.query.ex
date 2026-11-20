@@ -5,8 +5,7 @@ defmodule Mix.Tasks.Sp.Gen.Query do
   Generates the query citizen from an ESDM **query** element: the module, its
   `@spec` and the `new/n` constructor.
 
-  Executes `docs/architecture/blueprints/backend/domain/query.md`
-  (`query` blueprint). A collection read — declared by
+  A collection read — declared by
   `metadata.annotations."spgen.operation": collection`, or by `result.type:
   array` where the model says nothing — generates its body in full: the
   delegation to the shared `Sportipedia.Support.JSONAPI.QueryBuilder`. Every

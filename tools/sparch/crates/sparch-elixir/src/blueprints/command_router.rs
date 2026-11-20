@@ -1,7 +1,4 @@
-//! The composite's commanded router registration — ported from
-//! `SpGen.Blueprint.CommandRouter`
-//! (`tools/spgen/lib/sp_gen/blueprint/command_router.ex`), the registration
-//! half of `docs/architecture/blueprints/backend/domain/command.md`.
+//! The composite's commanded router registration.
 //!
 //! Aliases for command, handler and aggregate, the `identify` entry (once
 //! per aggregate) and the `dispatch` entry grouping the command with its
@@ -32,7 +29,7 @@ pub struct CommandRouter;
 
 impl CommandRouter {
     /// The composite router's path — the gate for app and router
-    /// registrations. `CommandRouter.module_file/1`.
+    /// registrations.
     pub fn module_file(ctx: &Context) -> String {
         ctx.render_or_panic(ROUTER_PATH)
     }
@@ -43,8 +40,7 @@ impl Blueprint for CommandRouter {
         "command_router"
     }
 
-    /// The oracle derives this blueprint's sweep participation from the
-    /// generator's head; the Rust sweep asks each ported module, so the
+    /// The sweep asks each module for its participation, so the
     /// registration host names the kind it registers.
     fn source_kinds(&self) -> Vec<ElementKind> {
         vec![ElementKind::Command]
@@ -107,8 +103,7 @@ fn use_unit() -> Unit {
     }
 }
 
-/// the support middlewares exist repo-wide, so these need no gate —
-/// `CommandRouter.middleware_units/1`.
+/// the support middlewares exist repo-wide, so these need no gate.
 fn middleware_units(name: &str) -> Vec<Unit> {
     let full = format!("Sportipedia.Support.Commanded.Middleware.{name}");
     let check_module = full.clone();
@@ -148,8 +143,7 @@ fn middleware_units(name: &str) -> Vec<Unit> {
     ]
 }
 
-/// `CommandRouter.registration_alias/2` — the alias a registration line
-/// needs, gated on the citizen it names.
+/// The alias a registration line needs, gated on the citizen it names.
 fn registration_alias(full: &str, gate: Vec<(String, String)>) -> Unit {
     let check_module = full.to_string();
     let sort_key = full.to_string();
@@ -223,8 +217,8 @@ fn dispatch_unit(
     }
 }
 
-/// `CommandRouter.plans/1`'s gates — each named citizen must exist before
-/// the line that references it may land.
+/// Each named citizen must exist before the line that references it may
+/// land.
 fn command_gate(ctx: &Context) -> Vec<(String, String)> {
     vec![(
         Command::module_file(ctx),
@@ -275,7 +269,7 @@ mod tests {
     }
 
     #[test]
-    fn paths_and_modules_render_like_the_oracle() {
+    fn paths_and_modules_render_as_the_model_expects() {
         let ctx = ctx_for("create-widget");
         assert_eq!(
             CommandRouter::module_file(&ctx),
@@ -291,7 +285,7 @@ mod tests {
     }
 
     #[test]
-    fn unit_ids_and_order_mirror_the_oracle() {
+    fn unit_ids_and_order_match_the_model() {
         let units = units_for("create-widget");
         let labels: Vec<String> = units.iter().map(|u| u.id.label()).collect();
         assert_eq!(
@@ -357,7 +351,7 @@ mod tests {
     }
 
     #[test]
-    fn renders_carry_the_exact_oracle_text() {
+    fn renders_carry_the_expected_text() {
         let units = units_for("create-widget");
         assert_eq!(
             (unit(&units, "dispatch CreateWidget").render)(),
@@ -407,7 +401,7 @@ mod tests {
 
     #[test]
     fn dispatch_joins_the_cluster_of_its_own_aggregate() {
-        // `after_macro_kw(:dispatch, :aggregate, == aggregate)`: the widget
+        // the aggregate-keyword placement: the widget
         // dispatch lands after the widget cluster, not after the gadget
         let text = "defmodule R do\n  middleware Identity\n\n  identify WidgetAggregate, by: :id, prefix: \"equipment/widget/\"\n\n  dispatch CreateWidget, to: CreateWidgetHandler, aggregate: WidgetAggregate\n\n  dispatch ArchiveWidget, to: ArchiveWidgetHandler, aggregate: WidgetAggregate\nend\n";
         let file = ElixirFile::parse(text);

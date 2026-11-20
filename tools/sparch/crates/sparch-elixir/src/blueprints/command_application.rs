@@ -1,7 +1,4 @@
-//! The subdomain's commanded application registration — ported from
-//! `SpGen.Blueprint.CommandApplication`
-//! (`tools/spgen/lib/sp_gen/blueprint/command_application.ex`), the
-//! registration half of `docs/architecture/blueprints/backend/domain/command.md`.
+//! The subdomain's commanded application registration.
 //!
 //! Registers the composite's commanded router with its subdomain
 //! application (`use Commanded.Application`): without the `router` line
@@ -30,7 +27,7 @@ pub struct CommandApplication;
 
 impl CommandApplication {
     /// The subdomain application's path (the gate for supervised
-    /// children). `CommandApplication.module_file/1`.
+    /// children).
     pub fn module_file(ctx: &Context) -> String {
         ctx.render_or_panic(APP_PATH)
     }
@@ -41,8 +38,7 @@ impl Blueprint for CommandApplication {
         "command_application"
     }
 
-    /// The oracle derives this blueprint's sweep participation from the
-    /// generator's head; the Rust sweep asks each ported module, so the
+    /// The sweep asks each blueprint module for the kinds it accepts, so the
     /// registration host names the kind it registers.
     fn source_kinds(&self) -> Vec<ElementKind> {
         vec![ElementKind::Command]
@@ -112,7 +108,7 @@ mod tests {
     }
 
     #[test]
-    fn paths_and_modules_render_like_the_oracle() {
+    fn paths_and_modules_render_as_the_model_expects() {
         let c = ctx();
         assert_eq!(
             CommandApplication::module_file(&c),

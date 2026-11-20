@@ -1,19 +1,17 @@
 //! The Elixir source view: tree-sitter based, read-only structural answers
-//! plus offset splices — the port of `SpGen.Source`'s questions and the
-//! placement outcomes of `SpGen.Merge`, with AST-printing replaced by text
-//! insertion into the original bytes.
+//! plus placement offsets, with AST-printing replaced by text insertion into
+//! the original bytes.
 //!
 //! Write-path verdict for the BE (measured by the probe tests and the
 //! parity golden, the way M2 measured TypeScript before sparch-typescript):
 //! presence is answered from the syntax tree, insertion is a text splice at
 //! computed offsets, and the bytes in between are never reprinted.
 //! Formatting is not this binary's job: the mix binding runs `mix format`
-//! over the api project after a successful write run — the same engine the
-//! Elixir tool applied inside `Merge.render/2`, on the same token stream.
+//! over the api project after a successful write run.
 
 use tree_sitter::{Node, Parser, Tree};
 
-/// Directive ranks of the module head — `SpGen.Merge.@directive_ranks`.
+/// Directive ranks of the module head.
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Rank {
     Moduledoc = 0,
@@ -29,7 +27,7 @@ pub struct ElixirFile {
     tree: Option<Tree>,
 }
 
-/// A located local call — the shape of `SpGen.Source.Entry`.
+/// A located local call, with its arguments and the file it sits in.
 pub struct Entry<'a> {
     node: Node<'a>,
     args: Vec<Node<'a>>,
@@ -45,7 +43,7 @@ impl Entry<'_> {
         self.node.end_byte()
     }
 
-    /// The rendered first argument — `Merge.first_rendered/1`.
+    /// The rendered first argument.
     pub fn first_key(&self) -> String {
         self.args
             .first()
@@ -53,7 +51,7 @@ impl Entry<'_> {
             .unwrap_or_default()
     }
 
-    /// The rendered last argument — `Source.action_arg/1`, the action atom a
+    /// The rendered last argument — the action atom a
     /// Phoenix route line ends with.
     pub fn action_key(&self) -> String {
         self.args
@@ -63,7 +61,7 @@ impl Entry<'_> {
     }
 
     /// Every keyword pair of the call's keyword arguments, as
-    /// `(key, rendered_value)` in source order — `Source.Entry.pairs/1`.
+    /// `(key, rendered_value)` in source order.
     /// Repeated keys are kept (the `validates` two-`by:` shape).
     pub fn pairs(&self) -> Vec<(String, String)> {
         let mut out = Vec::new();
@@ -73,7 +71,7 @@ impl Entry<'_> {
         out
     }
 
-    /// The rendered value of keyword `key`, first occurrence — `Entry.kw/2`.
+    /// The rendered value of keyword `key`, first occurrence.
     pub fn kw(&self, key: &str) -> Option<String> {
         self.pairs()
             .into_iter()
@@ -104,7 +102,7 @@ fn collect_pairs(file: &ElixirFile, node: Node<'_>, out: &mut Vec<(String, Strin
 
 impl ElixirFile {
     /// Parse source text; unparsable files yield a tree-less view where
-    /// nothing is present — `SpGen.Source.parse/1` with `ast: nil`.
+    /// nothing is present.
     pub fn parse(text: &str) -> Self {
         let mut parser = Parser::new();
         parser
@@ -156,7 +154,7 @@ impl ElixirFile {
 
     // -------------------------------------------------------------- names
 
-    /// The dotted module name of the file's `defmodule` — `Source.module_name/1`.
+    /// The dotted module name of the file's `defmodule`.
     pub fn module_name(&self) -> Option<String> {
         let defmodule = self.module_call()?;
         let name = defmodule.named_child(1)?;
@@ -179,7 +177,7 @@ impl ElixirFile {
             .any(|child| self.attr_name(*child).is_some_and(|name| name == attr))
     }
 
-    /// True when `@<attr> …` names the dotted module — `attr_names?/3`.
+    /// True when `@<attr> …` names the dotted module.
     pub fn attr_names(&self, attr: &str, module: &str) -> bool {
         self.body().iter().any(|child| {
             self.attr_name(*child).is_some_and(|name| name == attr)
@@ -218,7 +216,7 @@ impl ElixirFile {
         })
     }
 
-    /// All local calls of `macro_name`, in source order — `Source.calls/2`.
+    /// All local calls of `macro_name`, in source order.
     /// The walk covers the module body and non-function blocks (typedstruct
     /// blocks, router scopes), never function bodies or other modules.
     pub fn calls(&self, macro_name: &str) -> Vec<Entry<'_>> {
@@ -263,19 +261,19 @@ impl ElixirFile {
     }
 
     /// True when a DSL entry of `macro_name` exists whose first argument
-    /// renders to `key` — `Source.entry?/3`.
+    /// renders to `key`.
     pub fn has_entry(&self, macro_name: &str, key: &str) -> bool {
         self.calls(macro_name).iter().any(|e| e.first_key() == key)
     }
 
-    /// True when `describe "subject"` exists (exact) — `has_describe?/2`.
+    /// True when `describe "subject"` exists (exact).
     pub fn has_describe(&self, subject: &str) -> bool {
         self.calls("describe")
             .iter()
             .any(|e| e.args.first().and_then(|arg| e.file.literal_text(*arg)) == Some(subject))
     }
 
-    /// True when any clause of `name/arity` is defined — `Source.has_def?/3`.
+    /// True when any clause of `name/arity` is defined.
     pub fn has_def(&self, name: &str, arity: usize) -> bool {
         self.body().iter().any(|child| {
             self.call_target(*child)
@@ -287,7 +285,7 @@ impl ElixirFile {
     }
 
     /// True when a clause of `name/arity` has `key` (rendered arg) somewhere
-    /// in its head — `Source.def_head_has?/4`, e.g. the aggregate's `apply/2`
+    /// in its head, e.g. the aggregate's `apply/2`
     /// clauses identified by the event struct they pattern-match.
     pub fn has_def_head_arg(&self, name: &str, arity: usize, key: &str) -> bool {
         self.def_clauses(name, arity).into_iter().any(|head| {
@@ -297,8 +295,7 @@ impl ElixirFile {
         })
     }
 
-    /// The head calls of the public clauses of `name/arity` — `Merge`'s
-    /// `def_clause?/3` selection over `Source.def_clauses/1`.
+    /// The head calls of the public clauses of `name/arity`.
     fn def_clauses(&self, name: &str, arity: usize) -> Vec<Node<'_>> {
         self.body()
             .into_iter()
@@ -307,8 +304,7 @@ impl ElixirFile {
             .collect()
     }
 
-    /// True when the body child is a public clause of `name/arity` —
-    /// `Merge.def_clause?/3` plus the `head_match?` name/arity test.
+    /// True when the body child is a public clause of `name/arity`.
     fn def_clause_matches(&self, child: Node<'_>, name: &str, arity: usize) -> bool {
         self.call_target(child)
             .is_some_and(|target| target == "def")
@@ -319,8 +315,7 @@ impl ElixirFile {
     }
 
     /// The insert offset after the last clause of `name/arity` (keeps clause
-    /// groups together), else at the end of the body — `Merge.after_def/2`'s
-    /// `after_clauses_index/2`.
+    /// groups together), else at the end of the body.
     pub fn insert_offset_after_def(&self, name: &str, arity: usize) -> Option<usize> {
         let block = do_block(self.module_call()?)?;
         let children = significant(block);
@@ -335,7 +330,7 @@ impl ElixirFile {
     }
 
     /// The keyword pairs of every entry of `macro_name` whose first argument
-    /// renders to `key` — `Source.entry_kws/3`, the stale comparison's read.
+    /// renders to `key` — the stale comparison's read.
     pub fn entry_kws(&self, macro_name: &str, key: &str) -> Vec<(String, String)> {
         self.calls(macro_name)
             .iter()
@@ -348,7 +343,7 @@ impl ElixirFile {
 
     /// The insert offset for a head directive of `rank`.
     /// `alias_sort_key` selects the alphabetical position inside the alias
-    /// block — `Merge.head/1` and `Merge.alias_of/1`.
+    /// block.
     pub fn insert_offset_head(&self, rank: Rank, alias_sort_key: Option<&str>) -> Option<usize> {
         let block = do_block(self.module_call()?)?;
         let children = significant(block);
@@ -370,7 +365,7 @@ impl ElixirFile {
         Some(self.offset_in_body(&children, index, block))
     }
 
-    /// The insert offset at the very end of the module body — `body_end/0`.
+    /// The insert offset at the very end of the module body.
     pub fn insert_offset_body_end(&self) -> Option<usize> {
         let block = do_block(self.module_call()?)?;
         let children = significant(block);
@@ -378,10 +373,8 @@ impl ElixirFile {
     }
 
     /// The insert offset after the last top-level `describe`, else before
-    /// the first `defp`, else at the end of the body — the index of
-    /// `Merge.describe/0` (`after_describe_index/1` plus the
-    /// `before_defp_index/1` fallback). Test files keep describe blocks
-    /// together.
+    /// the first `defp`, else at the end of the body. Test files keep
+    /// describe blocks together.
     pub fn insert_offset_after_describe(&self) -> Option<usize> {
         let block = do_block(self.module_call()?)?;
         let children = significant(block);
@@ -399,8 +392,7 @@ impl ElixirFile {
     }
 
     /// The insert offset before the first `defp` group (public API above
-    /// private helpers), else at the end of the body — `Merge.before_helpers/0`
-    /// and its `before_defp_index/1`.
+    /// private helpers), else at the end of the body.
     pub fn insert_offset_before_helpers(&self) -> Option<usize> {
         let block = do_block(self.module_call()?)?;
         let children = significant(block);
@@ -408,9 +400,9 @@ impl ElixirFile {
         Some(self.offset_in_body(&children, index, block))
     }
 
-    /// The index of the first top-level `defp`, else the end of the body —
-    /// `Merge.before_defp_index/1`, shared by the `before_helpers` placement
-    /// and the `describe` fallback.
+    /// The index of the first top-level `defp`, else the end of the body.
+    /// Shared by the `before_helpers` placement and the `describe`
+    /// fallback.
     fn before_helpers_index(&self, children: &[Node<'_>]) -> usize {
         children
             .iter()
@@ -421,7 +413,7 @@ impl ElixirFile {
     }
 
     /// The insert offset at the directive boundary, above the code —
-    /// the materialization spot of `inside_block`'s wrapper path.
+    /// the materialization spot of the wrapper path.
     pub fn insert_offset_after_directives(&self) -> Option<usize> {
         let block = do_block(self.module_call()?)?;
         let children = significant(block);
@@ -430,9 +422,9 @@ impl ElixirFile {
     }
 
     /// The insert offset after the last top-level local call to
-    /// `macro_name` whose rendered first argument satisfies `predicate` —
-    /// `Merge.after_macro/3` with its `after_entry/3` scan. `None` when
-    /// nothing matches; the caller then applies the fallback placement.
+    /// `macro_name` whose rendered first argument satisfies `predicate`.
+    /// `None` when nothing matches; the caller then applies the fallback
+    /// placement.
     pub fn insert_offset_after_macro(
         &self,
         macro_name: &str,
@@ -443,8 +435,7 @@ impl ElixirFile {
 
     /// The insert offset after the last top-level local call to
     /// `macro_name` whose keyword argument `key` renders to a value
-    /// satisfying `predicate` — `Merge.after_macro_kw/4`. An absent keyword
-    /// renders `nil` there and never matches an `Eq`.
+    /// satisfying `predicate`. An absent keyword never matches an `Eq`.
     pub fn insert_offset_after_macro_kw(
         &self,
         macro_name: &str,
@@ -456,8 +447,8 @@ impl ElixirFile {
 
     /// The shared scan of the two `after_macro` factories: the last
     /// top-level local call of `macro_name` whose matched slot satisfies
-    /// the predicate, inserted after it. `Merge.after_entry/3` walks the
-    /// body's top-level expressions only — never nested blocks — and the
+    /// the predicate, inserted after it. The scan walks the body's
+    /// top-level expressions only — never nested blocks — and the
     /// fallback (if any) is the caller's decision.
     fn insert_offset_after(
         &self,
@@ -486,12 +477,11 @@ impl ElixirFile {
                         file: self,
                     };
                     match keyword {
-                        // `Merge.first_rendered/1` of an argless call
-                        // renders `""` — the oracle compares the rendered
-                        // text the same way
+                        // an argless call renders its first keyword as
+                        // `""`, so this compares the rendered text itself
                         None => entry.first_key() == *expected,
-                        // `kw_rendered/2` answers nil for an absent
-                        // keyword and `value == expected` is then false
+                        // an absent keyword answers nil and
+                        // `value == expected` is then false
                         Some(key) => entry.kw(key).is_some_and(|v| v == *expected),
                     }
                 }
@@ -502,7 +492,7 @@ impl ElixirFile {
 
     /// The insert offset inside the first top-level call to `macro_name`
     /// that carries a `do` block, before the trailing run of
-    /// `before_trailing` calls — `Merge.inside/3`. `None` when the call or
+    /// `before_trailing` calls. `None` when the call or
     /// its block does not exist (blocked; the wrapper case is decided by
     /// the caller, which then uses `insert_offset_after_directives`).
     pub fn insert_offset_inside(
@@ -535,8 +525,8 @@ impl ElixirFile {
         Some(self.offset_in_body(&body, index, inner))
     }
 
-    /// `Source.deepest_scope/2` — the deepest scope of `scope_paths` that
-    /// exists, as its byte range and the number of chain levels it matched.
+    /// The deepest scope of `scope_paths` that exists, as its byte range
+    /// and the number of chain levels it matched.
     /// The chain walks inward: a level that is missing ends the walk, and no
     /// match at all answers `None`.
     pub fn deepest_scope(&self, scope_paths: &[String]) -> Option<(usize, usize, usize)> {
@@ -558,7 +548,7 @@ impl ElixirFile {
     }
 
     /// True when a route (`verb` macro + action atom, e.g. `":create_widget"`)
-    /// exists inside the scope chain of path strings — `Source.route_present?/4`.
+    /// exists inside the scope chain of path strings.
     /// Routes are identified by action because paths like `"/"` collide
     /// across scopes.
     pub fn route_present(&self, verb: &str, action_key: &str, scope_paths: &[String]) -> bool {
@@ -570,10 +560,9 @@ impl ElixirFile {
         })
     }
 
-    /// `Merge.scope/1`'s `deepest_scope/2` plus `append_at_depth/4` — the
-    /// insert offset at the end of the body of the deepest existing scope of
-    /// `chain`, and how many levels matched. `None` when even the outermost
-    /// scope is missing (blocked).
+    /// The insert offset at the end of the body of the deepest existing
+    /// scope of `chain`, and how many levels matched. `None` when even
+    /// the outermost scope is missing (blocked).
     pub fn insert_offset_scope(&self, chain: &[crate::plan::ScopeLevel]) -> Option<(usize, usize)> {
         let mut block = do_block(self.module_call()?)?;
         let mut depth = 0usize;
@@ -598,7 +587,7 @@ impl ElixirFile {
         Some((self.offset_in_body(&children, children.len(), block), depth))
     }
 
-    /// `Merge.first_rendered/1` of a call node.
+    /// The rendered first argument of a call node.
     fn first_rendered(&self, node: Node<'_>) -> String {
         self.call_args(node)
             .first()
@@ -654,7 +643,7 @@ impl ElixirFile {
 
     /// True when the dotted `module` occurs anywhere in the file — supervisor
     /// children are listed by full module name (or aliased), so a text hit
-    /// counts. `Source.has_child?/2`.
+    /// counts.
     pub fn has_child(&self, module: &str) -> bool {
         self.text.contains(module)
     }
@@ -665,9 +654,7 @@ impl ElixirFile {
     }
 
     /// The file text with the first `children = [...]` binding replaced by an
-    /// inline list of its existing elements plus `unit_text` — the faithful
-    /// splice form of `Merge.children_list/0`'s `Zipper.replace(parent,
-    /// {:=, meta, [lhs, list ++ ns]})`, which reprints the whole assignment
+    /// inline list of its existing elements plus `unit_text`, reprinted
     /// with no source newlines. `None` when the assignment or its list is
     /// missing (blocked).
     pub fn children_list_replace(&self, unit_text: &str) -> Option<String> {
@@ -695,7 +682,7 @@ impl ElixirFile {
 
     // ------------------------------------------------------------- keys
 
-    /// Render a call argument as an entry key — `Source.render_arg/1`.
+    /// Render a call argument as an entry key.
     pub fn render_arg(&self, node: Node<'_>) -> String {
         let text = self.source_text(node);
         if node.kind() == "binary_operator" {
@@ -790,8 +777,7 @@ impl ElixirFile {
         }
     }
 
-    /// First body index that is code — the end of the directive block
-    /// (`rank_index`'s boundary).
+    /// First body index that is code — the end of the directive block.
     fn boundary_index(&self, children: &[Node<'_>]) -> usize {
         children
             .iter()
@@ -885,14 +871,13 @@ impl ElixirFile {
         out
     }
 
-    /// The name and arity of a `def` head — `Merge.head_match?/3`.
+    /// The name and arity of a `def` head.
     fn def_head(&self, def_call: Node<'_>) -> Option<(String, usize)> {
         let head = self.call_args(def_call).into_iter().next()?;
         self.def_head_of(head)
     }
 
-    /// The head call node of a `def` clause, guard unwrapped — the head
-    /// expression `Source.def_head/1` reads as `{name, _, args}`.
+    /// The head call node of a `def` clause, guard unwrapped.
     fn def_head_node<'a>(&self, def_call: Node<'a>) -> Option<Node<'a>> {
         let head = self.call_args(def_call).into_iter().next()?;
         Some(self.unwrap_when(head))
@@ -929,8 +914,7 @@ impl ElixirFile {
             }
             "identifier" => Some((self.source_text(head).to_string(), 0)),
             "binary_operator" => {
-                // `def foo when guard` — the head is the left side, the
-                // `{:when, _meta, [plain | _]}` case of `Source.def_head/1`
+                // `def foo when guard` — the head is the left side
                 if operator_token(head) == "when" {
                     self.def_head_of(head.named_child(0)?)
                 } else {
@@ -951,9 +935,8 @@ fn block_end_token(block: Node<'_>) -> Option<usize> {
         .map(|node| node.start_byte())
 }
 
-/// The `list` node on the right of the first `children = [...]` binding at any
-/// depth — `Merge.children_list/0`'s `Zipper.find(&match?({:children, _, nil}))`
-/// plus the `{:=, _, [lhs, rhs]}` parent check and `unwrap_list/1`.
+/// The `list` node on the right of the first `children = [...]` binding at
+/// any depth.
 fn find_children_list<'a>(node: Node<'a>, text: &str) -> Option<Node<'a>> {
     if node.kind() == "binary_operator" && operator_token(node) == "=" {
         let mut cursor = node.walk();
@@ -1047,8 +1030,8 @@ mod tests {
     use super::*;
 
     /// A file as the read-model blueprint meets it after creation: the
-    /// shape the oracle (Elixir tool) produces, hand-adopted here as the
-    /// expectation baseline.
+    /// generated read-model shape, hand-adopted here as the expectation
+    /// baseline.
     const READ_MODEL: &str = r#"defmodule Sportipedia.Catalog.Equipment.Widget.WidgetReadModel do
   @moduledoc """
   Represents a widget in the equipment.
@@ -1115,7 +1098,7 @@ end
         assert!(f.has_entry("field", ":title"));
         assert!(f.has_entry("field", ":weight"));
         assert!(!f.has_entry("field", ":slug"));
-        // the walk stops at def bodies, exactly like `Source.calls/2`:
+        // the walk stops at def bodies:
         // cast/validate_required live inside insert_changeset
         assert_eq!(f.calls("cast").len(), 0);
         assert_eq!(f.calls("validate_required").len(), 0);
@@ -1280,7 +1263,7 @@ end
     fn after_macro_lands_after_the_last_matching_entry() {
         let src = "defmodule R do\n  middleware Identity\n\n  identify GadgetAggregate, by: :id\n\n  dispatch CreateGadget, to: CreateGadgetHandler, aggregate: GadgetAggregate\nend\n";
         let f = ElixirFile::parse(src);
-        // `Merge.after_macro(:dispatch, fn _ -> true end, ...)`: any match
+        // the Any predicate matches every `dispatch` call
         let offset = f
             .insert_offset_after_macro("dispatch", &crate::plan::MacroPredicate::Any)
             .unwrap();
@@ -1309,7 +1292,7 @@ end
     fn after_macro_kw_matches_the_keyword_value_only() {
         let src = "defmodule R do\n  dispatch CreateGadget, to: CreateGadgetHandler, aggregate: GadgetAggregate\n\n  dispatch ArchiveWidget, to: ArchiveWidgetHandler, aggregate: WidgetAggregate\n\n  dispatch NoteWidget, to: NoteWidgetHandler, aggregate: WidgetAggregate\nend\n";
         let f = ElixirFile::parse(src);
-        // `Merge.after_macro_kw(:dispatch, :aggregate, == WidgetAggregate)`:
+        // `dispatch` entries whose `aggregate:` equals `WidgetAggregate`:
         // the insert goes after the last line of the WIDGET cluster, not
         // after the whole dispatch run
         let offset = f
@@ -1344,8 +1327,8 @@ end
 
     #[test]
     fn after_macro_scans_top_level_entries_only() {
-        // `Merge.after_entry/3` walks the body's expressions — a `dispatch`
-        // hidden inside another call's block does not count
+        // the scan walks the body's expressions — a `dispatch` hidden
+        // inside another call's block does not count
         let src = "defmodule R do\n  def build do\n    dispatch InsideDef\n  end\nend\n";
         let f = ElixirFile::parse(src);
         assert!(
@@ -1357,7 +1340,7 @@ end
 
     #[test]
     fn before_helpers_inserts_above_the_first_defp_else_appends() {
-        // `Merge.before_helpers/0`: public defs land above the private helpers
+        // public defs land above the private helpers
         let src = "defmodule M do\n  def public do\n    :ok\n  end\n\n  defp helper(x) do\n    x\n  end\nend\n";
         let f = ElixirFile::parse(src);
         let offset = f.insert_offset_before_helpers().unwrap();

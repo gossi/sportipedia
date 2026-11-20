@@ -5,8 +5,6 @@ defmodule Mix.Tasks.Sp.Gen.InternalApi do
   Generates the internal API of a constituent: `x_by_id/1` plus one accessor
   per unique-field invariant (`x_by_slug/1`).
 
-  Executes `docs/architecture/blueprints/backend/domain/internal-api.md` and
-  the `unique-slug` example (`internal api` blueprint).
   Internal API is used within the constituent (including tests) only —
   technical query implementations live in queries and validators, which call
   these accessors.

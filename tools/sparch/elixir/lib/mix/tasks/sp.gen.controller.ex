@@ -6,8 +6,6 @@ defmodule Mix.Tasks.Sp.Gen.Controller do
   query), its endpoint test file, and the route registration in the web
   router's scope chain (`/<subdomain> → /<composite> → /<domain-object>s`).
 
-  Executes `docs/architecture/blueprints/backend/web/controller.md` plus the
-  paired `endpoint-test.md` (`controller` blueprint).
   Only `GET` (queries) and `POST` (commands) — every write is a command
   endpoint. The endpoint tests follow the blueprint's status matrix (create
   200/422/403, delete 204/404/403, read 200/404, collection 200).

@@ -1,6 +1,4 @@
-//! The invariant patterns of the domain model, ported from
-//! `SpGen.Invariant` and its three pattern modules
-//! (`tools/spgen/lib/sp_gen/invariant*.ex`).
+//! The invariant patterns of the domain model.
 //!
 //! A `namedRule` (aggregate invariant or command constraint) resolves by
 //! pattern into validator descriptors, or stays unresolved when no pattern
@@ -32,8 +30,8 @@ pub struct Validator {
     pub snake: String,
 }
 
-/// The Pascal module form of a kebab name — `SpGen.Context.pascal/1`:
-/// split on `-`, capitalize each part's first letter, keep the rest.
+/// The Pascal module form of a kebab name: split on `-`, capitalize each
+/// part's first letter, keep the rest.
 pub fn pascal(name: &str) -> String {
     name.split('-')
         .map(|word| match word.chars().next() {

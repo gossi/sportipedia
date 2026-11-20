@@ -1,10 +1,5 @@
-//! One Vex validator per invariant/constraint the model resolved — the
-//! executable transfer of
-//! `docs/architecture/blueprints/backend/domain/validator.md` plus the
-//! example blueprints `examples/unique-slug.md` and
-//! `examples/domain-object-exists.md`, ported from
-//! `SpGen.Blueprint.Validator`
-//! (`tools/spgen/lib/sp_gen/blueprint/validator.ex`).
+//! One Vex validator per invariant/constraint the model resolved, plus
+//! the `unique-slug` and `domain-object-exists` examples.
 //!
 //! Three shapes, decided by the invariant pattern that claimed the rule:
 //!
@@ -47,8 +42,7 @@ const UUID_VALIDATOR: &str = "Sportipedia.Support.Validators.UuidValidator";
 pub struct ValidatorBlueprint;
 
 impl ValidatorBlueprint {
-    /// The validator module's file path (used as a `requires` gate) —
-    /// `Validator.module_file/2`.
+    /// The validator module's file path (used as a `requires` gate).
     pub fn module_file(ctx: &Context, validator: &Validator) -> String {
         ctx.render_or_panic_with(PATH, &validator_vars(&validator.snake))
     }
@@ -71,14 +65,14 @@ impl Blueprint for ValidatorBlueprint {
         "validator"
     }
 
-    /// `Validator.source_kinds` — the validator belongs to the command that
-    /// validates with it; it is never addressed as a generator.
+    /// The validator belongs to the command that validates with it; it is
+    /// never addressed as a generator.
     fn source_kinds(&self) -> Vec<ElementKind> {
         vec![ElementKind::Command]
     }
 
     /// A validator of an example shape is a call into the internal API;
-    /// scaffolded rules call no query — `Validator.dependencies/1`.
+    /// scaffolded rules call no query.
     fn dependencies(&self, ctx: &Context) -> Vec<Dependency> {
         if ctx.validators.iter().any(|v| v.kind != ValidatorKind::Rule) {
             vec![Dependency {
@@ -181,9 +175,8 @@ fn units(validator: &Validator, ctx: &Context) -> Vec<Unit> {
     units
 }
 
-/// The internal API module must exist before the alias/lookup may appear —
-/// `Validator.internal_gate/1`. A scaffolded rule names no query, so its
-/// units carry no gate at all.
+/// The internal API module must exist before the alias/lookup may appear.
+/// A scaffolded rule names no query, so its units carry no gate at all.
 fn internal_gate(validator: &Validator, ctx: &Context) -> Vec<(String, String)> {
     if validator.kind == ValidatorKind::Rule {
         return Vec::new();
@@ -214,9 +207,8 @@ fn doc(validator: &Validator, ctx: &Context) -> String {
     }
 }
 
-/// `Validator.def_block/2` — the `@doc`/`@spec` header over the body; the
-/// exists shape's spec takes `term()` because the value arrives straight
-/// off the request.
+/// The `@doc`/`@spec` header over the body; the exists shape's spec takes
+/// `term()` because the value arrives straight off the request.
 fn def_block(validator: &Validator, ctx: &Context) -> String {
     let body = body(validator, ctx).trim_end().to_string();
     if validator.kind == ValidatorKind::Exists {
@@ -231,7 +223,7 @@ fn def_block(validator: &Validator, ctx: &Context) -> String {
     )
 }
 
-/// `Validator.body/2` — the three example shapes.
+/// The three example shapes.
 fn body(validator: &Validator, ctx: &Context) -> String {
     let internal = format!("{}Internal", Context::pascal(&ctx.constituent));
     let do_ = &ctx.constituent;
@@ -258,7 +250,7 @@ fn body(validator: &Validator, ctx: &Context) -> String {
 /// already carries the internal alias, so this unit counts as present and
 /// the old file stays untouched — as a unit of its own, the alias would be
 /// appended to every old file, unused by the unguarded body still sitting
-/// there. — `Validator.alias_lines/2`.
+/// there.
 fn alias_lines(validator: &Validator, ctx: &Context) -> String {
     let internal = ctx.render_or_panic(INTERNAL_MODULE);
     if validator.kind == ValidatorKind::Exists {
@@ -309,7 +301,7 @@ mod tests {
     }
 
     #[test]
-    fn paths_and_modules_render_like_the_oracle() {
+    fn paths_and_modules_render_as_the_model_expects() {
         let ctx = ctx_for("create-widget");
         let unique = validator_by_snake(&ctx, "unique_slug");
         assert_eq!(
@@ -459,7 +451,7 @@ mod tests {
 
     #[test]
     fn the_finished_validator_file_is_fully_present() {
-        // the file the oracle creates, parsed back: every unit reads present
+        // the finished file, parsed back: every unit reads present
         let text = "defmodule Sportipedia.Catalog.Equipment.Widget.Validators.UniqueSlug do\n  @moduledoc \"\"\"\n  Validates that a widget slug is unique within the equipment.\n  \"\"\"\n  use Vex.Validator\n  alias Sportipedia.Catalog.Equipment.Widget.WidgetInternal\n\n  @doc \"\"\"\n  Validates the given slug value.\n  \"\"\"\n  @spec validate(String.t(), map()) :: :ok | {:error, term()}\n  def validate(value, context) do\n    with widget <- WidgetInternal.widget_by_slug(value),\n         false <- is_nil(widget),\n         false <- slug_belongs_to_widget?(widget, context) do\n      {:error, :slug_exists}\n    else\n      _ -> :ok\n    end\n  end\n\n  defp slug_belongs_to_widget?(widget, context) do\n    id = Map.get(context, :id)\n\n    id == widget.id\n  end\nend\n";
         let file = ElixirFile::parse(text);
         let ctx = ctx_for("create-widget");

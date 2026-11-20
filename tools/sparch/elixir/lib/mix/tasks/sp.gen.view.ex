@@ -5,8 +5,7 @@ defmodule Mix.Tasks.Sp.Gen.View do
   Generates the JSON:API view citizen for an ESDM **read model** element,
   plus its own test file.
 
-  Executes `docs/architecture/blueprints/backend/web/view.md`
-  (`view` blueprint): `use JSONAPI.View` with the
+  Writes `use JSONAPI.View` with the
   singular type, the resource `path/0` (`<subdomain>/<composite>/<domain-object>s`)
   and `fields/0` from the read model schema (id and timestamps are not
   attributes).

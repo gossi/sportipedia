@@ -71,10 +71,10 @@ end
     assert!(file.has_def_head_arg("apply", 2, "WidgetCreated{}"));
     assert!(file.has_def_head_arg("apply", 2, "WidgetArchived{}"));
     assert!(!file.has_def_head_arg("apply", 2, "WidgetNoted{}"));
-    // `Source.render_arg` keeps the `%` on the `__MODULE__` struct — it is
+    // The renderer keeps the `%` on the `__MODULE__` struct — it is
     // not an `__aliases__` node — while aliased patterns render `Event{}`
     assert!(file.has_def_head_arg("apply", 2, "%__MODULE__{}"));
-    // `Merge.after_def(:apply, 2)` sees the guarded clause too
+    // The after-def lookup sees the guarded clause too
     assert!(file.insert_offset_after_def("apply", 2).is_some());
     // arity 2 with the binding in the head
     assert!(file.has_def("apply", 2));

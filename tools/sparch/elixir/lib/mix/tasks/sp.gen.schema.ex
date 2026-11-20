@@ -5,8 +5,7 @@ defmodule Mix.Tasks.Sp.Gen.Schema do
   Generates the OpenAPI schema citizens (plus their ExUnit test files) that
   document an endpoint, driven by the element kind.
 
-  Executes `docs/architecture/blueprints/backend/web/schema.md`
-  (`schema` blueprint):
+  Generates the response/request schemas by element kind:
 
   * read model → `<DomainObject>Response` + `<DomainObject>CollectionResponse`
   * command (`create`/`update`) → `<Command>Request` (`delete` carries none)

@@ -1,13 +1,13 @@
-//! Naming substitution, ported from `SpGen.Placeholders`
-//! (`tools/spgen/lib/sp_gen/placeholders.ex`).
+//! Naming substitution for the blueprint placeholders: word splitting,
+//! re-casing, and pluralizing.
 //!
 //! The BE engine renders blueprint templates with `<placeholder>` syntax;
-//! the FE blueprints fill a typed model instead of template prose, so what
-//! carries over is the *mechanics*: word splitting, re-casing, and the
-//! four-rule pluralizer. The pluralizer must stay bug-for-bug identical to
-//! Elixir's `pluralize/1` — the BE router and the FE mocks derive the same
-//! collection segment from it, and no inflection crate may replace it (its
-//! irregular tables would diverge: `person` → BE `persons`, crates `people`).
+//! the FE blueprints fill a typed model instead of template prose, so both
+//! use the same *mechanics*: word splitting, re-casing, and the four-rule
+//! pluralizer. The pluralizer must stay exactly as written — the BE router
+//! and the FE mocks derive the same collection segment from it, and no
+//! inflection crate may replace it (its irregular tables would diverge:
+//! `person` → BE `persons`, crates `people`).
 
 /// The casing forms the substitution engine knows. SCREAMING is the FE
 /// addition (fixture consts); the BE forms carry over unchanged.
@@ -26,8 +26,8 @@ pub struct Name {
     words: Vec<String>,
 }
 
-/// Split one token into camel/Pascal parts, the semantics of the Elixir
-/// regex `[A-Z]+(?![a-z])|[A-Z]?[a-z0-9]+` (Rust regexes have no look-ahead,
+/// Split one token into camel/Pascal parts, the semantics of the regex
+/// `[A-Z]+(?![a-z])|[A-Z]?[a-z0-9]+` (Rust regexes have no look-ahead,
 /// so the rule is scanned directly): an acronym run stands alone, unless a
 /// lowercase tail follows, in which case the run's last letter starts that
 /// word.
@@ -72,8 +72,7 @@ fn split_token(token: &str) -> Vec<String> {
 
 impl Name {
     /// Split a name into lowercase words, honoring kebab, snake, camel and
-    /// Pascal casing plus acronym runs (`PublicAPI` → [public, api]) — the
-    /// direct port of `Placeholders.words/1`.
+    /// Pascal casing plus acronym runs (`PublicAPI` → [public, api]).
     pub fn parse(raw: &str) -> Self {
         let words = raw
             .split(['-', '_', ' '])
@@ -147,8 +146,8 @@ impl Name {
     }
 }
 
-/// The four-rule pluralizer, ported from `SpGen.Placeholders.pluralize/1`
-/// (its two `es` arms merged — identical outcomes).
+/// The four-rule pluralizer. The `ch`/`sh` and `s`/`x`/`z` rules both append
+/// `es`, so they share one arm.
 pub fn pluralize(text: &str) -> String {
     let lower = text.to_lowercase();
     if lower.ends_with("ch")

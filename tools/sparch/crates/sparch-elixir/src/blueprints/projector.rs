@@ -282,7 +282,7 @@ mod tests {
     }
 
     #[test]
-    fn paths_modules_and_projection_name_render_like_the_oracle() {
+    fn paths_modules_and_projection_name_render_as_the_model_expects() {
         let ctx = ctx_for("widget-created");
         assert_eq!(
             Projector::module_file(&ctx),
@@ -301,7 +301,7 @@ mod tests {
     }
 
     #[test]
-    fn unit_ids_and_order_mirror_the_oracle() {
+    fn unit_ids_and_order_match_the_model() {
         let labels: Vec<String> = units_for("widget-created")
             .iter()
             .map(|u| u.id.label())

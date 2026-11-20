@@ -4,8 +4,7 @@ defmodule Mix.Tasks.Sp.Gen.Event do
   @moduledoc """
   Generates the event citizen from an ESDM event element.
 
-  Executes the blueprint `docs/architecture/blueprints/backend/domain/event.md`
-  :
+  Writes the event module:
 
   * `services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/events/<_event>.ex`
   * the `<Event> event` `describe` block in the operation test file(s) of the

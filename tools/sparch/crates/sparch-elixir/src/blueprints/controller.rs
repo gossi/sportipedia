@@ -553,7 +553,7 @@ mod tests {
     }
 
     #[test]
-    fn paths_routes_and_the_collection_path_render_like_the_oracle() {
+    fn paths_routes_and_the_collection_path_render_as_the_model_expects() {
         let ctx = ctx_for("create-widget");
         assert_eq!(
             Controller::module_file(&ctx),

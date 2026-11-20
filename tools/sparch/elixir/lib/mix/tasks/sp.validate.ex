@@ -10,8 +10,8 @@ defmodule Mix.Tasks.Sp.Validate do
       mix sp.validate read-model.apparatus command.catalog-apparatus
 
   Checks (the generators' own contracts, same code): the fixture grammar and
-  example-to-schema consistency of every read model with `schema.examples`
-  (`SpGen.Fixtures` in the Elixir tool), reference resolution across the whole fixture graph
+  example-to-schema consistency of every read model with `schema.examples`,
+  reference resolution across the whole fixture graph
   (whole-model mode only), a non-empty `description` on every command,
   event and query (missing prose materializes as `TODO:` markers in generated
   docs and operation summaries), and the **declared operations**: every

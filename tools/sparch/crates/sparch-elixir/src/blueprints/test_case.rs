@@ -1,6 +1,4 @@
-//! Shared machinery for a test file several blueprints contribute to — the
-//! port of `SpGen.Blueprint.TestCaseFile`
-//! (`tools/spgen/lib/sp_gen/blueprint/test_case_file.ex`).
+//! Shared machinery for a test file several blueprints contribute to.
 //!
 //! The file is a container; each blueprint's `*Test` module contributes its
 //! own `describe` block plus the aliases it needs: the test file path and
@@ -15,20 +13,19 @@ use crate::context::Context;
 use crate::elixir::Rank;
 use crate::plan::{FilePlan, Placement, Unit, UnitId};
 
-/// The subdomain's `ExUnit.CaseTemplate` — `TestCaseFile.@test_use`.
+/// The subdomain's `ExUnit.CaseTemplate`.
 const TEST_USE: &str = "Sportipedia.<Subdomain>TestCase";
 
-/// `TestCaseFile.test_case_module/1` — the dotted, rendered module name.
+/// The dotted, rendered test-case module name.
 pub fn test_case_module(ctx: &Context) -> String {
     ctx.render_or_panic(TEST_USE)
 }
 
-/// A contributed describe body — `describe_body/2` of the Elixir `*Test`
-/// blueprints.
+/// A contributed describe body.
 type BodyFn = dyn Fn(&Context, &str) -> String;
 
 /// One contributed `describe` block — a `{subject_template, body_fn,
-/// alternates}` tuple of the Elixir version. Subject and alternates are
+/// alternates}` tuple. Subject and alternates are
 /// placeholder templates rendered with the plan's extra vars; the body
 /// renders from the context and the rendered subject.
 pub struct Describe {
@@ -39,9 +36,9 @@ pub struct Describe {
     pub alternates: Vec<&'static str>,
 }
 
-/// The keyword options of `TestCaseFile.plan/2`, as data. Rust plans are
-/// built per context, so the `requires` gates arrive already resolved to
-/// their `[{path, reason}]` answer for this context.
+/// The options [`plan`] takes, as data. Rust plans are built per context, so
+/// the `requires` gates arrive already resolved to their `[{path, reason}]`
+/// answer for this context.
 pub struct Options {
     pub path_template: &'static str,
     pub module_template: &'static str,
@@ -58,7 +55,7 @@ pub struct Options {
     pub describes: Vec<Describe>,
 }
 
-/// Builds the `FilePlan` — `TestCaseFile.plan/2`.
+/// Builds the `FilePlan`.
 pub fn plan(ctx: &Context, opts: Options) -> FilePlan {
     let extra_vars = &opts.extra_vars;
     let path = ctx.render_or_panic_with(opts.path_template, extra_vars);

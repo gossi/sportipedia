@@ -1,4 +1,4 @@
-//! The run context — the port of `SpGen.Context` for the BE blueprints.
+//! The run context for the BE blueprints.
 //!
 //! Everything a blueprint reads is pre-resolved here: identity, location
 //! (inferred, overridable, hard error when unknown), the derived operation,
@@ -48,7 +48,7 @@ impl Operation {
     }
 }
 
-/// How a collection query paginates — `Esdm.page_style/1`'s atoms.
+/// How a collection query paginates — the model's page style.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum PageStyle {
     Numbered,
@@ -123,12 +123,11 @@ pub struct Context {
     /// Rules the model states that no pattern realizes, `(name, rule)`.
     pub unresolved: Vec<(String, String)>,
     /// The events the element publishes, in the model's `publishes` order. A
-    /// published name the model holds no event for is dropped, the oracle's
-    /// `Enum.reject(&is_nil/1)`.
+    /// published name the model holds no event for is dropped.
     pub events: Vec<Element>,
-    /// The feature scenarios that exercise this element — `Esdm.scenarios/2`.
+    /// The feature scenarios that exercise this element.
     pub scenarios: Vec<serde_json::Value>,
-    /// The actors the model names for this element (`Esdm.actors/1`).
+    /// The actors the model names for this element.
     pub actors: Vec<String>,
     pub repo_root: PathBuf,
 }
@@ -198,19 +197,17 @@ impl Context {
 
     // ------------------------------------------------------------- derived
 
-    /// The same context driven from a related element — Elixir's
-    /// `%{ctx | element: e}`. Only the element is replaced; every derived
-    /// fact (fields, validators, location, links) keeps the original's, so
-    /// rendering re-resolves the identity placeholders from the new element
-    /// exactly as the oracle's blueprint helpers do.
+    /// The same context driven from a related element. Only the element is
+    /// replaced; every derived fact (fields, validators, location, links)
+    /// keeps the original's, so rendering re-resolves the identity
+    /// placeholders from the new element.
     pub fn with_element(&self, element: &Element) -> Context {
         let mut ctx = self.clone();
         ctx.element = element.clone();
         ctx
     }
 
-    /// All events owned by the context's aggregate, sorted by name —
-    /// `Context.aggregate_events/1`.
+    /// All events owned by the context's aggregate, sorted by name.
     pub fn aggregate_events(&self) -> Vec<Element> {
         if let Some(aggregate) = &self.aggregate {
             return self.model.events_of(&aggregate.name);
@@ -223,8 +220,8 @@ impl Context {
 
     /// The effect the read model declares for an event: a real operation,
     /// `None` for the declared `none` (not to materialize), or `None` when
-    /// nobody has decided — `Context.effect_for_event/2` plus the private
-    /// `declared_effect/2`, where `:invalid` reads as undecided. Both the
+    /// nobody has decided. The private `declared_effect` reads `:invalid`
+    /// as undecided. Both the
     /// undecided and the invalid answers generate no clause; the gap is
     /// reported by the run.
     pub fn effect_for_event(&self, event_name: &str) -> Option<Operation> {
@@ -236,8 +233,7 @@ impl Context {
             .and_then(|word| Operation::parse(&word))
     }
 
-    /// The module Pascal form of a kebab name (PublicAPI, ReadModel, …) —
-    /// `Context.pascal/1`.
+    /// The module Pascal form of a kebab name (PublicAPI, ReadModel, …).
     pub fn pascal(name: &str) -> String {
         name.split('-')
             .map(|part| {
@@ -255,18 +251,17 @@ impl Context {
             .collect()
     }
 
-    /// The snake_case operation key (`catalog_apparatus`), `Context.op_snake/1`.
+    /// The snake_case operation key (`catalog_apparatus`).
     pub fn op_snake(&self) -> String {
         self.element.name.replace('-', "_")
     }
 
-    /// True for queries whose operation is a collection read
-    /// (`Context.collection?/1`).
+    /// True for queries whose operation is a collection read.
     pub fn collection(&self) -> bool {
         self.element.kind == ElementKind::Query && self.operation == Some(Operation::Collection)
     }
 
-    /// Fields carrying a unique rule — `Context.unique_fields/1`.
+    /// Fields carrying a unique rule.
     pub fn unique_fields(&self) -> Vec<String> {
         self.validators
             .iter()
@@ -275,7 +270,7 @@ impl Context {
             .collect()
     }
 
-    /// Elixir type for a typedstruct field — `Context.elixir_type/1`.
+    /// Elixir type for a typedstruct field.
     pub fn elixir_type(f: &Befield) -> String {
         match f.ty.as_str() {
             "integer" => "integer()",
@@ -288,7 +283,7 @@ impl Context {
         .to_string()
     }
 
-    /// Ecto type atom text for schema fields — `Context.ecto_type/1`.
+    /// Ecto type atom text for schema fields.
     pub fn ecto_type(f: &Befield) -> String {
         match (f.ty.as_str(), f.format.as_deref()) {
             ("string", Some("uuid")) => ":binary_id".to_string(),
@@ -303,13 +298,13 @@ impl Context {
         }
     }
 
-    /// The description prose or `None` — `Esdm.describe/1`.
+    /// The description prose or `None`.
     pub fn description(&self) -> Option<&str> {
         self.element.description()
     }
 
-    /// The parameter names of a query's `parameters.oneOf` (`["id", "slug"]`)
-    /// — `Context.one_of_params/1`. A model that declares none answers with
+    /// The parameter names of a query's `parameters.oneOf` (`["id", "slug"]`).
+    /// A model that declares none answers with
     /// the empty list. Key order is the parsed document's, the same reading
     /// every mapping in the model crate uses (YAML mappings lose key order);
     /// this wave's consumer only asks whether the list is empty.
@@ -335,8 +330,7 @@ impl Context {
         names
     }
 
-    /// The path parameter name for a read query (`id`, `id_or_slug`),
-    /// `Context.read_param/1`.
+    /// The path parameter name for a read query (`id`, `id_or_slug`).
     pub fn read_param(&self) -> String {
         let names = self.one_of_params();
         if names.is_empty() {
@@ -346,7 +340,7 @@ impl Context {
     }
 
     /// A query's `parameters.properties` (collection queries), as a map or
-    /// `%{}` — `Context.query_parameters/1`.
+    /// `None` when the model declares none.
     pub fn query_parameters(&self) -> Option<&serde_json::Map<String, serde_json::Value>> {
         self.element
             .doc
@@ -357,7 +351,7 @@ impl Context {
 
     /// The fields a collection query may be filtered by — the names its
     /// `parameters.filter.properties` declares, sorted so a regenerated
-    /// file is stable — `Context.filterable_fields/1`.
+    /// file is stable.
     pub fn filterable_fields(&self) -> Vec<String> {
         let mut keys: Vec<String> = self
             .query_parameters()
@@ -372,7 +366,7 @@ impl Context {
 
     /// The fields a collection query may be sorted by: the model's
     /// `sort.properties` when it declares them, its filterable fields when
-    /// it does not — `Context.sortable_fields/1`.
+    /// it does not.
     pub fn sortable_fields(&self) -> Vec<String> {
         if self.element.kind != ElementKind::Query {
             return Vec::new();
@@ -385,8 +379,7 @@ impl Context {
         }
     }
 
-    /// How a collection query paginates: `Numbered | Offset | None` —
-    /// `Context.page_style/1`.
+    /// How a collection query paginates: `Numbered | Offset | None`.
     pub fn page_style(&self) -> PageStyle {
         if self.element.kind != ElementKind::Query {
             return PageStyle::None;
@@ -394,10 +387,9 @@ impl Context {
         esdm_page_style(&self.element)
     }
 
-    /// The fixture specs of `ctx`'s read model, or `[]` when none/invalid —
-    /// `Context.fixture_specs/1`, through `crate::context::fixture_functions`
-    /// (the port of `SpGen.Fixtures.validate/3`, the BE engine with the
-    /// `@elixir_nonames` and plural-collision function-name guards).
+    /// The fixture specs of `ctx`'s read model, or `[]` when none/invalid,
+    /// through `crate::context::fixture_functions` (the validator with the
+    /// reserved-name and plural-collision function-name guards).
     pub fn fixture_specs(&self) -> Vec<FixtureFn> {
         let Some(rm) = &self.read_model else {
             return Vec::new();
@@ -407,7 +399,7 @@ impl Context {
     }
 
     /// The materialized source for one field of the primary example, or
-    /// `None` — `Context.example_value/2` through `Context.fixture/1`.
+    /// `None` when the context holds no fixture.
     pub fn example_value(&self, name: &str) -> Option<String> {
         let fixture = self.fixture()?;
         fixture
@@ -417,15 +409,14 @@ impl Context {
             .map(|(_, source)| source.clone())
     }
 
-    /// True when `ctx`'s read model declares usable fixture examples —
-    /// `Context.fixtures?/1`.
+    /// True when `ctx`'s read model declares usable fixture examples.
     pub fn fixtures(&self) -> bool {
         !self.fixture_specs().is_empty()
     }
 
     /// The generated-fixture reference for `ctx`'s constituent, from its
     /// primary example (the first in model order), or `None` when the read
-    /// model declares no examples — `Context.fixture/1`.
+    /// model declares no examples.
     pub fn fixture(&self) -> Option<FixtureRef> {
         let spec = self.fixture_specs().into_iter().next()?;
         Some(self.build_fixture_ref(&spec))
@@ -460,7 +451,7 @@ impl Context {
     }
 
     /// The seed expression a single-row test uses to place the primary
-    /// fixture — `Context.seed_expr/1`.
+    /// fixture.
     pub fn seed_expr(f: &FixtureRef) -> String {
         format!(
             "{}.{}({}.{}())",
@@ -469,7 +460,7 @@ impl Context {
     }
 
     /// The plural seed expression a collection test uses to place every
-    /// fixture — `Context.seed_all_expr/1`.
+    /// fixture.
     pub fn seed_all_expr(f: &FixtureRef) -> String {
         format!(
             "{}.{}({}.{}())",
@@ -479,7 +470,7 @@ impl Context {
 
     // ---------------------------------------------------------- rendering
 
-    /// Placeholder variables — `Context.vars/1`. Values are raw domain
+    /// Placeholder variables. Values are raw domain
     /// names; the engine re-cases them per notation.
     pub fn vars(&self) -> Vars {
         let mut v = Vars::new();
@@ -497,7 +488,7 @@ impl Context {
         if self.element.kind == ElementKind::Command {
             v.insert("command".into(), self.element.name.clone());
         }
-        // `<Event>` — `Context.event_name/1`: an event element names itself,
+        // `<Event>`: an event element names itself,
         // and anything else names the first event it publishes. A citizen
         // that publishes nothing (or nothing the model holds) leaves the
         // variable out, so a template naming `<Event>` stays unresolved.
@@ -514,7 +505,7 @@ impl Context {
         v
     }
 
-    /// Prose slots — `Context.slots/1`, grown by the blueprints that need
+    /// Prose slots, grown by the blueprints that need
     /// more prose than the read model does.
     pub fn slots(&self) -> Slots {
         let mut s = Slots::new();
@@ -549,7 +540,7 @@ impl Context {
             self.constituent.clone(),
         );
         s.insert("bounded_context".to_string(), self.bounded_context());
-        // per-field type slots — `field_type_slots/1`
+        // per-field type slots
         s.insert("field type".to_string(), "String.t()".to_string());
         for f in &self.fields {
             s.insert(format!("{} type", f.name), Self::elixir_type(f));
@@ -557,21 +548,21 @@ impl Context {
         s
     }
 
-    /// `Context.render/4` — fill a blueprint template; unresolvable
+    /// Fill a blueprint template; unresolvable
     /// placeholders abort the run with the names listed.
     pub fn render(&self, template: &str) -> Result<String, Vec<String>> {
         placeholders::render(template, &self.vars(), &self.slots())
     }
 
-    /// `Context.render/3` with extra vars — a plan driven from a related
-    /// element overrides placeholders (`TestCaseFile.plan`'s `:extra_vars`).
+    /// `render` with extra vars — a plan driven from a related
+    /// element overrides placeholders (`test_case::plan`'s `extra_vars`).
     pub fn render_with(&self, template: &str, extra_vars: &Vars) -> Result<String, Vec<String>> {
         let mut vars = self.vars();
         vars.extend(extra_vars.clone());
         placeholders::render(template, &vars, &self.slots())
     }
 
-    /// `Context.render/4` — extra vars and extra prose slots together. The
+    /// Rendering with extra vars and extra prose slots together. The
     /// Bruno request file names its placeholder `<Operation Title>`, which
     /// the notation's space marks as a slot.
     pub fn render_full(
@@ -626,7 +617,7 @@ impl Context {
         }
     }
 
-    /// `Context.bounded_context/1` — the esdm scope's bounded context, for
+    /// The esdm scope's bounded context, for
     /// prose.
     pub(crate) fn bounded_context(&self) -> String {
         match self
@@ -649,8 +640,7 @@ struct LocationParts {
 }
 
 /// `docs/domain-model/<subdomain>/<composite>/...` — the repo layout is the
-/// architecture's source for subdomain and composite
-/// (`Context.model_dir_segments/1` plus the two projections).
+/// architecture's source for subdomain and composite.
 fn infer_location(element: &Element) -> LocationParts {
     let parts: Vec<String> = element
         .source
@@ -674,8 +664,8 @@ fn infer_location(element: &Element) -> LocationParts {
     }
 }
 
-/// `Context.infer_constituent/2` — the third return keeps the shape of the
-/// Elixir tuple form used at the call site.
+/// The constituent inferred from the element — the answer is the third
+/// value of the returned tuple.
 fn infer_constituent(model: &Model, element: &Element) -> ((), (), Option<String>) {
     let name = match element.kind {
         ElementKind::Aggregate | ElementKind::ReadModel | ElementKind::Entity => {
@@ -691,7 +681,7 @@ fn infer_constituent(model: &Model, element: &Element) -> ((), (), Option<String
     ((), (), name)
 }
 
-/// `Context.derive_operation/2` — declared, never guessed.
+/// The operation declared for the element, never guessed.
 pub fn derive_operation(model: &Model, element: &Element) -> Option<Operation> {
     use sparch_model::annotations as ann;
     match element.kind {
@@ -724,7 +714,7 @@ pub fn derive_operation(model: &Model, element: &Element) -> Option<Operation> {
     }
 }
 
-/// `Context.aggregate_link/2` with the self-links for aggregate- and
+/// The aggregate the element links to, with the self-links for aggregate- and
 /// read-model-driven runs.
 fn aggregate_link(model: &Model, element: &Element) -> Option<Element> {
     match element.kind {
@@ -755,7 +745,7 @@ fn read_model_link(model: &Model, element: &Element) -> Option<Element> {
     model.read_model_for(element)
 }
 
-/// `Context.build`'s `events:` field — `Esdm.publishes(element)` mapped through
+/// The context's `events:` field — the published names mapped through
 /// the model's event lookup, with the names the model holds no event for
 /// dropped. The list keeps `publishes` order, so the first entry is what
 /// `<Event>` means for a citizen that is not itself an event.
@@ -767,9 +757,9 @@ fn published_events(model: &Model, element: &Element) -> Vec<Element> {
         .collect()
 }
 
-/// `Esdm.sortable_fields/1` — the `sortableFields` list on a query's
+/// The `sortableFields` list on a query's
 /// `parameters.properties.sort` entry, each name `to_string`'d. A model that
-/// lists none leaves the `[]` answer for `Context.sortable_fields/1` to
+/// lists none leaves the `[]` answer for `sortable_fields` to
 /// replace with its filterable fields.
 fn esdm_sortable_fields(element: &Element) -> Vec<String> {
     let declared = element
@@ -792,8 +782,8 @@ fn value_to_string(value: &serde_json::Value) -> String {
     }
 }
 
-/// `Esdm.page_style/1` — `:none` when the model declares no `page`
-/// parameter, `:offset` when it names `limit`/`offset`, `:numbered`
+/// The model's page style: `None` when the query declares no `page`
+/// parameter, `Offset` when it names `limit`/`offset`, `Numbered`
 /// (`number`/`size`, and a bare `page` that states no properties) otherwise.
 fn esdm_page_style(element: &Element) -> PageStyle {
     let Some(props) = element
@@ -826,7 +816,7 @@ fn page_style_of(props: Option<&serde_json::Value>) -> PageStyle {
 }
 
 /// The feature scenarios that exercise the element (by its `when`
-/// command/query name), in model order — `Esdm.scenarios/2`.
+/// command/query name), in model order.
 fn scenarios(model: &Model, element: &Element) -> Vec<serde_json::Value> {
     model
         .elements
@@ -849,7 +839,7 @@ fn scenarios(model: &Model, element: &Element) -> Vec<serde_json::Value> {
         .collect()
 }
 
-/// `Context.fields_for/1` — canonical model order plus the generated `id`
+/// Canonical model order plus the generated `id`
 /// for command-driven contexts.
 fn fields_for(
     element: &Element,
@@ -875,7 +865,7 @@ fn fields_for(
     fields
 }
 
-/// `Context.generated_id/1` — the aggregate's `identifiedBy` generator
+/// The aggregate's `identifiedBy` generator
 /// decides whether the id is a uuid.
 fn generated_id(aggregate: Option<&Element>) -> Option<Befield> {
     let doc = aggregate?.doc.get("identifiedBy")?;
@@ -894,7 +884,7 @@ fn generated_id(aggregate: Option<&Element>) -> Option<Befield> {
     })
 }
 
-/// `Context.validators_for/2` — invariants and constraints through the
+/// Invariants and constraints through the
 /// pattern registry, with the citizen-realizable filter for unresolved
 /// rules and the sorted outputs.
 fn validators_for(
@@ -929,9 +919,8 @@ fn validators_for(
     let (mut validators, unresolved_rules) =
         sparch_model::invariants::resolve_all(&rules, &field_names, constituent);
 
-    // `realizable_by_citizen?` — a rule that names a field of any citizen
-    // element is noise about a run, not a gap in the model; only rules
-    // naming nothing anywhere stay reported.
+    // a rule that names a field of any citizen element is noise about a run,
+    // not a gap in the model; only rules naming nothing anywhere stay reported.
     let citizen = citizen_field_names(model, element, aggregate, &field_names);
     let unresolved: Vec<(String, String)> = unresolved_rules
         .into_iter()
@@ -988,7 +977,7 @@ fn citizen_field_names(
     names
 }
 
-/// `SpGen.Fixtures.materialize/2` — the code form of one example value:
+/// The code form of one example value:
 /// a fixture key → `UUID.uuid5(:dns, key)`; a `*Id` field whose value is
 /// neither a key nor a UUID → wrapped as well (the fail-safe reading);
 /// anything else → the literal, as `inspect` source.
@@ -1011,7 +1000,7 @@ fn uuid_expr(key: &str) -> String {
     )
 }
 
-/// `SpGen.Fixtures.uuid?/1` — a canonical dash-separated UUID string.
+/// A canonical dash-separated UUID string.
 fn canonical_uuid(value: &str) -> bool {
     let groups: Vec<usize> = value.split('-').map(|g| g.chars().count()).collect();
     groups.len() == 5
@@ -1024,9 +1013,9 @@ const ELIXIR_NONAMES: [&str; 14] = [
     "nil",
 ];
 
-/// One example, prepared for rendering into BE fixture code —
-/// `SpGen.Fixtures`' `spec` type: the fixture key, its parts, the function
-/// name it produces, and the materialized attributes in schema field order.
+/// One example, prepared for rendering into BE fixture code: the fixture key,
+/// its parts, the function name it produces, and the materialized attributes
+/// in schema field order.
 #[derive(Clone, Debug)]
 pub struct FixtureFn {
     pub key: String,
@@ -1035,10 +1024,9 @@ pub struct FixtureFn {
     pub attrs: Vec<(String, String)>,
 }
 
-/// A generated fixture row, named from every angle a test needs —
-/// `SpGen.Context.fixture_ref()`: the fixture module and its file, the
-/// mnemonic and plural function names, and the composite factory that seeds
-/// them.
+/// A generated fixture row, named from every angle a test needs: the fixture
+/// module and its file, the mnemonic and plural function names, and the
+/// composite factory that seeds them.
 #[derive(Clone, Debug)]
 pub struct FixtureRef {
     pub module: String,
@@ -1054,14 +1042,14 @@ pub struct FixtureRef {
     pub attrs: Vec<(String, String)>,
 }
 
-/// `SpGen.Fixtures.function_name/1` — the key's mnemonic, snake-cased.
+/// The key's mnemonic, snake-cased.
 pub fn function_name(key: &str) -> String {
     let (_composite, _read_model, mnemonic) =
         sparch_model::fixtures::parse_key(key).unwrap_or_else(|reason| panic!("{reason}"));
     mnemonic.replace('-', "_")
 }
 
-/// `SpGen.Fixtures.validate/3` — validate a read model's examples and
+/// Validate a read model's examples and
 /// prepare renderable specs, reporting *every* violation, never just the
 /// first. `plural` is the aggregate function the generated file will define;
 /// no mnemonic may shadow an Elixir keyword or produce that name.
@@ -1224,7 +1212,7 @@ fn fixture_fn(
     }
 }
 
-/// `SpGen.Fixtures.example_label/1` — the key when there is one, else the
+/// The key when there is one, else the
 /// title, else `<unnamed>`, always as `inspect` source.
 fn example_label(example: &serde_json::Map<String, serde_json::Value>) -> String {
     match example.get("id") {

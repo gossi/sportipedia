@@ -1,4 +1,4 @@
-//! Grouped report — the BE `SpGen.Report` culture: the report is how the
+//! Grouped report — the BE report culture: the report is how the
 //! operator decides what to run next; deferrals guide, blocks fail.
 //! Empty groups print nothing; `--dry-run` uses the same shape in future
 //! tense. Exit status is nonzero only on Blocked/Failed.

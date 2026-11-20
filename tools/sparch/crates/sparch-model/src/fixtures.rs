@@ -1,5 +1,4 @@
-//! The fixture identity rule, ported from `SpGen.Fixtures`
-//! (`tools/spgen/lib/sp_gen/fixtures.ex`).
+//! The fixture identity rule.
 //!
 //! A fixture is a read-model instance the domain model *declares*: the read
 //! model's `schema.examples`. Each example names itself with a fixture key —
@@ -70,8 +69,8 @@ pub fn examples_of(element: &Element) -> Vec<Value> {
         .unwrap_or_default()
 }
 
-/// Validate a read model's examples and prepare renderable specs — ported
-/// from `Fixtures.validate/3`, reporting *every* violation, never just the
+/// Validate a read model's examples and prepare renderable specs,
+/// reporting *every* violation, never just the
 /// first. `plural` is the collection const name the file will define
 /// (`POSITIONS`); no mnemonic may produce it.
 pub fn validate(

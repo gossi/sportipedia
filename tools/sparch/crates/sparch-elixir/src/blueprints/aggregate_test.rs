@@ -1,6 +1,4 @@
-//! The aggregate's contribution to each event's test file — ported from
-//! `SpGen.Blueprint.AggregateTest`
-//! (`tools/spgen/lib/sp_gen/blueprint/aggregate_test.ex`).
+//! The aggregate's contribution to each event's test file.
 //!
 //! A `describe "Aggregate"` block per event, applying that fact to the
 //! state. The fact under test decides where its test lives, so every event
@@ -30,9 +28,8 @@ impl Blueprint for AggregateTest {
         "aggregate_test"
     }
 
-    /// The oracle derives its sweep participation from the generator's
-    /// head (`primary.accepts?`); the Rust sweep asks each ported module,
-    /// so the companion names the kinds its head accepts.
+    /// The sweep asks each blueprint module for the kinds it accepts, so
+    /// the companion names the kinds its head accepts.
     fn source_kinds(&self) -> Vec<ElementKind> {
         vec![
             ElementKind::Aggregate,
@@ -94,7 +91,7 @@ fn plan_for_event(ctx: &Context, event: &Element) -> FilePlan {
     )
 }
 
-/// The `describe` body — `AggregateTest.describe_body/3`, heredoc
+/// The `describe` body, heredoc
 /// whitespace included.
 pub fn describe_body(ctx: &Context, subject: &str, events: &[Element]) -> String {
     let aggregate = ctx.render_or_panic("<DomainObject>Aggregate");

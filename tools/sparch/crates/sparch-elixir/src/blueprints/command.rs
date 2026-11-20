@@ -1,6 +1,4 @@
-//! The command struct file — the executable transfer of
-//! `docs/architecture/blueprints/backend/domain/command.md`, ported from
-//! `SpGen.Blueprint.Command` (`tools/spgen/lib/sp_gen/blueprint/command.ex`).
+//! The command struct file.
 //!
 //! Templates follow what the operation does:
 //!
@@ -12,7 +10,7 @@
 //! A command validates with the validators its invariants and constraints
 //! imply: they are generated as this blueprint's dependencies, together with
 //! the internal API they call and the lookup queries their accessors read
-//! through (`SpGen.Blueprint.Validator`).
+//! through.
 //!
 //! Presence-based merging means running this over existing, hand-finished
 //! commands is a no-op as long as module, `use`s, aliases, fields and
@@ -38,13 +36,12 @@ pub struct Command;
 
 impl Command {
     /// The command's module-name template (referenced by `CommandTest` and
-    /// `CommandRouter`) — `Command.module_template/0`.
+    /// `CommandRouter`).
     pub fn module_template() -> &'static str {
         MODULE
     }
 
-    /// The command module's file path (used as a `requires` gate) —
-    /// `Command.module_file/1`.
+    /// The command module's file path (used as a `requires` gate).
     pub fn module_file(ctx: &Context) -> String {
         ctx.render_or_panic(PATH)
     }
@@ -67,7 +64,7 @@ impl Blueprint for Command {
         false
     }
 
-    /// `Command.operations` — create | update | delete | none.
+    /// The operations — create | update | delete | none.
     fn operations(&self) -> Vec<crate::context::Operation> {
         vec![
             crate::context::Operation::Create,
@@ -77,14 +74,13 @@ impl Blueprint for Command {
         ]
     }
 
-    /// The operation is DECLARED in the model; `--template` may override —
-    /// `Command.optional_template?`.
+    /// The operation is DECLARED in the model; `--template` may override.
     fn optional_template(&self) -> bool {
         true
     }
 
     /// A command with rules generates the validators it validates with,
-    /// from this very element — `Command.dependencies/1`.
+    /// from this very element.
     fn dependencies(&self, ctx: &Context) -> Vec<Dependency> {
         if ctx.validators.is_empty() {
             return Vec::new();
@@ -113,8 +109,8 @@ impl Blueprint for Command {
     }
 }
 
-/// `Command.validator_module/2` — the validator's full module name as the
-/// command references it through an alias.
+/// The validator's full module name as the command references it through
+/// an alias.
 fn validator_module(ctx: &Context, v: &Validator) -> String {
     ValidatorBlueprint::module_name(ctx, v)
 }
@@ -134,8 +130,7 @@ fn units(ctx: &Context) -> Vec<Unit> {
     units
 }
 
-/// `Command.moduledoc_unit` — the prose slot filled from the model's
-/// description (or its `TODO:` marker).
+/// The prose slot filled from the model's description (or its `TODO:` marker).
 fn moduledoc_unit(ctx: &Context) -> Unit {
     let doc = ctx.render_or_panic(
         "<Describe what the command does to the aggregate, derived from the domain model.>",
@@ -226,7 +221,7 @@ fn field_units(ctx: &Context) -> Vec<Unit> {
 }
 
 /// The validator's own module file must exist before the command may name
-/// it — `Command.validator_gate/2`.
+/// it.
 fn validator_gate(ctx: &Context, v: &Validator) -> Vec<(String, String)> {
     vec![(
         ValidatorBlueprint::module_file(ctx, v),
@@ -266,8 +261,7 @@ fn validates_units(ctx: &Context) -> Vec<Unit> {
 }
 
 /// every validator guarding the field gates the line: a `validates` line
-/// may never reference a validator whose file does not exist —
-/// `Command.validator_gates/2`.
+/// may never reference a validator whose file does not exist.
 fn validator_gates(ctx: &Context, field: &Befield) -> Vec<(String, String)> {
     templates::validators_for(field, &ctx.validators)
         .into_iter()
@@ -286,7 +280,6 @@ fn validator_gates(ctx: &Context, field: &Befield) -> Vec<(String, String)> {
 /// (Vex keys validations by field, so a second call would replace the
 /// first) — presence of *a* line is therefore not presence of *this* line.
 /// A line is never appended twice: an incomplete one is reported instead.
-/// — `Command.validates_complete?/3` (the Rust name drops the Elixir `?`).
 fn validates_complete(src: &ElixirFile, field: &Befield, validators: &[Validator]) -> bool {
     line_present(src, field) && stale_validations(src, field, validators).is_empty()
 }
@@ -339,7 +332,6 @@ fn stale_details(
 /// The reference comment of the domain-object-exists example, said at the
 /// line that carries the option: why `allow_blank` — and never a
 /// `def validate(nil, _), do: :ok` clause (validator.md's contract).
-/// — `Command.exists_comment/2`.
 fn exists_comment(field: &Befield, validators: &[Validator]) -> String {
     let guards = templates::validators_for(field, validators);
     if guards.iter().any(|v| v.kind == ValidatorKind::Exists) {
@@ -383,7 +375,7 @@ mod tests {
     }
 
     #[test]
-    fn paths_and_modules_render_like_the_oracle() {
+    fn paths_and_modules_render_as_the_model_expects() {
         let ctx = ctx_for("create-widget");
         assert_eq!(
             Command::module_file(&ctx),
@@ -398,7 +390,7 @@ mod tests {
     }
 
     #[test]
-    fn unit_ids_and_order_mirror_the_oracle() {
+    fn unit_ids_and_order_match_the_model() {
         let units = units_for("create-widget");
         let labels: Vec<String> = units.iter().map(|u| u.id.label()).collect();
         assert_eq!(
@@ -439,7 +431,7 @@ mod tests {
     }
 
     #[test]
-    fn the_validates_lines_carry_the_exact_oracle_text() {
+    fn the_validates_lines_carry_the_expected_text() {
         let units = units_for("create-widget");
         assert_eq!(
             render(&units, "validates title"),
@@ -588,7 +580,7 @@ mod tests {
 
     #[test]
     fn the_finished_command_file_is_fully_present() {
-        // what the oracle creates, parsed back: every unit reads present
+        // the finished file, parsed back: every unit reads present
         let text = "defmodule Sportipedia.Catalog.Equipment.Widget.Command.ArchiveWidget do\n  @moduledoc \"\"\"\n  Archives a widget that is no longer used\n  \"\"\"\n  use TypedStruct\n  use ExConstructor\n  use Vex.Struct\n  alias Sportipedia.Catalog.Equipment.Widget.Validators.WidgetExists\n\n  # `allow_blank` keeps the existence check off an id the caller never sent:\n  # an absent address is `presence`'s to reject, and a `:not_found` for it would\n  # turn the 422 the client can act on into a 404 for a resource nobody named.\n  validates :id, presence: true, by: [function: &WidgetExists.validate/2, allow_blank: true]\n\n  typedstruct do\n    field :id, String.t(), enforce: true\n  end\nend\n";
         let file = ElixirFile::parse(text);
         for unit in &units_for("archive-widget") {

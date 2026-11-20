@@ -149,7 +149,7 @@ mod tests {
     }
 
     #[test]
-    fn unit_ids_and_order_mirror_the_oracle() {
+    fn unit_ids_and_order_match_the_model() {
         let labels: Vec<String> = units_for("widget-created")
             .iter()
             .map(|u| u.id.label())

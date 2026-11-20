@@ -1,13 +1,12 @@
-//! Ported from `tools/spgen/lib/sp_gen` — the ESDM model layer of the
+//! The ESDM model layer of the
 //! generators: reader, cross-document resolution, naming and path rules,
 //! relation keywords, invariant patterns, fixture grammar, placeholder
 //! engine.
 //!
 //! This crate holds everything language-neutral in sparch: what the domain
 //! model *means*. Blueprint crates (`sparch-typescript`, `sparch-elixir`) render
-//! against it, and the Elixir tool in `tools/spgen` interprets the same
-//! rules until its port wave completes — the shared fixture corpus
-//! (`fixtures/`) pins all three.
+//! against it; the shared fixture corpus (`fixtures/`) pins both crates to
+//! the same rules.
 
 pub mod annotations;
 pub mod citizen;

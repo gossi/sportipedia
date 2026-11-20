@@ -1,8 +1,7 @@
-//! Line-level composition shared by blueprints — the port of
-//! `SpGen.Templates` (`tools/spgen/lib/sp_gen/templates.ex`): `indent/2`,
-//! `field_line/1`, the `validates_line` machinery with its `by:` pairs,
-//! `sample_value/2` and `struct_body/1` plus the type-correct defaults and
-//! the `inspect` the Elixir source relies on.
+//! Line-level composition shared by blueprints: `indent`, `field_line`,
+//! the `validates_line` machinery with its `by:` pairs, `sample_value` and
+//! `struct_body` plus the type-correct defaults and the `inspect` the
+//! Elixir source relies on.
 
 use serde_json::Value;
 
@@ -10,7 +9,7 @@ use sparch_model::invariants::{Validator, ValidatorKind};
 
 use crate::context::{Befield, Context};
 
-/// Indent every non-empty line of `text` with `n` spaces — `Templates.indent/2`.
+/// Indent every non-empty line of `text` with `n` spaces.
 pub fn indent(text: &str, n: usize) -> String {
     let pad = " ".repeat(n);
     text.split('\n')
@@ -25,7 +24,7 @@ pub fn indent(text: &str, n: usize) -> String {
         .join("\n")
 }
 
-/// The `field` line for one data field — `Templates.field_line/1`:
+/// The `field` line for one data field:
 /// `field :title, String.t(), enforce: true` when the model requires it.
 pub fn field_line(f: &Befield) -> String {
     let base = format!("field :{}, {}", f.name, Context::elixir_type(f));
@@ -36,8 +35,8 @@ pub fn field_line(f: &Befield) -> String {
     }
 }
 
-/// The `validates` line for one field, merging presence with validators —
-/// `Templates.validates_line/2`. Validators attached to the field add
+/// The `validates` line for one field, merging presence with validators.
+/// Validators attached to the field add
 /// `by: [function: &Module.validate/2]` with the skip option the pattern
 /// demands; two validators on one field are two `by:` pairs in **one**
 /// call, because `Vex.Struct.validates/2` stores validations per field and
@@ -58,19 +57,17 @@ pub fn validates_line(f: &Befield, validators: &[Validator]) -> Option<String> {
     Some(format!("validates :{}, {}", f.name, parts.join(", ")))
 }
 
-/// Does `field` owe the line a `presence: true` part? —
-/// `Templates.validates_presence?/1`.
+/// Does `field` owe the line a `presence: true` part?
 pub fn validates_presence(f: &Befield) -> bool {
     f.required && !f.internal
 }
 
-/// The validators guarding `field`, in the order their `by:` parts appear —
-/// `Templates.validators_for/2`.
+/// The validators guarding `field`, in the order their `by:` parts appear.
 pub fn validators_for<'a>(f: &Befield, validators: &'a [Validator]) -> Vec<&'a Validator> {
     validators.iter().filter(|v| v.field == f.name).collect()
 }
 
-/// The `by:` pair for one validator — `Templates.validates_by_pair/2`, the
+/// The `by:` pair for one validator, the
 /// exact text a `validates` line needs. The skip option belongs inside the
 /// pair: Vex does not run the validator for a value the option covers.
 ///
@@ -93,13 +90,13 @@ pub fn validates_by_pair(v: &Validator, f: &Befield) -> String {
 }
 
 /// The text a `validates` line must contain for this validator to run at
-/// all — `Templates.validates_needle/1`, what the command's currency check
+/// all, what the command's currency check
 /// compares against the parsed file.
 pub fn validates_needle(v: &Validator) -> String {
     format!("&{}.validate/2", v.module)
 }
 
-/// Sample source value for a field — `Templates.sample_value/2`.
+/// Sample source value for a field.
 ///
 /// * **plain fields** — the happy feature scenario's `when.data`, then the
 ///   read model's primary example, then a type-correct default, then
@@ -115,7 +112,7 @@ pub fn sample_value(ctx: &Context, f: &Befield) -> String {
     }
 }
 
-/// `Templates.structural?/1` — the name is `id`, the format is `uuid`, or
+/// A field is structural when the name is `id`, the format is `uuid`, or
 /// it is a reference field (`*Id`).
 fn structural(f: &Befield) -> bool {
     f.name == "id" || f.format.as_deref() == Some("uuid") || f.name.ends_with("Id")
@@ -144,8 +141,7 @@ fn prose_no_scenario(ctx: &Context, f: &Befield) -> String {
 
 // Typed fields get type-correct literals: the DB would reject a
 // `"sample-apparatusId"` for a `:binary_id` column. The head-match order of
-// `Templates.typed_default/1` is kept verbatim: `id` and `uuid` before
-// `date-time`, formats before types.
+// `typed_default`: `id` and `uuid` before `date-time`, formats before types.
 fn typed_default(f: &Befield) -> String {
     if f.name == "id" {
         return "UUID.uuid4()".to_string();
@@ -165,7 +161,7 @@ fn typed_default(f: &Befield) -> String {
     }
 }
 
-/// The first scenario's `when.data[name]` — `Templates.scenario_value/2`.
+/// The first scenario's `when.data[name]`.
 /// JSON null reads as absent, matching Elixir's `get_in` returning `nil`.
 fn scenario_value<'a>(ctx: &'a Context, name: &str) -> Option<&'a Value> {
     let value = ctx.scenarios.first()?.get("when")?.get("data")?.get(name)?;
@@ -173,12 +169,12 @@ fn scenario_value<'a>(ctx: &'a Context, name: &str) -> Option<&'a Value> {
 }
 
 /// The struct literal body `key: value, ...` for all of the context's
-/// fields — `Templates.struct_body/1` without the overrides map.
+/// fields, without the overrides map.
 pub fn struct_body(ctx: &Context) -> String {
     struct_body_with(ctx, &[])
 }
 
-/// `Templates.struct_body/2` — the struct body with per-field source
+/// The struct body with per-field source
 /// overrides: a named field renders its override verbatim instead of its
 /// sample value (the projector test seeds the id from a create event).
 pub fn struct_body_with(ctx: &Context, overrides: &[(&str, &str)]) -> String {
@@ -194,8 +190,7 @@ pub fn struct_body_with(ctx: &Context, overrides: &[(&str, &str)]) -> String {
         .join(", ")
 }
 
-/// Elixir `inspect/1` of a model value, as source — `Templates.inspect_value/1`
-/// and the literal branch of `SpGen.Fixtures.materialize/2`.
+/// Elixir `inspect/1` of a model value, as source.
 pub fn inspect_value(value: &Value) -> String {
     match value {
         Value::Null => "nil".to_string(),
@@ -300,7 +295,7 @@ mod tests {
 
     #[test]
     fn the_validates_line_merges_presence_with_the_by_pairs() {
-        // `Templates.validates_line/2`: presence first, then one `by:`
+        // Presence first, then one `by:`
         // pair per guarding validator — all in ONE call, because Vex keys
         // validations per field and a second call would replace the first
         let slug = field("slug", "string", None, true);

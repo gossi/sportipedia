@@ -5,9 +5,8 @@ defmodule Mix.Tasks.Sp.Gen do
   The one supported entry point to the BE blueprint generators.
 
   This task (and its `mix sp.gen.<generator>` siblings) delegates to the
-  `sparch-elixir` binary built from the Rust workspace one directory up —
-  the executable transfers of the blueprints in
-  `docs/architecture/blueprints/backend/`. The binary is built
+  `sparch-elixir` binary built from the Rust workspace one directory up.
+  The binary is built
   automatically when missing or older than the crate sources
   (`SPARCH_NO_AUTOBUILD=1` opts out).
 
@@ -23,9 +22,8 @@ defmodule Mix.Tasks.Sp.Gen do
 
   After a run that wrote files (any run but `--dry-run`), the binding runs
   `mix format` inside `services/api`. That is the project's own formatter
-  engine — the same one the Elixir tool applied inside `SpGen.Merge`, on
-  the same token stream — so generated files land formatted without the
-  binary ever owning a formatter.
+  engine — applied to the generated files' token stream — so generated
+  files land formatted without the binary ever owning a formatter.
 
   The generators are idempotent and append-only, so the tree keeps
   compiling after every run (references to not-yet-generated citizens
@@ -35,7 +33,7 @@ defmodule Mix.Tasks.Sp.Gen do
       tools/sparch/target/release/sparch-elixir <generator> <element> [options]
 
   Port status: generators not transferred to Rust yet answer with a pointer
-  to the Elixir tool (`tools/spgen`), which stays live until every wave of
+  to the `mix sp.gen.<generator>` run that serves them until every wave of
   the parity gate is green.
   """
 

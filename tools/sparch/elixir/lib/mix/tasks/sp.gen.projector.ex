@@ -4,8 +4,7 @@ defmodule Mix.Tasks.Sp.Gen.Projector do
   @moduledoc """
   Generates the projector citizen from an ESDM event element.
 
-  Executes `docs/architecture/blueprints/backend/domain/projector.md`
-  (`projector` blueprint): the constituent projector's
+  Writes the projector's
   `project` clause for the event (insert / update / delete per the operation
   the read model *declares* for it — `metadata.annotations."spgen.operation.<event>"`)
   plus registration in the nearest supervisor — created here when the

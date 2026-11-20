@@ -1,5 +1,4 @@
-//! The template substitution engine, ported from `SpGen.Placeholders`
-//! (`tools/spgen/lib/sp_gen/placeholders.ex`).
+//! The template substitution engine.
 //!
 //! Placeholders are enclosed in angle brackets and carry the case they need
 //! (`<-kebab>`, `<_snake>`, `<Pascal>`, `<camel>`), or they are prose slots
@@ -65,7 +64,7 @@ fn classify(raw: &str) -> Classified {
     }
 }
 
-/// Detects the casing from the notation — `casing_of/1`. The `Prose` marker
+/// Detects the casing from the notation. The `Prose` marker
 /// (`None` here) means the body carries spaces and is filled as a slot.
 fn casing_of(body: &str) -> (Option<Case>, &str) {
     if let Some(rest) = body.strip_prefix('-') {

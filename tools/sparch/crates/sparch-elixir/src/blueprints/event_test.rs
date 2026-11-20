@@ -1,5 +1,4 @@
-//! The event's own test file — ported from `SpGen.Blueprint.EventTest`
-//! (`tools/spgen/lib/sp_gen/blueprint/event_test.ex`).
+//! The event's own test file.
 //!
 //! A `describe "Event"` block exercising construction, enforced fields, and
 //! JSON serialization. The event, not the operation, is what is tested
@@ -23,9 +22,8 @@ impl Blueprint for EventTest {
         "event_test"
     }
 
-    /// The oracle derives its sweep participation from the generator's
-    /// head (`primary.accepts?`); the Rust sweep asks each ported module,
-    /// so the companion names the kind it contributes to.
+    /// The sweep asks each module for its participation, so the
+    /// companion names the kind it contributes to.
     fn source_kinds(&self) -> Vec<sparch_model::ElementKind> {
         vec![sparch_model::ElementKind::Event]
     }
@@ -57,7 +55,7 @@ impl Blueprint for EventTest {
     }
 }
 
-/// The `describe` body — `EventTest.describe_body/2`, heredoc whitespace
+/// The `describe` body, heredoc whitespace
 /// included.
 pub fn describe_body(ctx: &Context, subject: &str) -> String {
     let event = ctx.render_or_panic("<Event>");

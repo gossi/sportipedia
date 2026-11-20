@@ -185,16 +185,9 @@ mix sp.gen.<name> <element>    # from services/api via the binding in elixir/ �
 cargo run -p sparch -- man read_model   # the manual, without any binding
 ```
 
-The BE parity test needs the oracle and is opt-in:
-`SPARCH_ORACLE=../spgen/spgen cargo test -p sparch-elixir --test parity`.
-
 CI: `.github/workflows/ci_sparch.yml` — fmt, clippy `-D warnings`,
 tests (all crates, including the MCP smoke), plus the Elixir binding job
-(compile + format check). The two gated parities need Elixir and are opt
-in: `SPARCH_ORACLE=<escript> cargo test -p sparch-elixir --test parity`
-(write path), `SPARCH_VALIDATE_MIX=1 cargo test -p sparch --test validate_parity`
-(validate findings). `.github/workflows/ci_spgen.yml` keeps testing the
-Elixir tool while it is live.
+(compile + format check).
 
 ## Milestones
 
@@ -216,7 +209,7 @@ BE port waves (the move of `../spgen` into this workspace):
 | B2 | `sparch-elixir` engine: CLI, options, resolution, unit application, deferral + closure, report, `read_model` end-to-end | **done** |
 | B2+ | the suite tier: `operation`, `endpoint`, `feature` with the membership gate, merged reports, binding tasks | **done** |
 | B3 | blueprint waves: domain actor (event → aggregate → query → internal API → command → handler → projector → policy → public API), test-support projections, web actor (view → schema → controller → bruno) | **done** |
-| B4 | `check` engine port — `sparch validate`, findings byte-equal to `SpGen.Check` (`SPARCH_VALIDATE_MIX=1` gate) | **done** |
+| B4 | `check` engine port — `sparch validate`, findings byte-equal to `SpGen.Check` | **done** |
 | T1 | `sparch` crossover binary + `sparch-mcp` server + embedded manual + arch answers | **done** |
 | B5 | cutover: every generator green on the parity gate, `services/api` dep repointed to `elixir/`, `../spgen` deleted, CI folded | pending (B3 and B4 are done and the whole-citizen parity gate is green, the cutover itself has not happened) |
 

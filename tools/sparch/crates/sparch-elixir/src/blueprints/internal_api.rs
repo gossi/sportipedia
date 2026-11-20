@@ -1,7 +1,4 @@
-//! The constituent's internal API — the executable transfer of
-//! `docs/architecture/blueprints/backend/domain/internal-api.md`, ported from
-//! `SpGen.Blueprint.InternalAPI`
-//! (`tools/spgen/lib/sp_gen/blueprint/internal_api.ex`).
+//! The constituent's internal API.
 //!
 //! `x_by_id/1` through `Repo`, plus one accessor per unique-field invariant
 //! (`x_by_slug/1`, lowercasing the value and delegating to the lookup query
@@ -14,17 +11,14 @@
 //! accessor delegates to, so a generated accessor never points at a module
 //! that does not exist.
 //!
-//! Unit order note: the oracle checks every unit's presence against the file
-//! snapshot it read at entry, then threads the *placements* through the AST.
-//! The ported engine's checks read the file as earlier units of the same plan
-//! have left it, and the oracle's alias check counts a unit present when its
-//! owner accessor is defined (`alias_unit`'s `has_alias || has_def` fallback
-//! — the pickup contract for a hand-written accessor without its alias).
-//! Listing an accessor before its aliases would therefore drop the aliases
-//! when a fresh file is created. Each accessor here comes after its own
-//! aliases; the directive block and the code region are placed independently
-//! (`Merge.alias_of` sorts, `Merge.before_helpers` keeps public defs above
-//! the `defp`s), so the landed file is the oracle's byte for byte.
+//! Unit order note: a unit's presence check reads the file as the earlier
+//! units of the same plan have left it, and the alias check counts a unit
+//! present when its owner accessor is defined (`alias_unit`'s
+//! `has_alias || has_def` fallback — the pickup contract for a hand-written
+//! accessor without its alias). Listing an accessor before its aliases would
+//! therefore drop the aliases when a fresh file is created. Each accessor here
+//! comes after its own aliases; the directive block and the code region are
+//! placed independently (aliases sort, public defs stay above the `defp`s).
 
 use sparch_model::ElementKind;
 
@@ -44,8 +38,7 @@ const REPO_MODULE: &str = "Sportipedia.<Subdomain>.Repo";
 pub struct InternalApi;
 
 impl InternalApi {
-    /// The internal API's file path (used as a `requires` gate) —
-    /// `InternalAPI.module_file/1`.
+    /// The internal API's file path (used as a `requires` gate).
     pub fn module_file(ctx: &Context) -> String {
         ctx.render_or_panic(PATH)
     }
@@ -60,10 +53,10 @@ impl Blueprint for InternalApi {
         Some("Generates the internal API accessors for a constituent")
     }
 
-    /// `InternalAPI.source_kinds` — the internal API belongs to the citizen,
-    /// not to one of its operations: any element of the constituent drives
-    /// the same file. A bare name naming both the aggregate and the read
-    /// model stays ambiguous; `kind.name` addresses it.
+    /// The internal API belongs to the citizen, not to one of its operations:
+    /// any element of the constituent drives the same file. A bare name
+    /// naming both the aggregate and the read model stays ambiguous;
+    /// `kind.name` addresses it.
     fn source_kinds(&self) -> Vec<ElementKind> {
         vec![
             ElementKind::ReadModel,
@@ -77,8 +70,7 @@ impl Blueprint for InternalApi {
     /// The read model the by_id lookup reads, and — when the citizen states a
     /// unique-field invariant — the lookup query the accessor delegates to.
     /// Both planned from the read model element itself, not the
-    /// partially-shaped element the run was addressed by —
-    /// `InternalAPI.dependencies/1`.
+    /// partially-shaped element the run was addressed by.
     fn dependencies(&self, ctx: &Context) -> Vec<Dependency> {
         let Some(element) = ctx.read_model.as_ref() else {
             return Vec::new();
@@ -116,13 +108,12 @@ impl Blueprint for InternalApi {
 
 // ------------------------------------------------------------------ clauses
 
-/// The read model as the clauses name it, through its alias —
-/// `Context.pascal(ctx.constituent) <> "ReadModel"` inside `by_id_clause/1`.
+/// The read model as the clauses name it, through its alias.
 fn read_model_local(ctx: &Context) -> String {
     format!("{}ReadModel", Context::pascal(&ctx.constituent))
 }
 
-/// `InternalAPI.by_id_clause/1` — the `Repo.get` over the read model.
+/// The `Repo.get` over the read model.
 fn by_id_clause(ctx: &Context, name: &str) -> String {
     let read_model = read_model_local(ctx);
     format!(
@@ -131,8 +122,7 @@ fn by_id_clause(ctx: &Context, name: &str) -> String {
     )
 }
 
-/// `InternalAPI.accessor_clause/2` — the lowercasing delegation to the
-/// lookup query.
+/// The lowercasing delegation to the lookup query.
 fn accessor_clause(ctx: &Context, name: &str, field: &str) -> String {
     let read_model = read_model_local(ctx);
     let query = LookupQuery::short_name(ctx, field);
@@ -199,7 +189,7 @@ fn moduledoc_unit(ctx: &Context, requires: Vec<(String, String)>) -> Unit {
     }
 }
 
-/// `InternalAPI.alias_unit/3` — the alias a clause needs to compile. It
+/// The alias a clause needs to compile. It
 /// counts as present when the alias line stands *or* when the accessor that
 /// uses it is defined: whoever wrote the accessor by hand owns the alias too.
 fn alias_unit(module: String, owner_def: &str, requires: Vec<(String, String)>) -> Unit {
@@ -219,9 +209,9 @@ fn alias_unit(module: String, owner_def: &str, requires: Vec<(String, String)>) 
     }
 }
 
-/// One accessor clause — the oracle's `%Unit{id: {:def, name, 1}}` with
-/// `check: &Source.has_def?/3` and `place: Merge.before_helpers()`. The
-/// clause text resolves at plan time, like every other BE blueprint here.
+/// One accessor clause — a def unit with the `has_def` presence check and the
+/// before-helpers placement. The clause text resolves at plan time, like
+/// every other BE blueprint here.
 fn def_unit(name: String, clause: String, requires: Vec<(String, String)>) -> Unit {
     let def_name = name.clone();
     Unit {
@@ -234,8 +224,7 @@ fn def_unit(name: String, clause: String, requires: Vec<(String, String)>) -> Un
     }
 }
 
-/// The read model must be generated before the module may name it —
-/// `InternalAPI.read_model_gate/0`.
+/// The read model must be generated before the module may name it.
 fn read_model_gate(ctx: &Context) -> Vec<(String, String)> {
     vec![(
         ReadModel::module_file(ctx),
@@ -244,8 +233,7 @@ fn read_model_gate(ctx: &Context) -> Vec<(String, String)> {
 }
 
 /// The accessor delegates to the lookup query module; it is only placeable
-/// once that module exists (the dependency pass creates it in this same run)
-/// — `InternalAPI.query_gate/1`.
+/// once that module exists (the dependency pass creates it in this same run).
 fn query_gate(ctx: &Context, field: &str) -> Vec<(String, String)> {
     vec![(
         LookupQuery::module_file(ctx, field),
@@ -288,7 +276,7 @@ mod tests {
     }
 
     #[test]
-    fn paths_and_modules_render_like_the_oracle() {
+    fn paths_and_modules_render_as_the_model_expects() {
         let ctx = widget_ctx();
         assert_eq!(
             InternalApi::module_file(&ctx),
@@ -326,7 +314,7 @@ mod tests {
     }
 
     #[test]
-    fn the_clauses_carry_the_exact_oracle_text() {
+    fn the_clauses_carry_the_expected_text() {
         let units = units_for("widget", ElementKind::Aggregate);
         assert_eq!(
             render(&units, "moduledoc"),
@@ -469,7 +457,7 @@ mod tests {
 
     #[test]
     fn the_finished_module_is_fully_present() {
-        // the file the oracle creates, parsed back: every unit reads present
+        // the finished file, parsed back: every unit reads present
         let text = "defmodule Sportipedia.Catalog.Equipment.Widget.WidgetInternal do\n  @moduledoc \"\"\"\n  Internal API for querying widget read models within the bounded context.\n  \"\"\"\n  alias Sportipedia.Catalog.Equipment.Widget.Queries.WidgetBySlug\n  alias Sportipedia.Catalog.Equipment.Widget.WidgetReadModel\n  alias Sportipedia.Catalog.Repo\n\n  def widget_by_id(id) do\n    Repo.get(WidgetReadModel, id)\n  end\n\n  def widget_by_slug(slug) do\n    slug\n    |> String.downcase()\n    |> WidgetBySlug.new()\n    |> Repo.one()\n  end\nend\n";
         let file = ElixirFile::parse(text);
         let units = units_for("widget", ElementKind::Aggregate);
@@ -502,8 +490,8 @@ mod tests {
     #[test]
     fn any_element_of_the_citizen_drives_the_same_file() {
         // source_kinds: [read-model, aggregate, command, event, query] —
-        // the oracle addresses the internal API from each of them; the
-        // widget command `create-widget` drives the same plan
+        // the internal API is addressed from each of them; the widget
+        // command `create-widget` drives the same plan
         let ctx = ctx_for("create-widget", ElementKind::Command);
         let plan = &InternalApi.plans(&ctx)[0];
         assert_eq!(

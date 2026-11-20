@@ -1,6 +1,4 @@
-//! The read model blueprint — the executable transfer of
-//! `docs/architecture/blueprints/backend/domain/read-model.md`, ported from
-//! `SpGen.Blueprint.ReadModel`.
+//! The read model blueprint.
 //!
 //! Generates the shared read model (Ecto schema) and its changesets. Fixed
 //! shape: `insert_changeset/2` and `update_changeset/2` always both exist.
@@ -19,13 +17,12 @@ pub struct ReadModel;
 
 impl ReadModel {
     /// The read model's module-name template (other blueprints alias through
-    /// it) — `ReadModel.module_template/0`.
+    /// it).
     pub fn module_template() -> &'static str {
         MODULE
     }
 
-    /// The read model's file path (used as a `requires` gate) —
-    /// `ReadModel.module_file/1`.
+    /// The read model's file path (used as a `requires` gate).
     pub fn module_file(ctx: &Context) -> String {
         ctx.render_or_panic(PATH)
     }

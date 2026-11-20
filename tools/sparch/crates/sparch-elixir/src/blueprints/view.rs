@@ -139,7 +139,7 @@ mod tests {
     }
 
     #[test]
-    fn paths_and_modules_render_like_the_oracle() {
+    fn paths_and_modules_render_as_the_model_expects() {
         let ctx = ctx_for("widget");
         assert_eq!(
             View::module_file(&ctx),

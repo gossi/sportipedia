@@ -1,7 +1,4 @@
-//! The aggregate module file — the executable transfer of
-//! `docs/architecture/blueprints/backend/domain/aggregate.md`, ported from
-//! `SpGen.Blueprint.Aggregate`
-//! (`tools/spgen/lib/sp_gen/blueprint/aggregate.ex`).
+//! The aggregate module file.
 //!
 //! Generates the aggregate module (or appends to an existing one): state
 //! fields and one `apply/2` clause per event of the aggregate — the body is
@@ -29,14 +26,13 @@ const EVENT_MODULE: &str = "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.E
 pub struct Aggregate;
 
 impl Aggregate {
-    /// The aggregate's module-name template (referenced by `AggregateTest`)
-    /// — `Aggregate.module_template/0`.
+    /// The aggregate's module-name template (referenced by `AggregateTest`).
     pub fn module_template() -> &'static str {
         MODULE
     }
 
     /// The aggregate module's file path for the element in `ctx` (used as a
-    /// `requires` gate) — `Aggregate.module_file/1`.
+    /// `requires` gate).
     pub fn module_file(ctx: &Context) -> String {
         ctx.render_or_panic(PATH)
     }
@@ -51,9 +47,9 @@ impl Blueprint for Aggregate {
         Some("Generates the aggregate module with apply/2 clauses per event")
     }
 
-    /// `Aggregate.source_kinds` — the aggregate reads its fold from the
-    /// events, so a run driven from a command or an event names the same
-    /// aggregate and generates the missing clause for just that fact.
+    /// The aggregate reads its fold from the events, so a run driven from
+    /// a command or an event names the same aggregate and generates the
+    /// missing clause for just that fact.
     fn source_kinds(&self) -> Vec<ElementKind> {
         vec![
             ElementKind::Aggregate,
@@ -74,8 +70,8 @@ impl Blueprint for Aggregate {
     }
 }
 
-/// `Aggregate.moduledoc_text/1` — the model's own words when the aggregate
-/// has them, the blueprint's TODO when it does not.
+/// The model's own words when the aggregate has them, the blueprint's TODO
+/// when it does not.
 fn moduledoc_text(ctx: &Context) -> String {
     match ctx.description() {
         None => format!(
@@ -159,7 +155,7 @@ fn units(ctx: &Context) -> Vec<Unit> {
     units
 }
 
-/// `Aggregate.use_unit` — a `use` line in the directive block.
+/// A `use` line in the directive block.
 fn use_unit(module: &str) -> Unit {
     let render = format!("use {module}");
     let check_module = module.to_string();
@@ -177,7 +173,7 @@ fn use_unit(module: &str) -> Unit {
 }
 
 /// The event's own module file must exist before the aggregate may
-/// reference it (alias + pattern match on its struct) — `event_gate/2`.
+/// reference it (alias + pattern match on its struct).
 fn event_gate(ctx: &Context, event: &Element) -> Vec<(String, String)> {
     let path = Event::module_file(&ctx.with_element(event));
     let reason = format!(
@@ -187,8 +183,8 @@ fn event_gate(ctx: &Context, event: &Element) -> Vec<(String, String)> {
     vec![(path, reason)]
 }
 
-/// `event_key/2` — the rendered `%Event{}` head pattern the clause check
-/// looks for, as `Source.render_arg` sees it: `WidgetCreated{}`.
+/// The rendered `%Event{}` head pattern the clause check
+/// looks for: `WidgetCreated{}`.
 fn event_key(ctx: &Context, event: &Element) -> String {
     let mut key = ctx.with_element(event).render_or_panic("<Event>");
     key.push_str("{}");
@@ -224,7 +220,7 @@ fn field_units(ctx: &Context) -> Vec<Unit> {
 
 // --------------------------------------------------------------- clauses
 
-/// The `apply/2` clause folding one event into the state — `apply_clause/3`.
+/// The `apply/2` clause folding one event into the state.
 /// Self-references inside the aggregate module go through `__MODULE__`:
 /// by its expanded name the struct is not yet defined while compiling.
 pub fn apply_clause(ctx: &Context, event: &Element, effect: Operation) -> String {
@@ -283,7 +279,7 @@ mod tests {
     }
 
     #[test]
-    fn paths_and_modules_render_like_the_oracle() {
+    fn paths_and_modules_render_as_the_model_expects() {
         let ctx = ctx_for("widget");
         assert_eq!(
             Aggregate::module_file(&ctx),
@@ -296,7 +292,7 @@ mod tests {
     }
 
     #[test]
-    fn unit_ids_and_order_mirror_the_oracle() {
+    fn unit_ids_and_order_match_the_model() {
         let ctx = ctx_for("widget");
         let plans = Aggregate.plans(&ctx);
         let ids: Vec<String> = plans[0].units.iter().map(|u| u.id.label()).collect();
@@ -379,7 +375,7 @@ mod tests {
     }
 
     #[test]
-    fn apply_clauses_carry_the_exact_oracle_text_per_declared_effect() {
+    fn apply_clauses_carry_the_expected_text_per_declared_effect() {
         let ctx = ctx_for("widget");
         let texts = unit_texts(&Aggregate.plans(&ctx)[0].units);
         let get = |label: &str| {

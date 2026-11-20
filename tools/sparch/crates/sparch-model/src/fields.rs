@@ -1,4 +1,4 @@
-//! Schema fields with canonical ordering, ported from `Esdm.fields/1`, plus
+//! Schema fields with canonical ordering, plus
 //! the sparch-owned relationship keyword.
 //!
 //! YAML mappings lose key order, so fields canonicalize deterministically:
@@ -49,7 +49,7 @@ pub struct Field {
 
 /// The schema block of a document: `data` for commands, `state` for
 /// aggregates, `schema` for read models, `result` (or its `items`) for
-/// queries — ported from `Esdm.data_schema/1`.
+/// queries.
 pub fn data_schema(doc: &Value) -> Option<&Value> {
     if let Some(data) = doc.get("data").filter(|d| d.is_object()) {
         return Some(data);

@@ -182,11 +182,10 @@ fn operation_suite(model: &Model, input: &Element) -> Result<Vec<Member>, String
     if let Some(rm) = &rm {
         push(&mut members, "read_model", rm);
     }
-    // The sequence mirrors `docs/architecture/blueprints/README.md`,
-    // "Building one operation". The internal API is NOT a suite member:
+    // The internal API is NOT a suite member:
     // the command's blueprint dependencies already generate it, with the
-    // validators and lookup queries behind it (the docs note exactly that
-    // on the `command` line). A suite lists commands, not their internals.
+    // validators and lookup queries behind it. A suite lists commands, not
+    // their internals.
     if input.kind == ElementKind::Command {
         for e in &events {
             push(&mut members, "event", e);

@@ -1,4 +1,4 @@
-//! The operator-facing report — the port of `SpGen.Report`. Same groups,
+//! The operator-facing report. Same groups,
 //! same labels, same future tense under `--dry-run`, same "a path is stated
 //! once, the furthest-along state wins", same `skipped:` notes folded into
 //! `Ignored`. The report is how the operator decides what to run next: a
@@ -78,7 +78,7 @@ struct Item {
 pub fn render(rows: &[Row], verbose: bool) -> Vec<String> {
     let check = rows.iter().any(|r| matches!(r, Row::Checked(..)));
     // --verbose under --dry-run: the units behind each Checked row, keyed by
-    // path; non-verbose output is byte-identical to the Elixir tool's report
+    // path.
     let mut details: std::collections::BTreeMap<String, Vec<String>> = Default::default();
     if verbose {
         for row in rows {
@@ -126,7 +126,7 @@ pub fn render(rows: &[Row], verbose: bool) -> Vec<String> {
         }
     }
     let mut strongest_wins: Vec<Item> = Vec::new();
-    // `Report.strongest/1` plus `merge/3`: the strongest group names the
+    // The strongest group names the
     // path, and the `skipped:` notes of every write row touching it
     // accumulate — a file partly back-filled and partly deferred reads
     // `Updated … skipped:`, not a bare `Updated`.
@@ -208,7 +208,7 @@ fn entries(row: &Row) -> Vec<Item> {
 }
 
 /// A dry-run row resolves to the group the generator would produce when
-/// it ran — `Report.entries/1` for `{:checked, path, ids}`.
+/// it ran.
 fn checked_entries(path: &str, ids: &[CheckId]) -> Vec<Item> {
     let mut notes: Vec<String> = Vec::new();
     let mut stale_details: Vec<String> = Vec::new();
@@ -415,9 +415,9 @@ mod tests {
         );
     }
 
-    // `Report.strongest/1` unions the notes across the rows of one path: a
+    // The notes union across the rows of one path: a
     // file the closure partly back-filled and partly left waiting reads one
-    // `Updated … skipped:` line, the way the oracle reports a deferred
+    // `Updated … skipped:` line, as for a deferred
     // internal module whose un-gated alias landed.
     #[test]
     fn backfill_and_deferral_union_their_notes_per_path() {
@@ -447,8 +447,8 @@ mod tests {
     }
 
     // The wave-1 unit ids (`{:derive, _}`, `:moduletag`, `{:test_alias, _}`)
-    // are not special to the report: labels come from `UnitId::label` (which
-    // mirrors `Report.unit_label/1`) and grouping reads only the row shape.
+    // are not special to the report: labels come from `UnitId::label`, and
+    // grouping reads only the row shape.
     // A deferred test-file unit folds into `Ignored` with the `skipped:`
     // note, the way every other unit id does.
     #[test]

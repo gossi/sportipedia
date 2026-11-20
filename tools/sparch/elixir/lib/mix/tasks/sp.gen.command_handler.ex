@@ -4,9 +4,7 @@ defmodule Mix.Tasks.Sp.Gen.CommandHandler do
   @moduledoc """
   Generates the command handler citizen from an ESDM command element.
 
-  Executes the blueprint
-  `docs/architecture/blueprints/backend/domain/command-handler.md`
-  :
+  Runs one command's handler:
 
   * `services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/operations/<_operation>/handler.ex`
   * the `<Command>Handler` `describe` block in the operation test file

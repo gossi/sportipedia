@@ -5,8 +5,7 @@ defmodule Mix.Tasks.Sp.Gen.Bruno do
   Generates the Bruno collection documentation for one ESDM operation
   (command or query), plus the constituent's `folder.yml`.
 
-  Executes `docs/architecture/blueprints/backend/web/bruno.md`
-  (`bruno` blueprint):
+  Generates the collection's documentation files:
 
   * `bruno/<Subdomain>/<Composite>/<Constituent>/<Operation Title>.yml`
   * JSON:API bodies mirroring the operation data (`create` carries attributes

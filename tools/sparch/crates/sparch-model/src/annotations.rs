@@ -1,4 +1,4 @@
-//! The `spgen.*` annotations, ported from `SpGen.Esdm`
+//! The `spgen.*` annotations
 //! (declared operations and effects — "declared, never guessed").
 
 use crate::element::Element;
@@ -40,7 +40,7 @@ pub fn declared_query_operation(element: &Element) -> Option<String> {
 }
 
 /// The declared effects of a read model as event name → effect (`create`,
-/// `update`, `delete`, `none`) — `Esdm.declared_effects/1`. Invalid values
+/// `update`, `delete`, `none`). Invalid values
 /// surface as `None` so checks can point at the exact mistake.
 pub fn declared_effects(element: &Element) -> Vec<(String, Option<String>)> {
     let annotations = annotations(element);

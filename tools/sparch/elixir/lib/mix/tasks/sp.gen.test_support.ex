@@ -18,7 +18,7 @@ defmodule Mix.Tasks.Sp.Gen.TestSupport do
     or attribute map) and `new_<domain_object>s/1` (fail-fast plural).
 
   A read model without examples gets the factory only. Examples that violate
-  the fixture contract (`SpGen.Fixtures`, checked by `mix sp.validate`) fail the
+  the fixture contract (checked by `mix sp.validate`) fail the
   run with every message and write nothing.
 
   Fixed shape — no `--template`. Run it after `mix sp.gen.read_model`.

@@ -1,6 +1,4 @@
-//! The command's contribution to the operation test file — ported from
-//! `SpGen.Blueprint.CommandTest`
-//! (`tools/spgen/lib/sp_gen/blueprint/command_test.ex`).
+//! The command's contribution to the operation test file.
 //!
 //! A `describe "Command"` block validating the struct's enforced fields:
 //! `requires id` always, `id cannot be nil` when a validator looks the id
@@ -27,9 +25,8 @@ impl Blueprint for CommandTest {
         "command_test"
     }
 
-    /// The oracle derives its sweep participation from the generator's
-    /// head (`primary.accepts?`); the Rust sweep asks each ported module,
-    /// so the companion names the kind it contributes to.
+    /// The sweep asks each module for its participation, so the
+    /// companion names the kind it contributes to.
     fn source_kinds(&self) -> Vec<ElementKind> {
         vec![ElementKind::Command]
     }
@@ -61,8 +58,7 @@ impl Blueprint for CommandTest {
     }
 }
 
-/// The `describe` body — `CommandTest.describe_body/2`, heredoc whitespace
-/// included.
+/// The `describe` body, heredoc whitespace included.
 pub fn describe_body(ctx: &Context, subject: &str) -> String {
     let cmd = ctx.render_or_panic("<Command>");
 

@@ -439,7 +439,7 @@ mod tests {
     }
 
     #[test]
-    fn paths_and_modules_render_like_the_oracle() {
+    fn paths_and_modules_render_as_the_model_expects() {
         let ctx = ctx_for("create-widget");
         assert_eq!(
             PublicApi::module_file(&ctx),

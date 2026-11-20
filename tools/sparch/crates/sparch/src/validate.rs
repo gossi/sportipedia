@@ -1,5 +1,5 @@
-//! `sparch validate` — the model-completeness engine, the port of
-//! `SpGen.Check`. The questions are the generators' own contracts read
+//! `sparch validate` — the model-completeness engine. The questions are
+//! the generators' own contracts read
 //! back against the model: prose slots, declared operations (completeness
 //! and integrity), fixture examples, and — whole-model only — the closed
 //! world of the fixture graph. Generates nothing, writes nothing.

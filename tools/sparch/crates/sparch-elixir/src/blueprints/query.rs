@@ -1,6 +1,4 @@
-//! The query module file — the executable transfer of
-//! `docs/architecture/blueprints/backend/domain/query.md`, ported from
-//! `SpGen.Blueprint.Query` (`tools/spgen/lib/sp_gen/blueprint/query.ex`).
+//! The query module file.
 //!
 //! One `new/1` constructor over the constituent's read model. What its body
 //! is depends on what the model declares the query to be:
@@ -16,9 +14,9 @@
 //!
 //! The operation comes from the model: `metadata.annotations."spgen.operation"`
 //! when the query declares one, else its `result` shape (`result.type: array`
-//! *is* a collection read). The blueprint is fixed shape — the oracle declares
-//! no `operations/0`, so `Blueprint.validate_operation/4` refuses `--template`
-//! here: a run never overrides what the model states.
+//! *is* a collection read). The blueprint is fixed shape — it declares no
+//! operations of its own, so `validate_operation` refuses `--template` here:
+//! a run never overrides what the model states.
 //!
 //! `import Ecto.Query` is NOT managed here: only the implementing body knows
 //! whether it speaks query macros, and an unused import is a compile warning
@@ -37,20 +35,18 @@ const MODULE: &str = "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Queries
 const READ_MODEL_MODULE: &str =
     "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>ReadModel";
 const QUERY_BUILDER: &str = "Sportipedia.Support.JSONAPI.QueryBuilder";
-/// The scaffold's unimplemented body — `Query.marker?/1`.
+/// The scaffold's unimplemented body.
 const MARKER: &str = "raise \"TODO";
 
 pub struct Query;
 
 impl Query {
-    /// The query module's file path (used as a `requires` gate) —
-    /// `Query.module_file/1`.
+    /// The query module's file path (used as a `requires` gate).
     pub fn module_file(ctx: &Context) -> String {
         ctx.render_or_panic(PATH)
     }
 
-    /// The query module's name template (the public API calls through it) —
-    /// `Query.module_template/0`.
+    /// The query module's name template (the public API calls through it).
     pub fn module_template() -> &'static str {
         MODULE
     }
@@ -82,7 +78,7 @@ impl Blueprint for Query {
 
     /// A collection query delegates to the read model, so the read model is
     /// the citizen this blueprint's code calls. A read query leaves its body
-    /// to the spec and calls nothing yet — `Query.dependencies/1`.
+    /// to the spec and calls nothing yet.
     fn dependencies(&self, ctx: &Context) -> Vec<Dependency> {
         if !is_collection(ctx) {
             return Vec::new();
@@ -103,16 +99,16 @@ fn is_collection(ctx: &Context) -> bool {
     ctx.operation == Some(Operation::Collection)
 }
 
-/// `Query.doc/1` — the model's own words, or the blueprint's own marker.
+/// The moduledoc text. The model's own words, or the blueprint's own marker.
 fn doc(ctx: &Context) -> String {
     ctx.description()
         .map(str::to_string)
         .unwrap_or_else(|| format!("TODO: describe the {} query", ctx.element.name))
 }
 
-/// `Query.param_type/1` — a collection takes the parsed JSON:API config, a
-/// read over declared parameters takes the string it addresses, and a read
-/// the model gives no parameters for takes a map.
+/// The parameter type of the generated body. A collection takes the parsed
+/// JSON:API config, a read over declared parameters takes the string it
+/// addresses, and a read the model gives no parameters for takes a map.
 fn param_type(ctx: &Context) -> &'static str {
     if is_collection(ctx) {
         "JSONAPI.Config.t()"
@@ -123,21 +119,19 @@ fn param_type(ctx: &Context) -> &'static str {
     }
 }
 
-/// The read model as the delegating body names it, through its alias —
-/// `Query.read_model/1`.
+/// The read model as the delegating body names it, through its alias.
 fn read_model(ctx: &Context) -> String {
     format!("{}ReadModel", Context::pascal(&ctx.constituent))
 }
 
 /// Prose through the placeholder engine, so an irregular stem stays right:
 /// one apparatus, several apparatuses — `<> "s"` on the constituent would not
-/// be. — `Query.plural/1`
+/// be.
 fn plural(ctx: &Context) -> String {
     ctx.render_or_panic("<domain_object>s")
 }
 
 /// The delegating body of a declared collection read — no macros, no TODO.
-/// `Query.def_block/1`.
 fn def_block(ctx: &Context) -> String {
     format!(
         "@doc \"\"\"\nCreates a new query to fetch {}.\n\"\"\"\n@spec new({}) :: Ecto.Query.t()\ndef new(query) do\n  QueryBuilder.build(query, {})\nend",
@@ -159,8 +153,8 @@ fn marker_block(ctx: &Context) -> String {
     )
 }
 
-/// `Query.marker?/1` — the scaffold's `raise "TODO …"`, which is exactly the
-/// file this blueprint must not push aliases into.
+/// The scaffold's `raise "TODO …"`, which is exactly the file this blueprint
+/// must not push aliases into.
 fn marker_in(file: &ElixirFile) -> bool {
     file.text().contains(MARKER)
 }
@@ -188,11 +182,10 @@ fn moduledoc_unit(ctx: &Context) -> Unit {
     }
 }
 
-/// `Query.def_present?/2` — a collection body is present only when it
-/// actually reads: a marker an earlier run left there counts as missing, so
-/// it reaches `stale` and is reported, never appended as a second clause
-/// (which would shadow the first). A read query's marker IS the delivery, so
-/// `new/1` being defined is enough.
+/// A collection body is present only when it actually reads: a marker an
+/// earlier run left there counts as missing, so it reaches `stale` and is
+/// reported, never appended as a second clause (which would shadow the first).
+/// A read query's marker IS the delivery, so `new/1` being defined is enough.
 fn def_unit(ctx: &Context) -> Unit {
     let collection = is_collection(ctx);
     let render = if collection {
@@ -201,9 +194,9 @@ fn def_unit(ctx: &Context) -> Unit {
         marker_block(ctx)
     };
     let notice = stale_notice(ctx);
-    // the oracle carries `stale:` on every query's `new/1` unit; for a read
-    // query `stale_body/2` answers with no detail, which is what keeps its
-    // marker out of the report
+    // every query's `new/1` unit carries a stale check; for a read query that
+    // check answers with no detail, which is what keeps its marker out of the
+    // report
     let stale: Stale = Some(Box::new(move |file: &ElixirFile| {
         if !collection || !file.has_def("new", 1) || !marker_in(file) {
             Vec::new()
@@ -221,8 +214,8 @@ fn def_unit(ctx: &Context) -> Unit {
     }
 }
 
-/// `Query.stale_body/2`'s detail — the merge never rewrites a line, so a body
-/// an earlier run left as a marker stays standing after the model declares
+/// The detail a stale body reports. The merge never rewrites a line, so a
+/// body an earlier run left as a marker stays standing after the model declares
 /// the read it is. The tool owns the notice, the operator owns the edit.
 fn stale_notice(ctx: &Context) -> String {
     format!(
@@ -231,9 +224,9 @@ fn stale_notice(ctx: &Context) -> String {
     )
 }
 
-/// The aliases a delegating body names — `Query.alias_units/1`. A TODO body
-/// names nothing, and an unused alias is a compile warning this tool must not
-/// manufacture, so a read query gets none.
+/// The aliases a delegating body names. A TODO body names nothing, and an
+/// unused alias is a compile warning this tool must not manufacture, so a read
+/// query gets none.
 fn alias_units(ctx: &Context) -> Vec<Unit> {
     if !is_collection(ctx) {
         return Vec::new();
@@ -263,8 +256,8 @@ fn alias_unit(module: String, requires: Vec<(String, String)>) -> Unit {
     }
 }
 
-/// The read model must be generated before the query may name it —
-/// `Query.alias_units`' `requires` of `[{ReadModel.module_file(c), reason}]`.
+/// The read model must be generated before the query may name it, so the
+/// read-model alias unit gates on `[{ReadModel::module_file(ctx), reason}]`.
 fn read_model_gate(ctx: &Context) -> Vec<(String, String)> {
     vec![(
         ReadModel::module_file(ctx),
@@ -520,8 +513,8 @@ mod tests {
 
     #[test]
     fn the_blueprint_is_fixed_shape() {
-        // the oracle declares no `operations/0`, so `--template` is refused
-        // and the operation is the model's declaration alone
+        // a fixed blueprint declares no operations of its own, so the run
+        // refuses `--template` and the operation comes from the model alone
         assert!(Query.is_fixed());
         assert!(!Query.optional_template());
         assert!(Query.operations().is_empty());

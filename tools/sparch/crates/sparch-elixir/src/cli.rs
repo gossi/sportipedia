@@ -1,4 +1,4 @@
-//! CLI entry — the port of `SpGen.CLI`, argument syntax now carried by
+//! CLI entry, argument syntax carried by
 //! clap (the default experience: generated help, `--version`, typed
 //! flags). One run per process: resolve the generator or suite, run it,
 //! print the report, choose the exit code. A Failed or Blocked row exits
@@ -107,7 +107,7 @@ pub fn main(argv: impl Iterator<Item = String>) -> i32 {
     if let Some(suite) = suites::Suite::parse(&generator) {
         return match suites::run(suite, &opts, element, &cwd) {
             Err(message) => {
-                // the oracle's die/1 contract: stderr, "error: " prefix, exit 1
+                // the error contract: stderr, "error: " prefix, exit 1
                 eprintln!("error: {message}");
                 1
             }
@@ -125,8 +125,8 @@ fn run(generator: &str, opts: &RunOptions, element: &str, cwd: &Path, verbose: b
         );
         return 1;
     }
-    // the whole registry entry, head first: the ported blueprint modules
-    // of one run, exactly as the Elixir tool runs them
+    // the whole registry entry, head first: the blueprint modules
+    // of one run
     let modules = blueprints::generator_modules(generator);
     match engine::run(&modules, opts, element, cwd) {
         Err(message) => {

@@ -4,8 +4,7 @@ defmodule Mix.Tasks.Sp.Gen.Policy do
   @moduledoc """
   Generates the policy citizen from an ESDM operation (command or query).
 
-  Executes `docs/architecture/blueprints/backend/domain/policy.md`
-  (`policy` blueprint): the constituent `authorize/3`
+  Writes the constituent's `authorize/3`
   clauses for the operation, with the guard pair when guests are not allowed
   and a single open clause when they are (the shared `Sportipedia.Auth.Roles`
   guards keep role checks centralized).
