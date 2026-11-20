@@ -1,21 +1,7 @@
----
-generator: "mix sp.gen.policy <operation>"
-blueprints:
-  - SpGen.Blueprint.Policy
-  - SpGen.Blueprint.PolicyTest
-module: "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Policy"
-writes: [module, operation test]
----
-
 # Policy
 
 One answer per operation: may this actor do this. Bodyguard, and the shared
 guards from `Sportipedia.Auth.Roles` — nothing else.
-
-## Prerequisite
-
-- The [Domain Model](../../../../domain-model/README.md) lists the operation's
-  `actors`.
 
 ## What the generator does
 

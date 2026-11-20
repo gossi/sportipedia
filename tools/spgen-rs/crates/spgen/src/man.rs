@@ -6,13 +6,7 @@ mod pages {
     include!(concat!(env!("OUT_DIR"), "/pages.rs"));
 }
 
-mod roff_pages {
-    include!(concat!(env!("OUT_DIR"), "/roff.rs"));
-}
-
 pub const PAGES: &[(&str, &str)] = pages::PAGES;
-
-pub const ROFF_PAGES: &[(&str, &str)] = roff_pages::ROFF_PAGES;
 
 pub fn page_path(generator: &str) -> Option<&'static str> {
     let slug = generator.replace('_', "-");
@@ -43,7 +37,7 @@ pub fn typescript_markdown(artifact: &str) -> Option<&'static str> {
 }
 
 pub fn index() -> String {
-    let mut out = String::from("man pages (man/roff, embedded at build time):\n");
+    let mut out = String::from("man pages (rendered on demand from the registry):\n");
     for page in crate::manpage::pages() {
         let call = match page.name.as_str() {
             crate::manpage::INDEX => "spgen man".to_string(),
@@ -96,11 +90,12 @@ pub fn serve(generator: Option<&str>, target: Option<&str>, format: Format) -> i
             return 1;
         }
     };
-    let Some(roff) = embedded(&page) else {
-        eprintln!(
-            "error: no embedded man page '{page}'; run `spgen man --write` and rebuild spgen"
-        );
-        return 1;
+    let roff = match crate::manpage::page(want, target) {
+        Ok(roff) => roff,
+        Err(error) => {
+            eprintln!("error: {error}");
+            return 1;
+        }
     };
     match format {
         Format::Roff => {
@@ -108,31 +103,24 @@ pub fn serve(generator: Option<&str>, target: Option<&str>, format: Format) -> i
             0
         }
         Format::Plain => {
-            print!("{}", plain(roff, &page));
+            print!("{}", plain(&roff, &page));
             0
         }
         Format::Pager => {
-            if std::io::stdout().is_terminal() && open_in_man(roff, &page) {
+            if std::io::stdout().is_terminal() && open_in_man(&roff, &page) {
                 return 0;
             }
-            print!("{}", plain(roff, &page));
+            print!("{}", plain(&roff, &page));
             0
         }
     }
 }
 
 pub fn page_text(generator: Option<&str>, target: Option<&str>) -> Result<String, String> {
-    let page = crate::manpage::page_name(generator.unwrap_or(crate::manpage::INDEX), target)?;
-    let roff = embedded(&page)
-        .ok_or_else(|| format!("no embedded man page '{page}'; run `spgen man --write`"))?;
-    Ok(plain(roff, &page))
-}
-
-fn embedded(page: &str) -> Option<&'static str> {
-    ROFF_PAGES
-        .iter()
-        .find(|(name, _)| *name == page)
-        .map(|(_, roff)| *roff)
+    let want = generator.unwrap_or(crate::manpage::INDEX);
+    let page = crate::manpage::page_name(want, target)?;
+    let roff = crate::manpage::page(want, target)?;
+    Ok(plain(&roff, &page))
 }
 
 fn plain(roff: &str, page: &str) -> String {
@@ -239,16 +227,5 @@ mod tests {
         assert_eq!(strip_overstrike("NA\u{8}AM\u{8}ME"), "NAME");
         assert_eq!(strip_overstrike("_\u{8}x _\u{8}y"), "x y");
         assert_eq!(strip_overstrike("keep"), "keep");
-    }
-
-    #[test]
-    fn every_generated_page_is_embedded() {
-        for page in crate::manpage::pages() {
-            assert!(
-                embedded(&page.name).is_some(),
-                "man/roff/{}.1 is not embedded; run `spgen man --write` and rebuild",
-                page.name
-            );
-        }
     }
 }

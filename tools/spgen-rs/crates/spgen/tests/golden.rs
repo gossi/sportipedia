@@ -223,56 +223,6 @@ fn man_pages_render_with_generated_headers() {
 }
 
 #[test]
-fn committed_roff_pages_are_what_the_generators_describe() {
-    let fresh = std::env::temp_dir().join(format!(
-        "spgen-man-write-{}",
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos()
-    ));
-    let (code, out) = spgen(&["man", "--write", &fresh.display().to_string()]);
-    assert_eq!(code, 0, "{out}");
-    let committed = committed_roff();
-    let mut fresh_names = list_roff(&fresh);
-    let mut committed_names = list_roff(&committed);
-    fresh_names.sort();
-    committed_names.sort();
-    assert_eq!(
-        fresh_names, committed_names,
-        "man/roff holds exactly these pages"
-    );
-    for name in &fresh_names {
-        let built = std::fs::read(fresh.join(name)).unwrap();
-        let checked = std::fs::read(committed.join(name)).unwrap();
-        assert_eq!(
-            built,
-            checked,
-            "man/roff/{} is stale; run `spgen man --write`",
-            name.display()
-        );
-    }
-    std::fs::remove_dir_all(&fresh).unwrap();
-}
-
-fn committed_roff() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../man/roff")
-        .canonicalize()
-        .unwrap()
-}
-
-fn list_roff(dir: &Path) -> Vec<PathBuf> {
-    std::fs::read_dir(dir)
-        .unwrap()
-        .filter_map(Result::ok)
-        .map(|entry| entry.file_name())
-        .filter(|name| name.to_string_lossy().ends_with(".1"))
-        .map(PathBuf::from)
-        .collect()
-}
-
-#[test]
 fn generate_runs_ported_engines_and_points_at_pending_ones() {
     let root = sandbox("generate");
     let r = root.display().to_string();

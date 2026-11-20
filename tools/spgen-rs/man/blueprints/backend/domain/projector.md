@@ -1,21 +1,6 @@
----
-generator: "mix sp.gen.projector <event>"
-blueprints:
-  - SpGen.Blueprint.Projector
-  - SpGen.Blueprint.ProjectorSupervisor
-  - SpGen.Blueprint.ProjectorTest
-module: "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Projector"
-writes: [module, supervisor child, event test]
----
-
 # Projector
 
 Applies a fact to the read model(s). One clause per projected event.
-
-## Prerequisite
-
-- The [Domain Model](../../../../domain-model/README.md) has a `projection` on
-  the read model naming this event.
 
 ## What the generator does
 

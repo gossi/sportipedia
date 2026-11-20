@@ -1,25 +1,9 @@
----
-generator: "mix sp.gen.schema <element>"
-blueprints:
-  - SpGen.Blueprint.Schema
-  - SpGen.Blueprint.SchemaTest
-module: "SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.Schemas.<Name>"
-writes: [module, schema test]
----
-
 # Schema
 
 OpenAPI documents for the endpoint: the request body, the response envelope, the
 query parameters. `OpenApiSpex` modules, referenced from the controller's
 `operation`; there is nothing to register in the API spec — using them is the
 registration.
-
-## Prerequisite
-
-- The [Domain Model](../../../../domain-model/README.md) contains the command,
-  query or read model.
-- The [public API](../domain/public-api.md) function exists — its `@spec` is the
-  shape a response schema is derived from.
 
 ## What the generator does
 

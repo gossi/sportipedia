@@ -1,23 +1,6 @@
----
-generator: "mix sp.gen.command <operation>"
-blueprints:
-  - SpGen.Blueprint.Command
-  - SpGen.Blueprint.CommandTest
-  - SpGen.Blueprint.CommandRouter
-  - SpGen.Blueprint.CommandApplication
-module: "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<Command>"
-writes: [module, operation test, commanded router, commanded application]
----
-
 # Command
 
 The intent to change an aggregate, validated before it is dispatched.
-
-## Prerequisite
-
-- The [Domain Model](../../../../domain-model/README.md) contains the command,
-  its data, its `publishes` events and its `constraints`, and the aggregate's
-  `invariants`.
 
 ## What the generator does
 

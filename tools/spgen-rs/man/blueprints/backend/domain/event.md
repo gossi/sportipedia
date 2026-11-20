@@ -1,21 +1,7 @@
----
-generator: "mix sp.gen.event <event>"
-blueprints:
-  - SpGen.Blueprint.Event
-  - SpGen.Blueprint.EventTest
-module: "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Event.<Event>"
-writes: [module, event test]
----
-
 # Event
 
 A fact that happened. Events are the unit of behaviour that the aggregate, the
 projector and their tests are written against.
-
-## Prerequisite
-
-- The [Domain Model](../../../../domain-model/README.md) contains the event and
-  its data.
 
 ## What the generator does
 

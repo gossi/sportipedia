@@ -1,29 +1,8 @@
----
-generator: "mix sp.gen.controller <operation>"
-blueprints:
-  - SpGen.Blueprint.Controller
-  - SpGen.Blueprint.ControllerTest
-  - SpGen.Blueprint.WebRouter
-module: "SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Controller"
-writes: [module, endpoint test, web route]
----
-
 # Controller
 
 The HTTP adapter for one operation: parse the request, call the
 [public API](../domain/public-api.md), render the response. No domain logic — the
 public API is the only thing a controller may call.
-
-## Prerequisite
-
-- The [Domain Model](../../../../domain-model/README.md) contains the command or
-  query.
-- The public API function, the [view](./view.md) and the
-  [schemas](./schema.md) exist — until they do, the action defers and the run
-  reports `skipped: spgen public_api`, `skipped: spgen schema`, …
-- `services/api/lib/sportipedia_web/router.ex` exists. It is operator-owned and
-  merge-only: a missing router is a `Failed`, not something the generator
-  invents.
 
 ## What the generator does
 

@@ -1,20 +1,9 @@
----
-generator: none
-owner: "mix ecto.gen.migration"
-writes: [migration]
----
-
 # Migration
 
 The database side of a read model. Deliberately **not** an executable blueprint:
 a migration file name carries a timestamp and migrations are history, so nothing
 here can be reproduced idempotently. The [read model](./read-model.md) documents
 the schema; this document states how the table behind it is created.
-
-## Prerequisite
-
-- The read model exists in the [Domain Model](../../../../domain-model/README.md)
-  with its fields and unique fields.
 
 ## Rules
 

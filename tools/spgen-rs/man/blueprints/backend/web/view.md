@@ -1,20 +1,6 @@
----
-generator: "mix sp.gen.view <read-model>"
-blueprints:
-  - SpGen.Blueprint.View
-  - SpGen.Blueprint.ViewTest
-module: "SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>View"
-writes: [module, view test]
----
-
 # View
 
 The JSON:API representation of a read model: its type, its path, its attributes.
-
-## Prerequisite
-
-- The [Domain Model](../../../../domain-model/README.md) contains the read model
-  the endpoint returns.
 
 ## What the generator does
 

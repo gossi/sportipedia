@@ -1,12 +1,3 @@
----
-generator: "mix sp.gen.test_support <read-model>"
-blueprints:
-  - SpGen.Blueprint.Fixtures
-  - SpGen.Blueprint.Factory
-module: "Sportipedia.TestSupport.<Subdomain>.<Composite>.<DomainObject>Fixtures"
-writes: [fixtures module, factory module]
----
-
 # Test Support
 
 The model's fixtures — declared data for tests — and the factories that turn
@@ -14,18 +5,6 @@ fixtures into persisted read models. Two outputs, two ownership models: the
 fixture file is a **projection** of the model (rewritten whole), the factory
 file is the composite's **append-only ledger** (one `new_*` pair per read
 model).
-
-## Prerequisite
-
-- The [Domain Model](../../../../domain-model/README.md) read model carries a
-  `schema` block; fixtures are its `schema.examples`.
-- Each example names itself with a **fixture key** as its `id`:
-  `<composite>:<read-model>:<mnemonic>`, kebab-case segments
-  ([naming](../../naming-substitution.md#fixture-keys)).
-- Example fields must be declared by the schema and carry its required
-  properties; values in `*Id` fields are fixture keys or real UUIDs.
-- `mix sp.check` is the gate: it reports every violation of this contract
-  before and independently of generation.
 
 ## What the generator does
 

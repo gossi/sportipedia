@@ -1,19 +1,8 @@
----
-test_file: endpoint test
-module: "SportipediaWeb.<Subdomain>.<Composite>.<DomainObject>.<Operation>EndpointTest"
-contributors:
-  - "mix sp.gen.controller <operation>"
----
-
 # Endpoint Test
 
 The HTTP view of one operation: request in, status and JSON:API document out.
 Contributed by the [controller](./controller.md) generator into
 `test/sportipedia_web/…/<domain_object>/operations/<operation>_endpoint_test.exs`.
-
-## Prerequisite
-
-- The controller, route and schemas have been generated.
 
 ## Harness
 

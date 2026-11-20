@@ -1,21 +1,7 @@
----
-generator: "mix sp.gen.read_model <read-model>"
-blueprints:
-  - SpGen.Blueprint.ReadModel
-module: "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>ReadModel"
-writes: [module]
----
-
 # Read Model
 
 The queryable projection of the events. Typed Ecto schema plus the changesets
 the projections need.
-
-## Prerequisite
-
-- The [Domain Model](../../../../domain-model/README.md) contains the read
-  model's `schema`, its `projections`, and the aggregate invariants that make a
-  field unique.
 
 ## What the generator does
 

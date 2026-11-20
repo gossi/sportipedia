@@ -98,14 +98,14 @@ pub struct ManArgs {
     pub target: Option<String>,
     #[arg(long, help = "plain text rather than the pager")]
     pub plain: bool,
-    #[arg(long, help = "the roff source, as committed under man/roff")]
+    #[arg(long, help = "the raw roff the page is rendered from")]
     pub roff: bool,
     #[arg(
         long,
         value_name = "DIR",
         num_args = 0..=1,
         default_missing_value = "",
-        help = "regenerate the roff pages (default tools/spgen-rs/man/roff)"
+        help = "export the roff pages (default tools/spgen-rs/man/roff)"
     )]
     pub write: Option<String>,
 }

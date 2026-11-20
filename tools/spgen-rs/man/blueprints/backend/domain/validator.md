@@ -1,22 +1,7 @@
----
-generator: none
-owner: "dependency of mix sp.gen.command (and of the read model for unique fields)"
-blueprints:
-  - SpGen.Blueprint.Validator
-module: "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Validators.<Validator>"
-writes: [module]
----
-
 # Validator
 
 One modelled rule, one Vex validator. A validator answers "is this value
 acceptable" — it never fixes data.
-
-## Prerequisite
-
-- The [Domain Model](../../../../domain-model/README.md) states the rule as a
-  `namedRule`: an aggregate `invariant` or a command `constraint`, with a `name`
-  and prose.
 
 ## Not a command
 

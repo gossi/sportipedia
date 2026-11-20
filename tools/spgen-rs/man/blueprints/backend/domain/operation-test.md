@@ -1,27 +1,8 @@
----
-test_file: operation test
-module: "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Operation.<Operation>Test"
-contributors:
-  - "mix sp.gen.command <operation>"
-  - "mix sp.gen.command_handler <operation>"
-  - "mix sp.gen.policy <operation>"
-  - "mix sp.gen.public_api <operation>"
-  - "mix sp.gen.query <query>"
----
-
 # Operation Test
 
 One test file per operation, built from `describe` blocks contributed by the
 generators that write the operation's code. It tests the operation through the
 public API — the vertical slice, not the modules.
-
-The shared machinery is `SpGen.Blueprint.TestCaseFile`: the file appears with the
-first contributor that has a test to write, and every later run appends only the
-missing `describe` and its aliases.
-
-## Prerequisite
-
-- The operation's code has been generated (the same run contributes the tests).
 
 ## Generated
 

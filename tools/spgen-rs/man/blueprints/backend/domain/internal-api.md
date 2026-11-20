@@ -1,22 +1,7 @@
----
-generator: "mix sp.gen.internal_api <element>"
-owner: "also reached as a dependency of every validator a command generates"
-blueprints:
-  - SpGen.Blueprint.InternalAPI
-  - SpGen.Blueprint.LookupQuery
-module: "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.<DomainObject>Internal"
-writes: [module]
----
-
 # Internal API
 
 Data access inside one constituent — for its public API, its validators and its
 tests. Never across a constituent or composite boundary.
-
-## Prerequisite
-
-- The [Domain Model](../../../../domain-model/README.md) contains the read model
-  and, for each lookup accessor, the invariant that makes the field addressable.
 
 ## What the generator does
 

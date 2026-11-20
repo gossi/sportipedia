@@ -1,25 +1,9 @@
----
-generator: "mix sp.gen.query <query>"
-blueprints:
-  - SpGen.Blueprint.Query
-  - SpGen.Blueprint.QueryTest
-module: "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Queries.<Query>"
-writes: [module, operation test]
----
-
 # Query
 
 A named read over the read models. One `new/n` that returns the query — never
 the results. `import Ecto.Query` belongs to the body that speaks query macros;
 a body delegating to the shared `QueryBuilder` needs none, and the generator
 does not write imports it cannot justify.
-
-## Prerequisite
-
-- The [Domain Model](../../../../domain-model/README.md) contains the query, its
-  `parameters` and its `result`.
-- For the generated (delegating) body: the read model
-  ([Read Model](./read-model.md)) — the query names it.
 
 ## What the generator does
 

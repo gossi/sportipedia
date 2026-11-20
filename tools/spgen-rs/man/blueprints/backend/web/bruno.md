@@ -1,20 +1,7 @@
----
-generator: "mix sp.gen.bruno <operation>"
-blueprints:
-  - SpGen.Blueprint.Bruno
-  - SpGen.Blueprint.BrunoFolder
-writes: [bruno]
----
-
 # Bruno
 
 Runnable request documentation for one endpoint, in the Bruno collection at the
 repo root. Not a test: a thing you can click while developing the operation.
-
-## Prerequisite
-
-- The operation exists in the [Domain Model](../../../../domain-model/README.md);
-  the controller and route are generated, so the path and verb are real.
 
 ## What the generator does
 

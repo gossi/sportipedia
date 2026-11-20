@@ -1,20 +1,6 @@
----
-generator: "mix sp.gen.public_api <operation>"
-blueprints:
-  - SpGen.Blueprint.PublicAPI
-  - SpGen.Blueprint.PublicAPITest
-module: "Sportipedia.<Subdomain>.<Composite>.<DomainObject>"
-writes: [module, operation test]
----
-
 # Public API
 
 The constituent's port: exactly one function per operation, nothing else.
-
-## Prerequisite
-
-- The [Domain Model](../../../../domain-model/README.md) contains the command or
-  query the function stands for.
 
 ## What the generator does
 

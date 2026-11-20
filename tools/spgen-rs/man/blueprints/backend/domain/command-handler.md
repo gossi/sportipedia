@@ -1,23 +1,6 @@
----
-generator: "mix sp.gen.command_handler <operation>"
-blueprints:
-  - SpGen.Blueprint.CommandHandler
-  - SpGen.Blueprint.CommandHandlerTest
-module: "Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Command.<Command>Handler"
-writes: [module, operation test]
----
-
 # Command Handler
 
 Turns one command into the event(s) that fact happened.
-
-## Prerequisite
-
-- The [Domain Model](../../../../domain-model/README.md) contains the command
-  and what it `publishes`.
-
-The shape is identical for every operation — input command, output events — so
-this generator is fixed and takes no `--template`.
 
 ## What the generator does
 
