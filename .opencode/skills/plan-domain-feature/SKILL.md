@@ -1,6 +1,6 @@
 ---
 name: plan-domain-feature
-description: Preflight the spec and domain model, translate them into technical design, and emit the generator call sequence with per-operation work packages.
+description: Preflight the spec and domain model, translate them into technical design, and emit the suite scope and generator call sequence with per-operation work packages.
 ---
 
 # Plan Domain Feature
@@ -151,8 +151,12 @@ command behind it fails `--warnings-as-errors`, and a policy clause defaulting t
 ## Step 6: Present the Result
 
 Follow `software-plan-format`. The artifact is: scope and operation list, preflight
-findings, the technical translation, the call sequence, the work packages, the
-deviation register, and the out-of-scope boundary.
+findings, the technical translation, the slice scope and its call sequence,
+the work packages, the deviation register, and the out-of-scope boundary.
+The scope names the suite (`operation`, `endpoint`, `feature`) — what the
+recipes call its slice; the sequence is what that suite runs, call by call —
+one list per suite until the API binds `mix sp.gen.<scope>` commands from the
+spgen-rs workspace.
 
 No module table. No file paths. No diagrams of a standard write or read sequence —
 include one only when the flow is genuinely non-obvious (cross-boundary calls,

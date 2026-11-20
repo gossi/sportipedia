@@ -1,0 +1,61 @@
+.TH "SPGEN-COMMAND_HANDLER" "1" "" "spgen 0.1.0" ""
+.SH NAME
+spgen\-command_handler \- Generates a command handler module and its test describe block
+.SH SYNOPSIS
+mix sp.gen.command_handler [options] <COMMAND>
+.SH DESCRIPTION
+Turns one command into the event(s) that fact happened.
+.SH Prerequisite
+.IP \[bu] 2
+The Domain Model (../../../../domain\-model/README.md) contains the command and what it publishes.
+.PP
+The shape is identical for every operation — input command, output events — so this generator is fixed and takes no \-\-template.
+.SH "What the generator does"
+.IP \[bu] 2
+The @behaviour Commanded.Commands.Handler, the aliases for command, aggregate and event, the @doc, the @spec (event.t() | [event.t()]) and the handle/2 head matching %Aggregate{} and %Command{}.
+.IP \[bu] 2
+The handler's dispatch … to: entry in the commanded router is contributed by the command (./command.md) generator, not here.
+.SH "Left to you"
+The body of handle/2, left as # implement logic here / # return events:
+.IP \[bu] 2
+Shallow — build the published event from the command's fields; the field lists are in the model, and this is the common case.
+.IP \[bu] 2
+Deep — guard, compute or derive before emitting; decided by the feature spec (docs/specs/), never copied from another citizen's handler.
+.SH Tests
+In the operation test (./operation\-test.md), under describe "Command Handler": the generator asserts the returned event type. The field\-by\-field mapping case and every branch a deep handler has are manual (Known gaps (../../README.md#known\-gaps)).
+.SS "Generated files"
+.IP \[bu] 2
+services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/operations/<_operation>/handler.ex (handle/2 calling the aggregate)
+.IP \[bu] 2
+services/api/test/sportipedia/<_subdomain>/<composite>/<domain_object>/operations/<_operation>_test.exs (handle test asserting events)
+.SH OPTIONS
+.TP
+\fB\-\-subdomain\fR \fI<SUBDOMAIN>\fR
+
+.TP
+\fB\-\-composite\fR \fI<COMPOSITE>\fR
+
+.TP
+\fB\-\-constituent\fR \fI<CONSTITUENT>\fR
+
+.TP
+\fB\-\-model\fR \fI<MODEL>\fR
+model root, default docs/domain\-model (relative to \-\-root)
+.TP
+\fB\-\-root\fR \fI<ROOT>\fR
+repo root, default inferred from the current directory
+.TP
+\fB\-\-dry\-run\fR
+report the drift, write nothing
+.TP
+\fB\-f\fR, \fB\-\-force\fR
+FE: rewrite present generated units in place
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.TP
+<\fICOMMAND\fR>
+the element: esdm: reference, *.esdm.yaml, kind.name, or bare name
+.SH "SEE ALSO"
+spgen(1)
+suites: operation, feature

@@ -8,6 +8,7 @@ use std::{
 
 use crate::element::{Element, ElementKind, build_address, scope_chain};
 
+#[derive(Clone)]
 pub struct Model {
     pub root: PathBuf,
     pub elements: Vec<Element>,

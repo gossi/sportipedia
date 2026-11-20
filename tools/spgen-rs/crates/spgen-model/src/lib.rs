@@ -1,20 +1,23 @@
-//! Ported from `tools/spgen/lib/sp_gen` — the ESDM model layer of the BE
-//! generator: reader, cross-document resolution, context lookup, naming and
-//! path rules, relation keywords, model checks.
+//! Ported from `tools/spgen/lib/sp_gen` — the ESDM model layer of the
+//! generators: reader, cross-document resolution, naming and path rules,
+//! relation keywords, invariant patterns, fixture grammar, placeholder
+//! engine.
 //!
 //! This crate holds everything language-neutral in spgen: what the domain
-//! model *means*. Blueprint crates (`spgen-fe`) render against it; the BE
-//! Elixir tool interprets the same rules in its own code, and the shared
-//! fixture corpus (`fixtures/domain-model`, a copy of
-//! `tools/spgen/fixtures/domain-model`) pins both.
+//! model *means*. Blueprint crates (`spgen-typescript`, `spgen-elixir`) render
+//! against it, and the Elixir tool in `tools/spgen` interprets the same
+//! rules until its port wave completes — the shared fixture corpus
+//! (`fixtures/`) pins all three.
 
 pub mod annotations;
 pub mod citizen;
 pub mod element;
 pub mod fields;
 pub mod fixtures;
+pub mod invariants;
 pub mod model;
 pub mod naming;
+pub mod placeholders;
 
 pub use citizen::{
     Citizen, Command, FixtureEntry, FixtureView, Property, PropertyKind, Query, QueryKind,
@@ -25,6 +28,9 @@ pub use fields::{Cardinality, Field, Relation, fields};
 pub use fixtures::{
     FixtureSpec, examples_of, fixture_key, parse_key, referenced_keys,
     validate as validate_examples,
+};
+pub use invariants::{
+    Validator, ValidatorKind, resolve as resolve_invariant, resolve_all as resolve_invariants,
 };
 pub use model::{Model, ResolveError};
 pub use naming::{Case, Name, pluralize};

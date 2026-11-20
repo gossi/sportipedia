@@ -6,7 +6,7 @@
 //! three kebab-case segments, `<composite>:<read-model>:<mnemonic>`, carried
 //! in its `id` property. On the FE the key *is* the materialized id (the
 //! JSON:API resource id), and a reference to another fixture resolves to the
-//! named const of that fixture's file — see `spgen-fe`'s fixtures blueprint.
+//! named const of that fixture's file — see `spgen-typescript`'s fixtures blueprint.
 
 use serde_json::Value;
 

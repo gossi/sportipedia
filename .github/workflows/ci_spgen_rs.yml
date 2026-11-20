@@ -48,3 +48,28 @@ jobs:
 
       - name: Run tests
         run: cargo test
+
+  binding:
+    name: Elixir binding
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    defaults:
+      run:
+        working-directory: tools/spgen-rs/elixir
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Erlang/OTP and Elixir
+        uses: erlef/setup-elixir@v1
+        with:
+          version-file: .tool-versions
+          version-type: strict
+
+      - name: Check formatting
+        run: mix format --check-formatted
+
+      - name: Compile
+        run: mix compile --warnings-as-errors

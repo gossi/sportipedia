@@ -1,0 +1,62 @@
+.TH "SPGEN-BRUNO" "1" "" "spgen 0.1.0" ""
+.SH NAME
+spgen\-bruno \- Generates the Bruno API\-request documentation for an operation
+.SH SYNOPSIS
+mix sp.gen.bruno [options] <COMMAND|QUERY>
+.SH DESCRIPTION
+Runnable request documentation for one endpoint, in the Bruno collection at the repo root. Not a test: a thing you can click while developing the operation.
+.SH Prerequisite
+.IP \[bu] 2
+The operation exists in the Domain Model (../../../../domain\-model/README.md); the controller and route are generated, so the path and verb are real.
+.SH "What the generator does"
+One file per operation at bruno/<Subdomain>/<Composite>/<Constituent>/<Operation Title>.yml, title\-cased like the rest of the collection, plus the constituent's folder.yml beside the first request it holds.
+.IP \[bu] 2
+Verb by element kind: POST for a command, GET for a query — the same rule the controller follows.
+.IP \[bu] 2
+URL against {{apiUrl}}; collection variables live in bruno/environments/.
+.IP \[bu] 2
+A JSON:API body mirroring the operation's data: create carries attributes only (the id is generated), update and delete address the row by id.
+.IP \[bu] 2
+examples: generated from the domain model's feature scenarios.
+.IP \[bu] 2
+seq: orders commands before queries, so assignment order matches the run order — run the command generators first.
+.IP \[bu] 2
+Docs artifacts are create\-only: an existing .yml is never rewritten, so hand\-tuned headers, saved responses and extra examples survive every run. An API change is therefore not propagated — when the operation's shape changes, update the file (or delete it and regenerate). See Ownership (../../README.md#ownership).
+.SH Tests
+None. Bruno files are documentation, not code under test — the endpoint they describe is tested in the endpoint test (./endpoint\-test.md).
+.SS "Generated files"
+.IP \[bu] 2
+bruno/<Subdomain>/<Composite>/<Constituent>/<Operation Title>.yml (request docs per operation)
+.IP \[bu] 2
+bruno/<Subdomain>/<Composite>/<Constituent>/folder.yml (folder defaults for requests)
+.SH OPTIONS
+.TP
+\fB\-\-subdomain\fR \fI<SUBDOMAIN>\fR
+
+.TP
+\fB\-\-composite\fR \fI<COMPOSITE>\fR
+
+.TP
+\fB\-\-constituent\fR \fI<CONSTITUENT>\fR
+
+.TP
+\fB\-\-model\fR \fI<MODEL>\fR
+model root, default docs/domain\-model (relative to \-\-root)
+.TP
+\fB\-\-root\fR \fI<ROOT>\fR
+repo root, default inferred from the current directory
+.TP
+\fB\-\-dry\-run\fR
+report the drift, write nothing
+.TP
+\fB\-f\fR, \fB\-\-force\fR
+FE: rewrite present generated units in place
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.TP
+<\fICOMMAND|QUERY\fR>
+the element: esdm: reference, *.esdm.yaml, kind.name, or bare name
+.SH "SEE ALSO"
+spgen(1)
+suites: endpoint, feature

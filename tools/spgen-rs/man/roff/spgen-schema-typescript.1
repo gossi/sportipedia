@@ -1,0 +1,45 @@
+.TH "SPGEN-SCHEMA-TYPESCRIPT" "1" "" "spgen 0.1.0" ""
+.SH NAME
+spgen\-schema\-typescript \- Generates the WarpDrive resource schema and the citizen's registrations
+.SH SYNOPSIS
+pnpm spgen schema <read\-model>
+.SH DESCRIPTION
+Generates the WarpDrive resource schema and the citizen's registrations
+.SS "Generated files"
+.IP \[bu] 2
+apps/<subdomain>/src/<composite>/schemas/<constituent>.ts (resource schema with defaults)
+.IP \[bu] 2
+apps/<subdomain>/src/<composite>/index.ts (export registration here)
+.IP \[bu] 2
+apps/<subdomain>/src/config.ts (citizen registration in config)
+.SH OPTIONS
+.TP
+\fB\-\-subdomain\fR \fI<SUBDOMAIN>\fR
+
+.TP
+\fB\-\-composite\fR \fI<COMPOSITE>\fR
+
+.TP
+\fB\-\-constituent\fR \fI<CONSTITUENT>\fR
+
+.TP
+\fB\-\-model\fR \fI<MODEL>\fR
+model root, default docs/domain\-model (relative to \-\-root)
+.TP
+\fB\-\-root\fR \fI<ROOT>\fR
+repo root, default inferred from the current directory
+.TP
+\fB\-\-dry\-run\fR
+report the drift, write nothing
+.TP
+\fB\-f\fR, \fB\-\-force\fR
+FE: rewrite present generated units in place
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.TP
+<\fIREAD\-MODEL\fR>
+the element: esdm: reference, *.esdm.yaml, kind.name, or bare name
+.SH "SEE ALSO"
+spgen(1)
+suites: domain\-objects, feature

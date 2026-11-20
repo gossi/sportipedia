@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["crates/spgen-model", "crates/spgen-fe"]
+members = ["crates/spgen-model", "crates/spgen-typescript", "crates/spgen-elixir", "crates/spgen", "crates/spgen-mcp"]
 
 [workspace.package]
 edition = "2024"

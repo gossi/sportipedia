@@ -1,0 +1,63 @@
+.TH "SPGEN-POLICY" "1" "" "spgen 0.1.0" ""
+.SH NAME
+spgen\-policy \- Generates the authorization policy for an operation
+.SH SYNOPSIS
+mix sp.gen.policy [options] <COMMAND|QUERY>
+.SH DESCRIPTION
+One answer per operation: may this actor do this. Bodyguard, and the shared guards from Sportipedia.Auth.Roles — nothing else.
+.SH Prerequisite
+.IP \[bu] 2
+The Domain Model (../../../../domain\-model/README.md) lists the operation's actors.
+.SH "What the generator does"
+It appends the operation's authorize/3 clause(s) to the constituent's policy, creating the file with @behaviour Bodyguard.Policy and the import Sportipedia.Auth.Roles when missing:
+.IP \[bu] 2
+guest among the actors → one open clause: authorize(:op, _user, _params), do: :ok.
+.IP \[bu] 2
+admin as the only actor → guest denial, is_admin? allowance, and an explicit denial of every other authenticated user:
+.nf
+def authorize(:op, user, _params) when is_guest?(user), do: :error
+def authorize(:op, user, _params) when is_admin?(user), do: :ok
+def authorize(:op, user, _params) when is_user?(user), do: :error
+.fi
+.IP \[bu] 2
+otherwise the deny/allow pair: is_guest?(user) → :error, is_user?(user) → :ok.
+.PP
+is_user?/1 is not is_guest?/1 — "authenticated", not "an admin": an admin\-only actor list generated from the deny/allow pair would admit every authenticated user, so the generator derives the is_admin? clause from the model instead (SpGen.Blueprint.Policy.admin_only?/1). Using the shared guards keeps the role checks identical everywhere — do not write a user.role == … comparison in a policy.
+.SH Tests
+In the operation test (./operation\-test.md), under describe "Policy": the guest denial and the user allowance, generated from the same actor list — for an admin\-only list, all three answers (guest denied, non\-admin user denied, admin allowed). A param\-dependent case is manual (Known gaps (../../README.md#known\-gaps)).
+.SS "Generated files"
+.IP \[bu] 2
+services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/policy.ex (authorize clauses per action)
+.IP \[bu] 2
+services/api/test/sportipedia/<_subdomain>/<composite>/<domain_object>/operations/<_operation>_test.exs (allowed and denied calls)
+.SH OPTIONS
+.TP
+\fB\-\-subdomain\fR \fI<SUBDOMAIN>\fR
+
+.TP
+\fB\-\-composite\fR \fI<COMPOSITE>\fR
+
+.TP
+\fB\-\-constituent\fR \fI<CONSTITUENT>\fR
+
+.TP
+\fB\-\-model\fR \fI<MODEL>\fR
+model root, default docs/domain\-model (relative to \-\-root)
+.TP
+\fB\-\-root\fR \fI<ROOT>\fR
+repo root, default inferred from the current directory
+.TP
+\fB\-\-dry\-run\fR
+report the drift, write nothing
+.TP
+\fB\-f\fR, \fB\-\-force\fR
+FE: rewrite present generated units in place
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.TP
+<\fICOMMAND|QUERY\fR>
+the element: esdm: reference, *.esdm.yaml, kind.name, or bare name
+.SH "SEE ALSO"
+spgen(1)
+suites: operation, feature

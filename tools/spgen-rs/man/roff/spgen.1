@@ -1,0 +1,189 @@
+.TH "SPGEN" "1" "" "spgen 0.1.0" ""
+.SH NAME
+spgen \- spgen — the blueprint generators' own tool
+.SH SYNOPSIS
+\fBspgen\fR [\fB\-h\fR|\fB\-\-help\fR] [\fB\-V\fR|\fB\-\-version\fR] <\fIsubcommands\fR>
+.SH DESCRIPTION
+spgen — the blueprint generators' own tool
+.SH OPTIONS
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.TP
+\fB\-V\fR, \fB\-\-version\fR
+Print version
+.SH SUBCOMMANDS
+.TP
+spgen\-generate(1)
+no arguments: the capability list; with them, run a generator or suite
+.TP
+spgen\-validate(1)
+model completeness (the sp.check rules) — writes nothing
+.TP
+spgen\-man(1)
+the manual page of a generator, or the index when no generator is given
+.TP
+spgen\-arch(1)
+where generated code lives (location) or what it is named (name)
+.TP
+spgen\-capabilities(1)
+the capability tree as text
+.TP
+spgen\-mcp(1)
+start the MCP server on stdio (read\-only tools)
+.TP
+spgen\-help(1)
+Print this message or the help of the given subcommand(s)
+.SH EXTRA
+The tiers: blueprints render units; generators run blueprints; suites run generators.
+The generators themselves are reached by operators through the bindings: mix sp.gen.* and pnpm spgen.
+.SH GENERATORS
+.SS elixir
+.TP
+\fBread_model\fR
+Generates the shared read model with its changesets
+.br
+mix sp.gen.read_model <element> [options]
+.TP
+\fBtest_support\fR
+Generates a read model's test\-support fixtures and factory functions
+.br
+mix sp.gen.test_support <element> [options]
+.TP
+\fBevent\fR
+Generates an event module and its test describe block
+.br
+mix sp.gen.event <element> [options]
+.TP
+\fBaggregate\fR
+Generates the aggregate module with apply/2 clauses per event
+.br
+mix sp.gen.aggregate <element> [options]
+.TP
+\fBquery\fR
+Generates a query module for a query element
+.br
+mix sp.gen.query <element> [options]
+.TP
+\fBinternal_api\fR
+Generates the internal API accessors for a constituent
+.br
+mix sp.gen.internal_api <element> [options]
+.TP
+\fBcommand\fR
+Generates a command module, its test and router registration
+.br
+mix sp.gen.command <element> [options]
+.TP
+\fBcommand_handler\fR
+Generates a command handler module and its test describe block
+.br
+mix sp.gen.command_handler <element> [options]
+.TP
+\fBprojector\fR
+Generates a projector clause for an event and registers the projector
+.br
+mix sp.gen.projector <element> [options]
+.TP
+\fBpolicy\fR
+Generates the authorization policy for an operation
+.br
+mix sp.gen.policy <element> [options]
+.TP
+\fBpublic_api\fR
+Generates the public API function for an operation
+.br
+mix sp.gen.public_api <element> [options]
+.TP
+\fBview\fR
+Generates the JSON:API view for a read model
+.br
+mix sp.gen.view <element> [options]
+.TP
+\fBschema\fR
+Generates OpenAPI schemas documenting an endpoint
+.br
+mix sp.gen.schema <element> [options]
+.TP
+\fBcontroller\fR
+Generates the controller action, endpoint test and route
+.br
+mix sp.gen.controller <element> [options]
+.TP
+\fBbruno\fR
+Generates the Bruno API\-request documentation for an operation
+.br
+mix sp.gen.bruno <element> [options]
+.SS typescript
+.TP
+\fBdomain\-object\fR
+Generates the domain object interface and its fields type
+.br
+pnpm spgen domain\-object <read\-model>
+.TP
+\fBschema\fR
+Generates the WarpDrive resource schema and the citizen's registrations
+.br
+pnpm spgen schema <read\-model>
+.TP
+\fBactions\fR
+Generates one request\-option builder per command
+.br
+pnpm spgen actions <read\-model>
+.TP
+\fBqueries\fR
+Generates one query function per model query
+.br
+pnpm spgen queries <read\-model>
+.TP
+\fBabilities\fR
+Generates one ability predicate per command from the model's actors
+.br
+pnpm spgen abilities <read\-model>
+.TP
+\fBfixtures\fR
+Generates a frozen const and find helpers per model example
+.br
+pnpm spgen fixtures <read\-model>
+.TP
+\fBendpoints\fR
+Generates the MSW endpoint descriptors and mock handlers
+.br
+pnpm spgen endpoints <read\-model>
+.TP
+\fBability\-test\fR
+Generates the role truth table test of each ability
+.br
+pnpm spgen ability\-test <read\-model>
+.TP
+\fBstorybook\fR
+Generates the storybook argTypes, presets and meta factory
+.br
+pnpm spgen storybook <read\-model>
+.SH SUITES
+.SS elixir
+.TP
+\fBmix sp.gen.operation\fR
+read_model, event, aggregate, query, command, command_handler, projector, policy, public_api
+.TP
+\fBmix sp.gen.endpoint\fR
+view, schema, controller, bruno
+.TP
+\fBmix sp.gen.feature\fR
+read_model, test_support, event, aggregate, query, command, command_handler, projector, policy, public_api, view, schema, controller, bruno
+.SS typescript
+.TP
+\fBpnpm spgen domain\-objects\fR
+domain\-object, schema, actions, queries, abilities
+.TP
+\fBpnpm spgen test\-support\fR
+fixtures, endpoints
+.TP
+\fBpnpm spgen ability\-tests\fR
+ability\-test
+.TP
+\fBpnpm spgen storybook\fR
+storybook
+.TP
+\fBpnpm spgen feature\fR
+domain\-object, schema, actions, queries, abilities, fixtures, endpoints, ability\-test, storybook

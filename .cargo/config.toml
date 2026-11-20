@@ -1,0 +1,2 @@
+[alias]
+spgen = ["run", "--quiet", "--manifest-path", "tools/spgen-rs/Cargo.toml", "-p", "spgen", "--"]

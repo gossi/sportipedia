@@ -1,0 +1,41 @@
+.TH "SPGEN-QUERIES" "1" "" "spgen 0.1.0" ""
+.SH NAME
+spgen\-queries \- Generates one query function per model query
+.SH SYNOPSIS
+pnpm spgen queries <read\-model>
+.SH DESCRIPTION
+Generates one query function per model query
+.SS "Generated files"
+.IP \[bu] 2
+apps/<subdomain>/src/<composite>/domain\-objects/<constituent>/queries.ts (query function per model query)
+.SH OPTIONS
+.TP
+\fB\-\-subdomain\fR \fI<SUBDOMAIN>\fR
+
+.TP
+\fB\-\-composite\fR \fI<COMPOSITE>\fR
+
+.TP
+\fB\-\-constituent\fR \fI<CONSTITUENT>\fR
+
+.TP
+\fB\-\-model\fR \fI<MODEL>\fR
+model root, default docs/domain\-model (relative to \-\-root)
+.TP
+\fB\-\-root\fR \fI<ROOT>\fR
+repo root, default inferred from the current directory
+.TP
+\fB\-\-dry\-run\fR
+report the drift, write nothing
+.TP
+\fB\-f\fR, \fB\-\-force\fR
+FE: rewrite present generated units in place
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.TP
+<\fIREAD\-MODEL\fR>
+the element: esdm: reference, *.esdm.yaml, kind.name, or bare name
+.SH "SEE ALSO"
+spgen(1)
+suites: domain\-objects, feature

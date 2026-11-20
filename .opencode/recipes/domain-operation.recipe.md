@@ -80,7 +80,7 @@ one design — but this stays at your disposal, and it follows the same rules.
 | Step | Agent | Does |
 |---|---|---|
 | `design` | software-architect | lints the model, preflights spec against model, translates to technical design, emits the generator call sequence, the work package, the deviation register, the boundary |
-| `generate` | backend-engineer | runs the calls verbatim, writes no logic, reports files touched |
+| `generate` | backend-engineer | runs the operation suite — `mix sp.gen.operation <operation>` once the API binds the spgen-rs workspace, otherwise the design's calls verbatim — writes no logic, reports files touched |
 | `implement` | backend-engineer | fills the residual bodies, writes the tests, test-first |
 | `review` | software-architect | reviews the operation against the architecture |
 | `adjust` | backend-engineer | applies findings, repairs via `--check`, commits |

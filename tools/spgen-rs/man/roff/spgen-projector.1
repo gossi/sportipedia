@@ -1,0 +1,78 @@
+.TH "SPGEN-PROJECTOR" "1" "" "spgen 0.1.0" ""
+.SH NAME
+spgen\-projector \- Generates a projector clause for an event and registers the projector
+.SH SYNOPSIS
+mix sp.gen.projector [options] <EVENT>
+.SH DESCRIPTION
+Applies a fact to the read model(s). One clause per projected event.
+.SH Prerequisite
+.IP \[bu] 2
+The Domain Model (../../../../domain\-model/README.md) has a projection on the read model naming this event.
+.SH "What the generator does"
+use Commanded.Projections.Ecto with application, repo, the projection name (<composite>.<domain_object>_projection), schema_prefix and consistency: :strong; the project/3 clause; the child in the nearest supervisor (composite first, else subdomain — created when missing); and the event test's describe "Projector".
+.PP
+The clause body is derived, not chosen: SpGen.Context reads the read model's projection rule (Esdm.projection_effect/1) and emits insert, update\-from\-get_changes/1, or delete — a missing row is a no\-op for update and delete. \-\-template is validated at the CLI; the body follows the model.
+.SH "Left to you"
+.IP \[bu] 2
+Check the clause against the rule. A projection rule whose prose states no effect falls back to create; if the model says otherwise, say so in the rule.
+.IP \[bu] 2
+Anything that is not row CRUD — a computed column, a second read model, a side effect — is spec logic, added inside the generated clause.
+.SH Tests
+In the event test (./event\-test.md), under describe "Projector": the generated case calls handle/2 with a full metadata map — handler_name equals the projector's name: option, event_number is a unique non\-negative integer — and asserts the row after an update or delete projection by first projecting the citizen's create event. Its idempotency and error cases are still manual (Known gaps (../../README.md#known\-gaps)).
+.SS "Generated files"
+.IP \[bu] 2
+services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/projector.ex (projection clause per event)
+.IP \[bu] 2
+services/api/lib/sportipedia/<_subdomain>/<composite>/supervisor.ex (composite projector children)
+.IP \[bu] 2
+services/api/lib/sportipedia/<_subdomain>/supervisor.ex (fallback projector children)
+.IP \[bu] 2
+services/api/test/sportipedia/<_subdomain>/<composite>/<domain_object>/events/<_event>_test.exs (projected row test per fact)
+.SH OPTIONS
+.TP
+\fB\-\-subdomain\fR \fI<SUBDOMAIN>\fR
+
+.TP
+\fB\-\-composite\fR \fI<COMPOSITE>\fR
+
+.TP
+\fB\-\-constituent\fR \fI<CONSTITUENT>\fR
+
+.TP
+\fB\-\-model\fR \fI<MODEL>\fR
+model root, default docs/domain\-model (relative to \-\-root)
+.TP
+\fB\-\-root\fR \fI<ROOT>\fR
+repo root, default inferred from the current directory
+.TP
+\fB\-\-dry\-run\fR
+report the drift, write nothing
+.TP
+\fB\-\-template\fR \fI<TEMPLATE>\fR
+what the operation does: create|update|delete|none (optional: the model declares the operation for this element)
+.br
+
+.br
+\fIPossible values:\fR
+.RS 14
+.IP \(bu 2
+create
+.IP \(bu 2
+update
+.IP \(bu 2
+delete
+.IP \(bu 2
+none
+.RE
+.TP
+\fB\-f\fR, \fB\-\-force\fR
+FE: rewrite present generated units in place
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.TP
+<\fIEVENT\fR>
+the element: esdm: reference, *.esdm.yaml, kind.name, or bare name
+.SH "SEE ALSO"
+spgen(1)
+suites: operation, feature

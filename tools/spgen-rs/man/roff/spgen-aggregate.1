@@ -1,0 +1,57 @@
+.TH "SPGEN-AGGREGATE" "1" "" "spgen 0.1.0" ""
+.SH NAME
+spgen\-aggregate \- Generates the aggregate module with apply/2 clauses per event
+.SH SYNOPSIS
+mix sp.gen.aggregate [options] <AGGREGATE|COMMAND|EVENT>
+.SH DESCRIPTION
+The stream of events for one domain object, folded into state.
+.SH Prerequisite
+.IP \[bu] 2
+The Domain Model (../../../../domain\-model/README.md) contains the aggregate and the events that change it.
+.PP
+The generator accepts an aggregate, command or event element and always resolves the aggregate's own element, so mix sp.gen.aggregate position and mix sp.gen.aggregate catalog\-position write the same file.
+.SH "What the generator does"
+.IP \[bu] 2
+typedstruct state from the aggregate's state.
+.IP \[bu] 2
+One apply/2 clause per event of the constituent, pattern\-matching aggregate and event: a create rebuilds the struct from the event's fields, an update merges Event.get_changes/1, a delete returns nil.
+.IP \[bu] 2
+The @moduledoc, which stays a TODO: marker until the model describes the aggregate.
+.SH Tests
+The aggregate's describe "Aggregate" lives in the event test (./event\-test.md), one applies <event> to aggregate state case per event: create starts from an empty struct, update seeds the id, delete asserts nil. Field\-by\-field assertions follow the event's data.
+.SS "Generated files"
+.IP \[bu] 2
+services/api/lib/sportipedia/<_subdomain>/<composite>/<domain_object>/aggregate.ex (typedstruct state with apply clauses)
+.IP \[bu] 2
+services/api/test/sportipedia/<_subdomain>/<composite>/<domain_object>/events/<_event>_test.exs (aggregate fold test per event)
+.SH OPTIONS
+.TP
+\fB\-\-subdomain\fR \fI<SUBDOMAIN>\fR
+
+.TP
+\fB\-\-composite\fR \fI<COMPOSITE>\fR
+
+.TP
+\fB\-\-constituent\fR \fI<CONSTITUENT>\fR
+
+.TP
+\fB\-\-model\fR \fI<MODEL>\fR
+model root, default docs/domain\-model (relative to \-\-root)
+.TP
+\fB\-\-root\fR \fI<ROOT>\fR
+repo root, default inferred from the current directory
+.TP
+\fB\-\-dry\-run\fR
+report the drift, write nothing
+.TP
+\fB\-f\fR, \fB\-\-force\fR
+FE: rewrite present generated units in place
+.TP
+\fB\-h\fR, \fB\-\-help\fR
+Print help
+.TP
+<\fIAGGREGATE|COMMAND|EVENT\fR>
+the element: esdm: reference, *.esdm.yaml, kind.name, or bare name
+.SH "SEE ALSO"
+spgen(1)
+suites: operation, feature
