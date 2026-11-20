@@ -1,2 +1,2 @@
 [alias]
-spgen = ["run", "--quiet", "--manifest-path", "tools/spgen-rs/Cargo.toml", "-p", "spgen", "--"]
+sparch = ["run", "--quiet", "--manifest-path", "tools/sparch/Cargo.toml", "-p", "sparch", "--"]

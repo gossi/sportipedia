@@ -1,0 +1,20 @@
+[package]
+name = "sparch"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "sparch"
+path = "src/main.rs"
+
+[dependencies]
+sparch-model = { path = "../sparch-model" }
+sparch-elixir = { path = "../sparch-elixir" }
+sparch-typescript = { path = "../sparch-typescript" }
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+clap = { version = "4.6.7", features = ["derive", "string"] }
+clap_mangen = "0.3.4"
+roff = "1.1.1"
+pulldown-cmark = "0.13.6"

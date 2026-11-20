@@ -31,9 +31,9 @@
       "url": "https://mcp.better-auth.com/mcp",
       "enabled": true
     },
-    "spgen": {
+    "sparch": {
       "type": "local",
-      "command": ["tools/spgen-rs/target/release/spgen", "mcp"],
+      "command": ["tools/sparch/target/release/sparch", "mcp"],
       "enabled": true
     }
   },

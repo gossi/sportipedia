@@ -93,7 +93,7 @@ whole build of a spec.
 | Step | Agent | Does |
 |---|---|---|
 | `design` | software-architect | lints the model (`esdm lint`) and checks its completeness (`mix sp.check`), preflights spec against model, translates to technical design, emits the generator call sequence, work packages, deviation register, boundary |
-| `generate` | backend-engineer | runs the feature suite — `mix sp.gen.feature <aggregate>` once the API binds the spgen-rs workspace, otherwise the design's call sequence verbatim — writes no logic, reports every file touched |
+| `generate` | backend-engineer | runs the feature suite — `mix sp.gen.feature <aggregate>` once the API binds the sparch workspace, otherwise the design's call sequence verbatim — writes no logic, reports every file touched |
 | `implement` | backend-engineer ×N, **parallel** | one operation each: fills residual bodies, writes the tests |
 | `review` | software-architect | reviews the constituent as a whole |
 | `adjust` | backend-engineer | applies findings, repairs lost registrations, **commits** |

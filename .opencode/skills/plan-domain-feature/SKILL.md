@@ -156,7 +156,7 @@ the work packages, the deviation register, and the out-of-scope boundary.
 The scope names the suite (`operation`, `endpoint`, `feature`) — what the
 recipes call its slice; the sequence is what that suite runs, call by call —
 one list per suite until the API binds `mix sp.gen.<scope>` commands from the
-spgen-rs workspace.
+sparch workspace.
 
 No module table. No file paths. No diagrams of a standard write or read sequence —
 include one only when the flow is genuinely non-obvious (cross-boundary calls,
