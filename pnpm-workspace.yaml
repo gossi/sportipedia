@@ -75,7 +75,7 @@ catalogs:
     "msw": "^3.0.0"
     "msw-storybook-addon": "^3.0.3"
     vitest: 4.1.11
-    playwright: "1.63.0"
+    playwright: "1.65.1"
   workshop:
     "@storybook/addon-a11y": "^10.6.0"
     "@storybook/addon-docs": "^10.6.0"
@@ -107,4 +107,4 @@ catalogs:
     "better-auth": 1.7.23
     "temporal-polyfill": ^0.3.0
   ai:
-    "@playwright/mcp": "0.0.83"
+    "@playwright/mcp": "0.0.85"
