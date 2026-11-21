@@ -798,7 +798,7 @@ importers:
         version: 1.2.2(prettier@3.9.4)
       '@hono/node-server':
         specifier: ^1.19.0
-        version: 1.19.1(hono@4.9.5)
+        version: 1.19.1(hono@4.13.19)
       '@types/node':
         specifier: ^25.0.3
         version: 25.0.3
@@ -815,8 +815,8 @@ importers:
         specifier: catalog:lint
         version: 10.6.0(jiti@2.7.0)
       hono:
-        specifier: ^4.9.4
-        version: 4.9.5
+        specifier: ^4.13.18
+        version: 4.13.19
       pg:
         specifier: ^8.16.3
         version: 8.16.3
@@ -6118,8 +6118,8 @@ packages:
     resolution: {integrity: sha512-eSmmWE5bZTK2Nou4g0AI3zZ9rswp7GRKoKXS1BLUkvPviOqs4YTN1djQIqrXy9k5gEtdLPy86JjRwsNM9tnDcA==}
     engines: {node: '>=0.10.0'}
 
-  hono@4.9.5:
-    resolution: {integrity: sha512-aLAVl5/67ifNnoFVxnhR89dpmSLsgwBprw/PT671ASwUpJqmd7Ne8KPTQo37DbRZfgpHaHeZ4bPVUvbOkeedMw==}
+  hono@4.13.19:
+    resolution: {integrity: sha512-KmXvQAXwcAHV+muzbIwoJ23niEB5nMoDVr9WcRkU8mvjUECm/1+7v4Jgp7P7a+H6MLFrh+vXrGonGrGS+RQfkA==}
     engines: {node: '>=16.9.0'}
 
   hookable@6.1.1:
@@ -10570,9 +10570,9 @@ snapshots:
     dependencies:
       '@theemo/tokens': 1.0.1
 
-  '@hono/node-server@1.19.1(hono@4.9.5)':
+  '@hono/node-server@1.19.1(hono@4.13.19)':
     dependencies:
-      hono: 4.9.5
+      hono: 4.13.19
 
   '@humanfs/core@0.19.1': {}
 
@@ -14570,7 +14570,7 @@ snapshots:
     dependencies:
       parse-passwd: 1.0.0
 
-  hono@4.9.5: {}
+  hono@4.13.19: {}
 
   hookable@6.1.1: {}
 
