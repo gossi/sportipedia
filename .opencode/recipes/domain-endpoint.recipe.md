@@ -22,7 +22,7 @@ steps:
 
   - id: generate
     agent: backend-engineer
-    skill: use-blueprints
+    skill: use-sparch
     with:
       phase: generate
       scope: web
@@ -33,7 +33,7 @@ steps:
     agent: backend-engineer
     skills:
       - tdd
-      - use-blueprints
+      - use-sparch
     with:
       phase: implement
       scope: web
@@ -54,7 +54,7 @@ steps:
     agent: backend-engineer
     skills:
       - tdd
-      - use-blueprints
+      - use-sparch
     with:
       phase: adjust
       scope: web
@@ -79,7 +79,7 @@ rules.
 ## Structure
 
 | Step | Agent | Does |
-|---|---|---|
+| --- | --- | --- |
 | `design` | software-architect | preflights, translates the operation into endpoint design, emits the generator call sequence, the work package, the deviation register, the boundary |
 | `generate` | backend-engineer | runs the endpoint suite — `mix sp.gen.endpoint <operation>` once the API binds the sparch workspace, otherwise the calls verbatim (view, schemas, controller with route, Bruno) — reports files touched |
 | `implement` | backend-engineer | fills the residual bodies and the endpoint tests, test-first |

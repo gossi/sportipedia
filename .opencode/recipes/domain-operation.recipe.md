@@ -22,7 +22,7 @@ steps:
 
   - id: generate
     agent: backend-engineer
-    skill: use-blueprints
+    skill: use-sparch
     with:
       phase: generate
       scope: domain
@@ -33,7 +33,7 @@ steps:
     agent: backend-engineer
     skills:
       - tdd
-      - use-blueprints
+      - use-sparch
     with:
       phase: implement
       scope: domain
@@ -54,7 +54,7 @@ steps:
     agent: backend-engineer
     skills:
       - tdd
-      - use-blueprints
+      - use-sparch
     with:
       phase: adjust
       scope: domain
@@ -78,7 +78,7 @@ one design — but this stays at your disposal, and it follows the same rules.
 ## Structure
 
 | Step | Agent | Does |
-|---|---|---|
+|  -- -  |  - --  | --- |
 | `design` | software-architect | lints the model, preflights spec against model, translates to technical design, emits the generator call sequence, the work package, the deviation register, the boundary |
 | `generate` | backend-engineer | runs the operation suite — `mix sp.gen.operation <operation>` once the API binds the sparch workspace, otherwise the design's calls verbatim — writes no logic, reports files touched |
 | `implement` | backend-engineer | fills the residual bodies, writes the tests, test-first |

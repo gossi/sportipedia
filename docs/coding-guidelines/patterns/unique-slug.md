@@ -1,6 +1,5 @@
 ---
 invariant: unique-field
-pattern: SpGen.Invariant.UniqueField
 claims: "unique-<field>, where <field> is a field of the citizen"
 ---
 
@@ -12,20 +11,20 @@ parameter, `slug` the common case.
 
 ## Nothing here is hand-written
 
-Generating the command that carries the rule writes all of it, in one run:
+Generating the command that carries the rule writes all of it, in one run
+(`sparch man` covers each generator):
 
-1. `Queries.<DomainObject>BySlug` — the lookup (executable:
-   `SpGen.Blueprint.LookupQuery`),
+1. `Queries.<DomainObject>BySlug` — the lookup (`sparch man lookup_query`),
 2. `<DomainObject>Internal.<domain_object>_by_slug/1` — the accessor, lowering
-   the value before the query (`SpGen.Blueprint.InternalAPI`),
+   the value before the query (`sparch man internal_api`),
 3. `Validators.UniqueSlug` — the validator over that accessor
-   (`SpGen.Blueprint.Validator`),
+   (`sparch man validator`),
 4. the read model with `unique_constraint(:slug)` in its changesets
-   (`SpGen.Blueprint.ReadModel`),
+   (`sparch man read_model`),
 5. `validates :slug, …, by: [function: &UniqueSlug.validate/2]` on the command.
 
 The code below is the reference for **review**, not a template to copy. If the
-generated file differs, the generator is wrong — fix `SpGen.Blueprint`, not the
+generated file differs, the generator is wrong — fix the generator, not the
 file.
 
 ## Contract
@@ -42,9 +41,9 @@ file.
   the reader may skip — and it is what lets the database back uniqueness with a
   **plain** unique index: no case-expression, no functional index, because the
   indexed column already holds one spelling
-  ([migration](../migration.md)).
+  ([migration](#the-migration-half)).
 - The database needs the matching unique index; see
-  [migration](../migration.md).
+  [the migration half](#the-migration-half).
 
 ## The pieces it realizes
 
@@ -90,9 +89,16 @@ defp slug_belongs_to_<domain_object>?(<domain_object>, context) do
 end
 ```
 
+## The migration half
+
+Migrations are operator work (`sparch man migration` states the ownership).
+The unique index the pattern needs is a **plain** index on the stored column —
+no case-expression, no functional index — because the write side already
+lowered the value.
+
 ## Tests
 
-Asserted in the [command's tests](../command.md#tests): duplicate rejected,
+Asserted in the command's tests (`sparch man command`): duplicate rejected,
 unchanged value on edit accepted, a value owned by another record rejected.
 
 ## Learnings

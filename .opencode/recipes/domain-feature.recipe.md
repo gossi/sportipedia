@@ -33,7 +33,7 @@ steps:
 
   - id: generate
     agent: backend-engineer
-    skill: use-blueprints
+    skill: use-sparch
     with:
       phase: generate
       aggregate: ${steps.design.result.aggregate}
@@ -48,7 +48,7 @@ steps:
         - agent: backend-engineer
           skills:
             - tdd
-            - use-blueprints
+            - use-sparch
           with:
             phase: implement
             operation: ${item}
@@ -71,7 +71,7 @@ steps:
     agent: backend-engineer
     skills:
       - tdd
-      - use-blueprints
+      - use-sparch
     with:
       phase: adjust
       aggregate: ${steps.design.result.aggregate}
@@ -91,7 +91,7 @@ whole build of a spec.
 ## Structure
 
 | Step | Agent | Does |
-|---|---|---|
+| --- | --- | --- |
 | `design` | software-architect | lints the model (`esdm lint`) and checks its completeness (`mix sp.check`), preflights spec against model, translates to technical design, emits the generator call sequence, work packages, deviation register, boundary |
 | `generate` | backend-engineer | runs the feature suite — `mix sp.gen.feature <aggregate>` once the API binds the sparch workspace, otherwise the design's call sequence verbatim — writes no logic, reports every file touched |
 | `implement` | backend-engineer ×N, **parallel** | one operation each: fills residual bodies, writes the tests |
@@ -214,4 +214,4 @@ and the commit made.
 ## Handoff
 
 The final artifact is a complete vertical slice: operation(s) + endpoint + tests
-+ docs + Bruno, committed.
+- docs + Bruno, committed.

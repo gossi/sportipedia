@@ -43,10 +43,6 @@ If any answer is "no" or "unsure", STOP and ask.
 
 ## Context for Executing the Skill
 
-- [Respect Code Access Policy](../../code-access-policy.md). **Reading
-  implementation code for patterns or reference is a task failure** in design
-  scope: patterns come from the blueprints and the architecture docs. When you
-  review code, that restriction is lifted — this is the design step.
 - Also load `software-plan-format` for the artifact shape.
 - DO NOT run discovery, DO NOT explore code.
 - If a template seems incomplete, that is a documentation gap — report it, do

@@ -20,6 +20,7 @@ The directory is partially organized around deployment units.
 - [`packages/`](./packages/) - Generic subdomain / Internal packages
 - [`services/`](./services/) - Microserives (generic and core subdomains)
 - [`support/`](./support/) - Supporting subdomain with its software components
+- [`tools/`](./tools/) - Internal tooling to help with development
 
 ## Subdomains
 

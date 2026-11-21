@@ -1,6 +1,5 @@
 ---
 invariant: domain-object-exists
-pattern: SpGen.Invariant.DomainObjectExists
 claims: "<domain-object>-exists, where <domain-object> is the citizen itself and id is one of its fields"
 ---
 
@@ -18,14 +17,14 @@ raises on values it cannot put there.
   internal `x_by_id/1` it calls.
 - A rule naming a *different* domain object — `apparatus-exists`,
   `equipment-exists` on a position — is a precondition on a reference, not on the
-  citizen. It falls through to `SpGen.Invariant.FieldRule` and arrives as a
+  citizen. It falls through to the field-rule resolution and arrives as a
   scaffold validator that raises a `TODO:` marker: the shape of that check is the
   operator's, the rule is the model's. Its contract is
   [Cross-aggregate reference rules](#cross-aggregate-reference-rules); the
   contract below is only for the citizen's own `id`.
 - A rule naming no field at all (an operational precondition such as
-  `no-archive-when-in-use`) is not a validator: it stays in
-  `SpGen.Context.unresolved` and produces nothing, so implement it yourself
+  `no-archive-when-in-use`) is not a validator: it stays in the report's
+  unresolved rules and produces nothing, so implement it yourself
   (validator and `validates … by:` line).
 
 ## Contract
@@ -84,7 +83,7 @@ defmodule Sportipedia.<Subdomain>.<Composite>.<DomainObject>.Validators.<DomainO
 end
 ```
 
-Used from the [command](../command.md):
+Used from the command (`sparch man command`):
 
 ```elixir
   # `allow_blank` keeps the existence check off an id the caller never sent: an
@@ -96,7 +95,7 @@ Used from the [command](../command.md):
 ```
 
 `allow_blank`, never a `def validate(nil, _), do: :ok` clause — see
-[validator](../validator.md#contracts): the skip option belongs to the command
+`sparch man validator`: the skip option belongs to the command
 line, where the rule that owns optionality (`presence`) is visible next to it.
 And `allow_blank`, not `allow_nil`: `Vex.Skipping.skip?/2` checks
 `allow_blank` first and delegates to `Vex.Blank.blank?/1`; with `allow_nil`
@@ -106,8 +105,8 @@ alone the lookup would still run on `""`.
 
 A rule that names a field of the citizen but checks an object of **another**
 aggregate — `equipment-exists` on `catalog-position`, where `apparatusId` and
-`instrumentId` point into equipment — is not this pattern. `SpGen.Invariant`
-hands it to `SpGen.Invariant.FieldRule` as a scaffold: the validator file exists,
+`instrumentId` point into equipment — is not this pattern. The invariant
+resolution hands it to the field rule as a scaffold: the validator file exists,
 its body and its error atom do not. The contract below is what filled them, and
 what the next reference rule copies.
 
@@ -117,7 +116,7 @@ what the next reference rule copies.
   about which kind of equipment.
 - Existing referenced object → `:ok`.
 - Optionality stays on the command's `validates` line (`allow_nil: true`), never a
-  `validate(nil, _)` clause — see [validator](../validator.md#contracts).
+  `validate(nil, _)` clause — see `sparch man validator`.
 - The lookup goes through the referenced constituent's **public API**
   (`Apparatus.read_apparatus/1`), not its internal API and not `Repo`: the check
   crosses a constituent boundary, so it asks the port, not the store.
@@ -134,7 +133,7 @@ it, is in [the finding below](#finding-not_found-as-a-reference-rule-atom).
 
 ## Tests
 
-Asserted in the [command's tests](../command.md#tests): an id that is not in the
+Asserted in the command's tests (`sparch man command`): an id that is not in the
 database is rejected with `:not_found`, a cataloged one validates. Assert the
 rule that speaks, never a crash:
 
@@ -162,7 +161,7 @@ knows — on the citizen's own existence check. A reference into another aggrega
 needs its own atom, see
 [the next finding](#finding-not_found-as-a-reference-rule-atom).
 
-### Finding: `:not_found` as a reference-rule atom
+### Finding: not_found as a reference-rule atom
 
 #### DO NOT
 
