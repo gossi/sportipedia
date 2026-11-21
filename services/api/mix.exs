@@ -40,7 +40,7 @@ defmodule Sportipedia.MixProject do
       {:elixir_uuid, "~> 1.2"},
       {:postgrex, ">= 0.0.0"},
       {:phoenix_html, "~> 4.3"},
-      {:phoenix_live_dashboard, "~> 0.8.7"},
+      {:phoenix_live_dashboard, "~> 0.9.0"},
       {:swoosh, "~> 1.25"},
       {:req, "~> 0.5"},
       {:cachex, "~> 3.6"},
