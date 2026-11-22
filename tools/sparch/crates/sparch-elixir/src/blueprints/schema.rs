@@ -1,5 +1,6 @@
 use sparch_model::ElementKind;
 
+use crate::blueprints::controller::command_edges;
 use crate::blueprints::view::View;
 use crate::context::{Context, Operation};
 use crate::elixir::{ElixirFile, Rank};
@@ -217,8 +218,17 @@ fn response_body(ctx: &Context, which: Which, n: &Names) -> String {
 }
 
 fn request_body(ctx: &Context, n: &Names) -> String {
-    let fields: Vec<&crate::context::Befield> = ctx.fields.iter().filter(|f| !f.internal).collect();
-    let props = fields
+    let edges = command_edges(ctx);
+    let edge_keys: Vec<&String> = edges.iter().map(|(_, key, _)| key).collect();
+    // the attributes are the plain fields; ids that write an edge travel
+    // as linkage, and the resource id lives on `data.id`, never in
+    // `attributes` — a key that references a resource is not an attribute
+    let attrs: Vec<&crate::context::Befield> = ctx
+        .fields
+        .iter()
+        .filter(|f| !f.internal && f.name != "id" && !edge_keys.contains(&&f.name))
+        .collect();
+    let attr_props = attrs
         .iter()
         .map(|f| {
             let nullable = if f.required {
@@ -231,7 +241,7 @@ fn request_body(ctx: &Context, n: &Names) -> String {
                 None => format!("The {}", f.name),
             };
             format!(
-                "      {}: %OpenApiSpex.Schema{{type: {}{nullable}, description: {}}}",
+                "            {}: %OpenApiSpex.Schema{{type: {}{nullable}, description: {}}}",
                 f.name,
                 openapi_type(f),
                 templates::inspect_string(&description)
@@ -239,7 +249,7 @@ fn request_body(ctx: &Context, n: &Names) -> String {
         })
         .collect::<Vec<_>>()
         .join(",\n");
-    let required: Vec<String> = fields
+    let required: Vec<String> = attrs
         .iter()
         .filter(|f| f.required)
         .map(|f| format!(":{}", f.name))
@@ -247,10 +257,34 @@ fn request_body(ctx: &Context, n: &Names) -> String {
     let required_line = if required.is_empty() {
         String::new()
     } else {
-        format!(",\n      required: [{}]", required.join(", "))
+        format!(",\n            required: [{}]", required.join(", "))
+    };
+    let rel_props = edges
+        .iter()
+        .map(|(edge, _, kind)| {
+            let linkage = match kind {
+                sparch_model::RelationKind::ManyToMany => {
+                    "%OpenApiSpex.Schema{type: :array, items: %OpenApiSpex.Schema{type: :object, properties: %{id: %OpenApiSpex.Schema{type: :string}, type: %OpenApiSpex.Schema{type: :string}}}, description: \"The linked resources\"}".to_string()
+                }
+                _ => {
+                    "%OpenApiSpex.Schema{type: :object, nullable: true, properties: %{id: %OpenApiSpex.Schema{type: :string}, type: %OpenApiSpex.Schema{type: :string}}, description: \"The linked resource; null unlinks\"}".to_string()
+                }
+            };
+            format!(
+                "          {edge}: %OpenApiSpex.Schema{{type: :object, properties: %{{\n            data: {linkage}\n          }}}}"
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(",\n");
+    let rel_block = if rel_props.is_empty() {
+        String::new()
+    } else {
+        format!(
+            ",\n        relationships: %OpenApiSpex.Schema{{type: :object, properties: %{{\n{rel_props}\n          }}}}"
+        )
     };
     format!(
-        "@doc \"\"\"\nReturns the OpenAPI schema for the {} request.\n\"\"\"\nOpenApiSpex.schema(%{{\n  title: \"{}\",\n  type: :object,\n  properties: %{{\n{props}\n  }}{required_line}\n}})",
+        "@doc \"\"\"\nReturns the OpenAPI schema for the {} request.\n\"\"\"\nOpenApiSpex.schema(%{{\n  title: \"{}\",\n  type: :object,\n  properties: %{{\n    data: %OpenApiSpex.Schema{{type: :object, properties: %{{\n      type: %OpenApiSpex.Schema{{type: :string, description: \"The resource type\"}},\n      id: %OpenApiSpex.Schema{{type: :string, nullable: true, description: \"The id of the resource to update\"}},\n      attributes: %OpenApiSpex.Schema{{type: :object, properties: %{{\n{attr_props}\n          }}{required_line}}}{rel_block}\n    }}, required: [:type, :attributes]}}\n  }},\n  required: [:data]\n}})",
         ctx.element.name, n.title
     )
 }
@@ -557,7 +591,7 @@ mod tests {
         );
         assert_eq!(
             request,
-            "@doc \"\"\"\nReturns the OpenAPI schema for the create-widget request.\n\"\"\"\nOpenApiSpex.schema(%{\n  title: \"equipment.CreateWidgetRequest\",\n  type: :object,\n  properties: %{\n      title: %OpenApiSpex.Schema{type: :string, description: \"Name of the widget\"},\n      slug: %OpenApiSpex.Schema{type: :string, description: \"URL-friendly unique identifier\"},\n      coachId: %OpenApiSpex.Schema{type: :string, nullable: true, description: \"Owning coach (optional, mutually exclusive with teamId)\"},\n      description: %OpenApiSpex.Schema{type: :string, nullable: true, description: \"Optional description\"},\n      label: %OpenApiSpex.Schema{type: :string, nullable: true, description: \"Short label shown in lists\"},\n      teamId: %OpenApiSpex.Schema{type: :string, nullable: true, description: \"Owning team (optional, mutually exclusive with coachId)\"}\n  },\n      required: [:title, :slug]\n})"
+            "@doc \"\"\"\nReturns the OpenAPI schema for the create-widget request.\n\"\"\"\nOpenApiSpex.schema(%{\n  title: \"equipment.CreateWidgetRequest\",\n  type: :object,\n  properties: %{\n    data: %OpenApiSpex.Schema{type: :object, properties: %{\n      type: %OpenApiSpex.Schema{type: :string, description: \"The resource type\"},\n      id: %OpenApiSpex.Schema{type: :string, nullable: true, description: \"The id of the resource to update\"},\n      attributes: %OpenApiSpex.Schema{type: :object, properties: %{\n            title: %OpenApiSpex.Schema{type: :string, description: \"Name of the widget\"},\n            slug: %OpenApiSpex.Schema{type: :string, description: \"URL-friendly unique identifier\"},\n            coachId: %OpenApiSpex.Schema{type: :string, nullable: true, description: \"Owning coach (optional, mutually exclusive with teamId)\"},\n            description: %OpenApiSpex.Schema{type: :string, nullable: true, description: \"Optional description\"},\n            label: %OpenApiSpex.Schema{type: :string, nullable: true, description: \"Short label shown in lists\"},\n            teamId: %OpenApiSpex.Schema{type: :string, nullable: true, description: \"Owning team (optional, mutually exclusive with coachId)\"}\n          },\n            required: [:title, :slug]}\n    }, required: [:type, :attributes]}\n  },\n  required: [:data]\n})"
         );
 
         let params = render(
@@ -665,5 +699,23 @@ mod tests {
             .find(|u| u.id.label() == label)
             .unwrap_or_else(|| panic!("no unit {label}"))
             .render)()
+    }
+
+    #[test]
+    fn the_request_document_holds_edges_in_relationships_not_attributes() {
+        let body = render(
+            &plan_for("catalog-position", Which::Request).units,
+            "schema_body",
+        );
+        // the edge arrives as linkage keyed by the relation name...
+        assert!(body.contains(
+            "apparatus: %OpenApiSpex.Schema{type: :object, properties: %{\n            data: %OpenApiSpex.Schema{type: :object, nullable: true"
+        ), "{body}");
+        assert!(body.contains("instrument: %OpenApiSpex.Schema{type: :object"), "{body}");
+        // ...and never as an attribute under its id spelling
+        assert!(!body.contains("apparatus_id:"), "{body}");
+        assert!(!body.contains("instrument_id:"), "{body}");
+        // plain fields stay attributes
+        assert!(body.contains("title: %OpenApiSpex.Schema{type: :string, description: \"Name of the position\"}"), "{body}");
     }
 }

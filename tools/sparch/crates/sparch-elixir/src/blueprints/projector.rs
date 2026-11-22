@@ -187,11 +187,6 @@ fn clause_unit(ctx: &Context, event_pascal: &str, effect: Operation) -> Unit {
 }
 
 fn clause(ctx: &Context, effect: Operation, event_pascal: &str) -> String {
-    let read_model = format!("{}ReadModel", Context::pascal(&ctx.constituent));
-    let internal = format!("{}Internal", Context::pascal(&ctx.constituent));
-    let var = ctx.constituent.clone();
-    let label = ctx.element.name.replace('-', "_");
-
     let doc = match effect {
         Operation::Update => format!(
             "Projects an {event_pascal} event to update the {} read model.",
@@ -207,31 +202,154 @@ fn clause(ctx: &Context, effect: Operation, event_pascal: &str) -> String {
         ),
     };
 
-    let body = clause_body(effect, &read_model, &internal, &var, &label, event_pascal);
+    let body = clause_body(ctx, effect, event_pascal);
     format!(
         "@doc \"\"\"\n{doc}\n\"\"\"\nproject %{event_pascal}{{}} = event, _metadata, fn multi ->\n{}\nend",
         templates::indent(body.trim_end(), 2)
     )
 }
 
+/// One set edge an event writes: the clause label, the relation
+/// property, the event's array field, the join storage, and the two
+/// foreign-key columns. Only plain (not `join_model`) `many_to_many`
+/// can be written as a set; a join model owns its rows through its own
+/// commands and validate refuses a parent set for those.
+struct SetEdge {
+    clause: String,
+    property: String,
+    field: String,
+    table: String,
+    owner_col: String,
+    other_col: String,
+    prefix: String,
+}
+
+fn replace_units(ctx: &Context) -> Vec<SetEdge> {
+    let Some(rm) = &ctx.read_model else {
+        return Vec::new();
+    };
+    let clause = ctx.element.name.replace('-', "_");
+    let mut out = Vec::new();
+    for f in ctx.fields.iter().filter(|f| f.name != "id") {
+        for p in sparch_model::fields(rm) {
+            let Some(rel) = &p.relation else { continue };
+            if rel.kind != sparch_model::RelationKind::ManyToMany || rel.join_model.is_some() {
+                continue;
+            }
+            if !sparch_model::field_matches_property(&f.name, &p) {
+                continue;
+            }
+            let table = rel.join_table.clone().unwrap_or_else(|| {
+                super::read_model::derive_join_table(&rm.name, &rel.to)
+            });
+            out.push(SetEdge {
+                clause: clause.clone(),
+                property: p.name.clone(),
+                field: f.name.clone(),
+                table,
+                owner_col: format!(
+                    "{}_id",
+                    sparch_model::Name::parse(&rm.name).render(sparch_model::Case::Snake)
+                ),
+                other_col: format!(
+                    "{}_id",
+                    sparch_model::Name::parse(&rel.to).render(sparch_model::Case::Snake)
+                ),
+                prefix: ctx.subdomain.clone(),
+            });
+        }
+    }
+    out
+}
+
+/// One `Ecto.Multi.run` step replacing (or, on a delete, clearing) the
+/// link rows of one set edge. Delete then insert is replay-safe because
+/// the event carries the whole set. `at` is the indentation of the
+/// surrounding pipeline step.
+fn replace_step(edge: &SetEdge, at: usize, cleanup_only: bool) -> String {
+    let SetEdge {
+        clause,
+        property,
+        field,
+        table,
+        owner_col,
+        other_col,
+        prefix,
+    } = edge;
+    let pad = " ".repeat(at);
+    let inner = " ".repeat(at + 2);
+    let name = if cleanup_only {
+        format!("{clause}_{property}_cleanup")
+    } else {
+        format!("{clause}_{property}")
+    };
+    let body = if cleanup_only {
+        format!(
+            "{inner}  {{:ok, repo.delete_all(from(r in \"{table}\", where: r.{owner_col} == ^event.id), prefix: \"{prefix}\")}}\n{inner}end)"
+        )
+    } else {
+        format!(
+            "{inner}  rows = Enum.map(event.{field}, fn id -> %{{ {owner_col}: event.id, {other_col}: id }} end)\n{inner}  {{_, nil}} = repo.delete_all(from(r in \"{table}\", where: r.{owner_col} == ^event.id), prefix: \"{prefix}\")\n{inner}  {{:ok, repo.insert_all(\"{table}\", rows, prefix: \"{prefix}\")}}\n{inner}end)"
+        )
+    };
+    format!("\n{pad}|> Ecto.Multi.run(:{name}, fn repo, _ ->\n{body}")
+}
+
 fn clause_body(
+    ctx: &Context,
     effect: Operation,
-    read_model: &str,
-    internal: &str,
-    var: &str,
-    label: &str,
     event_pascal: &str,
 ) -> String {
+    let read_model = format!("{}ReadModel", Context::pascal(&ctx.constituent));
+    let internal = format!("{}Internal", Context::pascal(&ctx.constituent));
+    let var = ctx.constituent.clone();
+    let label = ctx.element.name.replace('-', "_");
+    let renames = ctx.column_renames();
+    let replaces = replace_units(ctx);
+
+    // the projector's single translation: event keys whose relation
+    // stores into an overridden column. A derived column equals the event
+    // key and produces no step, so unchanged models keep today's text.
+    let mut apply = String::new();
+    for (field, column) in &renames {
+        apply.push_str(&format!(
+            " |> Map.put(:{column}, event.{field}) |> Map.delete(:{field})"
+        ));
+    }
     match effect {
-        Operation::Update => format!(
-            "case {internal}.{var}_by_id(event.id) do\n  nil ->\n    multi\n\n  %{read_model}{{}} = {var} ->\n    attrs = {event_pascal}.get_changes(event)\n\n    multi\n    |> Ecto.Multi.update(\n      :{label},\n      {read_model}.update_changeset({var}, attrs)\n    )\nend"
-        ),
-        Operation::Delete => format!(
-            "case {internal}.{var}_by_id(event.id) do\n  nil ->\n    multi\n\n  %{read_model}{{}} = {var} ->\n    multi\n    |> Ecto.Multi.delete(:{label}, {var})\nend"
-        ),
-        _ => format!(
-            "multi\n|> Ecto.Multi.insert(\n  :{label},\n  {read_model}.insert_changeset(%{read_model}{{}}, Map.from_struct(event))\n)"
-        ),
+        Operation::Update => {
+            let mut steps = String::new();
+            for edge in &replaces {
+                steps.push_str(&replace_step(edge, 4, false));
+            }
+            format!(
+                "case {internal}.{var}_by_id(event.id) do\n  nil ->\n    multi\n\n  %{read_model}{{}} = {var} ->\n    attrs = {event_pascal}.get_changes(event){apply}\n\n    multi\n    |> Ecto.Multi.update(\n      :{label},\n      {read_model}.update_changeset({var}, attrs)\n    ){steps}\nend"
+            )
+        }
+        Operation::Delete => {
+            let mut steps = String::new();
+            for edge in &replaces {
+                steps.push_str(&replace_step(edge, 4, true));
+            }
+            format!(
+                "case {internal}.{var}_by_id(event.id) do\n  nil ->\n    multi\n\n  %{read_model}{{}} = {var} ->\n    multi\n    |> Ecto.Multi.delete(:{label}, {var}){steps}\nend"
+            )
+        }
+        _ => {
+            let mut steps = String::new();
+            for edge in &replaces {
+                steps.push_str(&replace_step(edge, 0, false));
+            }
+            if renames.is_empty() {
+                format!(
+                    "multi\n|> Ecto.Multi.insert(\n  :{label},\n  {read_model}.insert_changeset(%{read_model}{{}}, Map.from_struct(event))\n){steps}"
+                )
+            } else {
+                format!(
+                    "attrs = event |> Map.from_struct(){apply}\n\nmulti\n|> Ecto.Multi.insert(\n  :{label},\n  {read_model}.insert_changeset(%{read_model}{{}}, attrs)\n){steps}"
+                )
+            }
+        }
     }
 }
 
@@ -420,5 +538,80 @@ mod tests {
         for unit in &units_for("widget-created") {
             assert!((unit.check)(&file), "{} must read present", unit.id.label());
         }
+    }
+
+    #[test]
+    fn a_column_override_renames_the_event_key_in_the_create_clause() {
+        let ctx = ctx_for("position-cataloged");
+        let renames = ctx.column_renames();
+        assert_eq!(
+            renames,
+            vec![(
+                "instrument_id".to_string(),
+                "installed_instrument_id".to_string()
+            )]
+        );
+        assert!(
+            !renames.iter().any(|(field, _)| field == "apparatus_id"),
+            "the derived column is the event key itself — no translation"
+        );
+        let body = clause_body(&ctx, Operation::Create, "PositionCataloged");
+        assert!(
+            body.contains(
+                "attrs = event |> Map.from_struct() |> Map.put(:installed_instrument_id, event.instrument_id) |> Map.delete(:instrument_id)"
+            ),
+            "{body}"
+        );
+        assert!(
+            body.contains("insert_changeset(%PositionReadModel{}, attrs)"),
+            "{body}"
+        );
+    }
+
+    #[test]
+    fn the_update_clause_renames_through_the_changes_pipeline() {
+        let ctx = ctx_for("position-edited");
+        let body = clause_body(&ctx, Operation::Update, "PositionEdited");
+        assert!(
+            body.contains(
+                "attrs = PositionEdited.get_changes(event) |> Map.put(:installed_instrument_id, event.instrument_id) |> Map.delete(:instrument_id)"
+            ),
+            "{body}"
+        );
+    }
+
+    #[test]
+    fn a_set_edge_event_replaces_the_link_rows_in_the_multi() {
+        let ctx = ctx_for("apparatus-tagged");
+        let units = Projector.plans(&ctx).remove(0).units;
+        let clause = units
+            .iter()
+            .find(|u| u.id.label() == "project apparatus-tagged")
+            .expect("clause");
+        let text = (clause.render)();
+        assert!(
+            text.contains("|> Ecto.Multi.run(:apparatus_tagged_tags, fn repo, _ ->"),
+            "{text}"
+        );
+        assert!(
+            text.contains("rows = Enum.map(event.tag_ids, fn id -> %{ apparatus_id: event.id, tag_id: id } end)"),
+            "{text}"
+        );
+        assert!(
+            text.contains("{_, nil} = repo.delete_all(from(r in \"apparatuses_tags\", where: r.apparatus_id == ^event.id), prefix: \"catalog\")"),
+            "{text}"
+        );
+        assert!(
+            text.contains("{:ok, repo.insert_all(\"apparatuses_tags\", rows, prefix: \"catalog\")}"),
+            "{text}"
+        );
+    }
+
+    #[test]
+    fn an_event_without_set_edges_renders_no_replace_step() {
+        let ctx = ctx_for("widget-created");
+        let text = clause(&ctx, Operation::Create, "WidgetCreated");
+        assert!(!text.contains("Multi.run"), "{text}");
+        assert!(!text.contains("attrs ="), "no rename either: {text}");
     }
 }

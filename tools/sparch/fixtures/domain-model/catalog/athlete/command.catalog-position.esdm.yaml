@@ -21,22 +21,20 @@ data:
     description:
       type: string
       description: "Optional description"
-    apparatusId:
+    apparatus_id:
       type: string
       format: uuid
-      x-esdm-relation: { to: apparatus, cardinality: one }
-      description: "Reference to apparatus (optional, mutually exclusive with instrumentId)"
-    instrumentId:
+      description: "Reference to apparatus (optional, mutually exclusive with instrument_id)"
+    instrument_id:
       type: string
       format: uuid
-      x-esdm-relation: { to: instrument, cardinality: one }
-      description: "Reference to instrument (optional, mutually exclusive with apparatusId)"
+      description: "Reference to instrument (optional, mutually exclusive with apparatus_id)"
   required:
     - title
     - slug
 constraints:
   - name: equipment-exists
-    rule: If apparatusId or instrumentId is provided, the referenced equipment must exist
+    rule: If apparatus_id or instrument_id is provided, the referenced equipment must exist
 publishes:
   - position-cataloged
 actors:

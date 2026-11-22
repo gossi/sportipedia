@@ -70,14 +70,91 @@ impl Controller {
             ctx.element.name,
             operation_spec(ctx)
         );
-        format!(
+        let action = format!(
             "{}\n\n@spec {}(Plug.Conn.t(), map()) :: Plug.Conn.t()\ndef {}(conn, _) do\n{}\nend\n",
             header.trim_end(),
             op,
             op,
             templates::indent(action_body(ctx, &op, &api).trim_end(), 2)
-        )
+        );
+        // a command whose body is a JSON:API resource document gets its
+        // private translation: attributes plus the linkage of every
+        // edge the command data writes, flattened to command keys
+        match &ctx.element.kind {
+            ElementKind::Command if ctx.operation != Some(Operation::Delete) => {
+                format!("{action}\n{}", translation(ctx, &op))
+            }
+            _ => action,
+        }
     }
+}
+
+/// The edges a command's data fields write, read through the element's
+/// read model: `(relationship key, command param key, kind)`. A field
+/// that correlates to no relation is a plain attribute and passes through
+/// untouched.
+pub(crate) fn command_edges(ctx: &Context) -> Vec<(String, String, sparch_model::RelationKind)> {
+    let Some(rm) = &ctx.read_model else {
+        return Vec::new();
+    };
+    let rm_fields = sparch_model::fields(rm);
+    let mut out: Vec<(String, String, sparch_model::RelationKind)> = Vec::new();
+    for f in ctx.fields.iter().filter(|f| f.name != "id" && !f.internal) {
+        for p in rm_fields.iter().filter(|p| p.relation.is_some()) {
+            let Some(relation) = &p.relation else {
+                continue;
+            };
+            if matches!(
+                relation.kind,
+                sparch_model::RelationKind::BelongsTo | sparch_model::RelationKind::ManyToMany
+            ) && sparch_model::field_matches_property(&f.name, p)
+            {
+                out.push((p.name.clone(), f.name.clone(), relation.kind));
+                break;
+            }
+        }
+    }
+    out
+}
+
+/// `defp {op}_params/1` — the document-to-parameters translation:
+/// attributes carry over, the id arrives from the path or the document,
+/// and every edge contributes the linkage's id (or id list) under the
+/// command key. This is the single place the JSON:API wire meets the
+/// command's id-speaking public API.
+fn translation(ctx: &Context, op: &str) -> String {
+    let edges = command_edges(ctx);
+    let mut text = format!(
+        "defp {op}_params(%{{\"data\" => data}} = params) do\n  base = data[\"attributes\"] || %{{}}\n"
+    );
+    if edges.is_empty() {
+        text.push_str(
+            "\n  case params[\"id\"] || data[\"id\"] do\n    nil -> base\n    id -> Map.put(base, \"id\", id)\n  end\nend",
+        );
+        return text;
+    }
+    text.push_str(
+        "\n  base =\n    case params[\"id\"] || data[\"id\"] do\n      nil -> base\n      id -> Map.put(base, \"id\", id)\n    end\n",
+    );
+    for (edge, key, kind) in &edges {
+        match kind {
+            sparch_model::RelationKind::BelongsTo => text.push_str(&format!(
+                "\n  {key} = get_in(data, [\"relationships\", \"{edge}\", \"data\", \"id\"])"
+            )),
+            _ => text.push_str(&format!(
+                "\n  {key} =\n    case get_in(data, [\"relationships\", \"{edge}\", \"data\"]) do\n      nil -> nil\n      links -> Enum.map(links, & &1[\"id\"])\n    end"
+            )),
+        }
+    }
+    let calls: Vec<String> = edges
+        .iter()
+        .map(|(_, key, _)| format!("Map.put(\"{key}\", {key})"))
+        .collect();
+    text.push_str(&format!(
+        "\n\n  base\n  |> {}\nend",
+        calls.join("\n  |> ")
+    ));
+    text
 }
 
 impl Blueprint for Controller {
@@ -501,10 +578,10 @@ fn action_body(ctx: &Context, op: &str, api: &str) -> String {
             "case {api}.{op}(conn.params[\"id\"]) do\n  :ok ->\n    send_resp(conn, :no_content, \"\")\n\n  {{:error, errors}} ->\n    {{:error, errors}}\nend\n"
         ),
         (ElementKind::Command, Some(Operation::None)) => format!(
-            "case {api}.{op}(conn.params) do\n  :ok ->\n    send_resp(conn, :no_content, \"\")\n\n  {{:error, errors}} ->\n    {{:error, errors}}\nend\n"
+            "case {api}.{op}({op}_params(conn.params)) do\n  :ok ->\n    send_resp(conn, :no_content, \"\")\n\n  {{:error, errors}} ->\n    {{:error, errors}}\nend\n"
         ),
         (ElementKind::Command, _) => format!(
-            "with {{:ok, {var}}} <- {api}.{op}(conn.params) do\n  conn\n  |> put_view(json: {view})\n  |> render(\"show.json\", %{{data: {var}}})\nend\n"
+            "with {{:ok, {var}}} <- {api}.{op}({op}_params(conn.params)) do\n  conn\n  |> put_view(json: {view})\n  |> render(\"show.json\", %{{data: {var}}})\nend\n"
         ),
         (ElementKind::Query, _) => {
             if ctx.collection() {
@@ -622,7 +699,7 @@ mod tests {
         let units = units_for("create-widget");
         assert_eq!(
             render(&units, "operation create_widget"),
-            "@doc \"\"\"\nHandles the create-widget request.\n\"\"\"\noperation :create_widget,\n  summary: \"Catalogs a new widget in the equipment catalog\",\n      request_body: {\"The widget attributes\", \"application/json\", CreateWidgetRequest},\n  responses: [\n        ok: {\"The widget\", \"application/vnd.api+json\", WidgetResponse},\n        unprocessable_entity: %Reference{\"$ref\": \"#/components/responses/unprocessable_entity\"},\n        unauthorized: %Reference{\"$ref\": \"#/components/responses/unauthorized\"},\n        forbidden: %Reference{\"$ref\": \"#/components/responses/forbidden\"}\n  ]\n\n@spec create_widget(Plug.Conn.t(), map()) :: Plug.Conn.t()\ndef create_widget(conn, _) do\n  with {:ok, widget} <- Widget.create_widget(conn.params) do\n    conn\n    |> put_view(json: WidgetView)\n    |> render(\"show.json\", %{data: widget})\n  end\nend"
+            "@doc \"\"\"\nHandles the create-widget request.\n\"\"\"\noperation :create_widget,\n  summary: \"Catalogs a new widget in the equipment catalog\",\n      request_body: {\"The widget attributes\", \"application/json\", CreateWidgetRequest},\n  responses: [\n        ok: {\"The widget\", \"application/vnd.api+json\", WidgetResponse},\n        unprocessable_entity: %Reference{\"$ref\": \"#/components/responses/unprocessable_entity\"},\n        unauthorized: %Reference{\"$ref\": \"#/components/responses/unauthorized\"},\n        forbidden: %Reference{\"$ref\": \"#/components/responses/forbidden\"}\n  ]\n\n@spec create_widget(Plug.Conn.t(), map()) :: Plug.Conn.t()\ndef create_widget(conn, _) do\n  with {:ok, widget} <- Widget.create_widget(create_widget_params(conn.params)) do\n    conn\n    |> put_view(json: WidgetView)\n    |> render(\"show.json\", %{data: widget})\n  end\nend\n\ndefp create_widget_params(%{\"data\" => data} = params) do\n  base = data[\"attributes\"] || %{}\n\n  case params[\"id\"] || data[\"id\"] do\n    nil -> base\n    id -> Map.put(base, \"id\", id)\n  end\nend"
         );
         assert_eq!(
             render(&units_for("archive-widget"), "operation archive_widget"),
@@ -687,5 +764,25 @@ mod tests {
             !(find("alias Sportipedia.Catalog.Equipment.Widget").check)(&empty),
             "the public API alias is its own fact"
         );
+    }
+
+    #[test]
+    fn the_command_with_edges_flattens_their_linkage_to_command_keys() {
+        let op = render(&units_for("catalog-position"), "operation catalog_position");
+        assert!(
+            op.contains("Position.catalog_position(catalog_position_params(conn.params))"),
+            "{op}"
+        );
+        assert!(
+            op.contains("apparatus_id = get_in(data, [\"relationships\", \"apparatus\", \"data\", \"id\"])"),
+            "{op}"
+        );
+        assert!(
+            op.contains("instrument_id = get_in(data, [\"relationships\", \"instrument\", \"data\", \"id\"])"),
+            "{op}"
+        );
+        assert!(op.contains(
+            "|> Map.put(\"apparatus_id\", apparatus_id)\n  |> Map.put(\"instrument_id\", instrument_id)\nend"
+        ), "{op}");
     }
 }

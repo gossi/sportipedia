@@ -22,11 +22,11 @@ data:
     description:
       type: string
       description: "Optional description"
-    apparatusId:
+    apparatus_id:
       type: string
       format: uuid
       description: "Reference to apparatus (optional)"
-    instrumentId:
+    instrument_id:
       type: string
       format: uuid
       description: "Reference to instrument (optional)"

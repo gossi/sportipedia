@@ -32,6 +32,8 @@ pub enum Cmd {
     Man(ManArgs),
     /// where generated code lives (location) or what it is named (name)
     Arch(ArchArgs),
+    /// the reference migration of a read model, as the model states it
+    Migration(MigrationArgs),
     /// the capability tree as text
     Capabilities(CapabilityArgs),
     /// start the MCP server on stdio (read-only tools)
@@ -140,6 +142,18 @@ pub enum Question {
 }
 
 #[derive(Args)]
+pub struct MigrationArgs {
+    /// the read model: esdm: reference, *.esdm.yaml, kind.name, or bare name
+    pub element: String,
+    /// model root relative to --root, default docs/domain-model
+    #[arg(long)]
+    pub model: Option<String>,
+    /// repo root, default inferred from the current directory
+    #[arg(long)]
+    pub root: Option<String>,
+}
+
+#[derive(Args)]
 pub struct CapabilityArgs {
     /// limit the tree to one language
     #[arg(long)]
@@ -152,6 +166,7 @@ pub fn run(cli: Cli, cwd: &Path) -> i32 {
         Cmd::Validate(args) => run_validate(&args, cwd),
         Cmd::Man(args) => run_man(&args, cwd),
         Cmd::Arch(args) => run_arch(&args, cwd),
+        Cmd::Migration(args) => run_migration(&args, cwd),
         Cmd::Capabilities(args) => {
             print!(
                 "{}",
@@ -190,6 +205,24 @@ fn run_validate(args: &ValidateArgs, cwd: &Path) -> i32 {
                 println!("{line}");
             }
             if report.complete { 0 } else { 1 }
+        }
+    }
+}
+
+fn run_migration(args: &MigrationArgs, cwd: &Path) -> i32 {
+    match crate::migration::run(&crate::migration::Options {
+        element: args.element.clone(),
+        repo_root: args.root.as_deref().map(PathBuf::from),
+        model: args.model.clone(),
+        cwd: cwd.to_path_buf(),
+    }) {
+        Err(message) => {
+            eprintln!("error: {message}");
+            1
+        }
+        Ok(text) => {
+            println!("{text}");
+            0
         }
     }
 }

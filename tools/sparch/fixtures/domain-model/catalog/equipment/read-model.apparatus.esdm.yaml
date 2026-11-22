@@ -9,6 +9,7 @@ metadata:
     spgen.operation.apparatus-cataloged: create
     spgen.operation.apparatus-edited: update
     spgen.operation.apparatus-archived: delete
+    spgen.operation.apparatus-tagged: update
 projections:
   - boundedContext: sport
     aggregate: apparatus
@@ -22,6 +23,10 @@ projections:
     aggregate: apparatus
     event: apparatus-archived
     rule: "Delete the apparatus"
+  - boundedContext: sport
+    aggregate: apparatus
+    event: apparatus-tagged
+    rule: "Replace the tag set stored in the link between apparatus and tag"
 schema:
   type: object
   properties:
@@ -38,6 +43,25 @@ schema:
     description:
       type: string
       description: "Optional description"
+    positions:
+      type: array
+      items:
+        type: string
+        format: uuid
+      x-esdm-relation: { to: position, kind: has_many, inverse: apparatus }
+      description: "Positions performed on this apparatus"
+    certification:
+      type: string
+      format: uuid
+      x-esdm-relation: { to: apparatus-certification, kind: has_one, inverse: apparatus }
+      description: "The safety certification this apparatus holds"
+    tags:
+      type: array
+      items:
+        type: string
+        format: uuid
+      x-esdm-relation: { to: tag, kind: many_to_many, inverse: apparatuses }
+      description: "Tags classifying this apparatus"
   required:
     - id
     - title

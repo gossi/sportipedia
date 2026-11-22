@@ -23,7 +23,10 @@ pub use citizen::{
     RelationView, ts_literal,
 };
 pub use element::{Element, ElementKind};
-pub use fields::{Cardinality, Field, Relation, fields};
+pub use fields::{
+    Field, Relation, RelationKind, column_of, field_matches_property, fields, has_id_tail,
+    malformed_relation, relation_column,
+};
 pub use fixtures::{
     FixtureSpec, examples_of, fixture_key, parse_key, referenced_keys,
     validate as validate_examples,
@@ -32,4 +35,4 @@ pub use invariants::{
     Validator, ValidatorKind, resolve as resolve_invariant, resolve_all as resolve_invariants,
 };
 pub use model::{Model, ResolveError};
-pub use naming::{Case, Name, pluralize};
+pub use naming::{Case, Name, pluralize, singularize};

@@ -84,7 +84,8 @@ impl std::fmt::Display for ContextError {
 #[allow(dead_code)]
 /// A model field as the BE sees it: the canonical `sparch_model` field plus
 /// the `internal` flag the create flow carries (the id is dispatched, not
-/// provided by the caller).
+/// provided by the caller) and the relation keyword, which is what tells
+/// the schema blueprint to write an association instead of a plain field.
 #[derive(Clone)]
 pub struct Befield {
     pub name: String,
@@ -93,6 +94,7 @@ pub struct Befield {
     pub description: Option<String>,
     pub required: bool,
     pub internal: bool,
+    pub relation: Option<sparch_model::Relation>,
 }
 
 impl Befield {
@@ -104,6 +106,26 @@ impl Befield {
             description: f.description.clone(),
             required: f.required,
             internal: false,
+            relation: f.relation.clone(),
+        }
+    }
+
+    /// Whether this field's relation carries the parent side of an edge:
+    /// no database field, never cast, rendered as an association macro.
+    pub fn is_virtual(&self) -> bool {
+        self.relation
+            .as_ref()
+            .is_some_and(|r| r.kind.is_virtual())
+    }
+
+    /// The database field a changeset consumes for this column: the
+    /// relation's column on the id-carrying kind, the name otherwise.
+    pub fn column(&self) -> String {
+        match &self.relation {
+            Some(relation) if relation.kind.carries_column() => {
+                sparch_model::column_of(&self.name, relation)
+            }
+            _ => self.name.clone(),
         }
     }
 }
@@ -231,6 +253,71 @@ impl Context {
             .find(|(event, _)| event == event_name)
             .and_then(|(_, effect)| effect)
             .and_then(|word| Operation::parse(&word))
+    }
+
+    /// The relation keyword behind a command or event data field: the
+    /// read model's `belongs_to` property that the field's name
+    /// correlates to (`apparatus_id` writes the edge `apparatus`), with
+    /// the database field it lands in. The projector and the controller
+    /// translation are the only consumers — the column name must not
+    /// escape above them.
+    pub fn relation_for_data_field(&self, data_field: &str) -> Option<(Field, String)> {
+        let rm = self.read_model.as_ref()?;
+        let edge = sparch_model::fields(rm).into_iter().find(|f| {
+            f.relation
+                .as_ref()
+                .is_some_and(|r| r.kind == sparch_model::RelationKind::BelongsTo)
+                && sparch_model::field_matches_property(data_field, f)
+        })?;
+        let column = sparch_model::relation_column(&edge).unwrap_or_else(|| edge.name.clone());
+        Some((edge, column))
+    }
+
+    /// The command's data fields that write a relation: `(edge property
+    /// name, command data field name)` in data-field order — the JSON:API
+    /// linkage key together with the command key it flattens into.
+    pub fn command_relations(&self) -> Vec<(String, String)> {
+        self.fields
+            .iter()
+            .filter(|f| f.name != "id" && !f.internal)
+            .filter_map(|f| {
+                let (edge, _) = self.relation_for_data_field(&f.name)?;
+                Some((edge.name.clone(), f.name.clone()))
+            })
+            .collect()
+    }
+
+    /// The projector's single translation: event data fields whose
+    /// relation stores into a database field that differs from the event
+    /// key. `(event field, column)` in field order; a derived column is
+    /// the same string as the event key and never appears here. This is
+    /// the only place a `column` override is read outside the schema.
+    pub fn column_renames(&self) -> Vec<(String, String)> {
+        self.fields
+            .iter()
+            .filter(|f| f.name != "id" && !f.internal)
+            .filter_map(|f| {
+                let (_, column) = self.relation_for_data_field(&f.name)?;
+                (f.name != column).then(|| (f.name.clone(), column))
+            })
+            .collect()
+    }
+
+    /// The context of a related read model: its own location, read from
+    /// the model layout, so module and path templates render for the
+    /// target rather than for this element. `None` when the name does not
+    /// resolve — the integrity checks report that, the blueprint skips it.
+    pub fn target_context(&self, read_model_name: &str) -> Option<Context> {
+        let element = self.model.find(ElementKind::ReadModel, read_model_name)?;
+        Context::build(
+            &self.model,
+            &element,
+            &ContextOptions {
+                repo_root: self.repo_root.clone(),
+                ..Default::default()
+            },
+        )
+        .ok()
     }
 
     /// The module Pascal form of a kebab name (PublicAPI, ReadModel, …).
@@ -881,6 +968,7 @@ fn generated_id(aggregate: Option<&Element>) -> Option<Befield> {
         description: Some("Unique identifier".to_string()),
         required: true,
         internal: false,
+        relation: None,
     })
 }
 

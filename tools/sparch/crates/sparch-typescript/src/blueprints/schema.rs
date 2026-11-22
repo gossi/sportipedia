@@ -130,12 +130,19 @@ fn schema(citizen: &Citizen, schema_const: &str) -> String {
         let Some(relation) = &property.relation else {
             continue;
         };
-        let kind = match relation.cardinality {
-            sparch_model::Cardinality::One => "belongsTo",
-            sparch_model::Cardinality::Many => "hasMany",
+        // the warpdrive field kind reads off the relation kind: the
+        // object-holding kinds (`belongs_to`, and `has_one` per
+        // WarpDrive's one-to-one guidance, which uses belongsTo on both
+        // sides) are 'belongsTo'; the collection kinds are 'hasMany'
+        let kind = if relation.kind.is_collection() {
+            "hasMany"
+        } else {
+            "belongsTo"
         };
+        // the inverse is the far property's citizen name: the ESDM key
+        // camelized, so it matches the property it names
         let inverse = match &relation.inverse {
-            Some(name) => format!("'{name}'"),
+            Some(name) => format!("'{}'", Name::parse(name).render(Case::Camel)),
             None => "null".to_string(),
         };
         text.push_str(&format!(
@@ -180,4 +187,70 @@ fn barrel_create(citizen: &Citizen, configure_fn: &str, schema_const: &str) -> S
     text.push_str("\n// Modules\n\n// Routes\n\n// Data\n");
     text.push_str(&configure_fn_text(configure_fn, schema_const));
     text
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sparch_model::Model;
+    use std::path::{Path, PathBuf};
+
+    fn corpus() -> PathBuf {
+        Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../../fixtures/domain-model")
+            .canonicalize()
+            .expect("shared fixture corpus")
+    }
+
+    fn schema_for(name: &str) -> String {
+        let model = Model::load(&corpus());
+        let element = model
+            .resolve(&format!("read-model.{name}"), &[])
+            .expect("read model");
+        let citizen = Citizen::build(&model, &element).expect("citizen");
+        schema(&citizen, &schema_const(&citizen))
+    }
+
+    #[test]
+    fn belongs_to_names_the_key_and_inverts_by_name() {
+        let text = schema_for("position");
+        // the edge property keeps its key name, its type is the target,
+        // and the declared inverse is camelled to the far property
+        assert!(
+            text.contains("kind: 'belongsTo',\n      name: 'apparatus',\n      type: 'apparatus',")
+        );
+        assert!(text.contains("options: { async: false, inverse: 'positions' }"));
+        // a unidirectional edge keeps the explicit null and its eslint note
+        assert!(text.contains("inverse: null"));
+        assert!(text.contains("WarpDrive requires an explicit null inverse"));
+    }
+
+    #[test]
+    fn collection_kinds_render_has_many_and_has_one_the_warpdrive_way() {
+        let text = schema_for("apparatus");
+        // has_many reads as a warpdrive hasMany, bound by its inverse
+        assert!(
+            text.contains("kind: 'hasMany',\n      name: 'positions',\n      type: 'position',")
+        );
+        assert!(text.contains("options: { async: false, inverse: 'apparatus' }"));
+        // has_one is a one-to-one: warpdrive speaks belongsTo on both sides
+        assert!(
+            text.contains("kind: 'belongsTo',\n      name: 'certification',\n      type: 'apparatus-certification',")
+        );
+        // many_to_many is a hasMany over the plain derived join table
+        assert!(
+            text.contains("kind: 'hasMany',\n      name: 'tags',\n      type: 'tag',")
+        );
+        assert!(text.contains("inverse: 'apparatuses'"));
+    }
+
+    #[test]
+    fn ids_stay_attributes_relations_never_are() {
+        let text = schema_for("position");
+        // no relation renders as an attribute, and no raw id column
+        // reaches the frontend schema at all
+        assert!(!text.contains("name: 'apparatusId'"));
+        assert!(!text.contains("name: 'apparatus_id'"));
+        assert!(!text.contains("kind: 'attribute', name: 'apparatus'"));
+    }
 }

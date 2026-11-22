@@ -22,12 +22,46 @@ impl View {
         ctx.fields
             .iter()
             .filter(|f| !matches!(f.name.as_str(), "id" | "inserted_at" | "updated_at"))
+            // a relation is never an attribute — the linkage carries it,
+            // the raw id column must not appear on the wire
+            .filter(|f| f.relation.is_none())
             .map(|f| format!(":{}", f.name))
             .collect()
     }
 
     pub fn view_path(ctx: &Context) -> String {
         ctx.render_or_panic("<-subdomain>/<composite>/<domain-object>s")
+    }
+
+    /// The view's edges: `(relationship key, far view module, short name)`
+    /// in field order, for every relation of the read model — including
+    /// the parent-side virtual kinds, which are precisely the collections
+    /// a compound document sideloads. `None` target (unresolved) is
+    /// skipped; the integrity findings already reported it.
+    pub fn relationships(ctx: &Context) -> Vec<(String, String, String)> {
+        let mut out: Vec<(String, String, String)> = Vec::new();
+        for f in ctx.fields.iter().filter(|f| f.name != "id") {
+            let Some(relation) = &f.relation else {
+                continue;
+            };
+            let Some(tctx) = ctx.target_context(&relation.to) else {
+                continue;
+            };
+            let module = tctx.render_or_panic(MODULE);
+            let short = module.rsplit('.').next().unwrap_or(&module).to_string();
+            out.push((f.name.clone(), module, short));
+        }
+        out
+    }
+
+    fn relationships_text(ctx: &Context) -> String {
+        let entries = View::relationships(ctx);
+        let pairs = entries
+            .iter()
+            .map(|(name, _, short)| format!("{name}: {short}"))
+            .collect::<Vec<_>>()
+            .join(", ");
+        format!("def relationships, do: [{pairs}]")
     }
 }
 
@@ -68,7 +102,7 @@ fn units(ctx: &Context) -> Vec<Unit> {
     let use_text = format!("use JSONAPI.View, type: \"{}\"", ctx.constituent);
     let path_text = format!("def path, do: \"{}\"", View::view_path(ctx));
     let fields_text = format!("def fields, do: [{}]", View::view_fields(ctx).join(", "));
-    vec![
+    let mut units = vec![
         Unit {
             id: UnitId::Moduledoc,
             check: Box::new(|f| f.has_moduledoc()),
@@ -107,7 +141,41 @@ fn units(ctx: &Context) -> Vec<Unit> {
             requires: Vec::new(),
             stale: None,
         },
-    ]
+    ];
+
+    // relationships — the view's edges, spelled as the library's
+    // `def relationships` keyword list against the far views; opt-in
+    // `include` is the QueryParser's job, so the plain form (no
+    // `:include` tuple) always applies
+    let relations = View::relationships(ctx);
+    for (_name, module, short) in &relations {
+        let alias_render = format!("alias {module}");
+        let alias_module = module.clone();
+        units.push(Unit {
+            id: UnitId::Alias(module.clone()),
+            check: Box::new(move |f| f.has_alias(&alias_module)),
+            render: Box::new(move || alias_render.clone()),
+            place: Placement::Head {
+                rank: Rank::Alias,
+                alias_sort_key: Some(short.clone()),
+            },
+            requires: Vec::new(),
+            stale: None,
+        });
+    }
+    if !relations.is_empty() {
+        let relationships = View::relationships_text(ctx);
+        units.push(Unit {
+            id: UnitId::Def("relationships".to_string(), 0),
+            check: Box::new(|f| f.has_def("relationships", 0)),
+            render: Box::new(move || relationships.clone()),
+            place: Placement::BodyEnd,
+            requires: Vec::new(),
+            stale: None,
+        });
+    }
+
+    units
 }
 
 #[cfg(test)]
@@ -224,4 +292,34 @@ mod tests {
             assert!((unit.check)(&file), "{} must read present", unit.id.label());
         }
     }
+
+    #[test]
+    fn relations_leave_the_attributes_and_enter_relationships() {
+        let units = units_for("read-model.position");
+        let fields = render(&units, "fields/0");
+        assert_eq!(
+            fields,
+            "def fields, do: [:title, :raw_slug, :slug, :description]"
+        );
+        let relationships = render(&units, "relationships/0");
+        assert_eq!(
+            relationships,
+            "def relationships, do: [apparatus: ApparatusView, instrument: InstrumentView]"
+        );
+        let aliases: Vec<String> = units
+            .iter()
+            .filter(|u| u.id.label().starts_with("alias "))
+            .map(|u| (u.render)())
+            .collect();
+        assert!(aliases.contains(
+            &"alias SportipediaWeb.Catalog.Equipment.Apparatus.ApparatusView".to_string()
+        ));
+    }
+
+    #[test]
+    fn a_citizen_without_relations_gets_no_relationships_unit() {
+        let units = units_for("read-model.widget");
+        assert!(!units.iter().any(|u| u.id.label() == "relationships/0"));
+    }
 }
+

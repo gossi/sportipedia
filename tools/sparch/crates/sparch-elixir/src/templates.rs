@@ -273,6 +273,7 @@ mod tests {
             description: None,
             required,
             internal: false,
+            relation: None,
         }
     }
 

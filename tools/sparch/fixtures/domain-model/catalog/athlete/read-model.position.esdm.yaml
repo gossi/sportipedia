@@ -52,15 +52,15 @@ schema:
     description:
       type: string
       description: "Optional description"
-    apparatusId:
+    apparatus:
       type: string
       format: uuid
-      x-esdm-relation: { to: apparatus, cardinality: one }
+      x-esdm-relation: { to: apparatus, kind: belongs_to, inverse: positions }
       description: "Reference to apparatus (optional)"
-    instrumentId:
+    instrument:
       type: string
       format: uuid
-      x-esdm-relation: { to: instrument, cardinality: one }
+      x-esdm-relation: { to: instrument, kind: belongs_to, column: installed_instrument_id }
       description: "Reference to instrument (optional)"
   required:
     - id
@@ -73,31 +73,31 @@ schema:
       description: "Riding on a unicycle"
       raw_slug: "riding"
       slug: "unicycle/riding"
-      instrumentId: "equipment:instrument:unicycle"
+      instrument: "equipment:instrument:unicycle"
     - id: "athlete:position:unicycle-on-tire"
       title: "On Tire"
       description: "Feet are on the tire"
       raw_slug: "on-tire"
       slug: "unicycle/on-tire"
-      instrumentId: "equipment:instrument:unicycle"
+      instrument: "equipment:instrument:unicycle"
     - id: "athlete:position:unicycle-seat-in-front"
       title: "Seat in-front"
       description: "Seat is hold in front of the body"
       raw_slug: "seat-in-front"
       slug: "unicycle/seat-in-front"
-      instrumentId: "equipment:instrument:unicycle"
+      instrument: "equipment:instrument:unicycle"
     - id: "athlete:position:gymnastics-straight-arm-support"
       title: "Straight-arm support"
       description: "Athlete has their arms straight while supporting themselves onto the bar"
       raw_slug: "straight-arm-support"
       slug: "horizontal-bar/straight-arm-support"
-      apparatusId: "equipment:apparatus:horizontal-bar"
+      apparatus: "equipment:apparatus:horizontal-bar"
     - id: "athlete:position:gymnastics-long-hang"
       title: "Long Hang"
       description: "Athlete has their arms straight while hanging on the bar"
       raw_slug: "long-hang"
       slug: "horizontal-bar/long-hang"
-      apparatusId: "equipment:apparatus:horizontal-bar"
+      apparatus: "equipment:apparatus:horizontal-bar"
     - id: "athlete:position:ready-stance"
       title: "Ready Stance"
       description: "Athletic stance with knees slightly bent"

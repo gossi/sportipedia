@@ -1,0 +1,47 @@
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: tag
+description: "A classification label applicable to equipment and exercises"
+scope:
+  domain: sport
+  boundedContext: sport
+metadata:
+  annotations:
+    spgen.operation.tag-created: create
+projections:
+  - boundedContext: sport
+    aggregate: tag
+    event: tag-created
+    rule: "Project the tag when it is created"
+schema:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier"
+    title:
+      type: string
+      description: "Name of the tag"
+    apparatuses:
+      type: array
+      items:
+        type: string
+        format: uuid
+      x-esdm-relation: { to: apparatus, kind: many_to_many, inverse: tags }
+      description: "Apparatuses carrying this tag"
+    exercises:
+      type: array
+      items:
+        type: string
+        format: uuid
+      x-esdm-relation: { to: exercise, kind: many_to_many, join_model: exercise-tag, inverse: tags }
+      description: "Exercises carrying this tag"
+  required:
+    - id
+    - title
+  examples:
+    - id: "equipment:tag:grip"
+      title: "Grip"
+    - id: "equipment:tag:support"
+      title: "Support"

@@ -21,7 +21,7 @@ invariants:
       piece of equipment, so it is the `<position-slug>` that must not repeat for
       two positions bound to the same equipment.
   - name: at-most-one-equipment
-    rule: A position can reference at most one piece of equipment (either apparatusId or instrumentId, not both)
+    rule: A position can reference at most one piece of equipment (either apparatus_id or instrument_id, not both)
 state:
   type: object
   properties:
@@ -38,14 +38,14 @@ state:
     description:
       type: string
       description: "Optional description"
-    apparatusId:
+    apparatus_id:
       type: string
       format: uuid
-      description: "Reference to apparatus (mutually exclusive with instrumentId)"
-    instrumentId:
+      description: "Reference to apparatus (mutually exclusive with instrument_id)"
+    instrument_id:
       type: string
       format: uuid
-      description: "Reference to instrument (mutually exclusive with apparatusId)"
+      description: "Reference to instrument (mutually exclusive with apparatus_id)"
   required:
     - id
     - title

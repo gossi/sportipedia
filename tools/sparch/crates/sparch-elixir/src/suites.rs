@@ -147,6 +147,16 @@ fn push(members: &mut Vec<Member>, generator: &'static str, element: &Element) {
 }
 
 fn operation_suite(model: &Model, input: &Element) -> Result<Vec<Member>, String> {
+    if !matches!(
+        input.kind,
+        ElementKind::Command | ElementKind::Query
+    ) {
+        return Err(format!(
+            "suite operation is driven from a command or a query, got {} ({})",
+            ElementKind::as_str(&input.kind),
+            input.address
+        ));
+    }
     let constituent = constituent_of(model, input).ok_or_else(|| {
         format!(
             "suite operation is driven from a command or a query, got {} ({})",
@@ -209,6 +219,16 @@ fn operation_suite(model: &Model, input: &Element) -> Result<Vec<Member>, String
 }
 
 fn endpoint_suite(model: &Model, input: &Element) -> Result<Vec<Member>, String> {
+    if !matches!(
+        input.kind,
+        ElementKind::Command | ElementKind::Query
+    ) {
+        return Err(format!(
+            "suite endpoint is driven from a command or a query, got {} ({})",
+            ElementKind::as_str(&input.kind),
+            input.address
+        ));
+    }
     let constituent = constituent_of(model, input).ok_or_else(|| {
         format!(
             "suite endpoint is driven from a command or a query, got {} ({})",

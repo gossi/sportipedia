@@ -144,6 +144,46 @@ impl Name {
     pub fn plural_kebab(&self) -> String {
         self.render_plural(Case::Kebab)
     }
+
+    /// Singular words, re-cased — the reverse of `render_plural`, the same
+    /// four rules read backward. Used by the relation naming rule: a
+    /// collection property `tags` correlates with the command field
+    /// `tag_ids`.
+    pub fn render_singular(&self, case: Case) -> String {
+        let mut name = self.clone();
+        let last = name.words.len().saturating_sub(1);
+        if let Some(word) = name.words.get_mut(last) {
+            *word = singularize(word);
+        }
+        name.render(case)
+    }
+}
+
+/// The inverse of the four-rule pluralizer, in the same spirit: mechanical,
+/// no irregular tables. `positions` → `position`, `apparatuses` →
+/// `apparatus`, `boxes` → `box`, `categories` → `category`. A word the rules
+/// cannot read backward stays as written (`axis` is nobody's plural here;
+/// the relation integrity checks treat a no-match as a finding, not a
+/// silent guess).
+pub fn singularize(text: &str) -> String {
+    let lower = text.to_lowercase();
+    if lower.ends_with("ies") && lower.len() > 3 {
+        return format!("{}y", &text[..text.len() - 3]);
+    }
+    for suffix in ["ches", "shes", "xes", "zes"] {
+        if lower.ends_with(suffix) && lower.len() > suffix.len() {
+            return text[..text.len() - 2].to_string();
+        }
+    }
+    // `ses` is pluralized `apparatus` + `es` (the bare-s rule); strip `es`
+    if lower.ends_with("ses") && lower.len() > 3 {
+        return text[..text.len() - 2].to_string();
+    }
+    // a bare trailing `s` that is not doubled (`class` stays)
+    if lower.ends_with('s') && !lower.ends_with("ss") && lower.len() > 1 {
+        return text[..text.len() - 1].to_string();
+    }
+    text.to_string()
 }
 
 /// The four-rule pluralizer. The `ch`/`sh` and `s`/`x`/`z` rules both append
@@ -224,6 +264,25 @@ mod tests {
         assert_eq!(
             Name::parse("exercise-category").render_plural(Case::Pascal),
             "ExerciseCategories"
+        );
+    }
+
+    #[test]
+    fn singularize_runs_the_pluralizer_backward() {
+        assert_eq!(singularize("positions"), "position");
+        assert_eq!(singularize("apparatuses"), "apparatus");
+        assert_eq!(singularize("boxes"), "box");
+        assert_eq!(singularize("churches"), "church");
+        assert_eq!(singularize("categories"), "category");
+        assert_eq!(singularize("days"), "day");
+        assert_eq!(singularize("class"), "class");
+        // every plural comes back to its word
+        for word in ["position", "apparatus", "box", "church", "category", "day"] {
+            assert_eq!(singularize(&pluralize(word)), word);
+        }
+        assert_eq!(
+            Name::parse("exercise-categories").render_singular(Case::Snake),
+            "exercise_category"
         );
     }
 }

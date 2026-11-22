@@ -10,7 +10,7 @@
 use crate::{
     Element, ElementKind, Model,
     annotations::{declared_effects, declared_query_operation},
-    fields::{self, Cardinality, Field},
+    fields::{self, Field, RelationKind},
     fixtures::{self, FixtureSpec},
     naming::{Case, Name},
 };
@@ -32,7 +32,7 @@ pub struct RelationView {
     pub target_composite: String,
     /// Pascal TS type name of the target (`Apparatus`).
     pub target_type: String,
-    pub cardinality: Cardinality,
+    pub kind: RelationKind,
     /// Explicit inverse property name, or `None` = unidirectional.
     pub inverse: Option<String>,
 }
@@ -40,9 +40,9 @@ pub struct RelationView {
 #[derive(Clone, Debug)]
 pub struct Property {
     pub field: Field,
-    /// TS property name: from the field's own words, or — for
-    /// relationships — from the relation keyword's `to`
-    /// (`apparatusId` with `to: apparatus` → `apparatus`).
+    /// TS property name: the field's own words, camelized — for
+    /// relationships too (`stationary` with `to: apparatus` →
+    /// `stationary`). `to` supplies the type, never the name.
     pub ts_name: String,
     /// `ID`, `Slug`, `string`, `Apparatus`, …
     pub ts_type: String,
@@ -319,9 +319,10 @@ fn build_properties(model: &Model, rm_fields: &[Field]) -> Vec<Property> {
         .cloned()
         .map(|field| {
             // The relation keyword is the identifier: a relationship's TS
-            // name and type come from `to`, never from the field's own
-            // spelling — `primaryEquipmentId` with `to: apparatus` is
-            // `apparatus?: Apparatus`, not a stripped field name.
+            // type comes from `to`, its name from the property key —
+            // `stationary` with `to: apparatus` is `stationary?:
+            // Apparatus`, never a `to`-derived rename. Two edges to one
+            // target get two distinct names; `to` only supplies the type.
             let is_reference = field.relation.is_some();
             let relation = field.relation.as_ref().map(|rel| {
                 let target = model.find(ElementKind::ReadModel, &rel.to);
@@ -333,21 +334,19 @@ fn build_properties(model: &Model, rm_fields: &[Field]) -> Vec<Property> {
                     target: rel.to.clone(),
                     target_composite,
                     target_type: Name::parse(&rel.to).render(Case::Pascal),
-                    cardinality: rel.cardinality,
+                    kind: rel.kind,
                     inverse: rel.inverse.clone(),
                 }
             });
-            let ts_name = match &relation {
-                Some(rel) => Name::parse(&rel.target).render(Case::Camel),
-                None => Name::parse(&field.name).render(Case::Camel),
-            };
+            let ts_name = Name::parse(&field.name).render(Case::Camel);
 
             let ts_type = if field.name == "id" {
                 "ID".to_string()
             } else if let Some(relation) = &relation {
-                match relation.cardinality {
-                    Cardinality::One => relation.target_type.clone(),
-                    Cardinality::Many => format!("{}[]", relation.target_type),
+                if relation.kind.is_collection() {
+                    format!("{}[]", relation.target_type)
+                } else {
+                    relation.target_type.clone()
                 }
             } else if ts_name == "slug" {
                 // slug detection is exact: the canonical key is `slug`
@@ -423,15 +422,20 @@ fn build_commands(
             let data_fields = fields::fields(&element);
             // `WithPartial` keys: the command's optional fields that map
             // to a writable citizen property — attributes *and*
-            // relationships, named as the citizen names them. Fields
-            // mapping to a readOnly or writeOnly property, or to nothing,
-            // are ignored: the model owns that breakage, not the renderer.
+            // relationships, named as the citizen names them — the command
+            // carries the id field (`apparatus_id`), which correlates to
+            // the read model's relation property (`apparatus`) by the
+            // naming rule. Fields mapping to a readOnly or writeOnly
+            // property, or to nothing, are ignored: the model owns that
+            // breakage, not the renderer.
             let mut partials = Vec::new();
             for f in &data_fields {
                 if f.required {
                     continue;
                 }
-                if let Some(p) = properties.iter().find(|p| p.field.name == f.name)
+                if let Some(p) = properties
+                    .iter()
+                    .find(|p| fields::field_matches_property(&f.name, &p.field))
                     && !p.read_only
                 {
                     partials.push(p.ts_name.clone());
