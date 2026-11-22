@@ -16,14 +16,21 @@ defmodule Mix.Tasks.Sp.Gen do
       mix sp.gen                                            # list generators and suites
       mix sp.gen.command catalog-apparatus --template create
       mix sp.gen.read_model widget --dry-run
+      mix sp.gen.read_model widget --diff                   # structural model-vs-code diff
       mix sp.gen.operation catalog-apparatus                # suite: one operation, domain actor
       mix sp.gen.endpoint catalog-apparatus                 # suite: one operation, web actor
       mix sp.gen.feature position                           # suite: whole constituent
 
-  After a run that wrote files (any run but `--dry-run`), the binding runs
-  `mix format` inside `services/api`. That is the project's own formatter
-  engine — applied to the generated files' token stream — so generated
-  files land formatted without the binary ever owning a formatter.
+  After a run that wrote files (any run but `--dry-run` and `--diff`), the
+  binding runs `mix format` inside `services/api`. That is the project's own
+  formatter engine — applied to the generated files' token stream — so
+  generated files land formatted without the binary ever owning a formatter.
+
+  `--diff` compares what the model generates against what is on disk, per
+  unit (`added`, `changed`, `removed`, `deferred`, `blocked`), formats
+  nothing, and exits non-zero so it can gate a verify pass. The exit code
+  distinguishes the outcomes: 0 in sync, 1 the run failed, 3 code drifts
+  from the model.
 
   The generators are idempotent and append-only, so the tree keeps
   compiling after every run (references to not-yet-generated citizens
@@ -62,14 +69,22 @@ defmodule Mix.Tasks.Sp.Gen do
 
     {_out, status} = System.cmd(bin, args, into: IO.stream(:stdio, :line))
 
-    if status != 0, do: Mix.raise("sparch-elixir exited with status #{status}")
+    if status != 0 do
+      if status == 3 && "--diff" in args do
+        Mix.raise("sparch-elixir --diff: the code drifts from the model (see the Drift report)")
+      else
+        Mix.raise("sparch-elixir exited with status #{status}")
+      end
+    end
 
     # deferral guidance keeps exit 0; the bare listing writes nothing;
-    # a leading option means the binary just listed; only a real generator
-    # or suite run needs the project formatter pass
+    # a leading option means the binary just listed; --dry-run and --diff
+    # write nothing; only a real generator or suite run needs the project
+    # formatter pass
     cond do
       args == [] -> :ok
       "--dry-run" in args -> :ok
+      "--diff" in args -> :ok
       match?([<<"-", _::binary>>, _ | _], args) -> :ok
       true -> format_project(root)
     end

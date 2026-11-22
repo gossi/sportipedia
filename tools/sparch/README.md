@@ -39,6 +39,21 @@ The manuals returns the command to execute that generator in a given project.
 For example `pnpm spgen <generator> <read-model>` or
 `mix sp.gen.command <command>`.
 
+### Asking what changed (`--diff`)
+
+After a domain-model change, generators know what is *missing* but stay quiet
+on what *drifted*. `--diff` answers that: it re-renders every unit of the
+plan, compares it to the file structurally (immune to `mix format`), and
+reports `added`, `changed`, `removed`, `deferred`, and `blocked` per file and
+unit, with the fix each one needs. It writes nothing. Suites diff all their
+member plans in one pass.
+
+    mix sp.gen.read_model widget --diff
+    mix sp.gen.feature position --diff
+
+Exit status: `0` in sync, `1` failure, `3` drift — the suite form is the
+verification step after implementing a model change.
+
 ## Working with the Domain Model
 
 `sparch` has a couple of additions to ESDM, that assist with code generation.

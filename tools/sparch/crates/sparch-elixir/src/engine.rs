@@ -28,6 +28,9 @@ pub enum Row {
     Unresolved(String, Vec<String>),
     Checked(String, Vec<CheckId>),
     Blocked(String, Vec<String>),
+    /// One file's `--diff` findings, as pre-formatted detail lines. A
+    /// `Drift` row exists only when the file drifts; the CLI exits 3 on it.
+    Drift(String, Vec<String>),
     Error(String, String),
 }
 
@@ -42,6 +45,9 @@ pub struct RunOptions {
     pub root: Option<String>,
     pub dry_run: bool,
     pub verbose: bool,
+    /// report model-vs-code drift per unit, write nothing (implies
+    /// `dry_run`)
+    pub diff: bool,
 }
 
 /// The run state threaded through plan application.
@@ -70,17 +76,26 @@ impl Applied {
     }
 }
 
-/// Runs one generator against one resolved element address. `modules` is
-/// the generator's registry entry — every *ported* blueprint module, head
-/// first. The run takes the whole module list while the head owns the
-/// element kinds and `--template` semantics. Argument syntax is the CLI's
-/// (clap's) business; this returns rows or a hard error message.
-pub fn run(
+/// Everything a run resolves and plans before it touches a file: the
+/// plans, the model, the context, and the context options the closure
+/// rounds need. `run` consumes it; the suite's `--diff` path collects
+/// member plans across generators and diffs the union once.
+pub struct Build {
+    pub repo_root: PathBuf,
+    pub plans: Vec<(FilePlan, Context)>,
+    pub model: Model,
+    pub ctx: Context,
+    pub ctx_opts: ContextOptions,
+}
+
+/// Resolve, validate, and plan one generator against one element address.
+/// Reads the model and nothing else; writes nothing.
+pub fn build(
     modules: &[&dyn Blueprint],
     opts: &RunOptions,
     address: &str,
     cwd: &Path,
-) -> Result<Vec<Row>, String> {
+) -> Result<Build, String> {
     let blueprint = modules
         .first()
         .copied()
@@ -147,6 +162,48 @@ pub fn run(
     require_operation(&element, &ctx)?;
 
     let plans = plans_for(&model, modules, &ctx);
+
+    Ok(Build {
+        repo_root,
+        plans,
+        model,
+        ctx,
+        ctx_opts,
+    })
+}
+
+/// Runs one generator against one resolved element address. `modules` is
+/// the generator's registry entry — every *ported* blueprint module, head
+/// first. The run takes the whole module list while the head owns the
+/// element kinds and `--template` semantics. Argument syntax is the CLI's
+/// (clap's) business; this returns rows or a hard error message.
+/// With `--diff` it answers the structural diff of the plans against the
+/// tree instead of applying them, and still states model-completeness
+/// guidance.
+pub fn run(
+    modules: &[&dyn Blueprint],
+    opts: &RunOptions,
+    address: &str,
+    cwd: &Path,
+) -> Result<Vec<Row>, String> {
+    let blueprint = modules
+        .first()
+        .copied()
+        .ok_or_else(|| "generator has no ported blueprint".to_string())?;
+    let Build {
+        repo_root,
+        plans,
+        model,
+        ctx,
+        ctx_opts,
+    } = build(modules, opts, address, cwd)?;
+
+    if opts.diff {
+        let mut rows = crate::diff::run(&plans, &repo_root, opts.verbose);
+        rows.extend(unresolved_rows(&ctx));
+        rows.extend(effect_gap_rows(&model, &ctx));
+        return Ok(rows);
+    }
 
     let mut applied = Applied {
         repo_root: repo_root.clone(),
@@ -302,6 +359,9 @@ Options:
   --root           repo root, default inferred from the current directory
   --dry-run        report the drift, write nothing
   --verbose        with --dry-run, list the units that would land, wait, or block
+                   (with --diff, also list the units that were compared and found)
+  --diff           compare model and code per unit — added, changed, removed,
+                   deferred, blocked — and write nothing; exits 3 on drift
 
 Slices (generators of one scope, in build order — refused until every
 member generator is ported here):

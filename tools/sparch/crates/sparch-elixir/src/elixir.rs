@@ -122,6 +122,13 @@ impl ElixirFile {
         &self.text[node.byte_range()]
     }
 
+    /// The raw text of a byte range, clamped to the file.
+    pub fn text_slice(&self, start: usize, end: usize) -> &str {
+        let start = start.min(self.text.len());
+        let end = end.min(self.text.len()).max(start);
+        &self.text[start..end]
+    }
+
     /// Debug dump: every node kind with its range. Used by probe tests.
     #[allow(dead_code)]
     pub fn dump(&self) -> String {
@@ -336,6 +343,196 @@ impl ElixirFile {
             .filter(|e| e.first_key() == key)
             .flat_map(|e| e.pairs())
             .collect()
+    }
+
+    // --------------------------------------------------------------- diff
+
+    /// The one-based line holding `byte`.
+    pub fn line_of(&self, byte: usize) -> usize {
+        let floor = byte.min(self.text.len());
+        1 + self.text[..floor].bytes().filter(|b| *b == b'\n').count()
+    }
+
+    /// True when the parse produced ERROR or MISSING nodes — the file (or
+    /// fragment) is not something a diff can pair statement by statement.
+    pub fn has_errors(&self) -> bool {
+        self.tree
+            .as_ref()
+            .is_some_and(|t| t.root_node().has_error())
+    }
+
+    /// The byte ranges of the parsed text's top-level statements — the
+    /// shapes a rendered unit is made of. Comments excluded.
+    pub fn fragment_ranges(&self) -> Vec<(usize, usize)> {
+        let Some(root) = self.tree.as_ref().map(Tree::root_node) else {
+            return Vec::new();
+        };
+        let mut cursor = root.walk();
+        root.named_children(&mut cursor)
+            .filter(|child| child.kind() != "comment")
+            .map(|child| (child.start_byte(), child.end_byte()))
+            .collect()
+    }
+
+    /// The shape a top-level statement carries, as the diff pairs a
+    /// rendered unit with the code already in a file. Ranges come from
+    /// `fragment_ranges`.
+    pub fn identify(&self, start: usize, end: usize) -> Option<Identity> {
+        let root = self.tree.as_ref().map(Tree::root_node)?;
+        let mut cursor = root.walk();
+        let node = root
+            .named_children(&mut cursor)
+            .find(|child| child.start_byte() == start && child.end_byte() == end)?;
+        if node.kind() == "call"
+            && let Some(target) = self.call_target(node)
+        {
+            if matches!(target.as_str(), "def" | "defp" | "defmacro" | "defmacrop") {
+                let head = self.def_head_node(node)?;
+                let (name, arity) = self.def_head_of(head)?;
+                let keys = self
+                    .call_args(head)
+                    .into_iter()
+                    .map(|arg| self.render_arg(arg))
+                    .collect();
+                return Some(Identity::Def { name, arity, keys });
+            }
+            let args = self.call_args(node);
+            let by_last = is_route_verb(&target);
+            let picked = if by_last { args.last() } else { args.first() };
+            let key = picked.map(|arg| self.render_arg(*arg))?;
+            return Some(Identity::Entry {
+                macro_name: target,
+                key,
+                by_last,
+            });
+        }
+        if let Some(name) = self.attr_name(node) {
+            return Some(Identity::Attr { name });
+        }
+        Some(Identity::Text {
+            text: normalize(self.source_text(node)),
+        })
+    }
+
+    /// Every public `def` clause of the module body: name, arity, the
+    /// rendered head arguments that key the clause, and the byte range.
+    pub fn def_clause_list(&self) -> Vec<(String, usize, Vec<String>, usize, usize)> {
+        self.body()
+            .into_iter()
+            .filter(|child| {
+                self.call_target(*child)
+                    .is_some_and(|target| target == "def")
+            })
+            .filter_map(|child| {
+                let head = self.def_head_node(child)?;
+                let (name, arity) = self.def_head_of(head)?;
+                let keys = self
+                    .call_args(head)
+                    .into_iter()
+                    .map(|arg| self.render_arg(arg))
+                    .collect();
+                Some((name, arity, keys, child.start_byte(), child.end_byte()))
+            })
+            .collect()
+    }
+
+    /// Every top-level `@attr` line of the module body: the attribute name
+    /// and the byte range of the whole expression.
+    pub fn attribute_entries(&self) -> Vec<(String, usize, usize)> {
+        self.body()
+            .into_iter()
+            .filter_map(|child| {
+                Some((self.attr_name(child)?, child.start_byte(), child.end_byte()))
+            })
+            .collect()
+    }
+
+    /// `start..end` extended upward over the `@doc`/`@spec` attributes and
+    /// comments belonging to the same statement, so a rendered clause that
+    /// carries its docs compares against the file's whole clause group.
+    pub fn absorb_attrs(&self, start: usize, end: usize) -> (usize, usize) {
+        let Some(block) = self.module_call().and_then(do_block) else {
+            return (start, end);
+        };
+        let Some(node) = significant(block)
+            .into_iter()
+            .find(|child| child.start_byte() == start && child.end_byte() == end)
+        else {
+            return (start, end);
+        };
+        let mut start = start;
+        let mut prev = node.prev_sibling();
+        while let Some(sibling) = prev {
+            if sibling.kind() == "comment" {
+                start = sibling.start_byte();
+                prev = sibling.prev_sibling();
+                continue;
+            }
+            let absorbable = sibling.kind() == "unary_operator"
+                && self
+                    .attr_name(sibling)
+                    .is_some_and(|name| name == "doc" || name == "spec");
+            if !absorbable {
+                break;
+            }
+            start = sibling.start_byte();
+            prev = sibling.prev_sibling();
+        }
+        (start, end)
+    }
+
+    /// The elements of the first `children = [...]` list: normalized text
+    /// and byte range of each element.
+    pub fn children_elements(&self) -> Vec<(String, usize, usize)> {
+        let Some(root) = self.tree.as_ref().map(Tree::root_node) else {
+            return Vec::new();
+        };
+        let Some(list) = find_children_list(root, &self.text) else {
+            return Vec::new();
+        };
+        let mut cursor = list.walk();
+        list.named_children(&mut cursor)
+            .map(|element| {
+                (
+                    normalize(self.source_text(element)),
+                    element.start_byte(),
+                    element.end_byte(),
+                )
+            })
+            .collect()
+    }
+
+    /// The canonical token signature of `start..end`: every leaf token in
+    /// source order, comments dropped, whitespace inside and between
+    /// tokens collapsed to single spaces, trailing commas before a closer
+    /// dropped. `mix format` only moves whitespace, inserts trailing
+    /// commas, and keeps comments and tokens, so equal code means equal
+    /// signatures no matter which side was formatted.
+    pub fn signature(&self, start: usize, end: usize) -> String {
+        let Some(root) = self.tree.as_ref().map(Tree::root_node) else {
+            return String::new();
+        };
+        let mut leaves: Vec<(String, String)> = Vec::new();
+        collect_leaves(self, root, start, end, &mut leaves);
+        let kept: Vec<(String, String)> = leaves
+            .into_iter()
+            .filter(|(kind, text)| kind != "comment" && !text.is_empty())
+            .collect();
+        let mut out = String::new();
+        for (index, (kind, text)) in kept.iter().enumerate() {
+            if kind == ","
+                && kept
+                    .get(index + 1)
+                    .is_some_and(|(next, _)| matches!(next.as_str(), ")" | "]" | "}" | "end"))
+            {
+                continue;
+            }
+            if !out.is_empty() {
+                out.push(' ');
+            }
+            out.push_str(text);
+        }
+        out
     }
 
     // ---------------------------------------------------------- placement
@@ -925,6 +1122,62 @@ impl ElixirFile {
     }
 }
 
+/// The shape a rendered unit's statement carries — how `--diff` pairs the
+/// render with the code already in a file. Derived from the render text
+/// itself, so every blueprint gets the diff without declaring anything.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Identity {
+    /// A `def`-family clause: function name, arity, and the rendered head
+    /// arguments that key the clause (the event struct of an `apply/2`,
+    /// the action atom of an `authorize/3`).
+    Def {
+        name: String,
+        arity: usize,
+        keys: Vec<String>,
+    },
+    /// A DSL entry call: the macro, the key identifying the entry (the
+    /// first argument, or the action for route verbs), and whether the
+    /// key is the last argument.
+    Entry {
+        macro_name: String,
+        key: String,
+        by_last: bool,
+    },
+    /// An `@attribute` line, by attribute name.
+    Attr { name: String },
+    /// Bare text — a supervisor child listed by module name.
+    Text { text: String },
+}
+
+/// Route verb macros identify their entry by the action in the last
+/// argument (paths collide across scopes), every other call by the first.
+pub fn is_route_verb(target: &str) -> bool {
+    matches!(target, "get" | "post" | "put" | "patch" | "delete")
+}
+
+/// The leaf tokens of `start..end`, in source order, as `(kind, normalized
+/// text)`. Comments arrive as leaves and the signature filters them.
+fn collect_leaves(
+    file: &ElixirFile,
+    node: Node<'_>,
+    start: usize,
+    end: usize,
+    acc: &mut Vec<(String, String)>,
+) {
+    if node.end_byte() <= start || node.start_byte() >= end {
+        return;
+    }
+    let mut cursor = node.walk();
+    let children: Vec<Node<'_>> = node.children(&mut cursor).collect();
+    if children.is_empty() {
+        acc.push((node.kind().to_string(), normalize(file.source_text(node))));
+        return;
+    }
+    for child in children {
+        collect_leaves(file, child, start, end, acc);
+    }
+}
+
 /// Debug helpers used by probe tests: the block's `end` token offset.
 fn block_end_token(block: Node<'_>) -> Option<usize> {
     let mut cursor = block.walk();
@@ -1411,6 +1664,121 @@ end
         assert_eq!(
             &next[offset + "field :slug, :string\n".len()..],
             &READ_MODEL[offset..]
+        );
+    }
+
+    // ---------------------------------------------------------------- diff
+
+    #[test]
+    fn signature_survives_formatting_comments_and_trailing_commas() {
+        let raw = "def insert_changeset(read_model, attrs) do\n  read_model\n  |> Ecto.Changeset.cast(attrs, [:id, :title])\n  |> validate_required([:title])\nend";
+        let formatted = "def insert_changeset(read_model, attrs) do\n  # a comment the generator never wrote\n  read_model\n  |> Ecto.Changeset.cast(\n    attrs,\n    [\n      :id,\n      :title,\n    ]\n  )\n  |> validate_required([:title])\nend";
+        let a = ElixirFile::parse(raw);
+        let b = ElixirFile::parse(formatted);
+        assert!(a.signature(0, usize::MAX) == b.signature(0, usize::MAX));
+        // content still counts: a changed token is never folded away
+        let changed = ElixirFile::parse(&raw.replace(":title", ":slug"));
+        assert_ne!(a.signature(0, usize::MAX), changed.signature(0, usize::MAX));
+        // string content is compared with whitespace collapsed, never with
+        // its interior dropped: different words differ, indentation does not
+        let doc_a = ElixirFile::parse("@moduledoc \"\"\"\nRepresents a widget.\n\"\"\"");
+        let doc_b = ElixirFile::parse("@moduledoc \"\"\"\n  Represents a widget.\n\"\"\"");
+        assert_eq!(
+            doc_a.signature(0, usize::MAX),
+            doc_b.signature(0, usize::MAX)
+        );
+    }
+
+    #[test]
+    fn identify_reads_the_four_shapes() {
+        let src = "@moduledoc \"doc\"\ndispatch CreateWidget, to: CreateWidgetHandler\ndef apply(state, %WidgetCreated{}) do\n  :ok\nend\nSportipedia.Catalog.WidgetProjector\n";
+        let f = ElixirFile::parse(src);
+        assert!(!f.has_errors());
+        let ranges = f.fragment_ranges();
+        let ids: Vec<Identity> = ranges
+            .iter()
+            .map(|(start, end)| f.identify(*start, *end).expect("shape"))
+            .collect();
+        assert!(
+            matches!(&ids[0], Identity::Attr { name } if name == "moduledoc"),
+            "{ids:?}"
+        );
+        assert!(
+            matches!(
+                &ids[1],
+                Identity::Entry { macro_name, key, by_last: false }
+                    if macro_name == "dispatch" && key == "CreateWidget"
+            ),
+            "{ids:?}"
+        );
+        assert!(
+            matches!(
+                &ids[2],
+                Identity::Def { name, arity: 2, .. } if name == "apply"
+            ),
+            "{ids:?}"
+        );
+        // the clause is keyed by the event struct its head matches
+        assert!(
+            ids[2]
+                == (Identity::Def {
+                    name: "apply".into(),
+                    arity: 2,
+                    keys: vec!["state".into(), "WidgetCreated{}".into()],
+                })
+        );
+        assert!(
+            matches!(&ids[3], Identity::Text { text } if text == "Sportipedia.Catalog.WidgetProjector"),
+            "{ids:?}"
+        );
+    }
+
+    #[test]
+    fn route_verbs_identify_by_the_action() {
+        let f = ElixirFile::parse("post \"/widgets\", WidgetController, :create_widget\n");
+        let (start, end) = f.fragment_ranges()[0];
+        let id = f.identify(start, end).unwrap();
+        assert!(
+            matches!(
+                &id,
+                Identity::Entry { macro_name, key, by_last: true }
+                    if macro_name == "post" && key == ":create_widget"
+            ),
+            "{id:?}"
+        );
+    }
+
+    #[test]
+    fn def_clause_list_carries_head_keys_and_absorb_widens_the_group() {
+        let src = "defmodule M do\n  @doc \"Creates.\"\n  @spec new(t) :: t\n  def new(_params) do\n    :ok\n  end\n\n  def apply(state, %WidgetCreated{}) do\n    state\n  end\nend\n";
+        let f = ElixirFile::parse(src);
+        let clauses = f.def_clause_list();
+        assert_eq!(clauses.len(), 2);
+        assert_eq!(clauses[0].0, "new");
+        assert_eq!(clauses[1].0, "apply");
+        assert_eq!(
+            clauses[1].2,
+            vec!["state".to_string(), "WidgetCreated{}".to_string()]
+        );
+        // absorbing the group pulls @doc and @spec above the clause
+        let (start, _end) = f.absorb_attrs(clauses[0].3, clauses[0].4);
+        assert_eq!(f.line_of(start), 2, "the group starts at the @doc line");
+    }
+
+    #[test]
+    fn attribute_entries_and_children_elements_list_their_ranges() {
+        let src = "defmodule S do\n  @moduledoc \"s\"\n  def init(_arg) do\n    children = [\n      Sportipedia.A,\n      Sportipedia.B,\n    ]\n\n    Supervisor.init(children, strategy: :one_for_one)\n  end\nend\n";
+        let f = ElixirFile::parse(src);
+        let attrs = f.attribute_entries();
+        assert_eq!(attrs.len(), 1);
+        assert_eq!(attrs[0].0, "moduledoc");
+        let elements = f.children_elements();
+        assert_eq!(
+            elements
+                .iter()
+                .map(|(t, ..)| t.as_str())
+                .collect::<Vec<&str>>(),
+            vec!["Sportipedia.A", "Sportipedia.B"]
         );
     }
 }

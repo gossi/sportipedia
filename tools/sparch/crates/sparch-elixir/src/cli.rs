@@ -3,7 +3,7 @@
 //! flags). One run per process: resolve the generator or suite, run it,
 //! print the report, choose the exit code. A Failed or Blocked row exits
 //! 1; a deferral, an outdated line or an unresolved rule stays guidance
-//! (exit 0), README decision 10.
+//! (exit 0), README decision 10; a `--diff` run that found drift exits 3.
 //!
 //! The bare invocation (no arguments) stays the curated generator-and-
 //! suite listing: it reads no repository and is the entry the bindings
@@ -54,6 +54,10 @@ struct Cli {
     /// with --dry-run, list the units that would land, wait, or block
     #[arg(long)]
     verbose: bool,
+    /// compare model and code per unit (added, changed, removed), write
+    /// nothing; exits 3 on drift
+    #[arg(long)]
+    diff: bool,
 }
 
 pub fn main(argv: impl Iterator<Item = String>) -> i32 {
@@ -84,8 +88,10 @@ pub fn main(argv: impl Iterator<Item = String>) -> i32 {
         constituent: cli.constituent,
         model: cli.model,
         root: cli.root,
-        dry_run: cli.dry_run,
+        // --diff reads the tree and writes nothing, the dry-run contract
+        dry_run: cli.dry_run || cli.diff,
         verbose: cli.verbose,
+        diff: cli.diff,
     };
     let verbose = opts.verbose;
 
@@ -138,7 +144,9 @@ fn run(generator: &str, opts: &RunOptions, element: &str, cwd: &Path, verbose: b
 }
 
 /// One merged report for a generator run or a suite; a Failed or Blocked
-/// row exits 1, guidance exits 0.
+/// row exits 1, guidance exits 0, and a `--diff` run that found drift
+/// exits 3 (distinct from the failure exit so a verify gate can tell
+/// "code drifts" from "the run broke").
 fn finish(rows: Vec<Row>, verbose: bool) -> i32 {
     for line in engine::render_report(&rows, verbose) {
         println!("{line}");
@@ -146,5 +154,11 @@ fn finish(rows: Vec<Row>, verbose: bool) -> i32 {
     let failing = rows
         .iter()
         .any(|r| matches!(r, Row::Error(..) | Row::Blocked(..)));
-    if failing { 1 } else { 0 }
+    if failing {
+        return 1;
+    }
+    if rows.iter().any(|r| matches!(r, Row::Drift(..))) {
+        return 3;
+    }
+    0
 }

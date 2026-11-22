@@ -70,6 +70,10 @@ pub struct GenerateArgs {
     /// with --dry-run, list the units that would land, wait, or block
     #[arg(long)]
     pub verbose: bool,
+    /// compare model and code per unit (added, changed, removed), write
+    /// nothing; exits 3 on drift (elixir)
+    #[arg(long)]
+    pub diff: bool,
     /// FE: rewrite present generated units in place
     #[arg(long, short = 'f')]
     pub force: bool,

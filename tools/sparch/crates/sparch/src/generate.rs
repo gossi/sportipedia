@@ -69,8 +69,10 @@ fn run_elixir(name: &str, args: &GenerateArgs, cwd: &Path) -> i32 {
         constituent: args.constituent.clone(),
         model: args.model.clone(),
         root: args.root.clone(),
-        dry_run: args.dry_run,
+        // --diff reads the tree and writes nothing, the dry-run contract
+        dry_run: args.dry_run || args.diff,
         verbose: args.verbose,
+        diff: args.diff,
     };
 
     let rows = if let Some(suite) = Suite::parse(name) {
@@ -127,7 +129,16 @@ fn run_elixir(name: &str, args: &GenerateArgs, cwd: &Path) -> i32 {
             sparch_elixir::engine::Row::Error(..) | sparch_elixir::engine::Row::Blocked(..)
         )
     });
-    if failing { 1 } else { 0 }
+    if failing {
+        return 1;
+    }
+    if rows
+        .iter()
+        .any(|r| matches!(r, sparch_elixir::engine::Row::Drift(..)))
+    {
+        return 3;
+    }
+    0
 }
 
 /// The binding's format pass, ported: run `mix format` in services/api.
@@ -165,6 +176,13 @@ fn run_typescript(name: &str, args: &GenerateArgs, cwd: &Path) -> i32 {
     use sparch_model::{Citizen, ElementKind, Model};
     use sparch_typescript::{blueprints, layout::Layout, report::Report};
 
+    if args.diff {
+        eprintln!(
+            "error: --diff is not ported to the typescript engine yet — the elixir generators \
+             answer it (mix sp.gen.<generator> <element> --diff)"
+        );
+        return 1;
+    }
     let Some(members) = blueprints::resolve(name) else {
         eprintln!("error: unknown target: {name} — `sparch capabilities` lists them");
         return 1;

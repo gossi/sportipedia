@@ -3,6 +3,7 @@
 pub mod blueprints;
 pub mod cli;
 pub mod context;
+pub mod diff;
 pub mod elixir;
 pub mod engine;
 pub mod plan;

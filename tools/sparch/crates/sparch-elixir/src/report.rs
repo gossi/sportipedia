@@ -16,6 +16,7 @@ enum Group {
     Unresolved = 5,
     Blocked = 6,
     Failed = 7,
+    Drift = 8,
 }
 
 impl Group {
@@ -47,6 +48,7 @@ impl Group {
             Group::Unresolved => "Unresolved rules",
             Group::Blocked => "Blocked",
             Group::Failed => "Failed",
+            Group::Drift => "Drift",
         }
     }
 }
@@ -149,6 +151,7 @@ pub fn render(rows: &[Row], verbose: bool) -> Vec<String> {
         Group::Rewritten,
         Group::Ignored,
         Group::Outdated,
+        Group::Drift,
         Group::Unresolved,
         Group::Blocked,
         Group::Failed,
@@ -165,6 +168,14 @@ pub fn render(rows: &[Row], verbose: bool) -> Vec<String> {
                     lines.push(format!("  {}", display_path(&item.path)));
                     for d in &item.details {
                         lines.push(format!("    - {d}"));
+                    }
+                }
+                // --diff details are pre-formatted decision lines with
+                // their own indentation, not a flat bullet list
+                Group::Drift => {
+                    lines.push(format!("  {}", display_path(&item.path)));
+                    for d in &item.details {
+                        lines.push(format!("    {d}"));
                     }
                 }
                 _ => {
@@ -202,6 +213,7 @@ fn entries(row: &Row) -> Vec<Item> {
         Row::Stale(p, details) => vec![item(Group::Outdated, p, details.clone(), vec![])],
         Row::Unresolved(p, details) => vec![item(Group::Unresolved, p, details.clone(), vec![])],
         Row::Blocked(p, _) => vec![item(Group::Blocked, p, vec![], vec![])],
+        Row::Drift(p, details) => vec![item(Group::Drift, p, details.clone(), vec![])],
         Row::Error(p, _) => vec![item(Group::Failed, p, vec![], vec![])],
         Row::Checked(p, ids) => checked_entries(p, ids),
     }

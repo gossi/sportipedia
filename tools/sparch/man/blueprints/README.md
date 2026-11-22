@@ -192,6 +192,33 @@ Exit status is `0` unless something is `Blocked` or `Failed`. `--check` writes
 nothing and prints the same report in future tense; it is a report, not a CI
 gate.
 
+### Model-vs-code diff (`--diff`)
+
+Presence is what a run asks; content is what `--diff` asks. It re-renders
+every unit of the plan and compares it to the file by token signature
+(comments, whitespace, and formatter-inserted trailing commas are never
+drift), then reports per file and unit:
+
+- `added` — the model declares it, the file lacks it. A rerun places it.
+- `changed` — present, but the code differs from the model. The entry shows
+  the file's lines and what the model says; edit them or delete and rerun.
+- `removed` — an entry of a generator-owned family (`field`, `dispatch`,
+  route verbs, `apply`/`authorize` clauses, supervisor children) that the
+  model no longer declares. Delete it, or — when the line is deliberate
+  wiring — state it in the model or the plan's deviation register.
+- `deferred` / `blocked` — same meaning as in a run.
+- whole-file `added` / `rewrite` / `deferred` — a missing file, or a
+  model-owned projection whose content drifted.
+
+Suites diff the union of their member plans in one pass: a file the suite
+itself would create satisfies its members' gates, so a clean tree reads
+`added`, never `deferred`, and shared files are asked once. Human completion
+slots (a render carrying a `TODO:` marker, and `describe` test blocks)
+compare by presence only.
+
+Exit status is `0` in sync, `1` when the run failed, `3` when the code
+drifts — so a final `--diff` is a verification gate, not just a report.
+
 ### Idempotence and recovery
 
 Re-running a generator over generated code reports `Ignored`. The merge is

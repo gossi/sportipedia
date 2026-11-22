@@ -6,7 +6,10 @@
 //! (a half-suite silently under-generating is worse than an error), then
 //! runs each generator exactly as its own command would and prints one
 //! merged report. Deferral, gates, exit codes and `--dry-run` semantics all
-//! pass through untouched.
+//! pass through untouched. The one exception is `--diff`, which skips the
+//! per-member sequence: the whole union of member plans is compared against
+//! the tree in a single pass, so a file one member would create never reads
+//! as another member's deferral.
 //!
 //! The scopes mirror the recipes in `.opencode/recipes/`:
 //! `operation` (domain actor of one command or query), `endpoint` (web
@@ -147,10 +150,7 @@ fn push(members: &mut Vec<Member>, generator: &'static str, element: &Element) {
 }
 
 fn operation_suite(model: &Model, input: &Element) -> Result<Vec<Member>, String> {
-    if !matches!(
-        input.kind,
-        ElementKind::Command | ElementKind::Query
-    ) {
+    if !matches!(input.kind, ElementKind::Command | ElementKind::Query) {
         return Err(format!(
             "suite operation is driven from a command or a query, got {} ({})",
             ElementKind::as_str(&input.kind),
@@ -219,10 +219,7 @@ fn operation_suite(model: &Model, input: &Element) -> Result<Vec<Member>, String
 }
 
 fn endpoint_suite(model: &Model, input: &Element) -> Result<Vec<Member>, String> {
-    if !matches!(
-        input.kind,
-        ElementKind::Command | ElementKind::Query
-    ) {
+    if !matches!(input.kind, ElementKind::Command | ElementKind::Query) {
         return Err(format!(
             "suite endpoint is driven from a command or a query, got {} ({})",
             ElementKind::as_str(&input.kind),
@@ -398,6 +395,39 @@ pub fn run(
     }
 
     let mut rows = Vec::new();
+    if opts.diff {
+        // a suite diff is one comparison of the union of all member plans
+        // against the disk, not N gated member runs: a file any member of
+        // this same run would create satisfies another member's gate, so a
+        // clean tree reads `added` where per-member checks would say
+        // `deferred`, and shared files (public API, policy, router) are
+        // asked once.
+        let mut union: Vec<(crate::plan::FilePlan, crate::context::Context)> = Vec::new();
+        for member in &members {
+            let modules = blueprints::generator_modules(member.generator);
+            let member_opts = crate::engine::RunOptions {
+                template: None,
+                given_template: None,
+                subdomain: opts.subdomain.clone(),
+                composite: opts.composite.clone(),
+                constituent: opts.constituent.clone(),
+                model: opts.model.clone(),
+                root: opts.root.clone(),
+                dry_run: true,
+                verbose: opts.verbose,
+                diff: true,
+            };
+            match engine::build(&modules, &member_opts, &member.element.address, cwd) {
+                Ok(built) => union.extend(built.plans),
+                Err(message) => {
+                    rows.push(Row::Error(format!("suite {}", member.generator), message));
+                    return Ok(rows);
+                }
+            }
+        }
+        rows.extend(crate::diff::run(&union, &repo_root, opts.verbose));
+        return Ok(rows);
+    }
     for member in members {
         // the membership gate proved the head is ported; run the whole
         // registry entry like the member's own command would
@@ -417,6 +447,7 @@ pub fn run(
             root: opts.root.clone(),
             dry_run: opts.dry_run,
             verbose: opts.verbose,
+            diff: opts.diff,
         };
         match engine::run(&modules, &member_opts, &member.element.address, cwd) {
             Ok(member_rows) => rows.extend(member_rows),
