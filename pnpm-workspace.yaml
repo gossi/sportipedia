@@ -69,12 +69,12 @@ catalogs:
     "prettier": ^3.9.4
     "stylelint": ^17.14.0
   test:
-    "@vitest/ui": "4.1.11"
-    "@vitest/browser-playwright": "4.1.11"
-    "@vitest/coverage-v8": "4.1.11"
+    "@vitest/ui": "4.1.12"
+    "@vitest/browser-playwright": "4.1.12"
+    "@vitest/coverage-v8": "4.1.12"
     "msw": "^3.0.0"
     "msw-storybook-addon": "^3.0.3"
-    vitest: 4.1.11
+    vitest: 4.1.12
     playwright: "1.65.1"
   workshop:
     "@storybook/addon-a11y": "^10.6.0"
