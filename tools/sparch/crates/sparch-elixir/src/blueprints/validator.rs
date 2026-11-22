@@ -322,7 +322,7 @@ mod tests {
 
     #[test]
     fn one_rule_is_one_file_even_over_several_fields() {
-        // at-most-one-owner names coachId AND teamId — two descriptors,
+        // at-most-one-owner names coach_id AND team_id — two descriptors,
         // one validator module
         let ctx = ctx_for("create-widget");
         let plans = ValidatorBlueprint.plans(&ctx);
@@ -400,11 +400,11 @@ mod tests {
         }
         assert_eq!(
             render(&plan.units, "validate/2"),
-            "@doc \"\"\"\nValidates the given coachId value.\n\"\"\"\n@spec validate(String.t(), map()) :: :ok | {:error, term()}\ndef validate(_value, _context) do\n  raise \"TODO: implement the at-most-one-owner validator (see the domain model rule)\"\nend"
+            "@doc \"\"\"\nValidates the given coach_id value.\n\"\"\"\n@spec validate(String.t(), map()) :: :ok | {:error, term()}\ndef validate(_value, _context) do\n  raise \"TODO: implement the at-most-one-owner validator (see the domain model rule)\"\nend"
         );
         assert_eq!(
             render(&plan.units, "moduledoc"),
-            "@moduledoc \"\"\"\nValidates the 'at-most-one-owner' rule: A widget is owned by at most one coach (either coachId or teamId, not both)\n\"\"\""
+            "@moduledoc \"\"\"\nValidates the 'at-most-one-owner' rule: A widget is owned by at most one coach (either coach_id or team_id, not both)\n\"\"\""
         );
     }
 

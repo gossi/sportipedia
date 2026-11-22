@@ -312,11 +312,11 @@ mod tests {
                 "field id",
                 "field title",
                 "field slug",
-                "field archivedAt",
-                "field coachId",
+                "field archived_at",
+                "field coach_id",
                 "field description",
                 "field label",
-                "field teamId",
+                "field team_id",
                 "apply widget-archived",
                 "apply widget-created",
                 "apply widget-edited",
@@ -388,7 +388,7 @@ mod tests {
 
         assert_eq!(
             get("apply widget-created"),
-            "def apply(%__MODULE__{} = _aggregate, %WidgetCreated{} = event) do\n  %__MODULE__{\n      id: event.id,\n      title: event.title,\n      slug: event.slug,\n      archivedAt: event.archivedAt,\n      coachId: event.coachId,\n      description: event.description,\n      label: event.label,\n      teamId: event.teamId\n  }\nend"
+            "def apply(%__MODULE__{} = _aggregate, %WidgetCreated{} = event) do\n  %__MODULE__{\n      id: event.id,\n      title: event.title,\n      slug: event.slug,\n      archived_at: event.archived_at,\n      coach_id: event.coach_id,\n      description: event.description,\n      label: event.label,\n      team_id: event.team_id\n  }\nend"
         );
         assert_eq!(
             get("apply widget-edited"),

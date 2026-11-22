@@ -50,15 +50,15 @@ schema:
     description:
       type: string
       description: "Optional description"
-    archivedAt:
+    archived_at:
       type: string
       format: date-time
       description: "When the widget was archived"
-    coachId:
+    coach_id:
       type: string
       format: uuid
       description: "Reference to the owning coach"
-    teamId:
+    team_id:
       type: string
       format: uuid
       description: "Reference to the owning team"
@@ -72,8 +72,8 @@ schema:
       slug: "classic-widget"
       label: "classic"
       description: "The original widget of the fixture world"
-      coachId: "equipment:coach:head-coach"
-      teamId: "equipment:team:first-team"
+      coach_id: "equipment:coach:head-coach"
+      team_id: "equipment:team:first-team"
     - id: "equipment:widget:gadget-2000"
       title: "Gadget 2000"
       slug: "gadget-2000"

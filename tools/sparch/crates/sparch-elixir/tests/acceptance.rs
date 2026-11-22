@@ -4,13 +4,15 @@
 //! criteria re-expressed in Rust — pickup, resurrection, black-box,
 //! fixture-driven.
 
-use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use common::{cleanup, sandbox, sparch};
 use sparch_elixir::{
     blueprints::{GENERATOR_ORDER, blueprint_for},
     suites::Suite,
 };
+
+mod common;
 
 fn pending_join(members: &[&'static str]) -> Option<String> {
     let p: Vec<&str> = members
@@ -26,56 +28,6 @@ fn first_unported() -> Option<&'static str> {
         .iter()
         .copied()
         .find(|g| blueprint_for(g).is_none())
-}
-
-fn fixtures() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../fixtures")
-        .canonicalize()
-        .expect("shared fixture corpus")
-}
-
-/// A fresh copy of the fixture repository: hosts in place, model mounted
-/// at `docs/domain-model`, no generated citizen yet.
-fn sandbox(tag: &str) -> PathBuf {
-    let unique = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_nanos();
-    let root = std::env::temp_dir().join(format!("sparch-elixir-{tag}-{unique}"));
-    copy_tree(&fixtures().join("repo"), &root);
-    std::fs::create_dir_all(root.join("docs")).unwrap();
-    copy_tree(
-        &fixtures().join("domain-model"),
-        &root.join("docs/domain-model"),
-    );
-    root
-}
-
-fn copy_tree(from: &Path, to: &Path) {
-    std::fs::create_dir_all(to).unwrap();
-    for entry in std::fs::read_dir(from).unwrap() {
-        let entry = entry.unwrap();
-        let target = to.join(entry.file_name());
-        if entry.file_type().unwrap().is_dir() {
-            copy_tree(&entry.path(), &target);
-        } else {
-            std::fs::copy(entry.path(), &target).unwrap();
-        }
-    }
-}
-
-fn sparch(root: &Path, args: &[&str]) -> (i32, String) {
-    let binary = env!("CARGO_BIN_EXE_sparch-elixir");
-    let output = Command::new(binary)
-        .args(args)
-        .arg("--root")
-        .arg(root)
-        .output()
-        .expect("run sparch-elixir");
-    let mut text = String::from_utf8_lossy(&output.stdout).to_string();
-    text.push_str(&String::from_utf8_lossy(&output.stderr));
-    (output.status.code().unwrap_or(-1), text)
 }
 
 const READ_MODEL: &str = "services/api/lib/sportipedia/catalog/equipment/widget/read_model.ex";
@@ -98,8 +50,8 @@ fn fresh_tree_creates_the_read_model() {
     assert!(text.contains("typed_schema \"widget\" do"));
     assert!(text.contains("field :title, :string"));
     assert!(text.contains("field :slug, :string"));
-    assert!(text.contains("field :archivedAt, :utc_datetime_usec"));
-    assert!(text.contains("field :coachId, :binary_id"));
+    assert!(text.contains("field :archived_at, :utc_datetime_usec"));
+    assert!(text.contains("field :coach_id, :binary_id"));
     assert!(text.contains("timestamps()"));
     assert!(text.contains("def insert_changeset(read_model, attrs) do"));
     assert!(text.contains("def update_changeset(read_model, attrs) do"));
@@ -331,8 +283,4 @@ fn the_old_check_flag_is_gone() {
     assert_eq!(code, 2, "--check no longer exists");
     assert!(out.contains("unexpected argument '--check'"), "{out}");
     cleanup(&root);
-}
-
-fn cleanup(root: &Path) {
-    let _ = std::fs::remove_dir_all(root);
 }

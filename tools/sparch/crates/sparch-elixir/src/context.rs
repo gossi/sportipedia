@@ -1066,7 +1066,7 @@ fn citizen_field_names(
 }
 
 /// The code form of one example value:
-/// a fixture key → `UUID.uuid5(:dns, key)`; a `*Id` field whose value is
+/// a fixture key → `UUID.uuid5(:dns, key)`; a `*_id` field whose value is
 /// neither a key nor a UUID → wrapped as well (the fail-safe reading);
 /// anything else → the literal, as `inspect` source.
 fn materialize_example(field: &str, value: &serde_json::Value) -> String {
@@ -1074,7 +1074,7 @@ fn materialize_example(field: &str, value: &serde_json::Value) -> String {
         if sparch_model::fixtures::fixture_key(text) {
             return uuid_expr(text);
         }
-        if field.ends_with("Id") && !canonical_uuid(text) {
+        if sparch_model::has_id_tail(field) && !canonical_uuid(text) {
             return uuid_expr(text);
         }
     }
@@ -1216,7 +1216,7 @@ pub fn fixture_functions(
         };
         for (field, value) in object {
             let Some(text) = value.as_str() else { continue };
-            if field.ends_with("Id")
+            if sparch_model::has_id_tail(field)
                 && !sparch_model::fixtures::fixture_key(text)
                 && !canonical_uuid(text)
             {

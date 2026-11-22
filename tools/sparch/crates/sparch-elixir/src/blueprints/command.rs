@@ -405,14 +405,14 @@ mod tests {
                 "field id",
                 "field title",
                 "field slug",
-                "field coachId",
+                "field coach_id",
                 "field description",
                 "field label",
-                "field teamId",
+                "field team_id",
                 "validates title",
                 "validates slug",
-                "validates coachId",
-                "validates teamId",
+                "validates coach_id",
+                "validates team_id",
             ]
         );
     }
@@ -442,8 +442,8 @@ mod tests {
             "validates :slug, presence: true, by: [function: &UniqueSlug.validate/2, allow_nil: true]"
         );
         assert_eq!(
-            render(&units, "validates coachId"),
-            "validates :coachId, by: [function: &AtMostOneOwner.validate/2, allow_nil: true]"
+            render(&units, "validates coach_id"),
+            "validates :coach_id, by: [function: &AtMostOneOwner.validate/2, allow_nil: true]"
         );
     }
 
@@ -504,12 +504,12 @@ mod tests {
                 "validator widget_exists not generated (sparch command)".to_string(),
             )]
         );
-        // a rule descriptor pair: the coachId line gates on its own module
+        // a rule descriptor pair: the coach_id line gates on its own module
         let coach = plan
             .units
             .iter()
-            .find(|u| u.id.label() == "validates coachId")
-            .expect("the coachId line");
+            .find(|u| u.id.label() == "validates coach_id")
+            .expect("the coach_id line");
         assert_eq!(coach.requires.len(), 1);
         assert_eq!(
             coach.requires[0].1,

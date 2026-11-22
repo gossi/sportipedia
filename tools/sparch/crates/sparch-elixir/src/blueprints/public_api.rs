@@ -488,7 +488,7 @@ mod tests {
         let units = units_for("create-widget");
         assert_eq!(
             render(&units, "create_widget/1"),
-            "\n@doc \"\"\"\nCatalogs a new widget in the equipment catalog\n\"\"\"\n@spec create_widget(%{required(:title) => String.t(), required(:slug) => String.t(), optional(:coachId) => String.t() | nil, optional(:description) => String.t() | nil, optional(:label) => String.t() | nil, optional(:teamId) => String.t() | nil}) :: Architecture.public_api(WidgetReadModel.t())\ndef create_widget(params) do\n  id = UUID.uuid4()\n  cmd = CreateWidget.new(Map.put(params, \"id\", id))\n\n  case Catalog.dispatch(cmd, consistency: :strong) do\n    :ok ->\n      {:ok, WidgetInternal.widget_by_id(id)}\n\n    {:error, errors} ->\n      ErrorClassifier.classify_error(errors)\n  end\nend"
+            "\n@doc \"\"\"\nCatalogs a new widget in the equipment catalog\n\"\"\"\n@spec create_widget(%{required(:title) => String.t(), required(:slug) => String.t(), optional(:coach_id) => String.t() | nil, optional(:description) => String.t() | nil, optional(:label) => String.t() | nil, optional(:team_id) => String.t() | nil}) :: Architecture.public_api(WidgetReadModel.t())\ndef create_widget(params) do\n  id = UUID.uuid4()\n  cmd = CreateWidget.new(Map.put(params, \"id\", id))\n\n  case Catalog.dispatch(cmd, consistency: :strong) do\n    :ok ->\n      {:ok, WidgetInternal.widget_by_id(id)}\n\n    {:error, errors} ->\n      ErrorClassifier.classify_error(errors)\n  end\nend"
         );
     }
 

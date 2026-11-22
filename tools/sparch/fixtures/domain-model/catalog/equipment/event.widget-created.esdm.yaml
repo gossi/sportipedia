@@ -25,11 +25,11 @@ data:
     description:
       type: string
       description: "Optional description"
-    coachId:
+    coach_id:
       type: string
       format: uuid
       description: "Owning coach"
-    teamId:
+    team_id:
       type: string
       format: uuid
       description: "Owning team"

@@ -12,7 +12,7 @@ invariants:
   - name: unique-slug
     rule: The slug for the widget must be unique within the domain
   - name: at-most-one-owner
-    rule: A widget is owned by at most one coach (either coachId or teamId, not both)
+    rule: A widget is owned by at most one coach (either coach_id or team_id, not both)
   - name: no-archive-when-in-use
     rule: A widget can only be archived when no sport references it via use-widget
 state:
@@ -34,18 +34,18 @@ state:
     description:
       type: string
       description: "Optional description"
-    archivedAt:
+    archived_at:
       type: string
       format: date-time
       description: "When the widget was archived"
-    coachId:
+    coach_id:
       type: string
       format: uuid
-      description: "Reference to the owning coach (mutually exclusive with teamId)"
-    teamId:
+      description: "Reference to the owning coach (mutually exclusive with team_id)"
+    team_id:
       type: string
       format: uuid
-      description: "Reference to the owning team (mutually exclusive with coachId)"
+      description: "Reference to the owning team (mutually exclusive with coach_id)"
   required:
     - id
     - title

@@ -149,7 +149,7 @@ pub fn validate(
         };
         // reference fields hold a key or a UUID
         for (name, value) in object {
-            if name.ends_with("Id")
+            if crate::fields::has_id_tail(name)
                 && let Some(text) = value.as_str()
                 && !fixture_key(text)
                 && !is_uuid(text)
@@ -214,7 +214,7 @@ pub fn referenced_keys(element: &Element) -> Vec<String> {
         .filter_map(Value::as_object)
         .flat_map(|object| {
             object.iter().filter_map(|(name, value)| {
-                if name.ends_with("Id") {
+                if crate::fields::has_id_tail(name) {
                     value
                         .as_str()
                         .filter(|v| fixture_key(v))
@@ -269,11 +269,11 @@ mod tests {
                 "properties": {
                     "id": { "type": "string" },
                     "title": { "type": "string" },
-                    "instrumentId": { "type": "string", "format": "uuid" }
+                    "instrument_id": { "type": "string", "format": "uuid" }
                 },
                 "required": ["id", "title"],
                 "examples": [
-                    { "id": "athlete:position:riding", "title": "Riding", "instrumentId": "equipment:instrument:unicycle" },
+                    { "id": "athlete:position:riding", "title": "Riding", "instrument_id": "equipment:instrument:unicycle" },
                     { "id": "athlete:position:bad", "title": "Bad", "unknown": 1 }
                 ]
             }
@@ -287,11 +287,11 @@ mod tests {
                 "properties": {
                     "id": { "type": "string" },
                     "title": { "type": "string" },
-                    "instrumentId": { "type": "string", "format": "uuid" }
+                    "instrument_id": { "type": "string", "format": "uuid" }
                 },
                 "required": ["id", "title"],
                 "examples": [
-                    { "id": "athlete:position:riding", "title": "Riding", "instrumentId": "equipment:instrument:unicycle" }
+                    { "id": "athlete:position:riding", "title": "Riding", "instrument_id": "equipment:instrument:unicycle" }
                 ]
             }
         }));

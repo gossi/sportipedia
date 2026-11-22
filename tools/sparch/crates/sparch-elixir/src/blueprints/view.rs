@@ -227,11 +227,11 @@ mod tests {
             vec![
                 ":title",
                 ":slug",
-                ":archivedAt",
-                ":coachId",
+                ":archived_at",
+                ":coach_id",
                 ":description",
                 ":label",
-                ":teamId"
+                ":team_id"
             ]
         );
         assert_eq!(View::view_path(&ctx), "catalog/equipment/widgets");
@@ -261,7 +261,7 @@ mod tests {
         );
         assert_eq!(
             render(&units, "fields/0"),
-            "def fields, do: [:title, :slug, :archivedAt, :coachId, :description, :label, :teamId]"
+            "def fields, do: [:title, :slug, :archived_at, :coach_id, :description, :label, :team_id]"
         );
     }
 
@@ -286,7 +286,7 @@ mod tests {
 
     #[test]
     fn a_written_view_reads_fully_present() {
-        let text = "defmodule SportipediaWeb.Catalog.Equipment.Widget.WidgetView do\n  @moduledoc \"\"\"\n  Renders widget resources in JSON:API format.\n  \"\"\"\n  use JSONAPI.View, type: \"widget\"\n\n  def path, do: \"catalog/equipment/widgets\"\n\n  def fields, do: [:title, :slug, :archivedAt, :coachId, :description, :label, :teamId]\nend\n";
+        let text = "defmodule SportipediaWeb.Catalog.Equipment.Widget.WidgetView do\n  @moduledoc \"\"\"\n  Renders widget resources in JSON:API format.\n  \"\"\"\n  use JSONAPI.View, type: \"widget\"\n\n  def path, do: \"catalog/equipment/widgets\"\n\n  def fields, do: [:title, :slug, :archived_at, :coach_id, :description, :label, :team_id]\nend\n";
         let file = crate::elixir::ElixirFile::parse(text);
         for unit in &units_for("widget") {
             assert!((unit.check)(&file), "{} must read present", unit.id.label());

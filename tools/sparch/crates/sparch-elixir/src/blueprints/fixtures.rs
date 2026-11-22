@@ -208,7 +208,7 @@ mod tests {
             "id": { "type": "string", "format": "uuid" },
             "title": { "type": "string" },
             "slug": { "type": "string" },
-            "coachId": { "type": "string", "format": "uuid" },
+            "coach_id": { "type": "string", "format": "uuid" },
         })
     }
 
@@ -223,7 +223,7 @@ mod tests {
                         "id": "equipment:widget:classic-widget",
                         "title": "Classic Widget",
                         "slug": "classic-widget",
-                        "coachId": "equipment:coach:head-coach",
+                        "coach_id": "equipment:coach:head-coach",
                     },
                     {
                         "id": "equipment:widget:gadget-2000",
@@ -241,7 +241,7 @@ mod tests {
         let attrs = &specs[0].attrs;
         assert_eq!(
             attrs.iter().map(|(n, _)| n.clone()).collect::<Vec<_>>(),
-            vec!["id", "title", "slug", "coachId"]
+            vec!["id", "title", "slug", "coach_id"]
         );
         assert_eq!(
             attrs[0].1,
@@ -260,7 +260,7 @@ mod tests {
             "schema": {
                 "properties": {
                     "title": { "type": "string" },
-                    "coachId": { "type": "string", "format": "uuid" },
+                    "coach_id": { "type": "string", "format": "uuid" },
                     "id": { "type": "string", "format": "uuid" },
                     "slug": { "type": "string" },
                 },
@@ -268,7 +268,7 @@ mod tests {
                 "examples": [
                     {
                         "slug": "x",
-                        "coachId": "equipment:coach:head-coach",
+                        "coach_id": "equipment:coach:head-coach",
                         "title": "T",
                         "id": "equipment:widget:x",
                     }
@@ -282,7 +282,7 @@ mod tests {
                 .iter()
                 .map(|(n, _)| n.clone())
                 .collect::<Vec<_>>(),
-            vec!["id", "title", "slug", "coachId"]
+            vec!["id", "title", "slug", "coach_id"]
         );
     }
 
@@ -297,7 +297,7 @@ mod tests {
                         "id": "catalog:widget:else",
                         "title": "Très mal",
                         "ghost": "here",
-                        "coachId": "just-a-word-without-colons",
+                        "coach_id": "just-a-word-without-colons",
                     }
                 ]
             }

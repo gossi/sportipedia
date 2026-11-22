@@ -24,14 +24,14 @@ data:
     description:
       type: string
       description: "Optional description"
-    coachId:
+    coach_id:
       type: string
       format: uuid
-      description: "Owning coach (optional, mutually exclusive with teamId)"
-    teamId:
+      description: "Owning coach (optional, mutually exclusive with team_id)"
+    team_id:
       type: string
       format: uuid
-      description: "Owning team (optional, mutually exclusive with coachId)"
+      description: "Owning team (optional, mutually exclusive with coach_id)"
   required:
     - title
     - slug

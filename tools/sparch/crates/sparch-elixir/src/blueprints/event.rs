@@ -217,10 +217,10 @@ mod tests {
                 "field id",
                 "field title",
                 "field slug",
-                "field coachId",
+                "field coach_id",
                 "field description",
                 "field label",
-                "field teamId",
+                "field team_id",
             ]
         );
     }

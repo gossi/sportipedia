@@ -113,9 +113,9 @@ pub fn sample_value(ctx: &Context, f: &Befield) -> String {
 }
 
 /// A field is structural when the name is `id`, the format is `uuid`, or
-/// it is a reference field (`*Id`).
+/// it is a reference field (`*_id`).
 fn structural(f: &Befield) -> bool {
-    f.name == "id" || f.format.as_deref() == Some("uuid") || f.name.ends_with("Id")
+    f.name == "id" || f.format.as_deref() == Some("uuid") || sparch_model::has_id_tail(&f.name)
 }
 
 fn structural_source(ctx: &Context, f: &Befield) -> String {
@@ -402,11 +402,11 @@ mod tests {
             "UUID.uuid4()"
         );
         assert_eq!(
-            typed_default(&field("coachId", "string", Some("uuid"), false)),
+            typed_default(&field("coach_id", "string", Some("uuid"), false)),
             "UUID.uuid4()"
         );
         assert_eq!(
-            typed_default(&field("archivedAt", "string", Some("date-time"), false)),
+            typed_default(&field("archived_at", "string", Some("date-time"), false)),
             "DateTime.utc_now()"
         );
         assert_eq!(typed_default(&field("n", "integer", None, false)), "1");
