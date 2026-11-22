@@ -94,7 +94,7 @@ catalogs:
     "unplugin-icons": ^22.5.0
   lib:
     "@hokulea/core": ^0.14.0
-    "@hokulea/ember": ^0.16.1
+    "@hokulea/ember": ^0.18.0
     "@hokulea/theme-moana": ^0.4.0
     "@theemo/ember": ^1.0.1
     "@theemo/vite": ^1.0.1
