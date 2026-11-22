@@ -9,100 +9,18 @@
 //! * every generated file parses without a single diagnostic
 //!
 //! Inputs are the shared fixture corpus, never the live `docs/domain-model`.
+//! The sandbox, CLI runner and parse guard live in `common/`, shared with
+//! `expected_files.rs`.
+
+mod common;
 
 use std::{
     collections::BTreeMap,
     fs,
     path::{Path, PathBuf},
-    process::Command,
 };
 
-use oxc_allocator::Allocator;
-use oxc_parser::Parser;
-use oxc_span::SourceType;
-
-fn corpus() -> PathBuf {
-    Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../../fixtures/domain-model")
-        .canonicalize()
-        .expect("fixture corpus")
-}
-
-fn sandbox() -> PathBuf {
-    static SEQ: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
-    let seq = SEQ.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let unique = format!(
-        "{}-{seq}",
-        std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_nanos()
-    );
-    let dir = std::env::temp_dir().join(format!("sparch-acceptance-{unique}"));
-    fs::create_dir_all(dir.join("docs")).unwrap();
-    fs::create_dir_all(dir.join("apps")).unwrap();
-
-    // the model: the fixture corpus, presented at the repo location
-    fs::create_dir_all(dir.join("docs/domain-model")).unwrap();
-    copy_dir(&corpus(), &dir.join("docs/domain-model"));
-
-    // registration hosts the generator must not invent
-    fs::create_dir_all(dir.join("apps/catalog/src")).unwrap();
-    fs::write(
-        dir.join("apps/catalog/src/config.ts"),
-        "import type { ApplicationInstance } from '@ember/application/instance';\n\
-         import type { Store } from '#support/data';\n\n\
-         function configureApi(app: ApplicationInstance) {\n\
-         \x20 const store = app.lookup('service:store') as Store;\n\n\
-         \x20 return store;\n\
-         }\n\n\
-         export function configure(app: ApplicationInstance) {\n\
-         \x20 configureApi(app);\n\
-         }\n",
-    )
-    .unwrap();
-
-    // the roles the ability tests address
-    let user = dir.join("apps/catalog/tests/user/support/fixtures");
-    fs::create_dir_all(&user).unwrap();
-    fs::write(
-        user.join("index.ts"),
-        "export const ADMIN = 'admin' as const;\n\
-         export const GUEST = 'guest' as const;\n\
-         export const USER = 'user' as const;\n",
-    )
-    .unwrap();
-
-    dir
-}
-
-fn copy_dir(from: &Path, to: &Path) {
-    for entry in fs::read_dir(from).unwrap() {
-        let entry = entry.unwrap();
-        let target = to.join(entry.file_name());
-        if entry.file_type().unwrap().is_dir() {
-            fs::create_dir_all(&target).unwrap();
-            copy_dir(&entry.path(), &target);
-        } else {
-            fs::copy(entry.path(), target).unwrap();
-        }
-    }
-}
-
-fn sparch(root: &Path, args: &[&str]) -> (i32, String) {
-    let binary = env!("CARGO_BIN_EXE_sparch-typescript");
-    let output = Command::new(binary)
-        .args(args)
-        .args(["--repo-root", root.to_str().unwrap()])
-        .output()
-        .expect("run sparch");
-    let stdout = String::from_utf8_lossy(&output.stdout).to_string();
-    let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-    (
-        output.status.code().unwrap_or(-1),
-        format!("{stdout}{stderr}"),
-    )
-}
+use common::{parse_problems, sandbox, sparch};
 
 fn tree(root: &Path) -> BTreeMap<PathBuf, String> {
     let mut files = BTreeMap::new();
@@ -130,20 +48,18 @@ fn collect(dir: &Path, files: &mut BTreeMap<PathBuf, String>) {
 
 fn assert_all_parse(root: &Path) {
     for (rel, text) in tree(root) {
-        let allocator = Allocator::default();
-        let source_type = SourceType::from_path(&rel).unwrap_or_else(|_| SourceType::ts());
-        let ret = Parser::new(&allocator, &text, source_type).parse();
-        assert!(
-            !ret.fatal_error && ret.diagnostics.is_empty(),
-            "generated file {} does not parse:\n{text}",
-            rel.display()
-        );
+        if let Some(why) = parse_problems(&rel.to_string_lossy(), &text) {
+            panic!(
+                "generated file {} does not parse ({why}):\n{text}",
+                rel.display()
+            );
+        }
     }
 }
 
 #[test]
 fn fresh_tree_completes_backfills_and_is_stable() {
-    let root = sandbox();
+    let root = sandbox("stable");
 
     // 1. the dependent citizen first: the equipment subjects are missing,
     //    everything referencing them defers — never a broken import
@@ -329,7 +245,7 @@ fn fresh_tree_completes_backfills_and_is_stable() {
 /// file materializes creates the barrel; nothing dangles meanwhile.
 #[test]
 fn citizen_without_examples_still_gets_its_barrel() {
-    let root = sandbox();
+    let root = sandbox("barrel");
     let (code, out) = sparch(&root, &["feature", "exercise"]);
     assert_eq!(code, 0, "{out}");
 

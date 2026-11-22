@@ -79,7 +79,12 @@ pub fn plan(citizen: &Citizen, layout: &Layout) -> Output {
 }
 
 pub fn schema_const(citizen: &Citizen) -> String {
-    format!("{}Schema", citizen.constituent)
+    // the identifier camel-cases the constituent: a kebab name would not
+    // parse (`apparatus-certificationSchema` is not a JS identifier)
+    format!(
+        "{}Schema",
+        Name::parse(&citizen.constituent).render(Case::Camel)
+    )
 }
 
 pub fn configure_fn(citizen: &Citizen) -> String {
@@ -238,9 +243,7 @@ mod tests {
             text.contains("kind: 'belongsTo',\n      name: 'certification',\n      type: 'apparatus-certification',")
         );
         // many_to_many is a hasMany over the plain derived join table
-        assert!(
-            text.contains("kind: 'hasMany',\n      name: 'tags',\n      type: 'tag',")
-        );
+        assert!(text.contains("kind: 'hasMany',\n      name: 'tags',\n      type: 'tag',"));
         assert!(text.contains("inverse: 'apparatuses'"));
     }
 
