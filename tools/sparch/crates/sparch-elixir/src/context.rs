@@ -113,9 +113,7 @@ impl Befield {
     /// Whether this field's relation carries the parent side of an edge:
     /// no database field, never cast, rendered as an association macro.
     pub fn is_virtual(&self) -> bool {
-        self.relation
-            .as_ref()
-            .is_some_and(|r| r.kind.is_virtual())
+        self.relation.as_ref().is_some_and(|r| r.kind.is_virtual())
     }
 
     /// The database field a changeset consumes for this column: the

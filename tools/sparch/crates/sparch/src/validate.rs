@@ -7,11 +7,11 @@
 use std::path::{Path, PathBuf};
 
 use serde::Serialize;
-use sparch_model::fields::{self, RELATION_KEY};
 use sparch_model::Model;
 use sparch_model::annotations::{
     EFFECT_PREFIX, OPERATION_KEY, OPERATIONS, QUERY_OPERATIONS, annotations, declared_effects,
 };
+use sparch_model::fields::{self, RELATION_KEY};
 use sparch_model::fixtures::{examples_of, referenced_keys, validate as validate_examples};
 use sparch_model::{Case, Element, ElementKind, Name, RelationKind};
 
@@ -466,7 +466,9 @@ fn relation_findings(model: &Model, element: &Element) -> Vec<Finding> {
             continue;
         };
         if let Some(inverse) = &relation.inverse {
-            out.extend(relation_pair(model, element, &f.name, relation, &target, inverse));
+            out.extend(relation_pair(
+                model, element, &f.name, relation, &target, inverse,
+            ));
         }
     }
     out
@@ -718,16 +720,19 @@ fn relation_whole_findings(model: &Model) -> Vec<Finding> {
     // (storage, pair) per declared many_to_many property — one entry per
     // side, so a pair appears twice with the same storage and pair key
     let mut stored: Vec<(String, (String, String), Element, String)> = Vec::new();
-    for rm in model.elements.iter().filter(|e| e.kind == ElementKind::ReadModel) {
+    for rm in model
+        .elements
+        .iter()
+        .filter(|e| e.kind == ElementKind::ReadModel)
+    {
         for f in fields::fields(rm) {
-            let Some(relation) = &f.relation else { continue };
+            let Some(relation) = &f.relation else {
+                continue;
+            };
             if relation.kind != RelationKind::ManyToMany {
                 continue;
             }
-            if model
-                .find(ElementKind::ReadModel, &relation.to)
-                .is_none()
-            {
+            if model.find(ElementKind::ReadModel, &relation.to).is_none() {
                 continue;
             }
             let storage = match (&relation.join_model, &relation.join_table) {
@@ -735,7 +740,10 @@ fn relation_whole_findings(model: &Model) -> Vec<Finding> {
                 (None, Some(jt)) => format!("table:{jt}"),
                 (None, None) => format!(
                     "table:{}",
-                    sparch_elixir::blueprints::read_model::derive_join_table(&rm.name, &relation.to)
+                    sparch_elixir::blueprints::read_model::derive_join_table(
+                        &rm.name,
+                        &relation.to
+                    )
                 ),
             };
             let pair = {
@@ -773,7 +781,10 @@ fn relation_whole_findings(model: &Model) -> Vec<Finding> {
     for (storage, pair, rm, property) in &stored {
         match counts.iter_mut().find(|(s, _)| s == storage) {
             Some((_, seen)) => seen.push((pair.clone(), rm.clone(), property.clone())),
-            None => counts.push((storage.clone(), vec![(pair.clone(), rm.clone(), property.clone())])),
+            None => counts.push((
+                storage.clone(),
+                vec![(pair.clone(), rm.clone(), property.clone())],
+            )),
         }
     }
     for (storage, seen) in &counts {
@@ -930,7 +941,10 @@ mod tests {
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../fixtures/domain-model");
         let model = Model::load(&root.canonicalize().expect("fixture corpus"));
         let messages = relation_messages(&model);
-        assert!(messages.is_empty(), "corpus relation findings: {messages:#?}");
+        assert!(
+            messages.is_empty(),
+            "corpus relation findings: {messages:#?}"
+        );
     }
 
     #[test]
@@ -972,11 +986,15 @@ mod tests {
         ]);
         let messages = relation_messages(&model);
         assert!(
-            messages.iter().any(|m| m.contains("array of uuids by definition")),
+            messages
+                .iter()
+                .any(|m| m.contains("array of uuids by definition")),
             "{messages:?}"
         );
         assert!(
-            messages.iter().any(|m| m.contains("column on \"positions\" is only for belongs_to")),
+            messages
+                .iter()
+                .any(|m| m.contains("column on \"positions\" is only for belongs_to")),
             "{messages:?}"
         );
     }
@@ -1002,9 +1020,9 @@ mod tests {
         ]);
         let messages = relation_messages(&model);
         assert!(
-            messages
-                .iter()
-                .any(|m| m.contains("binds the far side \"mounted_on\" on position, which does not declare it")),
+            messages.iter().any(|m| m.contains(
+                "binds the far side \"mounted_on\" on position, which does not declare it"
+            )),
             "{messages:?}"
         );
     }
@@ -1165,7 +1183,8 @@ mod tests {
         let messages = relation_messages(&model_of(vec![movement, tag, link, command]));
         assert!(
             messages.iter().any(|m| {
-                m.contains("data field \"tag_ids\" sets the modeled link") && m.contains("join_model owns its rows")
+                m.contains("data field \"tag_ids\" sets the modeled link")
+                    && m.contains("join_model owns its rows")
             }),
             "{messages:?}"
         );
@@ -1242,14 +1261,12 @@ mod tests {
 
     #[test]
     fn a_join_table_never_names_a_read_model_table() {
-        let model = model_of(vec![
-            read_model(
-                "position",
-                json!({
-                    "apparatus_id": { "type": "string" }
-                }),
-            ),
-        ]);
+        let model = model_of(vec![read_model(
+            "position",
+            json!({
+                "apparatus_id": { "type": "string" }
+            }),
+        )]);
         let messages = relation_messages(&model);
         // plain data with an _id tail that matches a plain property is fine
         assert!(messages.is_empty(), "{messages:?}");
@@ -1273,9 +1290,8 @@ mod tests {
         ]);
         let messages = relation_messages(&model);
         assert!(
-            messages
-                .iter()
-                .any(|m| m.contains("join table \"position\" of \"tags\" names the table of a read model")),
+            messages.iter().any(|m| m
+                .contains("join table \"position\" of \"tags\" names the table of a read model")),
             "{messages:?}"
         );
     }

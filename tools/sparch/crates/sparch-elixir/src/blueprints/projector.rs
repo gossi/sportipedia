@@ -239,9 +239,10 @@ fn replace_units(ctx: &Context) -> Vec<SetEdge> {
             if !sparch_model::field_matches_property(&f.name, &p) {
                 continue;
             }
-            let table = rel.join_table.clone().unwrap_or_else(|| {
-                super::read_model::derive_join_table(&rm.name, &rel.to)
-            });
+            let table = rel
+                .join_table
+                .clone()
+                .unwrap_or_else(|| super::read_model::derive_join_table(&rm.name, &rel.to));
             out.push(SetEdge {
                 clause: clause.clone(),
                 property: p.name.clone(),
@@ -295,11 +296,7 @@ fn replace_step(edge: &SetEdge, at: usize, cleanup_only: bool) -> String {
     format!("\n{pad}|> Ecto.Multi.run(:{name}, fn repo, _ ->\n{body}")
 }
 
-fn clause_body(
-    ctx: &Context,
-    effect: Operation,
-    event_pascal: &str,
-) -> String {
+fn clause_body(ctx: &Context, effect: Operation, event_pascal: &str) -> String {
     let read_model = format!("{}ReadModel", Context::pascal(&ctx.constituent));
     let internal = format!("{}Internal", Context::pascal(&ctx.constituent));
     let var = ctx.constituent.clone();
@@ -602,7 +599,9 @@ mod tests {
             "{text}"
         );
         assert!(
-            text.contains("{:ok, repo.insert_all(\"apparatuses_tags\", rows, prefix: \"catalog\")}"),
+            text.contains(
+                "{:ok, repo.insert_all(\"apparatuses_tags\", rows, prefix: \"catalog\")}"
+            ),
             "{text}"
         );
     }

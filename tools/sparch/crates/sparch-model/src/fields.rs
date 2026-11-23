@@ -253,7 +253,10 @@ pub fn malformed_relation(spec: &Value) -> bool {
 /// id-carrying kind, and `None` on the virtual kinds, which own no field.
 pub fn relation_column(field: &Field) -> Option<String> {
     let relation = field.relation.as_ref()?;
-    relation.kind.carries_column().then(|| column_of(&field.name, relation))
+    relation
+        .kind
+        .carries_column()
+        .then(|| column_of(&field.name, relation))
 }
 
 /// The correlation rule between a command or event data field and a read
@@ -272,9 +275,7 @@ pub fn field_matches_property(data_field: &str, property: &Field) -> bool {
     };
     match relation.kind {
         RelationKind::BelongsTo => data_field == format!("{}_id", property.name),
-        RelationKind::ManyToMany => {
-            data_field == format!("{}_ids", singularize(&property.name))
-        }
+        RelationKind::ManyToMany => data_field == format!("{}_ids", singularize(&property.name)),
         RelationKind::HasOne | RelationKind::HasMany => false,
     }
 }
@@ -358,7 +359,10 @@ mod tests {
         let relation = mobile.relation.clone().expect("mobile relation");
         assert_eq!(relation.column.as_deref(), Some("carried_apparatus_id"));
         assert_eq!(column_of("mobile", &relation), "carried_apparatus_id");
-        assert_eq!(relation_column(mobile).as_deref(), Some("carried_apparatus_id"));
+        assert_eq!(
+            relation_column(mobile).as_deref(),
+            Some("carried_apparatus_id")
+        );
 
         let tags = fields.iter().find(|f| f.name == "tags").expect("tags");
         let relation = tags.relation.clone().expect("tags relation");

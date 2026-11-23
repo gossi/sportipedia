@@ -109,7 +109,9 @@ pub fn render(model: &Model, element: &Element) -> Result<String, String> {
     // the join table of a plain many_to_many, rendered once per pair:
     // this model is its alphabetically first side
     for f in ctx.fields.iter().filter(|f| f.name != "id") {
-        let Some(relation) = &f.relation else { continue };
+        let Some(relation) = &f.relation else {
+            continue;
+        };
         if relation.kind != RelationKind::ManyToMany || relation.join_model.is_some() {
             continue;
         }
@@ -197,15 +199,24 @@ mod tests {
     #[test]
     fn edges_render_columns_and_their_far_side_decides_indexes() {
         let text = render_name("position");
-        assert!(text.contains("create table(:position, primary_key: false, prefix: \"catalog\") do"));
+        assert!(
+            text.contains("create table(:position, primary_key: false, prefix: \"catalog\") do")
+        );
         assert!(text.contains("add :apparatus_id, :binary_id\n"));
         assert!(text.contains("add :installed_instrument_id, :binary_id\n"));
         // the far side binds apparatus as has_many, not has_one: plain
         assert!(text.contains("create index(:position, [:apparatus_id], prefix: \"catalog\")"));
-        assert!(text.contains("create index(:position, [:installed_instrument_id], prefix: \"catalog\")"));
+        assert!(
+            text.contains(
+                "create index(:position, [:installed_instrument_id], prefix: \"catalog\")"
+            )
+        );
         assert!(!text.contains("unique_index(:position, [:apparatus_id]"));
         // the returning collection owns no column of position
-        assert!(!text.contains("positions"), "virtual kinds render nothing: {text}");
+        assert!(
+            !text.contains("positions"),
+            "virtual kinds render nothing: {text}"
+        );
     }
 
     #[test]
@@ -258,9 +269,15 @@ mod tests {
             exercise.contains("add :backup_apparatus_id, :binary_id\n"),
             "optional, so no null: {exercise}"
         );
-        assert!(!exercise.contains("exercise_tag"), "the link table belongs to its own read model: {exercise}");
+        assert!(
+            !exercise.contains("exercise_tag"),
+            "the link table belongs to its own read model: {exercise}"
+        );
         let link = render_name("exercise-tag");
-        assert!(link.contains("create table(:\"exercise-tag\", primary_key: false"), "{link}");
+        assert!(
+            link.contains("create table(:\"exercise-tag\", primary_key: false"),
+            "{link}"
+        );
         assert!(link.contains("add :exercise_id, :binary_id, null: false"));
         assert!(link.contains("add :tag_id, :binary_id, null: false"));
     }

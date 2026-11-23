@@ -150,10 +150,7 @@ fn translation(ctx: &Context, op: &str) -> String {
         .iter()
         .map(|(_, key, _)| format!("Map.put(\"{key}\", {key})"))
         .collect();
-    text.push_str(&format!(
-        "\n\n  base\n  |> {}\nend",
-        calls.join("\n  |> ")
-    ));
+    text.push_str(&format!("\n\n  base\n  |> {}\nend", calls.join("\n  |> ")));
     text
 }
 
@@ -774,7 +771,9 @@ mod tests {
             "{op}"
         );
         assert!(
-            op.contains("apparatus_id = get_in(data, [\"relationships\", \"apparatus\", \"data\", \"id\"])"),
+            op.contains(
+                "apparatus_id = get_in(data, [\"relationships\", \"apparatus\", \"data\", \"id\"])"
+            ),
             "{op}"
         );
         assert!(

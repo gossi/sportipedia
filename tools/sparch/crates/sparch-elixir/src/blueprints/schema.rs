@@ -711,11 +711,19 @@ mod tests {
         assert!(body.contains(
             "apparatus: %OpenApiSpex.Schema{type: :object, properties: %{\n            data: %OpenApiSpex.Schema{type: :object, nullable: true"
         ), "{body}");
-        assert!(body.contains("instrument: %OpenApiSpex.Schema{type: :object"), "{body}");
+        assert!(
+            body.contains("instrument: %OpenApiSpex.Schema{type: :object"),
+            "{body}"
+        );
         // ...and never as an attribute under its id spelling
         assert!(!body.contains("apparatus_id:"), "{body}");
         assert!(!body.contains("instrument_id:"), "{body}");
         // plain fields stay attributes
-        assert!(body.contains("title: %OpenApiSpex.Schema{type: :string, description: \"Name of the position\"}"), "{body}");
+        assert!(
+            body.contains(
+                "title: %OpenApiSpex.Schema{type: :string, description: \"Name of the position\"}"
+            ),
+            "{body}"
+        );
     }
 }

@@ -106,10 +106,12 @@ pub fn target_of(ctx: &Context, read_model_name: &str) -> Option<Target> {
 fn child_edge(ctx: &Context, relation: &sparch_model::Relation) -> Option<(Befield, String)> {
     let inverse = relation.inverse.as_deref()?;
     let tctx = ctx.target_context(&relation.to)?;
-    let edge = tctx
-        .fields
-        .iter()
-        .find(|f| f.name == inverse && f.relation.as_ref().is_some_and(|r| r.kind == sparch_model::RelationKind::BelongsTo))?;
+    let edge = tctx.fields.iter().find(|f| {
+        f.name == inverse
+            && f.relation
+                .as_ref()
+                .is_some_and(|r| r.kind == sparch_model::RelationKind::BelongsTo)
+    })?;
     Some((edge.clone(), edge.column()))
 }
 
@@ -154,10 +156,7 @@ fn schema_entry(ctx: &Context, f: &Befield) -> Option<(String, String, String)> 
                 }
                 _ => String::new(),
             };
-            let line = format!(
-                "{macro_} :{}, {}{foreign_key}",
-                f.name, target.short
-            );
+            let line = format!("{macro_} :{}, {}{foreign_key}", f.name, target.short);
             Some((macro_.to_string(), format!(":{}", f.name), line))
         }
         sparch_model::RelationKind::ManyToMany => match &relation.join_model {
@@ -168,16 +167,13 @@ fn schema_entry(ctx: &Context, f: &Befield) -> Option<(String, String, String)> 
                     "many_to_many :{}, {}, join_through: {}, join_keys: [{keys}]",
                     f.name, target.short, join.short
                 );
-                Some((
-                    "many_to_many".to_string(),
-                    format!(":{}", f.name),
-                    line,
-                ))
+                Some(("many_to_many".to_string(), format!(":{}", f.name), line))
             }
             None => {
-                let table = relation.join_table.clone().unwrap_or_else(|| {
-                    derive_join_table(&ctx.constituent, &relation.to)
-                });
+                let table = relation
+                    .join_table
+                    .clone()
+                    .unwrap_or_else(|| derive_join_table(&ctx.constituent, &relation.to));
                 let line = format!(
                     "many_to_many :{}, {}, join_through: \"{table}\"",
                     f.name, target.short
@@ -196,9 +192,9 @@ fn join_keys(ctx: &Context, join: &Context, far: &Target) -> Option<String> {
         join.fields
             .iter()
             .find(|f| {
-                f.relation
-                    .as_ref()
-                    .is_some_and(|r| r.kind == sparch_model::RelationKind::BelongsTo && r.to == name)
+                f.relation.as_ref().is_some_and(|r| {
+                    r.kind == sparch_model::RelationKind::BelongsTo && r.to == name
+                })
             })
             .map(|f| f.column())
     };
@@ -212,7 +208,9 @@ fn join_keys(ctx: &Context, join: &Context, far: &Target) -> Option<String> {
 fn relation_aliases(ctx: &Context) -> Vec<String> {
     let mut modules: Vec<String> = Vec::new();
     for f in schema_fields(ctx) {
-        let Some(relation) = &f.relation else { continue };
+        let Some(relation) = &f.relation else {
+            continue;
+        };
         for name in std::iter::once(relation.to.clone()).chain(relation.join_model.clone()) {
             if let Some(t) = target_of(ctx, &name)
                 && !modules.contains(&t.module)
@@ -507,8 +505,16 @@ mod tests {
         );
         // the far modules arrive as aliases
         let aliases = relation_aliases(&ctx);
-        assert!(aliases.contains(&"Sportipedia.Catalog.Equipment.Apparatus.ApparatusReadModel".to_string()));
-        assert!(aliases.contains(&"Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel".to_string()));
+        assert!(
+            aliases.contains(
+                &"Sportipedia.Catalog.Equipment.Apparatus.ApparatusReadModel".to_string()
+            )
+        );
+        assert!(
+            aliases.contains(
+                &"Sportipedia.Catalog.Equipment.Instrument.InstrumentReadModel".to_string()
+            )
+        );
     }
 
     #[test]
@@ -534,7 +540,10 @@ mod tests {
         // nothing virtual reaches the cast lists
         let atoms = updatable_field_atoms(&ctx);
         for absent in [":positions", ":certification", ":tags"] {
-            assert!(!atoms.contains(absent), "{absent} must not be cast: {atoms}");
+            assert!(
+                !atoms.contains(absent),
+                "{absent} must not be cast: {atoms}"
+            );
         }
     }
 
@@ -565,7 +574,9 @@ mod tests {
             l == "many_to_many :tags, TagReadModel, join_through: ExerciseTagReadModel, join_keys: [exercise_id: :id, tag_id: :id]"
         }));
         let aliases = relation_aliases(&ctx);
-        assert!(aliases.contains(&"Sportipedia.Catalog.Exercises.ExerciseTag.ExerciseTagReadModel".to_string()));
+        assert!(aliases.contains(
+            &"Sportipedia.Catalog.Exercises.ExerciseTag.ExerciseTagReadModel".to_string()
+        ));
     }
 
     #[test]
