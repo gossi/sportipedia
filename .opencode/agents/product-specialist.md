@@ -1,6 +1,5 @@
 ---
 description: Product Specialist — Authority over Domain Model and Specifications
-temperature: 0
 mode: all
 model: opencode-go/qwen3.8-flash
 ---

@@ -25,9 +25,9 @@ defmodule Mix.Tasks.Sp.Gen.Feature do
   list, never a guess; there is no `--template` here.
 
   What the suite does NOT do: implement residual bodies, run tests, or
-  touch git — that belongs to the `implement` step of a recipe
-  (`.opencode/recipes/domain-feature.recipe.md`). The suite is the
-  `generate` step made one command.
+  touch git — that belongs to the `implement` step of the spec recipe
+  (`.opencode/recipes/spec.recipe.md`), which runs this suite in the same session it
+  fills the bodies in.
 
   The suite refuses until every member generator is ported to
   `sparch-elixir`, naming the missing ones. While it refuses, run the same

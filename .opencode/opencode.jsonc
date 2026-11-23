@@ -1,95 +1,69 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "permission": {
-    "read": {
-      "*": "allow",
-      "*.env": "deny",
-      "*.env.*": "deny",
-      "*.env.example": "allow"
-    },
-  },
+  "permissions": [
+    { "action": "external_directory", "resource": "*", "effect": "deny" },
+    { "action": "read", "resource": "*", "effect": "allow" },
+    { "action": "read", "resource": "*.env", "effect": "deny" },
+    { "action": "read", "resource": "*.env.*", "effect": "deny" },
+    { "action": "read", "resource": "*.env.example", "effect": "allow" }
+  ],
   "mcp": {
-    // "elixir-ls": {
-    //   "type": "local",
-    //   "command": [
-    //     "bash",
-    //     "scripts/start-elixir-ls-mcp.sh"
-    //   ],
-    //   "enabled": true
-    // },
-    "playwright": {
-      "type": "local",
-      "command": ["node_modules/.bin/playwright-mcp"],
-      "enabled": true,
-      "environment": {
-        "PLAYWRIGHT_MCP_BROWSER": "chromium",
-        "PLAYWRIGHT_MCP_HEADLESS": "true"
+    "servers": {
+      "playwright": {
+        "type": "local",
+        "command": ["node_modules/.bin/playwright-mcp"],
+        "environment": {
+          "PLAYWRIGHT_MCP_BROWSER": "chromium",
+          "PLAYWRIGHT_MCP_HEADLESS": "true"
+        }
+      },
+      "better-auth": {
+        "type": "remote",
+        "url": "https://mcp.better-auth.com/mcp"
+      },
+      "sparch": {
+        "type": "local",
+        "command": ["tools/sparch/target/release/sparch", "mcp"]
       }
-    },
-    "better-auth": {
-      "type": "remote",
-      "url": "https://mcp.better-auth.com/mcp",
-      "enabled": true
-    },
-    "sparch": {
-      "type": "local",
-      "command": ["tools/sparch/target/release/sparch", "mcp"],
-      "enabled": true
     }
   },
-  "agent": {
+  "agents": {
     "builder": {
-      "color": "primary"
+      "color": "#8aadf4"
     },
     "product-specialist": {
-      "color": "primary",
-      "permission": {
-        "read": {
-          "*": "deny",
-          "docs/**": "allow",
-          "ARCHITECTURE.md": "allow",
-          "AGENTS.md": "allow"
-        },
-        "edit": {
-          "*": "deny",
-          "docs/domain-model/**": "allow",
-          "docs/specs/**": "allow"
-        },
-        "glob": {
-          "*": "deny",
-          "docs/**": "allow",
-          "ARCHITECTURE.md": "allow",
-          "AGENTS.md": "allow"
-        },
-        "grep": {
-          "*": "deny",
-          "docs/**": "allow",
-          "ARCHITECTURE.md": "allow",
-          "AGENTS.md": "allow"
-        },
-        "list": {
-          "*": "deny",
-          "docs/**": "allow"
-        },
-        "bash": {
-          "*": "deny",
-          "esdm lint": "allow"
-        },
-        "task": "deny",
-        "webfetch": "deny",
-        "question": "allow",
-        "skill": "allow",
-        "todowrite": "allow"
-      }
+      "color": "#8aadf4",
+      "permissions": [
+        { "action": "read", "resource": "*", "effect": "deny" },
+        { "action": "read", "resource": "docs/**", "effect": "allow" },
+        { "action": "read", "resource": "ARCHITECTURE.md", "effect": "allow" },
+        { "action": "read", "resource": "AGENTS.md", "effect": "allow" },
+
+        { "action": "edit", "resource": "*", "effect": "deny" },
+        { "action": "edit", "resource": "docs/domain-model/**", "effect": "allow" },
+        { "action": "edit", "resource": "docs/specs/**", "effect": "allow" },
+
+        { "action": "glob", "resource": "*", "effect": "deny" },
+        { "action": "glob", "resource": "docs/**", "effect": "allow" },
+
+        { "action": "grep", "resource": "*", "effect": "allow" },
+        { "action": "shell", "resource": "*", "effect": "deny" },
+        { "action": "shell", "resource": "esdm lint *", "effect": "allow" },
+        { "action": "shell", "resource": "sparch validate *", "effect": "allow" },
+        { "action": "webfetch", "resource": "*", "effect": "deny" },
+        { "action": "subagent", "resource": "*", "effect": "deny" },
+        { "action": "question", "resource": "*", "effect": "allow" },
+        { "action": "skill", "resource": "*", "effect": "allow" }
+      ]
     },
-    "backend-engineer": {
-      "color": "primary"
+    "software-engineer": {
+      "color": "#8aadf4"
     },
     "software-architect": {
-      "color": "primary"
+      "color": "#8aadf4"
     }
   },
-  "reference": {
+  "references": {
     "recipes": {
       "path": ".opencode/recipes"
     }
