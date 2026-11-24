@@ -5,6 +5,8 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
+use sparch::manpage;
+
 fn fixtures() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
         .join("../../fixtures")
@@ -187,10 +189,27 @@ fn man_pages_render_with_generated_headers() {
         out.contains("mix sp.gen.read_model [options] <READ-MODEL>"),
         "the synopsis is the binding call:\n{out}"
     );
+
+    // What a formatter does to the text is its own business: groff justifies and
+    // hyphenates, mandoc does neither, and neither is wrong. Both sides of a prose
+    // comparison therefore go through the same function that puts prose into a
+    // page, which leaves the content as the only thing under test.
+    let page = manpage::plain_text(&out);
     assert!(
-        out.contains("The queryable projection of the events"),
+        page.contains(&manpage::plain_text(
+            "The queryable projection of the events"
+        )),
         "the author's prose:\n{out}"
     );
+    assert!(
+        page.contains(&manpage::plain_text("they need — with a")),
+        "the prose keeps its dash:\n{out}"
+    );
+
+    // Two artifacts the Linux renderer used to leak into the text: escape
+    // sequences meant for a terminal, and a mis-decoded UTF-8 dash.
+    assert!(!out.contains('\u{1b}'), "the page carries escapes:\n{out}");
+    assert!(!out.contains("â"), "the page carries mojibake:\n{out}");
 
     let (code, out) = sparch(&["man", "projector", "--roff"]);
     assert_eq!(code, 0, "{out}");

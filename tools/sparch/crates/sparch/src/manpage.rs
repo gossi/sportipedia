@@ -142,10 +142,7 @@ fn be_page(generator: &str) -> Page {
             .collect(),
     };
     let roff = assemble(&facts);
-    Page {
-        name: facts.page,
-        roff,
-    }
+    page_of(facts.page, roff)
 }
 
 fn fe_page(artifact: &str) -> Page {
@@ -171,10 +168,7 @@ fn fe_page(artifact: &str) -> Page {
         suites,
     };
     let roff = assemble(&facts);
-    Page {
-        name: facts.page,
-        roff,
-    }
+    page_of(facts.page, roff)
 }
 
 fn placeholder(kinds: &[&'static str]) -> String {
@@ -256,6 +250,56 @@ fn title_line(page: &str) -> String {
     )
 }
 
+/// The typographic characters the manuals use, spelled the way every formatter
+/// agrees on. groff decodes its input as latin1 whatever the locale says, so a
+/// UTF-8 em dash reaches the page as mojibake, and its code point spelling came
+/// out doubled on groff 1.24.2. mandoc renders both correctly, which is why this
+/// only ever showed up on Linux. ASCII asks neither renderer to behave.
+const FOLDS: [(&str, &str); 11] = [
+    ("\u{2014}", "-"),   // em dash
+    ("\u{2013}", "-"),   // en dash
+    ("\u{2010}", "-"),   // hyphen
+    ("\u{2011}", "-"),   // non-breaking hyphen
+    ("\u{2192}", "->"),  // right arrow
+    ("\u{2190}", "<-"),  // left arrow
+    ("\u{2194}", "<->"), // left right arrow
+    ("\u{2026}", "..."), // ellipsis
+    ("\u{201c}", "\""),  // left double quote
+    ("\u{201d}", "\""),  // right double quote
+    ("\u{2019}", "'"),   // right single quote
+];
+
+/// Turn author prose into the text a page carries, independent of any renderer.
+/// Everything that reads a manual page as text, the tests included, compares
+/// through here, so a formatter's spacing and typography cannot become the
+/// subject of an assertion.
+pub fn plain_text(text: &str) -> String {
+    let folded = fold(text);
+    folded.split_whitespace().collect::<Vec<_>>().join(" ")
+}
+
+fn fold(text: &str) -> String {
+    let mut out = text.to_string();
+    for (from, to) in FOLDS {
+        out = out.replace(from, to);
+    }
+    // Anything left over is rare enough to go through as a code point reference
+    // rather than as bytes a renderer may decode however its locale likes.
+    out.chars()
+        .map(|ch| match ch.is_ascii() {
+            true => ch.to_string(),
+            false => format!("\\[u{:04X}]", ch as u32),
+        })
+        .collect()
+}
+
+fn page_of(name: String, roff: String) -> Page {
+    Page {
+        name,
+        roff: fold(&roff),
+    }
+}
+
 fn clap_section(render: impl Fn(&mut dyn std::io::Write) -> std::io::Result<()>) -> String {
     let mut buffer: Vec<u8> = Vec::new();
     render(&mut buffer).expect("writing to a Vec cannot fail");
@@ -320,10 +364,7 @@ fn index_page() -> Page {
     roff.push_str(&clap_section(|w| man.render_extra_section(w)));
     roff.push_str(&generators_section());
     roff.push_str(&suites_section());
-    Page {
-        name: INDEX.to_string(),
-        roff,
-    }
+    page_of(INDEX.to_string(), roff)
 }
 
 fn generators_section() -> String {

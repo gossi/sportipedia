@@ -125,12 +125,42 @@ pub fn page_text(generator: Option<&str>, target: Option<&str>) -> Result<String
 
 fn plain(roff: &str, page: &str) -> String {
     if let Some(text) = through_groff(roff) {
-        return strip_overstrike(&text);
+        return clean(&text);
     }
     if let Some(text) = through_man(roff, page) {
-        return strip_overstrike(&text);
+        return clean(&text);
     }
     roff.to_string()
+}
+
+/// Both renderers mark bold and italic inside the text stream: groff and mandoc
+/// overstrike with backspaces, man-db's groff additionally colors with SGR
+/// sequences even when its output is a pipe. A page read as text wants neither.
+fn clean(text: &str) -> String {
+    strip_overstrike(&strip_sgr(text))
+}
+
+fn strip_sgr(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut chars = text.chars().peekable();
+    while let Some(ch) = chars.next() {
+        if ch != '\u{1b}' {
+            out.push(ch);
+            continue;
+        }
+        // A control sequence is ESC, '[', parameter and intermediate bytes, then
+        // one final byte in 0x40..=0x7E. Anything else after ESC is left out too,
+        // so a truncated sequence cannot leak a control code into the text.
+        if chars.peek() == Some(&'[') {
+            chars.next();
+            for next in chars.by_ref() {
+                if ('\u{40}'..='\u{7e}').contains(&next) {
+                    break;
+                }
+            }
+        }
+    }
+    out
 }
 
 fn through_groff(roff: &str) -> Option<String> {
@@ -227,5 +257,15 @@ mod tests {
         assert_eq!(strip_overstrike("NA\u{8}AM\u{8}ME"), "NAME");
         assert_eq!(strip_overstrike("_\u{8}x _\u{8}y"), "x y");
         assert_eq!(strip_overstrike("keep"), "keep");
+    }
+
+    #[test]
+    fn control_sequences_are_dropped() {
+        // groff colors a page it is writing to a pipe, and man-db passes that
+        // through, so the plain face has to remove it.
+        assert_eq!(strip_sgr("\u{1b}[1mNAME\u{1b}[0m"), "NAME");
+        assert_eq!(strip_sgr("\u{1b}[4mT\u{1b}[24m(1)"), "T(1)");
+        assert_eq!(strip_sgr("keep"), "keep");
+        assert_eq!(clean("\u{1b}[1mNA\u{8}AM\u{8}ME\u{1b}[0m"), "NAME");
     }
 }
