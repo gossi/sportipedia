@@ -5,7 +5,7 @@
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use sparch::manpage;
+use sparch::plaintext;
 
 fn fixtures() -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -176,40 +176,71 @@ fn validate_reads_the_model_contracts() {
 }
 
 #[test]
+fn man_pages_put_the_content_into_the_roff() {
+    // The roff is what sparch writes, so the content is compared there. What a
+    // formatter does with it afterwards is not sparch's answer, and groff and
+    // mandoc disagree about spacing, hyphenation, color and even input encoding.
+    // The text comes out of this crate's own rendering of that roff.
+    let (code, roff) = sparch(&["man", "read_model", "--roff"]);
+    assert_eq!(code, 0, "{roff}");
+    let page = plaintext::render(&roff);
+    for want in [
+        "NAME\n    sparch-read_model - Generates the shared read model with its changesets",
+        "SYNOPSIS\n    mix sp.gen.read_model [options] <READ-MODEL>",
+        "DESCRIPTION\n    The queryable projection of the events. Typed Ecto schema plus the changesets the projections need.",
+        // The blueprint prose carries an em dash. It reaches the page as a plain
+        // dash, because no renderer is trusted to decode it the same way twice.
+        "casting the fields they need - with a unique_constraint",
+        "Left to you\n    - The table: mix ecto.gen.migration, including the unique index a unique_constraint needs",
+        "OPTIONS\n    --subdomain <SUBDOMAIN>",
+        "    --model <MODEL>\n    model root, default docs/domain-model (relative to --root)",
+        "    <READ-MODEL>\n    the element: esdm: reference, *.esdm.yaml, kind.name, or bare name",
+        "SEE ALSO\n    sparch(1)\n    suites: operation, feature",
+    ] {
+        assert!(page.contains(want), "missing from the page: {want}\n{page}");
+    }
+    for name in ["read_model", "projector", "domain-object", "storybook"] {
+        let (code, roff) = sparch(&["man", name, "--roff"]);
+        assert_eq!(code, 0, "{roff}");
+        assert!(
+            roff.is_ascii(),
+            "{name}: a typographic character reached the roff, where a formatter \
+             that decodes its input as latin1 turns it into mojibake\n{roff}"
+        );
+    }
+    let (code, index) = sparch(&["man", "--roff"]);
+    assert_eq!(code, 0, "{index}");
+    assert!(
+        index.is_ascii(),
+        "the index carries every generator's shortdoc, and must stay ASCII:\n{index}"
+    );
+}
+
+#[test]
 fn man_pages_render_with_generated_headers() {
+    // The `--plain` face is that same rendering, so the binary and the library
+    // must agree, and nothing a formatter leaks may appear in either.
+    let (code, roff) = sparch(&["man", "read_model", "--roff"]);
+    assert_eq!(code, 0, "{roff}");
     let (code, out) = sparch(&["man", "read_model", "--plain"]);
     assert_eq!(code, 0, "{out}");
+    assert_eq!(
+        out,
+        plaintext::render(&roff),
+        "the binary does not print this crate's own rendering"
+    );
     for section in ["NAME", "SYNOPSIS", "OPTIONS", "DESCRIPTION"] {
         assert!(
             out.contains(section),
             "{section} missing from the page:\n{out}"
         );
     }
-    assert!(
-        out.contains("mix sp.gen.read_model [options] <READ-MODEL>"),
-        "the synopsis is the binding call:\n{out}"
-    );
 
-    // What a formatter does to the text is its own business: groff justifies and
-    // hyphenates, mandoc does neither, and neither is wrong. Both sides of a prose
-    // comparison therefore go through the same function that puts prose into a
-    // page, which leaves the content as the only thing under test.
-    let page = manpage::plain_text(&out);
-    assert!(
-        page.contains(&manpage::plain_text(
-            "The queryable projection of the events"
-        )),
-        "the author's prose:\n{out}"
-    );
-    assert!(
-        page.contains(&manpage::plain_text("they need — with a")),
-        "the prose keeps its dash:\n{out}"
-    );
-
-    // Two artifacts the Linux renderer used to leak into the text: escape
-    // sequences meant for a terminal, and a mis-decoded UTF-8 dash.
+    // Three artifacts the Linux formatter used to leak into the text: escape
+    // sequences meant for a terminal, a mis-decoded UTF-8 dash, and roff itself.
     assert!(!out.contains('\u{1b}'), "the page carries escapes:\n{out}");
     assert!(!out.contains("â"), "the page carries mojibake:\n{out}");
+    assert!(!out.contains(".SH"), "the page carries roff noise:\n{out}");
 
     let (code, out) = sparch(&["man", "projector", "--roff"]);
     assert_eq!(code, 0, "{out}");

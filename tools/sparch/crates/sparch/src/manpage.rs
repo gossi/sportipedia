@@ -250,11 +250,10 @@ fn title_line(page: &str) -> String {
     )
 }
 
-/// The typographic characters the manuals use, spelled the way every formatter
+/// The typographic characters the manuals use, in the spelling every formatter
 /// agrees on. groff decodes its input as latin1 whatever the locale says, so a
-/// UTF-8 em dash reaches the page as mojibake, and its code point spelling came
-/// out doubled on groff 1.24.2. mandoc renders both correctly, which is why this
-/// only ever showed up on Linux. ASCII asks neither renderer to behave.
+/// UTF-8 em dash reaches the page as mojibake, while mandoc passes the bytes
+/// through, which is why this only ever showed up on Linux.
 const FOLDS: [(&str, &str); 11] = [
     ("\u{2014}", "-"),   // em dash
     ("\u{2013}", "-"),   // en dash
@@ -268,15 +267,6 @@ const FOLDS: [(&str, &str); 11] = [
     ("\u{201d}", "\""),  // right double quote
     ("\u{2019}", "'"),   // right single quote
 ];
-
-/// Turn author prose into the text a page carries, independent of any renderer.
-/// Everything that reads a manual page as text, the tests included, compares
-/// through here, so a formatter's spacing and typography cannot become the
-/// subject of an assertion.
-pub fn plain_text(text: &str) -> String {
-    let folded = fold(text);
-    folded.split_whitespace().collect::<Vec<_>>().join(" ")
-}
 
 fn fold(text: &str) -> String {
     let mut out = text.to_string();

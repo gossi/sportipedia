@@ -1,6 +1,6 @@
-use std::io::{IsTerminal, Write};
+use std::io::IsTerminal;
 use std::path::PathBuf;
-use std::process::{Command, Stdio};
+use std::process::Command;
 
 mod pages {
     include!(concat!(env!("OUT_DIR"), "/pages.rs"));
@@ -103,14 +103,14 @@ pub fn serve(generator: Option<&str>, target: Option<&str>, format: Format) -> i
             0
         }
         Format::Plain => {
-            print!("{}", plain(&roff, &page));
+            print!("{}", crate::plaintext::render(&roff));
             0
         }
         Format::Pager => {
             if std::io::stdout().is_terminal() && open_in_man(&roff, &page) {
                 return 0;
             }
-            print!("{}", plain(&roff, &page));
+            print!("{}", crate::plaintext::render(&roff));
             0
         }
     }
@@ -118,83 +118,11 @@ pub fn serve(generator: Option<&str>, target: Option<&str>, format: Format) -> i
 
 pub fn page_text(generator: Option<&str>, target: Option<&str>) -> Result<String, String> {
     let want = generator.unwrap_or(crate::manpage::INDEX);
-    let page = crate::manpage::page_name(want, target)?;
+    // Resolved for its error: an unknown generator must answer here, and the
+    // page name itself only mattered when a formatter was in the loop.
+    crate::manpage::page_name(want, target)?;
     let roff = crate::manpage::page(want, target)?;
-    Ok(plain(&roff, &page))
-}
-
-fn plain(roff: &str, page: &str) -> String {
-    if let Some(text) = through_groff(roff) {
-        return clean(&text);
-    }
-    if let Some(text) = through_man(roff, page) {
-        return clean(&text);
-    }
-    roff.to_string()
-}
-
-/// Both renderers mark bold and italic inside the text stream: groff and mandoc
-/// overstrike with backspaces, man-db's groff additionally colors with SGR
-/// sequences even when its output is a pipe. A page read as text wants neither.
-fn clean(text: &str) -> String {
-    strip_overstrike(&strip_sgr(text))
-}
-
-fn strip_sgr(text: &str) -> String {
-    let mut out = String::with_capacity(text.len());
-    let mut chars = text.chars().peekable();
-    while let Some(ch) = chars.next() {
-        if ch != '\u{1b}' {
-            out.push(ch);
-            continue;
-        }
-        // A control sequence is ESC, '[', parameter and intermediate bytes, then
-        // one final byte in 0x40..=0x7E. Anything else after ESC is left out too,
-        // so a truncated sequence cannot leak a control code into the text.
-        if chars.peek() == Some(&'[') {
-            chars.next();
-            for next in chars.by_ref() {
-                if ('\u{40}'..='\u{7e}').contains(&next) {
-                    break;
-                }
-            }
-        }
-    }
-    out
-}
-
-fn through_groff(roff: &str) -> Option<String> {
-    let mut child = Command::new("groff")
-        .args(["-mandoc", "-Tutf8"])
-        .stdin(Stdio::piped())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::null())
-        .spawn()
-        .ok()?;
-    if let Some(mut stdin) = child.stdin.take() {
-        let _ = stdin.write_all(roff.as_bytes());
-    }
-    let out = child.wait_with_output().ok()?;
-    match out.status.success() {
-        true => Some(String::from_utf8_lossy(&out.stdout).to_string()),
-        false => None,
-    }
-}
-
-fn through_man(roff: &str, page: &str) -> Option<String> {
-    let root = stage(roff, page)?;
-    let out = Command::new("man")
-        .arg("-M")
-        .arg(&root)
-        .args(["-S", "1", page])
-        .env("PAGER", "cat")
-        .output()
-        .ok()?;
-    let _ = std::fs::remove_dir_all(&root);
-    match out.status.success() {
-        true => Some(String::from_utf8_lossy(&out.stdout).to_string()),
-        false => None,
-    }
+    Ok(crate::plaintext::render(&roff))
 }
 
 fn open_in_man(roff: &str, page: &str) -> bool {
@@ -224,48 +152,4 @@ fn stage(roff: &str, page: &str) -> Option<PathBuf> {
     std::fs::create_dir_all(&dir).ok()?;
     std::fs::write(dir.join(format!("{page}.1")), roff).ok()?;
     Some(root)
-}
-
-fn strip_overstrike(text: &str) -> String {
-    let chars: Vec<char> = text.chars().collect();
-    let mut out = String::with_capacity(text.len());
-    let mut index = 0;
-    while index < chars.len() {
-        let next = chars.get(index + 1).copied();
-        let after = chars.get(index + 2).copied();
-        match (next, after) {
-            (Some('\u{8}'), Some(letter)) if letter == chars[index] || chars[index] == '_' => {
-                out.push(letter);
-                index += 3;
-            }
-            (Some('\u{8}'), _) => index += 2,
-            _ => {
-                out.push(chars[index]);
-                index += 1;
-            }
-        }
-    }
-    out
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn overstrike_becomes_plain_text() {
-        assert_eq!(strip_overstrike("NA\u{8}AM\u{8}ME"), "NAME");
-        assert_eq!(strip_overstrike("_\u{8}x _\u{8}y"), "x y");
-        assert_eq!(strip_overstrike("keep"), "keep");
-    }
-
-    #[test]
-    fn control_sequences_are_dropped() {
-        // groff colors a page it is writing to a pipe, and man-db passes that
-        // through, so the plain face has to remove it.
-        assert_eq!(strip_sgr("\u{1b}[1mNAME\u{1b}[0m"), "NAME");
-        assert_eq!(strip_sgr("\u{1b}[4mT\u{1b}[24m(1)"), "T(1)");
-        assert_eq!(strip_sgr("keep"), "keep");
-        assert_eq!(clean("\u{1b}[1mNA\u{8}AM\u{8}ME\u{1b}[0m"), "NAME");
-    }
 }

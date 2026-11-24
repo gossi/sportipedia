@@ -10,4 +10,5 @@ pub mod generate;
 pub mod man;
 pub mod manpage;
 pub mod migration;
+pub mod plaintext;
 pub mod validate;
