@@ -1,0 +1,46 @@
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: edit-position
+description: "Edit properties of the position"
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: position
+metadata:
+  annotations:
+    spgen.operation: update
+data:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier of the position to edit"
+    title:
+      type: string
+      description: "Name of the position"
+    slug:
+      type: string
+      description: "URL-friendly identifier of the position itself (raw, not namespaced; the read model stores it as raw_slug and re-derives the globally unique slug from it and the referenced equipment's slug)"
+    description:
+      type: string
+      description: "Optional description"
+    apparatus_id:
+      type: string
+      format: uuid
+      description: "Reference to apparatus (optional, mutually exclusive with instrument_id)"
+    instrument_id:
+      type: string
+      format: uuid
+      description: "Reference to instrument (optional, mutually exclusive with apparatus_id)"
+  required:
+    - id
+constraints:
+  - name: position-exists
+    rule: A position needs to exist (check by id)
+  - name: equipment-exists
+    rule: If apparatus_id or instrument_id is provided, the referenced equipment must exist
+publishes:
+  - position-edited
+actors:
+  - user

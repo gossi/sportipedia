@@ -1,0 +1,47 @@
+# Operation Test
+
+One test file per operation, built from `describe` blocks contributed by the
+generators that write the operation's code. It tests the operation through the
+public API — the vertical slice, not the modules.
+
+## Generated
+
+- `use Sportipedia.<Subdomain>TestCase`, `@moduletag :integration`, and the
+  aliases each `describe` needs — gated on the modules they reference, so a test
+  never cites a citizen that does not exist yet.
+- `describe "Command"` — requires id, id cannot be nil, presence per required
+  field ([command](./command.md)).
+- `describe "Command Handler"` — command in, event out
+  ([command handler](./command-handler.md)).
+- `describe "Policy"` — guest and user cases from the model's `actors`
+  ([policy](./policy.md)).
+- `describe "Public API"` — success, `{:error, {:validation_failure, _}}` for
+  commands, `:not_found` for an unknown read, the collection case
+  ([public API](./public-api.md)).
+- `describe "Query"` — a placeholder case until the query is implemented
+  ([query](./query.md)).
+
+Events, aggregates and projectors are **not** here: the fact owns its own file,
+the [event test](./event-test.md).
+
+## Left to you
+
+Where a case needs read-model state directly, seed the model's **fixture** —
+`sp.gen.test_support` generates the `<Composite>.new_<domain_object>/1` (a fixture
+struct or an attribute map) and `new_<domain_object>s/1` into
+`test/support/<_subdomain>/<composite>/<composite>.ex`. A generated test already
+calls them for a direct read-model row; an added case should reuse the same
+fixture function rather than hand-write a `%{title: "sample-title", …}` map —
+the fixture is the single source of truth for that citizen's data, and its id is
+a stable `UUID.uuid5(:dns, <key>)` the rest of the graph refers to. Reach the
+same state through the **public API** when the test is about behaviour (the
+aggregate and its events), not a table row: only a command dispatch builds the
+event-sourced state an update or delete acts on.
+
+Everything else that is still yours is listed once in
+[Known gaps](../../README.md#known-gaps).
+
+## Learnings
+
+- Test names say what the system does through the interface, in the model's
+  vocabulary; they do not name modules or private functions.

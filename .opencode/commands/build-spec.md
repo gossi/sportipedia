@@ -1,6 +1,6 @@
 ---
 name: build-spec
-description: Build a given spec — one spec is one aggregate, so it is one feature slice
+description: Build a given spec
 agent: builder
 ---
 
@@ -14,13 +14,13 @@ Parameters:
 
 ## What Runs
 
-The recipe delegates once to `domain-feature`, which runs five phases: design
-(software-architect), generate (backend-engineer), implement (one
-backend-engineer per operation, in parallel), review (software-architect), adjust
-and commit (backend-engineer).
+Three calls. `plan` runs the software-architect, which reports what the document
+states and then the work it implies, split into generated work and manual work.
+`implement` runs the software-engineer, which uses the generators for everything a
+generator owns and writes the rest test-first, in whichever sides the spec's `scope`
+declares. The review loop runs the software-architect against the spec and the
+working tree, and the software-engineer applies findings when the review fails,
+three iterations at most.
 
-The design step lints the domain model and preflights the spec against it before
-anything is generated, and stops with `MODEL GAP:` where they disagree. That is
-the earliest and cheapest place a model defect can be caught.
-
-Report the slice outcome when it returns: operations built, review status, commit.
+Report the outcome when it returns: what was planned, what was built, review status,
+and what stays open. Nothing commits.

@@ -1,0 +1,53 @@
+info:
+  name: Create Widget
+  type: http
+  seq: 2
+
+http:
+  method: POST
+  url: "{{apiUrl}}/catalog/equipment/widgets/create-widget"
+  body:
+    type: json
+    data: |-
+      {
+        "data": {
+          "type": "widget",
+          "attributes": {
+            "title": "Pommel Horse",
+            "slug": "pommel-horse",
+            "coach_id": "sample-coach_id",
+            "description": "sample-description",
+            "label": "Pommel",
+            "team_id": "sample-team_id"
+          }
+        }
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: Create Pommel Horse
+    request:
+      url: "{{apiUrl}}/catalog/equipment/widgets/create-widget"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "data": {
+              "type": "widget",
+              "attributes": {
+                "title": "Pommel Horse",
+                "slug": "pommel-horse",
+                "coach_id": "sample-coach_id",
+                "description": "sample-description",
+                "label": "Pommel",
+                "team_id": "sample-team_id"
+              }
+            }
+          }

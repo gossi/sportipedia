@@ -1,5 +1,14 @@
 # Sportipedia Generator
 
+> **Porting status:** this Elixir tool is the live BE generator and the
+> parity oracle for its Rust port. The transfer into
+> [`../spgen-rs/crates/spgen-elixir`](../spgen-rs/crates/spgen-elixir)
+> runs wave by wave (`read_model` is through the parity gate); the tool
+> here stays untouched — and `services/api` keeps pointing at it — until
+> every generator is green on the gate, after which this directory is
+> deleted and the little binding in `../spgen-rs/elixir` takes over the
+> `mix sp.gen.*` surface.
+
 ## Idea
 
 The blueprints under `docs/architecture/blueprints/` describe, in prose, how one

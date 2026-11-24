@@ -1,0 +1,21 @@
+info:
+  name: List Widgets
+  type: http
+  seq: 6
+
+http:
+  method: GET
+  url: "{{apiUrl}}/catalog/equipment/widgets"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: List Widgets
+    request:
+      url: "{{apiUrl}}/catalog/equipment/widgets"
+      method: GET

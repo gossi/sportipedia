@@ -84,7 +84,7 @@ defmodule Sportipedia.MixProject do
       # so the generators work on a tree that does not compile yet — which is
       # exactly when they are needed. Dev/test only, and `runtime: false`
       # keeps the tool out of releases and out of the app's code path.
-      {:spgen, path: "../../tools/spgen", runtime: false, only: [:dev, :test]}
+      {:sparch, path: "../../tools/sparch/elixir", runtime: false, only: [:dev, :test]}
     ]
   end
 

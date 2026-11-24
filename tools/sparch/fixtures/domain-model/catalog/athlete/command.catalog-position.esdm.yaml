@@ -1,0 +1,41 @@
+apiVersion: schema.esdm.io/core/v1
+kind: command
+name: catalog-position
+description: "Catalogs a new position in the catalog: a body position or stance, optionally bound to one piece of equipment"
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: position
+metadata:
+  annotations:
+    spgen.operation: create
+data:
+  type: object
+  properties:
+    title:
+      type: string
+      description: "Name of the position"
+    slug:
+      type: string
+      description: "URL-friendly identifier of the position itself (raw, not namespaced; the read model stores it as raw_slug and derives the globally unique slug from it and the referenced equipment's slug)"
+    description:
+      type: string
+      description: "Optional description"
+    apparatus_id:
+      type: string
+      format: uuid
+      description: "Reference to apparatus (optional, mutually exclusive with instrument_id)"
+    instrument_id:
+      type: string
+      format: uuid
+      description: "Reference to instrument (optional, mutually exclusive with apparatus_id)"
+  required:
+    - title
+    - slug
+constraints:
+  - name: equipment-exists
+    rule: If apparatus_id or instrument_id is provided, the referenced equipment must exist
+publishes:
+  - position-cataloged
+actors:
+  - user

@@ -1,0 +1,45 @@
+info:
+  name: Note Widget
+  type: http
+  seq: 4
+
+http:
+  method: POST
+  url: "{{apiUrl}}/catalog/equipment/widgets/note-widget"
+  body:
+    type: json
+    data: |-
+      {
+        "data": {
+          "type": "widget",
+          "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+          "attributes": {
+            "comment": "sample-comment"
+          }
+        }
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: Note Widget
+    request:
+      url: "{{apiUrl}}/catalog/equipment/widgets/note-widget"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "data": {
+              "type": "widget",
+              "id": "d290f1ee-6c54-4b01-90e6-d701748f0851",
+              "attributes": {
+                "comment": "sample-comment"
+              }
+            }
+          }

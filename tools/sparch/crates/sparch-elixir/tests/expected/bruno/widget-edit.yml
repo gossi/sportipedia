@@ -1,0 +1,55 @@
+info:
+  name: Edit Widget
+  type: http
+  seq: 3
+
+http:
+  method: POST
+  url: "{{apiUrl}}/catalog/equipment/widgets/edit-widget"
+  body:
+    type: json
+    data: |-
+      {
+        "data": {
+          "type": "widget",
+          "id": "{{ generated }}",
+          "attributes": {
+            "coach_id": "sample-coach_id",
+            "description": "sample-description",
+            "label": "Vaulting",
+            "slug": "vaulting-table",
+            "team_id": "sample-team_id",
+            "title": "Vaulting Table"
+          }
+        }
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: Edit Vaulting Table
+    request:
+      url: "{{apiUrl}}/catalog/equipment/widgets/edit-widget"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "data": {
+              "type": "widget",
+              "id": "{{ generated }}",
+              "attributes": {
+                "coach_id": "sample-coach_id",
+                "description": "sample-description",
+                "label": "Vaulting",
+                "slug": "vaulting-table",
+                "team_id": "sample-team_id",
+                "title": "Vaulting Table"
+              }
+            }
+          }

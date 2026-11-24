@@ -155,6 +155,7 @@ scope: backend and/or frontend
 - Read models and queries
 - Authorization/Permissions
 - Given-When-Then Feature + Scenarios
+- Domain models this feature drops, with the reason
 
 **Use this example (only sections that apply):**
 
@@ -170,6 +171,10 @@ Modified Domain Models:
 New Domain Models:
 
 - [Type: Name](../path/to/file.esdm.yaml): Purpose
+
+Removed Domain Models:
+
+- [Type: Name](../path/to/file.esdm.yaml): Why it goes away, and what replaces it
 ```
 
 ## Additional Requirements

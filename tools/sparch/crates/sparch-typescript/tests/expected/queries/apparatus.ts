@@ -1,0 +1,35 @@
+/**
+ * @module Apparatus Queries
+ * @mergeModuleWith Apparatus
+ */
+import { findRecord, query } from '@warp-drive/utilities/json-api';
+
+import type { Apparatus } from './apparatus';
+import type { ReactiveDataDocument } from '@warp-drive/core/reactive';
+import type { FindRecordOptions } from '@warp-drive/core/types';
+import type { QueryParamsSource } from '@warp-drive/core/types/params';
+import type { FindRecordRequestOptions, QueryRequestOptions } from '@warp-drive/core/types/request';
+/**
+ * @group Apparatus
+ * @category Queries
+ */
+export function listApparatuses(
+  params: QueryParamsSource = {}
+): QueryRequestOptions<ReactiveDataDocument<Apparatus[]>> {
+  return query<Apparatus>('apparatus', params, { resourcePath: 'equipment/apparatuses' });
+}
+
+/**
+ * @group Apparatus
+ * @category Queries
+ */
+export function readApparatus(
+  idOrSlug: string,
+  params: FindRecordOptions = {}
+): FindRecordRequestOptions<ReactiveDataDocument<Apparatus>, Apparatus> {
+  return findRecord<Apparatus>('apparatus', idOrSlug, {
+    resourcePath: 'equipment/apparatuses',
+    ...params
+  });
+}
+

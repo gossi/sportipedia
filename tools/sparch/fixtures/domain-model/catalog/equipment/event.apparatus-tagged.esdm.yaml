@@ -1,0 +1,24 @@
+apiVersion: schema.esdm.io/core/v1
+kind: event
+name: apparatus-tagged
+description: "The apparatus has been classified with the full set of tags"
+scope:
+  domain: sport
+  boundedContext: sport
+  aggregate: apparatus
+data:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier"
+    tag_ids:
+      type: array
+      items:
+        type: string
+        format: uuid
+      description: "The complete set of tags after classifying the apparatus"
+  required:
+    - id
+    - tag_ids

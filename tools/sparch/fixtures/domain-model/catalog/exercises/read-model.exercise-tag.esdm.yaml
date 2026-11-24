@@ -1,0 +1,40 @@
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: exercise-tag
+description: "A tag applied to an exercise, with the weighting of that fit"
+scope:
+  domain: sport
+  boundedContext: sport
+metadata:
+  annotations:
+    spgen.operation.exercise-tagged: create
+projections:
+  - boundedContext: sport
+    aggregate: exercise
+    event: exercise-tagged
+    rule: "Project the link when a tag is applied to the exercise"
+schema:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier"
+    exercise:
+      type: string
+      format: uuid
+      x-esdm-relation: { to: exercise, kind: belongs_to }
+      description: "The tagged exercise"
+    tag:
+      type: string
+      format: uuid
+      x-esdm-relation: { to: tag, kind: belongs_to }
+      description: "The applied tag"
+    weight:
+      type: integer
+      description: "How strongly the tag fits, 0 to 100"
+  required:
+    - id
+    - exercise
+    - tag
+    - weight

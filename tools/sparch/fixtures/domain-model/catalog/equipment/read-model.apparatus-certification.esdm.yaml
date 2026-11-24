@@ -1,0 +1,38 @@
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: apparatus-certification
+description: "The safety certification an apparatus is held to"
+scope:
+  domain: sport
+  boundedContext: sport
+metadata:
+  annotations:
+    spgen.operation.apparatus-certified: create
+projections:
+  - boundedContext: sport
+    aggregate: apparatus
+    event: apparatus-certified
+    rule: "Project the certification when the apparatus is certified"
+schema:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier"
+    apparatus:
+      type: string
+      format: uuid
+      x-esdm-relation: { to: apparatus, kind: belongs_to, inverse: certification }
+      description: "The certified apparatus (the one-to-one side carrying the reference)"
+    level:
+      type: string
+      description: "Certification level"
+  required:
+    - id
+    - apparatus
+    - level
+  examples:
+    - id: "equipment:apparatus-certification:still-rings-en16634"
+      apparatus: "equipment:apparatus:still-rings"
+      level: "EN 16634 Class A"

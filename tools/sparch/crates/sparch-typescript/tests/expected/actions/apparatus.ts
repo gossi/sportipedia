@@ -1,0 +1,101 @@
+/**
+ * @module Apparatus Actions
+ * @mergeModuleWith Apparatus
+ */
+import { cacheKeyFor } from '@warp-drive/core';
+import { buildBaseURL } from '@warp-drive/utilities';
+import {
+  createRecord,
+  deleteRecord,
+  serializePatch,
+  serializeResources,
+  updateRecord
+} from '@warp-drive/utilities/json-api.cjs';
+
+import type { Apparatus, ApparatusFields } from './apparatus';
+import type { ReactiveResource } from '@warp-drive/core/reactive';
+import type {
+  CreateRequestOptions,
+  DeleteRequestOptions,
+  UpdateRequestOptions
+} from '@warp-drive/core/types/request';
+import type { WithPartial } from '@warp-drive/core/types/utils';
+import type { Store } from '#support/data';
+
+/**
+ * @group Apparatus
+ * @category Actions
+ */
+export function archiveApparatus(
+  record: ReactiveResource,
+  { store }: { store: Store }
+): DeleteRequestOptions<ReactiveResource> {
+  const requestOptions = deleteRecord(record);
+
+  // @ts-expect-error warp-drive thinks, this must be DELETE (haiyaa, so wrong!)
+  requestOptions.method = 'POST';
+  requestOptions.url = buildBaseURL({ resourcePath: 'equipment/apparatuses/archive-apparatus' });
+  requestOptions.headers.append('Content-Type', 'application/vnd.api+json');
+
+  const payload = serializeResources(store.cache, cacheKeyFor(record));
+
+  requestOptions.body = JSON.stringify(payload);
+
+  return requestOptions;
+}
+
+
+type CatalogApparatusData = WithPartial<ApparatusFields, 'description'>;
+
+/**
+ * @group Apparatus
+ * @category Actions
+ */
+export function catalogApparatus(
+  data: CatalogApparatusData,
+  { store }: { store: Store }
+): CreateRequestOptions<Apparatus> {
+  const apparatus = store.createRecord<Apparatus>('apparatus', data);
+  const options = createRecord(apparatus, {
+    resourcePath: 'equipment/apparatuses/catalog-apparatus',
+    reload: true
+  });
+
+  options.headers.append('Content-Type', 'application/vnd.api+json');
+  options.body = JSON.stringify({
+    data: store.cache.peek(cacheKeyFor(apparatus))
+  });
+
+  return options;
+}
+
+
+type EditApparatusData = Partial<ApparatusFields>;
+
+/**
+ * @group Apparatus
+ * @category Actions
+ */
+export function editApparatus(
+  record: ReactiveResource,
+  changes: EditApparatusData,
+  { store }: { store: Store }
+): UpdateRequestOptions {
+  Object.assign(record, changes);
+
+  const requestOptions = updateRecord(record, {
+    reload: true
+  });
+
+  // @ts-expect-error warp-drive thinks, this must be PUT or PATCH (haiyaa, so wrong!)
+  requestOptions.method = 'POST';
+  requestOptions.url = buildBaseURL({ resourcePath: 'equipment/apparatuses/edit-apparatus' });
+  requestOptions.headers.append('Content-Type', 'application/vnd.api+json');
+
+  const payload = serializePatch(store.cache, cacheKeyFor(record));
+
+  requestOptions.body = JSON.stringify(payload);
+
+  return requestOptions;
+}
+

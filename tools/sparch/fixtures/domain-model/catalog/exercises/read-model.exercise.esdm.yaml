@@ -1,0 +1,47 @@
+apiVersion: schema.esdm.io/core/v1
+kind: read-model
+name: exercise
+scope:
+  domain: sport
+  boundedContext: sport
+metadata:
+  annotations:
+    spgen.operation.exercise-created: create
+projections:
+  - boundedContext: sport
+    aggregate: exercise
+    event: exercise-created
+    rule: "Project the exercise when it is created"
+schema:
+  type: object
+  properties:
+    id:
+      type: string
+      format: uuid
+      description: "Unique identifier"
+    title:
+      type: string
+      description: "Name of the exercise"
+    difficulty:
+      type: integer
+      description: "Optional difficulty rating"
+    primary_apparatus:
+      type: string
+      format: uuid
+      x-esdm-relation: { to: apparatus, kind: belongs_to }
+      description: "The apparatus the exercise is performed on"
+    safety_apparatus:
+      type: string
+      format: uuid
+      x-esdm-relation: { to: apparatus, kind: belongs_to, column: backup_apparatus_id }
+      description: "The apparatus backing the exercise for safety"
+    tags:
+      type: array
+      items:
+        type: string
+        format: uuid
+      x-esdm-relation: { to: tag, kind: many_to_many, join_model: exercise-tag, inverse: exercises }
+      description: "Tags classifying this exercise"
+  required:
+    - id
+    - title

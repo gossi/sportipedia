@@ -86,7 +86,7 @@ $defs:
         description: >-
           Name of the subagent that should execute this step. Required when no
           sub-recipe is referenced. One of: software-architect,
-          backend-engineer, product-specialist.
+          software-engineer, product-specialist.
         pattern: "^[a-z][a-z0-9-]*$"
       skill:
         type: string

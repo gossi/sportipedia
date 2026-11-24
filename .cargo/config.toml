@@ -1,0 +1,2 @@
+[alias]
+sparch = ["run", "--quiet", "--manifest-path", "tools/sparch/Cargo.toml", "-p", "sparch", "--"]

@@ -1,145 +1,120 @@
 ---
 name: parse-spec
-description: Parse a spec markdown file and extract the ordered list of operations to build.
+description: Read a spec document and report the facts it states, without deciding any work.
 ---
 
 # Parse Spec
 
 ## Overview
 
-Read a spec document and extract the list of operations (commands and queries) it
-describes, grouped into the slice they belong to, in build order.
+A spec is a human document. This skill reads it and reports what it states, in the
+document's own words and order, plus the element addresses its links point at.
 
-**Executed by the software-architect** as the first part of the design step. A
-spec is a human document, so extraction is reading judgement, not a grep: the
-builder does not execute this skill.
+It answers one question: **what does the document say**. It never answers what work
+follows from that, which is
+[plan-spec](../plan-spec/SKILL.md).
+
+**Executed by the software-architect**, in the `plan` and `review` steps of the
+[spec recipe](../../recipes/spec.recipe.md). The builder does not run it.
 
 ## When to Use This Skill
 
-Use this skill when:
-
-- You are the software-architect starting a design or a review
-- You have been given a `spec_path`
-- You need the operation list, its grouping, and the spec's own integrity state
+- You are given a `spec_path` and need what the document states
+- You are about to plan work from a spec, or review a result against one
 
 ## Input
 
-You receive a `spec_path` parameter — the path to the spec markdown file.
+`spec_path`: the spec markdown file.
 
 ## Steps
 
-### Step 0: Lint and Check the Domain Model
+### Step 1: Read the whole file
 
-Run `esdm lint` before reading the spec. This is the first integrity check of the
-flow, not a last-minute review finding: a model error silently changes what the
-generators emit.
+Read `${spec_path}` completely, including frontmatter. Do not skim for one section:
+the sections outside `## Domain Model` carry requirements the model does not express.
 
-Then run `mix sp.check docs/domain-model/<subdomain>` for the subdomain in
-scope: it answers the question lint cannot — does the model carry everything the
-generators need (fixture keys and example consistency, non-empty descriptions
-where docs and operation summaries come from)? It is mechanical, not
-interpretive: findings are model defects to fix, never design decisions.
+### Step 2: Report the frontmatter
 
-- **Block** on any error under `docs/domain-model/**` for the constituent you
-  are about to plan. A missing required field or unknown key in an aggregate,
-  command, event or read model means the design step would be planning against a
-  file the generators cannot read.
-- **Block** on any `sp.check` finding for the constituent: the generator would
-  refuse the same content later — refuse it here, where nothing has run.
-- **Note** errors in unrelated subdomains or fixtures and pass them through as a
-  known-baseline — do not stop the slice for them.
-- Re-run `esdm lint` (and `mix sp.check`, if its findings touched this
-  constituent) after any `MODEL GAP:` correction, before anything is generated.
+Record `feature`, `subdomain`, `composite`, `constituent` and `scope` as written.
+`scope` says which sides of the system the spec covers, so keep its value verbatim
+and do not infer a side it does not name. Absent keys are reported as absent.
 
-If lint or check blocks, output `MODEL GAP: <file> — <what the model needs>` and
-stop.
+### Step 3: Report the Domain Model section
 
-### Step 1: Read the Spec File
+The section groups its entries under four labels: `Used Domain Models:`,
+`Modified Domain Models:`, `New Domain Models:` and `Removed Domain Models:`. For
+every entry record:
 
-Read the spec file at `${spec_path}`.
+- `bucket`: `used`, `modified`, `new` or `removed`
+- `kind` and `name`: taken from the link label, for example
+  `[Command: catalog-apparatus]` gives kind `command` and name `catalog-apparatus`
+- `path`: the link target, as written
+- `note`: the purpose text after the colon, verbatim
 
-### Step 2: Extract Commands
+Entries whose note begins with `Referenced` keep their bucket and are also marked
+`referenced: true`. Those are the spec naming another aggregate's model, and they are
+facts about dependencies, not about this spec's work.
 
-Find the `## Domain Model` section. Within it, identify all list items matching
-the pattern `[Command: <name>]`. Extract each `<name>`.
+Keep the document order within each bucket. A missing label means an empty bucket.
 
-Preserve the order they appear in the spec.
+### Step 4: Derive element addresses from the links
 
-### Step 3: Extract Queries
+Each ESDM file is named `<kind>.<name>.esdm.yaml`, so an entry's address is
+`kind.name` from the filename, and it must agree with the link label. Report an entry
+whose filename and label disagree. Do not open the ESDM files.
 
-Find the `## Domain Model` section. Within it, identify all list items matching
-the pattern `[Query: <name>]`.
+### Step 5: Report the remaining sections
 
-If no `[Query: ...]` entries exist, also scan:
+Record, per section, the bullets as written, with their section name:
 
-- The `### Functional Requirements` subsection for lines mentioning "List" or
-  "Read an" — these imply query operations
-- The `### Integration Requirements` subsection for GET controller actions
-  matching the pattern `→ :<action_name>` — these are queries
+- `### Functional Requirements`, `### Technical Requirements`,
+  `### Integration Requirements`, `### User Experience Requirements`
+- `## Non-requirements`
+- `## Quality Assurance` test scenarios, each by name, with the domain-model file and
+  scenario it references when the text names one
+- `## Tradeoffs and Concerns`, each title with its `Follow-up` link
 
-Convert snake_case action names to kebab-case (e.g. `list_apparatuses` →
-`list-apparatuses`, `read_apparatus` → `read-apparatus`).
+An empty section is reported as empty. Do not fill a gap from the model or from code.
 
-Preserve the order they appear in the spec.
+### Step 6: Check the document's own links
 
-### Step 4: Group into Feature Slices
+Resolve every relative link in the document against the spec file's directory. Report
+each one that does not exist, with the section it sits in. A wrong `../` depth is the
+usual cause. Report it as a document defect and do not repair it, change it, or let
+it alter anything else in this result.
 
-Resolve each operation name to its ESDM file under `docs/domain-model/` and read
-its `scope` block. Group operations by aggregate — that group is one **feature
-slice**, and it is the unit of parallel execution.
-
-Commands carry `scope.aggregate`. Queries do not — they carry `readModel`, which
-names the same constituent. Use `scope.aggregate` for commands and `readModel` for
-queries; a query whose read model matches an aggregate's slice belongs to that
-slice. If a query's read model matches nothing, stop and report it — the model is
-incomplete.
-
-Operations on the same aggregate share `public_api.ex`, `policy.ex`,
-`<object>_controller.ex`, `aggregate.ex`, `projector.ex` and the web router
-scope. They must be built by one agent, serially. Never split an aggregate's
-operations across slices.
-
-Record the composite each slice lives in: slices in the same composite also share
-the composite's commanded router.
-
-### Step 5: Check the Spec's Own Links
-
-The spec links to ESDM files with relative paths. Resolve each link in the
-`## Domain Model` section against the spec file's directory and report any that
-do not exist. These are usually a wrong `../` depth. Report them as a doc defect —
-do not silently fix or ignore them, and do not let them change your extraction.
-
-### Step 6: Return the Result
-
-Return a JSON object:
+### Step 7: Return the result
 
 ```json
 {
-  "operations": ["catalog-apparatus", "edit-apparatus", "archive-apparatus", "read-apparatus", "list-apparatuses"],
-  "features": [
-    { "name": "apparatus", "composite": "equipment", "aggregate": "apparatus",
-      "operations": ["catalog-apparatus", "edit-apparatus", "archive-apparatus", "read-apparatus", "list-apparatuses"] }
+  "frontmatter": { "feature": "…", "subdomain": "…", "composite": "…",
+                   "constituent": "…", "scope": "…" },
+  "domain_model": [
+    { "bucket": "modified", "kind": "command", "name": "catalog-apparatus",
+      "address": "command.catalog-apparatus",
+      "path": "../../../domain-model/catalog/equipment/command.catalog-apparatus.esdm.yaml",
+      "note": "`data` populated with `title`, `slug`, `description` …",
+      "referenced": false }
   ],
-  "broken_links": ["## Domain Model → ../domain-model/catalog/equipment/aggregate.apparatus.esdm.yaml"]
+  "requirements": { "functional": ["…"], "technical": ["…"], "integration": ["…"],
+                    "user_experience": ["…"] },
+  "non_requirements": ["…"],
+  "qa_scenarios": [ { "name": "…", "references": "…" } ],
+  "tradeoffs": [ { "title": "…", "follow_up": "…" } ],
+  "label_address_mismatches": [],
+  "broken_links": [ "## Domain Model → ../../../domain-model/…" ]
 }
 ```
 
-Rules:
-
-- `operations`: commands first, sorted by resulting database operation (create,
-  update, delete), then queries in spec order.
-- `features`: one entry per aggregate, each carrying its operations in the
-  `operations` order above.
-- Each operation name is the exact `name` property from the domain model.
-
 ## Verification
 
-- [ ] Did I find ALL commands from the Domain Model section?
-- [ ] Did I find ALL queries (from `[Query:]` entries, Functional Requirements,
-      or Integration Requirements)?
-- [ ] Are commands listed before queries?
-- [ ] Does each group contain every operation of exactly one aggregate?
-- [ ] Did I attempt to resolve every Domain Model link and report failures?
-- [ ] Did I avoid extracting events, aggregates, read models, or actors as
-      operations?
-- [ ] Is the output valid JSON with `operations`, `features`, and `broken_links`?
+- [ ] Did I read every section, not just `## Domain Model`?
+- [ ] Did I record `scope` exactly as the frontmatter states it?
+- [ ] Did I capture all four domain model buckets, keeping document order?
+- [ ] Did I mark entries whose note says `Referenced`?
+- [ ] Did I take names from the link labels and addresses from the filenames, and
+      report where they disagree?
+- [ ] Did I leave out any work decision? (should be: yes, none)
+- [ ] Did I avoid opening ESDM files or implementation files? (should be: yes)
+- [ ] Did I attempt every relative link and report the failures with their section?
+- [ ] Is the output valid JSON with all seven keys?
