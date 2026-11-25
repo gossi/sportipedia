@@ -223,12 +223,7 @@ drifts — so a final `--diff` is a verification gate, not just a report.
 
 Re-running a generator over generated code reports `Ignored`. The merge is
 append-only: existing lines are never rewritten. If the project does not
-compile, the mix tasks still work (the tool is a path dependency of the API);
-as a recovery hatch run the binary directly:
-
-```sh
-tools/spgen/spgen <generator> <element> [options]
-```
+compile, the mix tasks still work (the tool is a path dependency of the API).
 
 `SPARCH_NO_AUTOBUILD=1` stops the tasks from rebuilding it.
 
