@@ -107,4 +107,4 @@ catalogs:
     "better-auth": 1.7.25
     "temporal-polyfill": ^0.3.0
   ai:
-    "@playwright/mcp": "0.0.85"
+    "@playwright/mcp": "0.0.86"
