@@ -91,7 +91,7 @@
     "eslint": "catalog:lint",
     "eslint-plugin-ember": "catalog:lint",
     "prettier": "catalog:lint",
-    "rollup": "^4.44.0",
+    "rollup": "^4.68.8",
     "tsdown": "catalog:build",
     "typescript": "catalog:build",
     "unplugin-icons": "catalog:icons",
